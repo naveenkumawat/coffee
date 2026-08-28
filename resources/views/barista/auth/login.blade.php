@@ -1,0 +1,1 @@
+@extends('barista.layouts.auth')

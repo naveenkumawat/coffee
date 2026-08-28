@@ -1,0 +1,1 @@
+@extends('administrator.layouts.auth')

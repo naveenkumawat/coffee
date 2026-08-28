@@ -1,6 +1,6 @@
 # Coffee
 
-Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. The first implemented slice is a role-aware menu catalog with a public storefront homepage and a separate admin guard for staff workflows.
+Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. It now includes a ZYLM-inspired shared internal management UI for `administrator` and `barista` panels, while keeping the public customer-facing Coffee frontend separate.
 
 ## What was reused conceptually from ZYLM
 
@@ -17,18 +17,19 @@ Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. The fi
 - Centralized request-context logging and exception rendering
 - A lighter role model using enums, middleware, and policies
 
-## Foundation included on August 27, 2026
+## Foundation included on August 28, 2026
 
 - Laravel 13 application scaffold
 - MySQL-ready `.env.example`
 - Separate `admin` guard for staff access
 - Role enum and role configuration
 - Public homepage backed by cached menu catalog queries
-- Admin dashboard
+- Shared internal theme assets, layouts, components, and responsive behavior
+- Separate `administrator` and `barista` panel routes, views, and dashboards
 - Menu category and menu item CRUD foundation
 - Structured JSON logging channel
 - Seed support for an owner account through environment variables
-- Feature tests for public menu, admin auth, and catalog management
+- Feature tests for public menu, internal auth, and catalog management
 
 ## Project structure
 
@@ -39,7 +40,10 @@ Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. The fi
 - `app/Policies`: authorization rules
 - `app/Events` and `app/Listeners`: catalog change hooks
 - `app/Support`: shared logging and exception utilities
-- `resources/views`: public and admin Blade UI
+- `resources/views/administrator`: administrator panel views
+- `resources/views/barista`: barista panel views
+- `resources/views/internal`: shared internal layouts, auth shell, partials, and UI building blocks
+- `resources/views`: public Coffee storefront views remain separate from the internal theme
 - `docs/architecture.md`: short architecture reference
 
 ## Local setup
@@ -95,6 +99,12 @@ composer run dev
 ```bash
 npm run build
 ```
+
+## Internal panel URLs
+
+- Administrator login: `/administrator/login`
+- Barista login: `/barista/login`
+- Legacy `/admin/*` URLs redirect to the administrator panel entry points
 
 ## Testing
 

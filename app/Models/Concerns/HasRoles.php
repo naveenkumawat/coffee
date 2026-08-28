@@ -34,4 +34,15 @@ trait HasRoles
 
         return $role->canManageMenu();
     }
+
+    public function canAccessInternalPanel(string $panel): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return match ($panel) {
+            'administrator' => $role->canAccessAdministratorPanel(),
+            'barista' => $role->canAccessBaristaPanel(),
+            default => false,
+        };
+    }
 }

@@ -1,0 +1,5 @@
+.adminPagination { text-align: center;}
+.adminPagination .relative svg{ width: 20px; }
+.adminPagination .relative a{ color: #3F4254; }
+.adminPagination nav .flex-1{ display: none; }
+.adminPagination .relative [aria-current="page"] span{ background: #000!important; color: #fff; font-weight: 600; }

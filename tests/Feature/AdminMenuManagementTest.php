@@ -16,7 +16,7 @@ class AdminMenuManagementTest extends TestCase
     {
         $manager = User::factory()->manager()->create();
 
-        $response = $this->actingAs($manager, 'admin')->post(route('admin.menu.categories.store'), [
+        $response = $this->actingAs($manager, 'admin')->post(route('administrator.menu.categories.store'), [
             'name' => 'Seasonal Specials',
             'slug' => 'seasonal-specials',
             'description' => 'Limited-time drinks and desserts.',
@@ -24,7 +24,7 @@ class AdminMenuManagementTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $response->assertRedirect(route('admin.menu.categories.index'));
+        $response->assertRedirect(route('administrator.menu.categories.index'));
 
         $this->assertDatabaseHas('menu_categories', [
             'name' => 'Seasonal Specials',
@@ -38,7 +38,7 @@ class AdminMenuManagementTest extends TestCase
             'role' => UserRole::Barista,
         ]);
 
-        $response = $this->actingAs($barista, 'admin')->post(route('admin.menu.categories.store'), [
+        $response = $this->actingAs($barista, 'admin')->post(route('administrator.menu.categories.store'), [
             'name' => 'Cold Brew',
             'slug' => 'cold-brew',
         ]);
@@ -51,7 +51,7 @@ class AdminMenuManagementTest extends TestCase
         $manager = User::factory()->manager()->create();
         $category = MenuCategory::factory()->create();
 
-        $response = $this->actingAs($manager, 'admin')->post(route('admin.menu.items.store'), [
+        $response = $this->actingAs($manager, 'admin')->post(route('administrator.menu.items.store'), [
             'menu_category_id' => $category->id,
             'name' => 'Maple Cappuccino',
             'slug' => 'maple-cappuccino',
@@ -62,7 +62,7 @@ class AdminMenuManagementTest extends TestCase
             'is_featured' => 1,
         ]);
 
-        $response->assertRedirect(route('admin.menu.items.index'));
+        $response->assertRedirect(route('administrator.menu.items.index'));
 
         $this->assertDatabaseHas('menu_items', [
             'name' => 'Maple Cappuccino',

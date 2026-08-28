@@ -16,8 +16,11 @@
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-4">
-                    <a href="{{ route('admin.login') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
-                        Open admin
+                    <a href="{{ route('administrator.login') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                        Open administrator panel
+                    </a>
+                    <a href="{{ route('barista.login') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                        Barista sign in
                     </a>
                     <a href="#menu" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
                         Browse menu

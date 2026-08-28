@@ -36,4 +36,20 @@ enum UserRole: string
             self::Barista, self::Cashier, self::Customer => false,
         };
     }
+
+    public function canAccessAdministratorPanel(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            self::Barista, self::Cashier, self::Customer => false,
+        };
+    }
+
+    public function canAccessBaristaPanel(): bool
+    {
+        return match ($this) {
+            self::Barista => true,
+            self::Owner, self::Manager, self::Cashier, self::Customer => false,
+        };
+    }
 }
