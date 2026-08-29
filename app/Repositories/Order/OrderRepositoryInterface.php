@@ -25,6 +25,8 @@ interface OrderRepositoryInterface
 
     public function findOrderableVariant(int $variantId): ?ProductVariant;
 
+    public function findByCheckoutToken(string $checkoutToken): ?Order;
+
     public function findActiveCustomer(int $customerId): ?User;
 
     public function create(array $attributes): Order;

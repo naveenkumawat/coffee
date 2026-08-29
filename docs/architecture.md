@@ -1,5 +1,58 @@
 # Coffee Architecture
 
+## Canonical Frontend Architecture
+
+Internal surfaces:
+
+- Administrator = Laravel Blade
+- Barista = Laravel Blade
+
+Customer surface:
+
+- Customer = API-driven mobile-first PWA
+- Laravel provides the REST API transport and business backend for the customer app
+- The customer PWA consumes the API and is the canonical long-term storefront architecture
+- Existing customer Blade auth/account/cart/checkout flows are transition/foundation work only
+- Existing customer Blade customer work must not be expanded as the final storefront architecture, but it should not be deleted yet
+
+## Target Request Flows
+
+Customer PWA:
+
+```text
+Customer PWA
+  -> Laravel API controllers
+  -> existing Services
+  -> Repositories
+  -> Models / Database
+```
+
+Internal panels:
+
+```text
+Administrator / Barista Blade
+  -> controllers
+  -> existing Services
+  -> Repositories
+  -> Models / Database
+```
+
+Transition rules:
+
+- Blade and API may call the same existing Services during migration.
+- API controllers are a thin transport layer and must not fork or duplicate domain workflows.
+- Do not introduce parallel `Api\*Service` classes that re-implement Product, Cart, Order, Checkout, or similar business logic.
+- Reuse existing Product, Cart, Order, Checkout, and related Services as the shared domain layer for both internal Blade and customer API entry points.
+
+## Customer PWA Requirements
+
+- Mobile-first and touch-first UX is the primary requirement.
+- Installable PWA behavior should be supported where the browser/device allows it.
+- The customer app should use a manifest, service worker, and offline shell.
+- Responsive desktop fallback is still required, but it is secondary to smartphone UX.
+- Offline support must never treat sensitive or live customer/account/order/payment data as the source of truth.
+- The backend remains authoritative for authentication, pricing, availability, cart state, checkout validation, payment state, and order state.
+
 ## ZYLM Patterns Identified
 
 - Module-first folder grouping across repositories, services, transfers, and parsers.
@@ -85,6 +138,7 @@ Future modules such as `Ingredient`, `Inventory`, `Recipe`, `Order`, `Customer`,
   - domain exceptions
 
 Administrator and Barista may call the same shared business layer, but they should not receive duplicated role-specific business services if the underlying rule set is the same.
+The customer API should follow the same shared business-layer rule rather than creating a second domain layer for mobile endpoints.
 
 ## Internal Button/UI Convention
 
@@ -179,3 +233,5 @@ For current menu writes:
 - Put transactions and workflows in services.
 - Add new providers only when a new architectural layer needs bindings.
 - Keep public storefront behavior separate from internal panel architecture.
+- Do not treat current customer Blade views/controllers as the final storefront architecture.
+- Treat the customer API/PWA migration as pending work until the PWA replaces temporary customer Blade screens.

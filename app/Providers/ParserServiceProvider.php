@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Parsers\Cart\CartParser;
 use App\Parsers\Cart\CartParserInterface;
+use App\Parsers\Checkout\CheckoutParser;
+use App\Parsers\Checkout\CheckoutParserInterface;
 use App\Parsers\Ingredient\IngredientBrandParser;
 use App\Parsers\Ingredient\IngredientBrandParserInterface;
 use App\Parsers\Ingredient\IngredientCategoryParser;
@@ -37,6 +39,7 @@ class ParserServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CartParserInterface::class, CartParser::class);
+        $this->app->bind(CheckoutParserInterface::class, CheckoutParser::class);
         $this->app->bind(IngredientCategoryParserInterface::class, IngredientCategoryParser::class);
         $this->app->bind(IngredientBrandParserInterface::class, IngredientBrandParser::class);
         $this->app->bind(IngredientParserInterface::class, IngredientParser::class);

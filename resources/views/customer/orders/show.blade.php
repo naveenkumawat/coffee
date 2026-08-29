@@ -32,7 +32,32 @@
                         <p class="text-sm uppercase tracking-[0.25em] text-amber-200">Notes</p>
                         <p class="mt-2 text-stone-300">{{ $order->customer_notes ?: 'No order notes provided.' }}</p>
                     </div>
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.25em] text-amber-200">Pickup Name</p>
+                        <p class="mt-2 text-stone-300">{{ $order->pickup_name ?: 'Primary account contact' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.25em] text-amber-200">Pickup Phone</p>
+                        <p class="mt-2 text-stone-300">{{ $order->pickup_phone ?: ($order->customer_phone ?: 'Not provided') }}</p>
+                    </div>
                 </div>
+
+                @if ($order->status === \App\Enums\OrderStatus::PendingPayment)
+                    <div class="mt-8 rounded-3xl border border-amber-300/20 bg-amber-500/10 p-5">
+                        <p class="text-sm font-medium text-amber-100">Payment is still pending.</p>
+                        <p class="mt-2 text-sm leading-7 text-stone-300">{{ config('coffee.payments.instructions') }}</p>
+                        @if (filled(config('coffee.payments.upi_id')) || filled(config('coffee.payments.whatsapp_number')))
+                            <div class="mt-4 flex flex-wrap gap-3 text-sm text-stone-200">
+                                @if (filled(config('coffee.payments.upi_id')))
+                                    <span class="rounded-full border border-white/10 px-3 py-2">UPI: {{ config('coffee.payments.upi_id') }}</span>
+                                @endif
+                                @if (filled(config('coffee.payments.whatsapp_number')))
+                                    <span class="rounded-full border border-white/10 px-3 py-2">WhatsApp: {{ config('coffee.payments.whatsapp_number') }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="mt-8 space-y-4">
                     @foreach ($order->items as $item)

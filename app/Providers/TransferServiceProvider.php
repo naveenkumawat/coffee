@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
+use App\Transfers\Checkout\CheckoutTransfer;
+use App\Transfers\Checkout\CheckoutTransferInterface;
 use App\Transfers\Ingredient\IngredientBrandFilterTransfer;
 use App\Transfers\Ingredient\IngredientBrandFilterTransferInterface;
 use App\Transfers\Ingredient\IngredientBrandTransfer;
@@ -61,6 +63,7 @@ class TransferServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CartItemTransferInterface::class, CartItemTransfer::class);
+        $this->app->bind(CheckoutTransferInterface::class, CheckoutTransfer::class);
         $this->app->bind(IngredientCategoryTransferInterface::class, IngredientCategoryTransfer::class);
         $this->app->bind(IngredientBrandTransferInterface::class, IngredientBrandTransfer::class);
         $this->app->bind(IngredientBrandFilterTransferInterface::class, IngredientBrandFilterTransfer::class);

@@ -128,7 +128,7 @@ class CustomerCartTest extends TestCase
             ->assertOk()
             ->assertSee('$4.95')
             ->assertSee('$14.85')
-            ->assertSee('Checkout coming next');
+            ->assertSee('Proceed to checkout');
     }
 
     public function test_inactive_or_unavailable_products_and_variants_are_rejected(): void

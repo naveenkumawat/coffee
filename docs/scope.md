@@ -32,22 +32,41 @@ The system should be designed so that online payment, delivery integration, loya
 
 ### Frontend
 
-* Laravel Blade
+* Internal Administrator frontend: Laravel Blade
+* Internal Barista frontend: Laravel Blade
+* Customer frontend target: API-driven mobile-first Progressive Web App (PWA)
 * HTML5
 * CSS3
 * JavaScript
-* Bootstrap or another suitable responsive UI framework
 
 ### Architecture Considerations
 
 * MVC architecture
 * Repository/service layer where appropriate
 * Role-based permissions
-* Responsive web design
-* Mobile-friendly customer ordering
+* Internal panels remain Blade-rendered
+* Customer storefront is a mobile-first PWA that consumes Laravel REST APIs
+* Existing customer Blade views/controllers are temporary transition foundations and are not the final storefront architecture
+* Responsive web design with customer mobile-first priority
 * Secure authentication
 * Scalable database structure
 * Modular development for future enhancements
+* Shared domain services reused by both Blade and API transport layers during migration
+
+### Canonical Frontend Architecture
+
+Internal management surfaces:
+
+* Administrator = Laravel Blade
+* Barista = Laravel Blade
+
+Customer ordering surface:
+
+* Customer = API-driven mobile-first PWA
+* Laravel provides the REST API and business backend for the customer app
+* The customer PWA consumes the API and should not be treated as a Blade-first architecture
+* Existing customer Blade authentication/account/cart/checkout flows are temporary foundation work only and must not be expanded as the long-term storefront
+* Existing customer Blade work should not be deleted yet; Blade and API may coexist during migration
 
 ---
 
@@ -851,6 +870,13 @@ Administrator/Barista can manually confirm payment.
 
 The customer-facing website should represent the café brand professionally.
 
+Canonical implementation target:
+
+* Mobile-first API-driven PWA for customers
+* Installable where browser/device capabilities allow
+* Responsive desktop/tablet fallback, with smartphone use as the primary design target
+* Laravel Blade customer screens may exist temporarily during transition, but they are not the final customer frontend architecture
+
 Suggested pages:
 
 * Home
@@ -995,6 +1021,12 @@ Customers can browse the website without logging in.
 
 Login will be required before checkout.
 
+Long-term delivery model:
+
+* Customer authentication/account endpoints should be provided through the customer API
+* Temporary Blade customer auth/account screens may remain during transition
+* Final customer authentication UX should live in the PWA, not in Blade as the permanent storefront
+
 Authentication functionality:
 
 * Registration
@@ -1017,6 +1049,11 @@ Future development may include:
 # 33. Checkout
 
 Checkout will require a logged-in customer.
+
+Architecture note:
+
+* The final customer checkout flow should be delivered through the customer PWA consuming Laravel API endpoints
+* Temporary Blade checkout work may continue as a foundation during transition, but it should not define the long-term frontend architecture
 
 The customer confirms:
 
@@ -1059,6 +1096,8 @@ Clicking an order opens complete order details.
 # 35. Customer Order Tracking
 
 Customers can view the current progress of an order.
+
+Final customer order history and tracking should be exposed through the customer API for the PWA while the backend remains authoritative for authentication, pricing, availability, cart ownership, checkout state, payment state, and order state.
 
 Example:
 
@@ -1522,3 +1561,17 @@ The final system should provide a single platform through which the café can ma
 The platform should make café operations easier while also providing customers with a modern, simple, mobile-friendly ordering experience.
 
 The architecture should remain modular so the café can gradually evolve from a small takeaway/order-management platform into a complete **Café ERP, POS, inventory and digital ordering ecosystem** without rebuilding the core application.
+
+Target application flow:
+
+* Customer PWA -> Laravel API -> existing Services -> Repositories -> Models
+* Administrator/Barista Blade -> existing Services -> Repositories -> Models
+
+Customer API coverage should ultimately include:
+
+* auth/account
+* catalog/products/variants
+* favourites
+* cart
+* checkout
+* orders/tracking

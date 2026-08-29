@@ -7,13 +7,18 @@
                 <p class="text-xs uppercase tracking-[0.35em] text-amber-200">Customer Cart</p>
                 <h1 class="mt-3 text-3xl font-semibold text-white">Your cart</h1>
                 <p class="mt-3 max-w-2xl text-sm leading-7 text-stone-300">
-                    Review selected drinks before checkout is introduced in the next customer ordering phase.
+                    Review selected drinks, confirm the latest server-side pricing, and continue into checkout when your cart is ready.
                 </p>
             </div>
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('home') }}#menu" class="rounded-full border border-white/15 px-5 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
                     Continue browsing
                 </a>
+                @if ($summary['item_count'] > 0 && ! $summary['has_unavailable_items'])
+                    <a href="{{ route('customer.checkout.show') }}" class="rounded-full bg-amber-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                        Proceed to checkout
+                    </a>
+                @endif
                 @if ($summary['item_count'] > 0)
                     <form method="POST" action="{{ route('customer.cart.clear') }}">
                         @csrf
@@ -75,6 +80,7 @@
                                         name="quantity"
                                         type="number"
                                         min="1"
+                                        inputmode="numeric"
                                         value="{{ old('quantity', $item->quantity) }}"
                                         class="w-24 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-amber-300/50"
                                     />
@@ -124,11 +130,17 @@
                     disabled
                     class="mt-8 w-full cursor-not-allowed rounded-full bg-white/10 px-6 py-3 font-medium text-stone-300 opacity-70"
                 >
-                    Checkout coming next
+                    @if ($summary['item_count'] === 0)
+                        Add items to continue
+                    @elseif ($summary['has_unavailable_items'])
+                        Remove unavailable items to continue
+                    @else
+                        Checkout available above
+                    @endif
                 </button>
 
                 <p class="mt-4 text-sm leading-7 text-stone-400">
-                    Checkout and order creation stay intentionally unavailable in this phase so we can introduce them cleanly on top of this persistent cart foundation.
+                    Final price validation, order creation, and payment instructions are completed during checkout so the server remains the source of truth.
                 </p>
             </aside>
         </div>

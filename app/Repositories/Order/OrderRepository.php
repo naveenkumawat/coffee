@@ -114,6 +114,18 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
             ->find($variantId);
     }
 
+    public function findByCheckoutToken(string $checkoutToken): ?Order
+    {
+        return $this->model->newQuery()
+            ->with([
+                'customer',
+                'items',
+                'statusHistory',
+            ])
+            ->where('checkout_token', $checkoutToken)
+            ->first();
+    }
+
     public function findActiveCustomer(int $customerId): ?User
     {
         return $this->userModel->newQuery()

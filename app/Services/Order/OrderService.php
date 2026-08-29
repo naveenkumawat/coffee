@@ -24,11 +24,16 @@ class OrderService implements OrderServiceInterface
     {
         return DB::transaction(function () use ($actor, $data): Order {
             $customerId = $data->getCustomerId();
+            $customer = null;
 
-            if ($customerId !== null && ! $this->orders->findActiveCustomer($customerId)) {
-                throw ValidationException::withMessages([
-                    'customer_id' => 'Only active customer accounts can be linked to an order.',
-                ]);
+            if ($customerId !== null) {
+                $customer = $this->orders->findActiveCustomer($customerId);
+
+                if (! $customer) {
+                    throw ValidationException::withMessages([
+                        'customer_id' => 'Only active customer accounts can be linked to an order.',
+                    ]);
+                }
             }
 
             $preparedItems = $this->prepareItems($data->getItems());
@@ -48,12 +53,19 @@ class OrderService implements OrderServiceInterface
                 'order_date' => $placedAt->toDateString(),
                 'daily_sequence' => $dailySequence,
                 'customer_id' => $customerId,
+                'customer_name' => $data->getCustomerName() ?: $customer?->name,
+                'customer_email' => $data->getCustomerEmail() ?: $customer?->email,
+                'customer_phone' => $data->getCustomerPhone() ?: $customer?->phone,
+                'pickup_name' => $data->getPickupName(),
+                'pickup_phone' => $data->getPickupPhone(),
                 'assigned_barista_id' => null,
+                'checkout_token' => $data->getCheckoutToken(),
                 'status' => OrderStatus::PendingPayment->value,
                 'subtotal' => $subtotal,
                 'discount_total' => '0.00',
                 'total_amount' => $subtotal,
                 'customer_notes' => $data->getCustomerNotes(),
+                'pickup_notes' => $data->getPickupNotes(),
                 'placed_at' => $placedAt,
             ]);
 

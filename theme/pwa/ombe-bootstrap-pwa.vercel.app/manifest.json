@@ -1,0 +1,15 @@
+{
+  "background_color": "var(--primary)",
+  "description": "Ombe - Coffee Shop Mobile App Template ( Bootstrap + PWA ) | DexignZone",
+  "display": "standalone",
+  "icons": [
+	{
+	  "src": "assets/images/app-logo/pwa150x150.png",
+	  "sizes": "150x150",
+	  "type": "image/png"
+	}
+  ],
+  "name": "Ombe - Coffee Shop Mobile App Template",
+  "short_name": "Ombe",
+  "start_url": "index.html"
+}
