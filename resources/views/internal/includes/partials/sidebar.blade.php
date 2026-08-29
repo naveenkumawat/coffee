@@ -17,6 +17,12 @@
                     ['label' => 'Menu Items', 'route' => 'administrator.menu.items.index', 'pattern' => 'administrator.menu.items.*', 'icon' => 'ki-basket'],
                 ] : [],
             ],
+            [
+                'heading' => 'Administration',
+                'items' => $user?->canManageUsers() ? [
+                    ['label' => 'Users', 'route' => 'administrator.users.index', 'pattern' => 'administrator.users.*', 'icon' => 'ki-profile-circle'],
+                ] : [],
+            ],
         ],
         'barista' => [
             [

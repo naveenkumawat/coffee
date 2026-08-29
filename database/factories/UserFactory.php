@@ -56,4 +56,14 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => ['role' => UserRole::Manager]);
     }
+
+    public function barista(): static
+    {
+        return $this->state(fn () => ['role' => UserRole::Barista]);
+    }
+
+    public function inactive(): static
+    {
+        return $this->state(fn () => ['is_active' => false]);
+    }
 }

@@ -29,7 +29,23 @@ enum UserRole: string
         };
     }
 
+    public function isAdministratorRole(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            self::Barista, self::Cashier, self::Customer => false,
+        };
+    }
+
     public function canManageMenu(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            self::Barista, self::Cashier, self::Customer => false,
+        };
+    }
+
+    public function canManageUsers(): bool
     {
         return match ($this) {
             self::Owner, self::Manager => true,
@@ -50,6 +66,16 @@ enum UserRole: string
         return match ($this) {
             self::Barista => true,
             self::Owner, self::Manager, self::Cashier, self::Customer => false,
+        };
+    }
+
+    public function managementLabel(): string
+    {
+        return match ($this) {
+            self::Owner, self::Manager => 'Administrator',
+            self::Barista => 'Barista',
+            self::Customer => 'Customer',
+            self::Cashier => 'Cashier',
         };
     }
 }

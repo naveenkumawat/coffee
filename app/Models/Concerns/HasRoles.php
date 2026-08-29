@@ -35,6 +35,13 @@ trait HasRoles
         return $role->canManageMenu();
     }
 
+    public function canManageUsers(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canManageUsers();
+    }
+
     public function canAccessInternalPanel(string $panel): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
@@ -44,5 +51,19 @@ trait HasRoles
             'barista' => $role->canAccessBaristaPanel(),
             default => false,
         };
+    }
+
+    public function isAdministratorRole(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->isAdministratorRole();
+    }
+
+    public function managementRoleLabel(): string
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->managementLabel();
     }
 }

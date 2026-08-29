@@ -20,8 +20,8 @@ Architecture source: [architecture.md](./architecture.md)
   - Product/menu domain coverage
   - Customer storefront
   - Security and role segmentation
+  - Administrator user management
 - Not started:
-  - User management
   - Ingredient, inventory, recipe, order, reporting, and customer account modules
 
 ## Phase 0 - Platform Foundation
@@ -63,14 +63,14 @@ Status: Partial
 
 ### User Management
 
-- [ ] Administrator user listing implemented
-- [ ] Create user implemented
-- [ ] Edit user implemented
-- [ ] Activate/deactivate user implemented
-- [ ] Reset password implemented
-- [ ] Assign role implemented
+- [x] Administrator user listing implemented
+- [x] Create user implemented
+- [x] Edit user implemented
+- [x] Activate/deactivate user implemented
+- [x] Reset password implemented
+- [x] Assign role implemented
 - [ ] Customer order history access from user management implemented
-- [ ] User archive/delete flow implemented
+- [x] User archive/delete flow implemented
 
 ## Phase 2 - Administrator and Barista Dashboards
 Status: Partial

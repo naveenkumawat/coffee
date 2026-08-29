@@ -6,6 +6,10 @@ use App\Transfers\Menu\MenuCategoryTransfer;
 use App\Transfers\Menu\MenuCategoryTransferInterface;
 use App\Transfers\Menu\MenuItemTransfer;
 use App\Transfers\Menu\MenuItemTransferInterface;
+use App\Transfers\User\UserFilterTransfer;
+use App\Transfers\User\UserFilterTransferInterface;
+use App\Transfers\User\UserTransfer;
+use App\Transfers\User\UserTransferInterface;
 use Illuminate\Support\ServiceProvider;
 
 class TransferServiceProvider extends ServiceProvider
@@ -14,5 +18,7 @@ class TransferServiceProvider extends ServiceProvider
     {
         $this->app->bind(MenuCategoryTransferInterface::class, MenuCategoryTransfer::class);
         $this->app->bind(MenuItemTransferInterface::class, MenuItemTransfer::class);
+        $this->app->bind(UserTransferInterface::class, UserTransfer::class);
+        $this->app->bind(UserFilterTransferInterface::class, UserFilterTransfer::class);
     }
 }

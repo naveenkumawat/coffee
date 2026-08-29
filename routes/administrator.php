@@ -3,6 +3,7 @@
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
+use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,8 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('menu/items', MenuItemController::class)
         ->parameters(['items' => 'menu_item'])
         ->names('menu.items');
+
+    Route::resource('users', UserController::class);
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->defaults('panel', 'administrator')
