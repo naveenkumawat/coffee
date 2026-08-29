@@ -135,6 +135,7 @@ class AdministratorMenuManagementTest extends TestCase
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.menu.categories.index'))
             ->assertOk()
+            ->assertSee('internal-button-group', false)
             ->assertSee('internal-action-dropdown-trigger', false)
             ->assertSee(route('administrator.menu.categories.edit', $category), false);
     }
@@ -150,6 +151,7 @@ class AdministratorMenuManagementTest extends TestCase
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.menu.items.index'))
             ->assertOk()
+            ->assertSee('internal-button-group', false)
             ->assertSee('internal-action-dropdown-trigger', false)
             ->assertSee(route('administrator.menu.items.edit', $menuItem), false);
     }

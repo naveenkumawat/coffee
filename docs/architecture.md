@@ -86,6 +86,19 @@ Future modules such as `Ingredient`, `Inventory`, `Recipe`, `Order`, `Customer`,
 
 Administrator and Barista may call the same shared business layer, but they should not receive duplicated role-specific business services if the underlying rule set is the same.
 
+## Internal Button/UI Convention
+
+- All Administrator and Barista page, form, filter, and toolbar actions must use the shared internal button system.
+- Use `resources/views/components/internal/button.blade.php` for standalone internal buttons.
+- Use `resources/views/components/internal/button-group.blade.php` for related actions such as `Search + Reset`, `Save + Cancel`, `Back + Edit`, and single-toolbar create actions when they should stay visually consistent with grouped controls.
+- Keep table row actions inside the shared `x-internal.action-dropdown` component. Do not replace row actions with visible button groups.
+- Semantic variants are fixed:
+  - `success` for positive primary actions such as create, save, update, and search
+  - `dark` for neutral actions such as back, cancel, and reset
+  - `danger` for destructive actions
+- Internal button styling must stay centralized in shared internal assets such as `public/internal/assets/css/custom.css`. Do not introduce module-specific button CSS or inline button styles.
+- If a new internal screen needs a button pattern that does not fit the shared component API, update the shared component first instead of hand-coding a one-off button implementation in the view.
+
 ## Internal Role Naming Convention
 
 - ZYLM's canonical internal management convention is `Administrator`, not `Admin`.

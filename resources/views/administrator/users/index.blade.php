@@ -10,10 +10,14 @@
 @endsection
 
 @section('toolbar-actions')
-    <a href="{{ route('administrator.users.create') }}" class="btn btn-primary">
-        <i class="ki-outline ki-plus fs-2"></i>
-        New User
-    </a>
+    <x-internal.button-group :items="[
+        [
+            'label' => 'New User',
+            'url' => route('administrator.users.create'),
+            'variant' => 'success',
+            'icon' => 'ki-plus',
+        ],
+    ]" />
 @endsection
 
 @section('content')
@@ -49,10 +53,10 @@
                     </select>
                 </div>
                 <div class="col-xl-2 col-md-12">
-                    <div class="d-flex flex-wrap gap-3">
-                        <button type="submit" class="btn btn-primary flex-grow-1">Search</button>
-                        <a href="{{ route('administrator.users.index') }}" class="btn btn-light flex-grow-1">Reset</a>
-                    </div>
+                    <x-internal.button-group :items="[
+                        ['label' => 'Search', 'type' => 'submit', 'variant' => 'success', 'icon' => 'ki-magnifier'],
+                        ['label' => 'Reset', 'url' => route('administrator.users.index'), 'variant' => 'dark', 'icon' => 'ki-arrows-circle'],
+                    ]" justify="start" />
                 </div>
             </form>
         </div>
@@ -108,9 +112,13 @@
                                             'url' => route('administrator.users.edit', $managedUser),
                                             'icon' => 'ki-notepad-edit',
                                         ],
+                                        ['type' => 'separator'],
                                         [
-                                            'type' => 'separator',
+                                            'label' => $managedUser->is_active ? 'Active' : 'Inactive',
+                                            'icon' => $managedUser->is_active ? 'ki-check-circle' : 'ki-cross-circle',
+                                            'disabled' => true,
                                         ],
+                                        ['type' => 'separator'],
                                         [
                                             'label' => 'Archive',
                                             'url' => route('administrator.users.destroy', $managedUser),

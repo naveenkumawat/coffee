@@ -76,6 +76,91 @@
     text-align: right;
 }
 
+.internal-button-group-wrapper {
+    display: flex;
+    width: 100%;
+}
+
+.internal-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 2.75rem;
+    padding: 0.725rem 1.1rem;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 0.85rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.internal-button:hover,
+.internal-button:focus-visible {
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.internal-button:focus-visible {
+    outline: 0;
+}
+
+.internal-button:disabled,
+.internal-button.disabled,
+.internal-button[aria-disabled='true'] {
+    opacity: 0.7;
+    box-shadow: none;
+    transform: none;
+    pointer-events: none;
+}
+
+.internal-button i {
+    font-size: 1rem !important;
+    line-height: 1;
+}
+
+.internal-button-group {
+    flex-wrap: nowrap;
+    max-width: 100%;
+}
+
+.internal-button-group-wrap {
+    flex-wrap: wrap;
+}
+
+.internal-button-group-button {
+    border-radius: 0;
+    box-shadow: none;
+    transform: none;
+}
+
+.internal-button-group > .internal-button-group-button:first-child {
+    border-top-left-radius: 0.85rem;
+    border-bottom-left-radius: 0.85rem;
+}
+
+.internal-button-group > .internal-button-group-button:last-child {
+    border-top-right-radius: 0.85rem;
+    border-bottom-right-radius: 0.85rem;
+}
+
+.internal-button-group-wrap > .internal-button-group-button {
+    border-radius: 0.85rem;
+}
+
+.internal-button-group .internal-button + .internal-button {
+    margin-left: 0;
+}
+
+.internal-button-group .btn,
+.internal-button-group form,
+.internal-button-group a {
+    max-width: 100%;
+}
+
 .internal-action-dropdown {
     position: relative;
     display: inline-flex;
@@ -153,12 +238,32 @@
         min-width: 8.5rem;
     }
 
+    .internal-button-group-wrapper {
+        width: 100%;
+    }
+
+    .internal-button-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .internal-button-group .btn,
+    .internal-button-group a,
+    .internal-button-group .internal-button {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
     .internal-form-actions {
         flex-direction: column-reverse;
         align-items: stretch !important;
     }
 
-    .internal-form-actions .btn {
+    .internal-form-actions .btn,
+    .internal-form-actions .internal-button-group,
+    .internal-form-actions .internal-button-group .btn,
+    .internal-form-actions .internal-button-group a,
+    .internal-form-actions .internal-button-group .internal-button {
         width: 100%;
     }
 }

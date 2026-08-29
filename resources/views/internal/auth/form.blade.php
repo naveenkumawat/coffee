@@ -52,9 +52,7 @@
     </div>
 
     <div class="d-grid mb-10">
-        <button type="submit" class="btn btn-light-success btn-active-success">
-            <span class="indicator-label">Sign In</span>
-        </button>
+        <x-internal.button label="Sign In" type="submit" variant="success" stretch="true" />
     </div>
     <div class="text-gray-500 text-center fw-semibold fs-6">Shared internal theme, role-scoped access, and a separate Coffee customer frontend.</div>
 </form>

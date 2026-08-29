@@ -42,6 +42,13 @@ trait HasRoles
         return $role->canManageUsers();
     }
 
+    public function canManageIngredients(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canManageIngredients();
+    }
+
     public function canAccessInternalPanel(string $panel): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);

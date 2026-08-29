@@ -17,12 +17,13 @@ Architecture source: [architecture.md](./architecture.md)
 - Partial foundations:
   - Administrator dashboard
   - Barista dashboard
+  - Ingredient master data
   - Product/menu domain coverage
   - Customer storefront
   - Security and role segmentation
   - Administrator user management
 - Not started:
-  - Ingredient, inventory, recipe, order, reporting, and customer account modules
+  - Inventory, recipe, order, reporting, and customer account modules
 
 ## Phase 0 - Platform Foundation
 Status: Partial
@@ -101,24 +102,34 @@ Status: Partial
 - [ ] Tablet/mobile operational optimization completed
 
 ## Phase 3 - Ingredient and Inventory Foundation
-Status: Pending
+Status: Partial
 
 ### Ingredient Categories
 
-- [ ] Ingredient category model and migration implemented
-- [ ] Administrator CRUD implemented
-- [ ] Activate/deactivate workflow implemented
-- [ ] Ingredient-by-category view implemented
+- [x] Ingredient category model and migration implemented
+- [x] Administrator CRUD implemented
+- [x] Activate/deactivate workflow implemented
+- [x] Ingredient-by-category view implemented
+- [x] Auto-generated slug workflow implemented
+- [x] Legacy category sort ordering removed from the master-data flow
+
+### Ingredient Brands
+
+- [x] Ingredient brand model and migration implemented
+- [x] Administrator CRUD implemented
+- [x] Activate/deactivate workflow implemented
+- [x] Ingredient-by-brand view implemented
 
 ### Ingredients
 
-- [ ] Ingredient model and migration implemented
-- [ ] Measurement unit support implemented
-- [ ] Purchase quantity and purchase cost tracking implemented
-- [ ] Calculated unit cost implemented
-- [ ] Stock thresholds implemented
-- [ ] Supplier metadata support implemented
-- [ ] Ingredient CRUD implemented
+- [x] Ingredient model and migration implemented
+- [x] Ingredient-to-brand relationship implemented
+- [x] Measurement unit support implemented
+- [x] Purchase quantity and purchase cost tracking implemented
+- [x] Calculated unit cost implemented
+- [x] Stock thresholds implemented
+- [x] Supplier metadata support implemented
+- [x] Ingredient CRUD implemented
 
 ### Inventory
 

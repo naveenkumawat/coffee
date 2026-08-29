@@ -10,10 +10,9 @@
 @endsection
 
 @section('toolbar-actions')
-    <a href="{{ route('administrator.menu.items.create') }}" class="btn btn-primary">
-        <i class="ki-outline ki-plus fs-2"></i>
-        New Item
-    </a>
+    <x-internal.button-group :items="[
+        ['label' => 'New Item', 'url' => route('administrator.menu.items.create'), 'variant' => 'success', 'icon' => 'ki-plus'],
+    ]" />
 @endsection
 
 @section('content')
@@ -58,9 +57,13 @@
                                             'url' => route('administrator.menu.items.edit', $item),
                                             'icon' => 'ki-notepad-edit',
                                         ],
+                                        ['type' => 'separator'],
                                         [
-                                            'type' => 'separator',
+                                            'label' => $item->is_available ? 'Available' : 'Paused',
+                                            'icon' => $item->is_available ? 'ki-check-circle' : 'ki-cross-circle',
+                                            'disabled' => true,
                                         ],
+                                        ['type' => 'separator'],
                                         [
                                             'label' => 'Delete',
                                             'url' => route('administrator.menu.items.destroy', $item),

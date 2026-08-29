@@ -86,8 +86,10 @@
             </div>
 
             <div class="d-flex justify-content-end internal-form-actions">
-                <a href="{{ route('administrator.users.index') }}" class="btn btn-light">Back</a>
-                <button type="submit" class="btn btn-primary">{{ $submit }}</button>
+                <x-internal.button-group :items="[
+                    ['label' => 'Cancel', 'url' => route('administrator.users.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+                    ['label' => $submit, 'type' => 'submit', 'variant' => 'success', 'icon' => 'ki-check'],
+                ]" />
             </div>
         </form>
     </div>

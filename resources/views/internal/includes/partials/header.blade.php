@@ -42,15 +42,12 @@
 
             <div class="app-navbar flex-shrink-0">
                 <div class="app-navbar-item ms-1 ms-md-4">
-                    <a href="{{ route('home') }}" class="btn btn-light-primary btn-sm">
-                        <i class="ki-duotone ki-shop fs-3 me-1">
-                            <span class="path1"></span>
-                            <span class="path2"></span>
-                            <span class="path3"></span>
-                            <span class="path4"></span>
-                        </i>
-                        Storefront
-                    </a>
+                    <x-internal.button
+                        label="Storefront"
+                        :url="route('home')"
+                        variant="default"
+                        icon="ki-shop"
+                    />
                 </div>
 
                 @if ($user)

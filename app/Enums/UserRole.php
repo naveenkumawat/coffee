@@ -53,6 +53,14 @@ enum UserRole: string
         };
     }
 
+    public function canManageIngredients(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            self::Barista, self::Cashier, self::Customer => false,
+        };
+    }
+
     public function canAccessAdministratorPanel(): bool
     {
         return match ($this) {

@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Administrator\DashboardController;
+use App\Http\Controllers\Administrator\IngredientBrandController;
+use App\Http\Controllers\Administrator\IngredientCategoryController;
+use App\Http\Controllers\Administrator\IngredientController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
 use App\Http\Controllers\Administrator\UserController;
@@ -37,6 +40,18 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('menu/items', MenuItemController::class)
         ->parameters(['items' => 'menu_item'])
         ->names('menu.items');
+
+    Route::resource('ingredients/categories', IngredientCategoryController::class)
+        ->parameters(['categories' => 'ingredient_category'])
+        ->names('ingredients.categories');
+
+    Route::resource('ingredients/brands', IngredientBrandController::class)
+        ->parameters(['brands' => 'ingredient_brand'])
+        ->names('ingredients.brands');
+
+    Route::resource('ingredients', IngredientController::class)
+        ->parameters(['ingredients' => 'ingredient'])
+        ->names('ingredients');
 
     Route::resource('users', UserController::class);
 

@@ -10,10 +10,9 @@
 @endsection
 
 @section('toolbar-actions')
-    <a href="{{ route('administrator.menu.items.create') }}" class="btn btn-primary">
-        <i class="ki-outline ki-plus fs-2"></i>
-        Add Menu Item
-    </a>
+    <x-internal.button-group :items="[
+        ['label' => 'Add Menu Item', 'url' => route('administrator.menu.items.create'), 'variant' => 'success', 'icon' => 'ki-plus'],
+    ]" />
 @endsection
 
 @section('content')
@@ -113,9 +112,14 @@
                         <div class="text-gray-700">Homepage, customer navigation, product discovery, checkout, and all public-facing frontend experiences continue to use their own Coffee theme.</div>
                     </div>
 
-                    <button type="button" class="btn btn-light-primary" data-bs-toggle="modal" data-bs-target="#internalFoundationModal">
-                        Review shared UI foundation
-                    </button>
+                    <x-internal.button
+                        label="Review shared UI foundation"
+                        type="button"
+                        variant="default"
+                        icon="ki-information-5"
+                        data-bs-toggle="modal"
+                        data-bs-target="#internalFoundationModal"
+                    />
                 </div>
             </div>
         </div>

@@ -82,6 +82,7 @@ class AdministratorUserManagementTest extends TestCase
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.users.show', $customer))
             ->assertOk()
+            ->assertSee('internal-button-group', false)
             ->assertSee($customer->email)
             ->assertSee('Pending order module');
     }

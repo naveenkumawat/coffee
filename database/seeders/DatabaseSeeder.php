@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
             $this->seedDevelopmentInternalUsers();
         }
 
+        $this->call(IngredientCategorySeeder::class);
+
+        if (app()->environment('local', 'testing')) {
+            $this->call(IngredientBrandSeeder::class);
+            $this->call(IngredientSeeder::class);
+        }
+
         if (filled(env('ADMIN_EMAIL')) && filled(env('ADMIN_PASSWORD'))) {
             User::query()->updateOrCreate(
                 ['email' => env('ADMIN_EMAIL')],

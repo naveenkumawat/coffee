@@ -11,10 +11,10 @@
 @endsection
 
 @section('toolbar-actions')
-    <a href="{{ route('administrator.users.edit', $managedUser) }}" class="btn btn-primary">
-        <i class="ki-outline ki-notepad-edit fs-2"></i>
-        Edit User
-    </a>
+    <x-internal.button-group :items="[
+        ['label' => 'Back', 'url' => route('administrator.users.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+        ['label' => 'Edit User', 'url' => route('administrator.users.edit', $managedUser), 'variant' => 'success', 'icon' => 'ki-notepad-edit'],
+    ]" />
 @endsection
 
 @section('content')
