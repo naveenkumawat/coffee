@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Auth\RoleService;
 use App\Services\Auth\RoleServiceInterface;
+use App\Services\Cart\CartService;
+use App\Services\Cart\CartServiceInterface;
 use App\Services\Ingredient\IngredientBrandService;
 use App\Services\Ingredient\IngredientBrandServiceInterface;
 use App\Services\Ingredient\IngredientCategoryService;
@@ -42,6 +44,7 @@ class DomainServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);
         $this->app->bind(IngredientServiceInterface::class, IngredientService::class);

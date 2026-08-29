@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\CustomerNewPasswordController;
 use App\Http\Controllers\Auth\CustomerPasswordResetLinkController;
 use App\Http\Controllers\Auth\CustomerRegisteredUserController;
 use App\Http\Controllers\Customer\AccountController;
+use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\OrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,11 @@ Route::middleware('guest:web')->group(function (): void {
 });
 
 Route::middleware(['auth:web', 'role:customer'])->group(function (): void {
+    Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
+    Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
+    Route::put('/cart/items/{cartItem}', [CartController::class, 'update'])->name('cart.items.update');
+    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->name('cart.items.destroy');
+    Route::delete('/cart', [CartController::class, 'clear'])->name('cart.clear');
     Route::get('/account', [AccountController::class, 'show'])->name('account.show');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');

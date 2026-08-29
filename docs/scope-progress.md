@@ -262,7 +262,7 @@ Status: Partial
 ### Favourites, Cart, and Checkout
 
 - [ ] Favourite products implemented
-- [ ] Cart implemented
+- [x] Cart implemented
 - [ ] Cart item notes implemented
 - [ ] Size selection implemented
 - [ ] Flavour selection implemented

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\Cart\CartRepository;
+use App\Repositories\Cart\CartRepositoryInterface;
 use App\Repositories\Ingredient\IngredientBrandRepository;
 use App\Repositories\Ingredient\IngredientBrandRepositoryInterface;
 use App\Repositories\Ingredient\IngredientCategoryRepository;
@@ -34,6 +36,7 @@ class RepositoryServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(IngredientCategoryRepositoryInterface::class, IngredientCategoryRepository::class);
         $this->app->bind(IngredientBrandRepositoryInterface::class, IngredientBrandRepository::class);
         $this->app->bind(IngredientRepositoryInterface::class, IngredientRepository::class);

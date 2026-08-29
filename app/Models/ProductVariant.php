@@ -6,6 +6,7 @@ use App\Enums\ProductServingUnit;
 use Database\Factories\ProductVariantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -47,5 +48,10 @@ class ProductVariant extends AbstractModel
     public function recipe(): HasOne
     {
         return $this->hasOne(Recipe::class)->whereNull('deleted_at');
+    }
+
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class, 'product_variant_id');
     }
 }

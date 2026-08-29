@@ -16,7 +16,7 @@
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-4">
-                    @guest
+                    @guest('web')
                         <a href="{{ route('customer.register') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
                             Create customer account
                         </a>
@@ -24,12 +24,17 @@
                             Customer sign in
                         </a>
                     @else
-                        <a href="{{ route('customer.account.show') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
-                            Open my account
-                        </a>
-                        <a href="{{ route('customer.orders.index') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
-                            View my orders
-                        </a>
+                        @if (auth('web')->user()?->hasRole('customer'))
+                            <a href="{{ route('customer.account.show') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                                Open my account
+                            </a>
+                            <a href="{{ route('customer.cart.show') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                                Open my cart
+                            </a>
+                            <a href="{{ route('customer.orders.index') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                                View my orders
+                            </a>
+                        @endif
                     @endguest
                     <a href="{{ route('administrator.login') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
                         Open administrator panel
@@ -51,6 +56,23 @@
                             <h2 class="mt-3 text-xl font-semibold text-white">{{ $product->name }}</h2>
                             <p class="mt-2 text-sm text-stone-300">{{ $product->short_description ?: $product->description }}</p>
                             <p class="mt-4 text-lg font-semibold text-emerald-300">${{ number_format((float) ($product->defaultVariant?->price ?? 0), 2) }}</p>
+                            <div class="mt-4">
+                                @php($defaultVariant = $product->defaultVariant)
+                                @if ($defaultVariant && auth('web')->user()?->hasRole('customer'))
+                                    <form method="POST" action="{{ route('customer.cart.items.store') }}">
+                                        @csrf
+                                        <input type="hidden" name="product_variant_id" value="{{ $defaultVariant->id }}" />
+                                        <input type="hidden" name="quantity" value="1" />
+                                        <button type="submit" class="rounded-full bg-amber-400 px-4 py-2 text-sm font-medium text-stone-950 transition hover:bg-amber-300">
+                                            Add to cart
+                                        </button>
+                                    </form>
+                                @elseif ($defaultVariant)
+                                    <a href="{{ route('customer.login') }}" class="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                                        Sign in to order
+                                    </a>
+                                @endif
+                            </div>
                         </article>
                     @endforeach
                 </div>
@@ -87,8 +109,27 @@
                                         <h4 class="text-lg font-medium text-white">{{ $product->name }}</h4>
                                         <p class="mt-1 text-sm text-stone-400">{{ $product->short_description ?: $product->description }}</p>
                                     </div>
-                                    <span class="text-base font-semibold text-emerald-300">${{ number_format((float) ($product->defaultVariant?->price ?? 0), 2) }}</span>
-                                </div>
+                            <span class="text-base font-semibold text-emerald-300">${{ number_format((float) ($product->defaultVariant?->price ?? 0), 2) }}</span>
+                        </div>
+                        @php($defaultVariant = $product->defaultVariant)
+                        @if ($defaultVariant)
+                            <div class="mt-3 flex flex-wrap gap-3">
+                                @if (auth('web')->user()?->hasRole('customer'))
+                                    <form method="POST" action="{{ route('customer.cart.items.store') }}">
+                                        @csrf
+                                        <input type="hidden" name="product_variant_id" value="{{ $defaultVariant->id }}" />
+                                        <input type="hidden" name="quantity" value="1" />
+                                        <button type="submit" class="rounded-full bg-amber-400 px-4 py-2 text-sm font-medium text-stone-950 transition hover:bg-amber-300">
+                                            Add {{ $defaultVariant->name }} to cart
+                                        </button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('customer.login') }}" class="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                                        Sign in to order
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                             @endforeach
                         </div>
                     </section>

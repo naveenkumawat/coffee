@@ -21,19 +21,24 @@
                         Menu
                     </a>
 
-                    @auth
-                        <a href="{{ route('customer.orders.index') }}" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
-                            My Orders
-                        </a>
-                        <a href="{{ route('customer.account.show') }}" class="rounded-full bg-amber-400 px-4 py-2 font-medium text-stone-950 transition hover:bg-amber-300">
-                            Account
-                        </a>
-                        <form method="POST" action="{{ route('customer.logout') }}">
-                            @csrf
-                            <button type="submit" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
-                                Logout
-                            </button>
-                        </form>
+                    @auth('web')
+                        @if (auth('web')->user()?->hasRole('customer'))
+                            <a href="{{ route('customer.cart.show') }}" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
+                                Cart ({{ $customerCartCount ?? 0 }})
+                            </a>
+                            <a href="{{ route('customer.orders.index') }}" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
+                                My Orders
+                            </a>
+                            <a href="{{ route('customer.account.show') }}" class="rounded-full bg-amber-400 px-4 py-2 font-medium text-stone-950 transition hover:bg-amber-300">
+                                Account
+                            </a>
+                            <form method="POST" action="{{ route('customer.logout') }}">
+                                @csrf
+                                <button type="submit" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
+                                    Logout
+                                </button>
+                            </form>
+                        @endif
                     @else
                         <a href="{{ route('customer.login') }}" class="rounded-full border border-white/10 px-4 py-2 transition hover:border-white/30 hover:bg-white/5 hover:text-white">
                             Login
@@ -50,6 +55,14 @@
                     <div class="mx-auto max-w-7xl px-6 pb-2">
                         <div class="rounded-3xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-100">
                             {{ session('status') }}
+                        </div>
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="mx-auto max-w-7xl px-6 pb-2">
+                        <div class="rounded-3xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm text-rose-100">
+                            {{ $errors->first() }}
                         </div>
                     </div>
                 @endif

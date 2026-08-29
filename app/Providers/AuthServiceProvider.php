@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Ingredient;
 use App\Models\IngredientBrand;
 use App\Models\IngredientCategory;
@@ -15,6 +17,8 @@ use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Policies\CartItemPolicy;
+use App\Policies\CartPolicy;
 use App\Policies\IngredientBrandPolicy;
 use App\Policies\IngredientCategoryPolicy;
 use App\Policies\IngredientPolicy;
@@ -34,6 +38,8 @@ use Illuminate\Support\Facades\Gate;
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
+        Cart::class => CartPolicy::class,
+        CartItem::class => CartItemPolicy::class,
         Ingredient::class => IngredientPolicy::class,
         IngredientBrand::class => IngredientBrandPolicy::class,
         IngredientCategory::class => IngredientCategoryPolicy::class,
