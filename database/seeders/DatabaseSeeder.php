@@ -19,6 +19,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('local', 'testing')) {
+            $this->seedDevelopmentInternalUsers();
+        }
+
         if (filled(env('ADMIN_EMAIL')) && filled(env('ADMIN_PASSWORD'))) {
             User::query()->updateOrCreate(
                 ['email' => env('ADMIN_EMAIL')],
@@ -71,6 +75,36 @@ class DatabaseSeeder extends Seeder
                 'is_available' => true,
                 'is_featured' => true,
             ]);
+        }
+    }
+
+    protected function seedDevelopmentInternalUsers(): void
+    {
+        $users = [
+            [
+                'email' => 'admin@coffee.local',
+                'name' => 'Coffee Administrator',
+                'role' => UserRole::Owner,
+            ],
+            [
+                'email' => 'barista@coffee.local',
+                'name' => 'Coffee Barista',
+                'role' => UserRole::Barista,
+            ],
+        ];
+
+        foreach ($users as $user) {
+            User::query()->updateOrCreate(
+                ['email' => $user['email']],
+                [
+                    'name' => $user['name'],
+                    'phone' => null,
+                    'role' => $user['role'],
+                    'is_active' => true,
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                ],
+            );
         }
     }
 }

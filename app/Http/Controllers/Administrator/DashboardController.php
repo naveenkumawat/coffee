@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Menu\MenuCategoryRepository;
-use App\Repositories\Menu\MenuItemRepository;
+use App\Repositories\Menu\MenuCategoryRepositoryInterface;
+use App\Repositories\Menu\MenuItemRepositoryInterface;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
 {
     public function __invoke(
-        MenuCategoryRepository $categoryRepository,
-        MenuItemRepository $itemRepository,
+        MenuCategoryRepositoryInterface $categoryRepository,
+        MenuItemRepositoryInterface $itemRepository,
     ): View {
         $categoryPage = $categoryRepository->paginateForAdmin(5);
         $itemPage = $itemRepository->paginateForAdmin(5);

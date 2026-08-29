@@ -22,15 +22,15 @@
         </div>
     </div>
 
-    <div class="card card-flush">
+    <div class="card card-flush internal-card">
         <div class="card-header pt-7">
             <div class="card-title">
                 <h3 class="fw-bold text-gray-900">Queue preview</h3>
             </div>
         </div>
         <div class="card-body pt-5">
-            <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+            <div class="table-responsive internal-table-wrapper">
+                <table class="table align-middle table-row-dashed fs-6 gy-5 internal-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Ticket</th>

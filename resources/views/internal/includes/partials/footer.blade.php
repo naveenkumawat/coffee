@@ -1,15 +1,20 @@
 <div id="kt_app_footer" class="app-footer">
-    <div class="app-container container-xxl d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
-        <div class="text-gray-900 order-2 order-md-1">
-            <span class="text-muted fw-semibold me-1">{{ now()->year }}</span>
-            <span class="fw-semibold">{{ config('app.name') }}</span>
-            <span class="text-muted ms-2">Shared internal panel foundation for Administrator and Barista.</span>
+    <div class="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
+        <div class="text-dark order-2 order-md-1">
+            <span class="text-muted fw-semibold me-1">{{ now()->year }} &copy; All Rights Reserved by</span>
+            <span class="text-gray-800">{{ config('app.name') }}</span>
         </div>
         <ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
             <li class="menu-item">
                 <a href="{{ route('home') }}" class="menu-link px-2">Storefront</a>
             </li>
         </ul>
+    </div>
+</div>
+
+<div class="modal fade" id="dynamicModalPopup" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-650px">
+        <div class="modal-content"></div>
     </div>
 </div>
 

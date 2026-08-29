@@ -4,28 +4,45 @@ namespace App\Services\Menu;
 
 use App\Events\Menu\MenuCategorySaved;
 use App\Models\MenuCategory;
-use App\Transfers\Menu\MenuCategoryData;
+use App\Repositories\Menu\MenuCategoryRepositoryInterface;
+use App\Transfers\Menu\MenuCategoryTransferInterface;
 use Illuminate\Support\Facades\DB;
 
-class MenuCategoryService
+class MenuCategoryService implements MenuCategoryServiceInterface
 {
-    public function store(MenuCategoryData $data): MenuCategory
-    {
-        return DB::transaction(function () use ($data): MenuCategory {
-            $category = MenuCategory::query()->create($data->toArray());
-            MenuCategorySaved::dispatch($category->fresh());
+    public function __construct(
+        protected MenuCategoryRepositoryInterface $categories,
+        protected MenuCatalogServiceInterface $menuCatalogService,
+    ) {}
 
-            return $category;
+    public function store(MenuCategoryTransferInterface $data): MenuCategory
+    {
+        $category = DB::transaction(function () use ($data): MenuCategory {
+            return $this->categories->create($data->toArray());
         });
+
+        MenuCategorySaved::dispatch($category);
+
+        return $category;
     }
 
-    public function update(MenuCategory $menuCategory, MenuCategoryData $data): MenuCategory
+    public function update(MenuCategory $menuCategory, MenuCategoryTransferInterface $data): MenuCategory
     {
-        return DB::transaction(function () use ($menuCategory, $data): MenuCategory {
-            $menuCategory->update($data->toArray());
-            MenuCategorySaved::dispatch($menuCategory->fresh());
-
-            return $menuCategory;
+        $menuCategory = DB::transaction(function () use ($menuCategory, $data): MenuCategory {
+            return $this->categories->update($menuCategory, $data->toArray());
         });
+
+        MenuCategorySaved::dispatch($menuCategory);
+
+        return $menuCategory;
+    }
+
+    public function delete(MenuCategory $menuCategory): void
+    {
+        DB::transaction(function () use ($menuCategory): void {
+            $this->categories->delete($menuCategory);
+        });
+
+        $this->menuCatalogService->flushPublicCache();
     }
 }

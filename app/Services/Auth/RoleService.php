@@ -6,7 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
-class RoleService
+class RoleService implements RoleServiceInterface
 {
     public function all(): Collection
     {

@@ -2,22 +2,23 @@
 
 namespace App\Services\Menu;
 
-use App\Repositories\Menu\MenuCategoryRepository;
-use App\Repositories\Menu\MenuItemRepository;
+use App\Repositories\Menu\MenuCategoryRepositoryInterface;
+use App\Repositories\Menu\MenuItemRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
-class MenuCatalogService
+class MenuCatalogService implements MenuCatalogServiceInterface
 {
     public const PUBLIC_MENU_CACHE_KEY = 'menu.public.catalog';
 
     public const FEATURED_MENU_CACHE_KEY = 'menu.public.featured';
 
     public function __construct(
-        protected MenuCategoryRepository $categories,
-        protected MenuItemRepository $items,
+        protected MenuCategoryRepositoryInterface $categories,
+        protected MenuItemRepositoryInterface $items,
     ) {}
 
-    public function publicCatalog()
+    public function publicCatalog(): Collection
     {
         return Cache::remember(
             self::PUBLIC_MENU_CACHE_KEY,
@@ -26,7 +27,7 @@ class MenuCatalogService
         );
     }
 
-    public function featuredItems()
+    public function featuredItems(): Collection
     {
         return Cache::remember(
             self::FEATURED_MENU_CACHE_KEY,

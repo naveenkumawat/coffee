@@ -18,7 +18,8 @@
     @csrf
     <div class="text-center mb-11">
         <h1 class="text-gray-900 fw-bolder mb-3">{{ $panelConfig['title'] }}</h1>
-        <div class="text-gray-500 fw-semibold fs-6">{{ $panelConfig['description'] }}</div>
+        <div class="text-gray-500 fw-semibold fs-6 mb-2">{{ $panelConfig['description'] }}</div>
+        <div class="text-muted fw-bold fs-7">{{ $panelConfig['eyebrow'] }}</div>
     </div>
 
     @if ($errors->any())
@@ -34,7 +35,7 @@
     @endif
 
     <div class="fv-row mb-8">
-        <label for="email" class="form-label fw-semibold text-gray-600">{{ $panelConfig['eyebrow'] }}</label>
+        <label for="email" class="form-label fw-semibold text-gray-600">Email address</label>
         <input id="email" type="email" placeholder="name@example.com" name="email" autocomplete="email" value="{{ old('email') }}" class="form-control bg-transparent" required autofocus>
     </div>
 
@@ -51,7 +52,7 @@
     </div>
 
     <div class="d-grid mb-10">
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-light-success btn-active-success">
             <span class="indicator-label">Sign In</span>
         </button>
     </div>

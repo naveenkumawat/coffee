@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(AddRequestContext::class);
+        $middleware->redirectGuestsTo(function (Request $request): string {
+            $routeName = (string) ($request->route()?->getName() ?? '');
+
+            return str_starts_with($routeName, 'barista.')
+                ? route('barista.login')
+                : route('administrator.login');
+        });
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);
@@ -37,6 +44,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (Throwable $exception, Request $request) {
             if ($request->expectsJson()) {
+                return null;
+            }
+
+            if (config('app.debug') || app()->environment(['local', 'testing'])) {
                 return null;
             }
 

@@ -1,44 +1,115 @@
 @php
+    use App\Enums\UserRole;
+
     $user = auth('admin')->user();
     $panelName = $panel === 'administrator' ? 'Administrator' : 'Barista';
+    $dashboardRoute = $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard');
+    $logoutRoute = $panel === 'administrator' ? route('administrator.logout') : route('barista.logout');
+    $roleLabel = $user?->role instanceof UserRole ? $user->role->label() : null;
 @endphp
 
 <div id="kt_app_header" class="app-header">
-    <div class="app-container container-xxl d-flex align-items-stretch justify-content-between" id="kt_app_header_container">
-        <div class="d-flex align-items-center d-lg-none ms-n3 me-2" title="Show sidebar menu">
-            <div class="btn btn-icon btn-color-gray-700 btn-active-color-primary w-35px h-35px" id="kt_app_sidebar_mobile_toggle">
-                <i class="ki-outline ki-abstract-14 fs-2"></i>
+    <div class="app-container container-fluid d-flex align-items-stretch justify-content-between" id="kt_app_header_container">
+        <div class="d-flex align-items-center d-lg-none ms-n3 me-1 me-md-2" title="Show sidebar menu">
+            <div class="btn btn-icon btn-active-color-primary w-35px h-35px" id="kt_app_sidebar_mobile_toggle">
+                <i class="ki-duotone ki-abstract-14 fs-2 fs-md-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                </i>
             </div>
         </div>
 
-        <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0 me-lg-15">
-            <a href="{{ $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard') }}" class="text-decoration-none">
-                <span class="fs-2 fw-bold text-gray-900">{{ config('app.name') }}</span>
-                <span class="badge badge-light-warning ms-3">{{ $panelName }}</span>
+        <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
+            <a href="{{ $dashboardRoute }}" class="d-lg-none text-decoration-none">
+                <span class="fw-bold text-dark">{{ config('app.name') }}</span>
             </a>
         </div>
 
-        <div class="app-navbar flex-shrink-0">
-            <div class="app-navbar-item ms-1 ms-md-4">
-                <a href="{{ route('home') }}" class="btn btn-light-primary">
-                    <i class="ki-outline ki-shop fs-3"></i>
-                    View Storefront
-                </a>
-            </div>
+        <div class="d-flex align-items-stretch justify-content-between flex-lg-grow-1" id="kt_app_header_wrapper">
+            <div
+                class="app-header-menu app-header-mobile-drawer align-items-stretch"
+                data-kt-drawer="true"
+                data-kt-drawer-name="app-header-menu"
+                data-kt-drawer-activate="{default: true, lg: false}"
+                data-kt-drawer-overlay="true"
+                data-kt-drawer-width="250px"
+                data-kt-drawer-direction="end"
+                data-kt-drawer-toggle="#kt_app_header_menu_toggle"
+                data-kt-swapper="true"
+                data-kt-swapper-mode="{default: 'append', lg: 'prepend'}"
+                data-kt-swapper-parent="{default: '#kt_app_body', lg: '#kt_app_header_wrapper'}"
+            ></div>
 
-            @if ($user)
+            <div class="app-navbar flex-shrink-0">
                 <div class="app-navbar-item ms-1 ms-md-4">
-                    <div class="btn btn-flex btn-light align-items-center gap-3">
-                        <span class="symbol symbol-35px symbol-circle">
-                            <span class="symbol-label bg-warning text-inverse-warning fw-bold">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                        </span>
-                        <span class="d-none d-md-flex flex-column align-items-start">
-                            <span class="text-gray-800 fs-7 fw-bold">{{ $user->name }}</span>
-                            <span class="text-muted fs-8">{{ $user->role->label() }}</span>
-                        </span>
-                    </div>
+                    <a href="{{ route('home') }}" class="btn btn-light-primary btn-sm">
+                        <i class="ki-duotone ki-shop fs-3 me-1">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                            <span class="path4"></span>
+                        </i>
+                        Storefront
+                    </a>
                 </div>
-            @endif
+
+                @if ($user)
+                    <div class="app-navbar-item ms-1 ms-md-4" id="kt_header_user_menu_toggle">
+                        <div
+                            class="cursor-pointer symbol symbol-35px"
+                            data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
+                            data-kt-menu-attach="parent"
+                            data-kt-menu-placement="bottom-end"
+                        >
+                            <div class="symbol-label fs-3 bg-light-primary text-primary rounded-3">
+                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                            </div>
+                        </div>
+
+                        <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-color fw-semibold py-4 fs-6 w-275px" data-kt-menu="true">
+                            <div class="menu-item px-3">
+                                <div class="menu-content d-flex align-items-center px-3">
+                                    <div class="symbol symbol-50px me-5">
+                                        <div class="symbol-label fs-2 bg-light-primary text-primary rounded-3">
+                                            {{ strtoupper(substr($user->name, 0, 1)) }}
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-column">
+                                        <div class="fw-bold d-flex align-items-center fs-5">
+                                            {{ $user->name }}
+                                            <span class="badge badge-light-success fw-bold fs-8 px-2 py-1 ms-2">{{ $panelName }}</span>
+                                        </div>
+                                        <span class="fw-semibold text-muted fs-7">{{ $user->email }}</span>
+                                        @if ($roleLabel)
+                                            <span class="text-gray-500 fs-8 mt-1">{{ $roleLabel }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="separator my-2"></div>
+
+                            <div class="menu-item px-5">
+                                <a href="{{ $dashboardRoute }}" class="menu-link px-5">Dashboard</a>
+                            </div>
+
+                            <div class="menu-item px-5">
+                                <a href="{{ route('home') }}" class="menu-link px-5">View Storefront</a>
+                            </div>
+
+                            <div class="separator my-2"></div>
+
+                            <div class="menu-item px-5">
+                                <form method="POST" action="{{ $logoutRoute }}">
+                                    @csrf
+                                    <button type="submit" class="menu-link px-5 border-0 bg-transparent w-100 text-start">Sign Out</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
 </div>

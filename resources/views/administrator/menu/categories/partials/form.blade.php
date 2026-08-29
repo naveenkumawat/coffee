@@ -1,4 +1,4 @@
-<div class="card card-flush">
+<div class="card card-flush internal-card internal-form-card">
     <div class="card-header">
         <div class="card-title">
             <h3 class="fw-bold text-gray-900">{{ $title }}</h3>
@@ -11,7 +11,7 @@
                 @method($method)
             @endif
 
-            <div class="row g-6 mb-8">
+            <div class="row g-6 mb-8 internal-form-grid">
                 <div class="col-12">
                     <label for="name" class="required form-label">Name</label>
                     <input id="name" name="name" type="text" value="{{ old('name', $category->name) }}" required class="form-control" />
@@ -36,7 +36,7 @@
                 <label class="form-check-label" for="is_active">Category is active on the public menu</label>
             </div>
 
-            <div class="d-flex justify-content-end gap-3">
+            <div class="d-flex justify-content-end internal-form-actions">
                 <a href="{{ route('administrator.menu.categories.index') }}" class="btn btn-light">Back</a>
                 <button type="submit" class="btn btn-primary">{{ $submit }}</button>
             </div>

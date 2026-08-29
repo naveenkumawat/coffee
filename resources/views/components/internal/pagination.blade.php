@@ -1,10 +1,10 @@
 @if ($paginator->hasPages())
-    <div class="d-flex flex-stack flex-wrap pt-10">
-        <div class="fs-7 fw-semibold text-gray-700 py-2 me-4">
+    <div class="internal-pagination d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-4 pt-10">
+        <div class="fs-7 fw-semibold text-gray-700 py-2 me-md-4">
             Showing {{ $paginator->firstItem() ?? 0 }} to {{ $paginator->lastItem() ?? 0 }} of {{ $paginator->total() }} results
         </div>
 
-        <ul class="pagination">
+        <ul class="pagination pagination-sm flex-wrap mb-0">
             @if ($paginator->onFirstPage())
                 <li class="page-item previous disabled"><span class="page-link"><i class="previous"></i></span></li>
             @else

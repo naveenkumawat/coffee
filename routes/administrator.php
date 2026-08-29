@@ -6,6 +6,16 @@ use App\Http\Controllers\Administrator\MenuItemController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+    $user = auth('admin')->user();
+
+    if ($user?->canAccessInternalPanel('administrator')) {
+        return redirect()->route('administrator.dashboard');
+    }
+
+    return redirect()->route('administrator.login');
+})->name('root');
+
 Route::middleware('guest:admin')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])
         ->defaults('panel', 'administrator')

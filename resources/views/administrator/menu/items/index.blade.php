@@ -17,17 +17,17 @@
 @endsection
 
 @section('content')
-    <div class="card card-flush">
+    <div class="card card-flush internal-card">
         <div class="card-body pt-0">
-            <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5 mb-0">
+            <div class="table-responsive internal-table-wrapper">
+                <table class="table align-middle table-row-dashed fs-6 gy-5 internal-table">
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Item</th>
                             <th>Category</th>
                             <th>Price</th>
                             <th>Flags</th>
-                            <th class="text-end">Actions</th>
+                            <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="fw-semibold text-gray-600">
@@ -51,13 +51,25 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="text-end">
-                                    <a href="{{ route('administrator.menu.items.edit', $item) }}" class="btn btn-sm btn-light-primary me-2">Edit</a>
-                                    <form method="POST" action="{{ route('administrator.menu.items.destroy', $item) }}" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-light-danger">Delete</button>
-                                    </form>
+                                <td class="text-end internal-action-cell">
+                                    <x-internal.action-dropdown :items="[
+                                        [
+                                            'label' => 'Edit',
+                                            'url' => route('administrator.menu.items.edit', $item),
+                                            'icon' => 'ki-notepad-edit',
+                                        ],
+                                        [
+                                            'type' => 'separator',
+                                        ],
+                                        [
+                                            'label' => 'Delete',
+                                            'url' => route('administrator.menu.items.destroy', $item),
+                                            'method' => 'DELETE',
+                                            'icon' => 'ki-trash',
+                                            'danger' => true,
+                                            'confirm' => 'Delete this menu item?',
+                                        ],
+                                    ]" />
                                 </td>
                             </tr>
                         @empty

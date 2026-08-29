@@ -3,22 +3,23 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Administrator\MenuItem\StoreMenuItemRequest;
-use App\Http\Requests\Administrator\MenuItem\UpdateMenuItemRequest;
-use App\Models\MenuCategory;
+use App\Http\Requests\MenuItem\MenuItemCreateRequest;
+use App\Http\Requests\MenuItem\MenuItemUpdateRequest;
 use App\Models\MenuItem;
-use App\Repositories\Menu\MenuItemRepository;
-use App\Services\Menu\MenuCatalogService;
-use App\Services\Menu\MenuItemService;
-use App\Transfers\Menu\MenuItemData;
+use App\Parsers\Menu\MenuItemParserInterface;
+use App\Repositories\Menu\MenuCategoryRepositoryInterface;
+use App\Repositories\Menu\MenuItemRepositoryInterface;
+use App\Services\Menu\MenuItemServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class MenuItemController extends Controller
 {
     public function __construct(
-        protected MenuItemRepository $items,
-        protected MenuItemService $service,
+        protected MenuItemParserInterface $parser,
+        protected MenuItemRepositoryInterface $items,
+        protected MenuCategoryRepositoryInterface $categories,
+        protected MenuItemServiceInterface $service,
     ) {}
 
     public function index(): View
@@ -36,13 +37,13 @@ class MenuItemController extends Controller
 
         return view('administrator.menu.items.create', [
             'item' => new MenuItem(['is_available' => true, 'sort_order' => 10]),
-            'categories' => MenuCategory::query()->where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'),
+            'categories' => $this->categories->activeOptions(),
         ]);
     }
 
-    public function store(StoreMenuItemRequest $request): RedirectResponse
+    public function store(MenuItemCreateRequest $request): RedirectResponse
     {
-        $this->service->store(MenuItemData::fromArray($request->validated()));
+        $this->service->store($this->parser->getTransferFromArrayData($request->validated()));
 
         return redirect()
             ->route('administrator.menu.items.index')
@@ -60,14 +61,14 @@ class MenuItemController extends Controller
 
         return view('administrator.menu.items.edit', [
             'item' => $menuItem,
-            'categories' => MenuCategory::query()->orderBy('sort_order')->pluck('name', 'id'),
+            'categories' => $this->categories->allOptions(),
         ]);
     }
 
-    public function update(UpdateMenuItemRequest $request, MenuItem $menuItem): RedirectResponse
+    public function update(MenuItemUpdateRequest $request, MenuItem $menuItem): RedirectResponse
     {
         $this->authorize('update', $menuItem);
-        $this->service->update($menuItem, MenuItemData::fromArray($request->validated()));
+        $this->service->update($menuItem, $this->parser->getTransferFromArrayData($request->validated()));
 
         return redirect()
             ->route('administrator.menu.items.edit', $menuItem)
@@ -77,8 +78,7 @@ class MenuItemController extends Controller
     public function destroy(MenuItem $menuItem): RedirectResponse
     {
         $this->authorize('delete', $menuItem);
-        $menuItem->delete();
-        app(MenuCatalogService::class)->flushPublicCache();
+        $this->service->delete($menuItem);
 
         return redirect()
             ->route('administrator.menu.items.index')

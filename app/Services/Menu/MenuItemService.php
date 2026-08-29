@@ -4,28 +4,45 @@ namespace App\Services\Menu;
 
 use App\Events\Menu\MenuItemSaved;
 use App\Models\MenuItem;
-use App\Transfers\Menu\MenuItemData;
+use App\Repositories\Menu\MenuItemRepositoryInterface;
+use App\Transfers\Menu\MenuItemTransferInterface;
 use Illuminate\Support\Facades\DB;
 
-class MenuItemService
+class MenuItemService implements MenuItemServiceInterface
 {
-    public function store(MenuItemData $data): MenuItem
-    {
-        return DB::transaction(function () use ($data): MenuItem {
-            $item = MenuItem::query()->create($data->toArray());
-            MenuItemSaved::dispatch($item->fresh('category'));
+    public function __construct(
+        protected MenuItemRepositoryInterface $items,
+        protected MenuCatalogServiceInterface $menuCatalogService,
+    ) {}
 
-            return $item;
+    public function store(MenuItemTransferInterface $data): MenuItem
+    {
+        $menuItem = DB::transaction(function () use ($data): MenuItem {
+            return $this->items->create($data->toArray());
         });
+
+        MenuItemSaved::dispatch($menuItem->fresh('category'));
+
+        return $menuItem;
     }
 
-    public function update(MenuItem $menuItem, MenuItemData $data): MenuItem
+    public function update(MenuItem $menuItem, MenuItemTransferInterface $data): MenuItem
     {
-        return DB::transaction(function () use ($menuItem, $data): MenuItem {
-            $menuItem->update($data->toArray());
-            MenuItemSaved::dispatch($menuItem->fresh('category'));
-
-            return $menuItem;
+        $menuItem = DB::transaction(function () use ($menuItem, $data): MenuItem {
+            return $this->items->update($menuItem, $data->toArray());
         });
+
+        MenuItemSaved::dispatch($menuItem->fresh('category'));
+
+        return $menuItem;
+    }
+
+    public function delete(MenuItem $menuItem): void
+    {
+        DB::transaction(function () use ($menuItem): void {
+            $this->items->delete($menuItem);
+        });
+
+        $this->menuCatalogService->flushPublicCache();
     }
 }

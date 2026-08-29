@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Administrator\MenuCategory\StoreMenuCategoryRequest;
-use App\Http\Requests\Administrator\MenuCategory\UpdateMenuCategoryRequest;
+use App\Http\Requests\MenuCategory\MenuCategoryCreateRequest;
+use App\Http\Requests\MenuCategory\MenuCategoryUpdateRequest;
 use App\Models\MenuCategory;
-use App\Repositories\Menu\MenuCategoryRepository;
-use App\Services\Menu\MenuCatalogService;
-use App\Services\Menu\MenuCategoryService;
-use App\Transfers\Menu\MenuCategoryData;
+use App\Parsers\Menu\MenuCategoryParserInterface;
+use App\Repositories\Menu\MenuCategoryRepositoryInterface;
+use App\Services\Menu\MenuCategoryServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class MenuCategoryController extends Controller
 {
     public function __construct(
-        protected MenuCategoryRepository $categories,
-        protected MenuCategoryService $service,
+        protected MenuCategoryParserInterface $parser,
+        protected MenuCategoryRepositoryInterface $categories,
+        protected MenuCategoryServiceInterface $service,
     ) {}
 
     public function index(): View
@@ -38,9 +38,9 @@ class MenuCategoryController extends Controller
         ]);
     }
 
-    public function store(StoreMenuCategoryRequest $request): RedirectResponse
+    public function store(MenuCategoryCreateRequest $request): RedirectResponse
     {
-        $this->service->store(MenuCategoryData::fromArray($request->validated()));
+        $this->service->store($this->parser->getTransferFromArrayData($request->validated()));
 
         return redirect()
             ->route('administrator.menu.categories.index')
@@ -61,10 +61,10 @@ class MenuCategoryController extends Controller
         ]);
     }
 
-    public function update(UpdateMenuCategoryRequest $request, MenuCategory $menuCategory): RedirectResponse
+    public function update(MenuCategoryUpdateRequest $request, MenuCategory $menuCategory): RedirectResponse
     {
         $this->authorize('update', $menuCategory);
-        $this->service->update($menuCategory, MenuCategoryData::fromArray($request->validated()));
+        $this->service->update($menuCategory, $this->parser->getTransferFromArrayData($request->validated()));
 
         return redirect()
             ->route('administrator.menu.categories.edit', $menuCategory)
@@ -74,8 +74,7 @@ class MenuCategoryController extends Controller
     public function destroy(MenuCategory $menuCategory): RedirectResponse
     {
         $this->authorize('delete', $menuCategory);
-        $menuCategory->delete();
-        app(MenuCatalogService::class)->flushPublicCache();
+        $this->service->delete($menuCategory);
 
         return redirect()
             ->route('administrator.menu.categories.index')

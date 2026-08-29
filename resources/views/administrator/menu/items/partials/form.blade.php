@@ -1,4 +1,4 @@
-<div class="card card-flush">
+<div class="card card-flush internal-card internal-form-card">
     <div class="card-header">
         <div class="card-title">
             <h3 class="fw-bold text-gray-900">{{ $title }}</h3>
@@ -11,7 +11,7 @@
                 @method($method)
             @endif
 
-            <div class="row g-6 mb-8">
+            <div class="row g-6 mb-8 internal-form-grid">
                 <div class="col-md-6">
                     <label for="menu_category_id" class="required form-label">Category</label>
                     <select id="menu_category_id" name="menu_category_id" required class="form-select" data-control="select2" data-placeholder="Select a category">
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-3">
+            <div class="d-flex justify-content-end internal-form-actions">
                 <a href="{{ route('administrator.menu.items.index') }}" class="btn btn-light">Back</a>
                 <button type="submit" class="btn btn-primary">{{ $submit }}</button>
             </div>

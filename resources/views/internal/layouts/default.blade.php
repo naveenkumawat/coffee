@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <base href="" />
         <title>{{ $title ?? config('app.name') }} | {{ ucfirst($panel) }} Panel</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <link rel="stylesheet" href="{{ asset('internal/assets/plugins/global/plugins.bundle.css') }}">
-        <link rel="stylesheet" href="{{ asset('internal/assets/css/style.bundle.css') }}">
-        <link rel="stylesheet" href="{{ asset('internal/assets/css/custom.css') }}">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
+        <link href="{{ asset('internal/assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
+        <link href="{{ asset('internal/assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
+        <link href="{{ asset('internal/assets/css/custom.css') }}" rel="stylesheet" type="text/css" />
         @stack('styles')
     </head>
     <body
@@ -21,11 +23,28 @@
         data-kt-app-sidebar-push-header="true"
         data-kt-app-sidebar-push-toolbar="true"
         data-kt-app-sidebar-push-footer="true"
+        data-kt-app-toolbar-enabled="true"
+        data-kt-app-toolbar-fixed="true"
         class="app-default"
     >
         <script>
+            var defaultThemeMode = 'light';
+            var themeMode;
+
             if (document.documentElement) {
-                document.documentElement.setAttribute('data-bs-theme', 'light');
+                if (document.documentElement.hasAttribute('data-bs-theme-mode')) {
+                    themeMode = document.documentElement.getAttribute('data-bs-theme-mode');
+                } else if (localStorage.getItem('data-bs-theme') !== null) {
+                    themeMode = localStorage.getItem('data-bs-theme');
+                } else {
+                    themeMode = defaultThemeMode;
+                }
+
+                if (themeMode === 'system') {
+                    themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+
+                document.documentElement.setAttribute('data-bs-theme', themeMode);
             }
         </script>
 
@@ -38,29 +57,34 @@
 
                     <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
                         <div class="d-flex flex-column flex-column-fluid">
-                            <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
-                                <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack flex-wrap gap-4">
-                                    <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
-                                        <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">
-                                            @yield('page-title', config('app.name'))
-                                        </h1>
+                            @hasSection('breadcrumb')
+                                @yield('breadcrumb')
+                            @else
+                                <x-internal.page-header :title="trim($__env->yieldContent('page-title')) ?: config('app.name')">
+                                    <x-slot:breadcrumbs>
                                         @hasSection('breadcrumbs')
                                             @yield('breadcrumbs')
                                         @else
                                             <x-internal.breadcrumbs :items="[['label' => ucfirst($panel) . ' Panel']]" />
                                         @endif
-                                    </div>
+                                    </x-slot:breadcrumbs>
+
+                                    @hasSection('page-description')
+                                        <x-slot:description>
+                                            @yield('page-description')
+                                        </x-slot:description>
+                                    @endif
 
                                     @hasSection('toolbar-actions')
-                                        <div class="d-flex align-items-center gap-3">
+                                        <x-slot:actions>
                                             @yield('toolbar-actions')
-                                        </div>
+                                        </x-slot:actions>
                                     @endif
-                                </div>
-                            </div>
+                                </x-internal.page-header>
+                            @endif
 
                             <div id="kt_app_content" class="app-content flex-column-fluid">
-                                <div id="kt_app_content_container" class="app-container container-xxl">
+                                <div id="kt_app_content_container" class="app-container container-fluid">
                                     <x-internal.alerts />
                                     @yield('content')
                                 </div>
@@ -73,9 +97,19 @@
             </div>
         </div>
 
+        <div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true">
+            <i class="ki-duotone ki-arrow-up">
+                <span class="path1"></span>
+                <span class="path2"></span>
+            </i>
+        </div>
+
         <script src="{{ asset('internal/assets/plugins/global/plugins.bundle.js') }}"></script>
         <script src="{{ asset('internal/assets/js/scripts.bundle.js') }}"></script>
+        <script src="{{ asset('internal/assets/plugins/custom/ckeditor/ckeditor-classic.bundle.js') }}"></script>
         <script src="{{ asset('internal/assets/js/custom.js') }}"></script>
+        <script src="{{ asset('internal/assets/js/config/app-config.js') }}"></script>
         @stack('scripts')
+        @include('components.flash-toast')
     </body>
 </html>

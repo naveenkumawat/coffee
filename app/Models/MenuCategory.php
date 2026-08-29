@@ -4,10 +4,9 @@ namespace App\Models;
 
 use Database\Factories\MenuCategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MenuCategory extends Model
+class MenuCategory extends AbstractModel
 {
     /** @use HasFactory<MenuCategoryFactory> */
     use HasFactory;

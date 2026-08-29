@@ -1,12 +1,13 @@
 @php
     $user = auth('admin')->user();
+    $dashboardRoute = $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard');
 
     $navigation = match ($panel) {
         'administrator' => [
             [
-                'heading' => 'Overview',
+                'heading' => 'Dashboard',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'administrator.dashboard', 'pattern' => 'administrator.dashboard*', 'icon' => 'ki-element-11'],
+                    ['label' => 'Analytics', 'route' => 'administrator.dashboard', 'pattern' => 'administrator.dashboard*', 'icon' => 'ki-chart-line'],
                 ],
             ],
             [
@@ -32,14 +33,22 @@
 
 <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="225px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
-        <a href="{{ $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard') }}" class="text-decoration-none">
+        <a href="{{ $dashboardRoute }}" class="text-decoration-none d-flex flex-column">
             <span class="fs-3 fw-bold text-white">{{ config('app.name') }}</span>
+            <span class="text-gray-400 fs-8 text-uppercase">{{ $panel === 'administrator' ? 'Administrator' : 'Barista' }}</span>
         </a>
+
+        <div id="kt_app_sidebar_toggle" class="app-sidebar-toggle btn btn-icon btn-shadow btn-sm btn-color-muted btn-active-color-primary body-bg h-30px w-30px position-absolute top-50 start-100 translate-middle rotate" data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body" data-kt-toggle-name="app-sidebar-minimize">
+            <i class="ki-duotone ki-double-left fs-2 rotate-180">
+                <span class="path1"></span>
+                <span class="path2"></span>
+            </i>
+        </div>
     </div>
 
     <div class="app-sidebar-menu overflow-hidden flex-column-fluid">
-        <div id="kt_app_sidebar_menu_wrapper" class="app-sidebar-wrapper hover-scroll-overlay-y my-5" data-kt-scroll="true" data-kt-scroll-activate="true" data-kt-scroll-height="auto" data-kt-scroll-dependencies="#kt_app_sidebar_logo" data-kt-scroll-wrappers="#kt_app_sidebar_menu" data-kt-scroll-offset="5px">
-            <div class="menu menu-column menu-rounded menu-sub-indention fw-semibold px-3" id="kt_app_sidebar_menu" data-kt-menu="true">
+        <div id="kt_app_sidebar_menu_wrapper" class="app-sidebar-wrapper hover-scroll-overlay-y my-5" data-kt-scroll="true" data-kt-scroll-activate="true" data-kt-scroll-height="auto" data-kt-scroll-dependencies="#kt_app_sidebar_logo, #kt_app_sidebar_footer" data-kt-scroll-wrappers="#kt_app_sidebar_menu" data-kt-scroll-offset="5px" data-kt-scroll-save-state="true">
+            <div class="menu menu-column menu-rounded menu-sub-indention px-3" id="kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false">
                 @foreach ($navigation as $section)
                     @if (filled($section['items']))
                         <div class="menu-item pt-5">
@@ -49,10 +58,20 @@
                         </div>
 
                         @foreach ($section['items'] as $item)
+                            @php
+                                $isActive = request()->routeIs($item['pattern']);
+                            @endphp
                             <div class="menu-item">
-                                <a class="menu-link {{ request()->routeIs($item['pattern']) ? 'active' : '' }}" href="{{ route($item['route']) }}">
+                                <a class="menu-link {{ $isActive ? 'active here show' : '' }}" href="{{ route($item['route']) }}">
                                     <span class="menu-icon">
-                                        <i class="ki-outline {{ $item['icon'] }} fs-2"></i>
+                                        <i class="ki-duotone {{ $item['icon'] }} fs-2">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                            <span class="path3"></span>
+                                            <span class="path4"></span>
+                                            <span class="path5"></span>
+                                            <span class="path6"></span>
+                                        </i>
                                     </span>
                                     <span class="menu-title">{{ $item['label'] }}</span>
                                 </a>
@@ -68,9 +87,27 @@
                 </div>
 
                 <div class="menu-item">
+                    <a class="menu-link" href="{{ route('home') }}">
+                        <span class="menu-icon">
+                            <i class="ki-duotone ki-shop fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                                <span class="path3"></span>
+                                <span class="path4"></span>
+                            </i>
+                        </span>
+                        <span class="menu-title">Storefront</span>
+                    </a>
+                </div>
+
+                <div class="menu-item">
                     <button class="menu-link border-0 bg-transparent w-100 text-start" data-bs-toggle="modal" data-bs-target="#internalFoundationModal" type="button">
                         <span class="menu-icon">
-                            <i class="ki-outline ki-information-5 fs-2"></i>
+                            <i class="ki-duotone ki-information-5 fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                                <span class="path3"></span>
+                            </i>
                         </span>
                         <span class="menu-title">UI Foundation</span>
                     </button>
@@ -81,7 +118,10 @@
                         @csrf
                         <button class="menu-link border-0 bg-transparent w-100 text-start" type="submit">
                             <span class="menu-icon">
-                                <i class="ki-outline ki-exit-right fs-2"></i>
+                                <i class="ki-duotone ki-exit-right fs-2">
+                                    <span class="path1"></span>
+                                    <span class="path2"></span>
+                                </i>
                             </span>
                             <span class="menu-title">Sign Out</span>
                         </button>

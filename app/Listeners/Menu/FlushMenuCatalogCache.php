@@ -2,11 +2,13 @@
 
 namespace App\Listeners\Menu;
 
-use App\Services\Menu\MenuCatalogService;
+use App\Services\Menu\MenuCatalogServiceInterface;
 
 class FlushMenuCatalogCache
 {
-    public function __construct(protected MenuCatalogService $menuCatalogService) {}
+    public function __construct(
+        protected MenuCatalogServiceInterface $menuCatalogService,
+    ) {}
 
     public function handle(object $event): void
     {
