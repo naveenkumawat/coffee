@@ -8,6 +8,7 @@ use App\Http\Controllers\Administrator\InventoryController;
 use App\Http\Controllers\Administrator\InventoryRefillRequestController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
+use App\Http\Controllers\Administrator\OrderController;
 use App\Http\Controllers\Administrator\ProductCategoryController;
 use App\Http\Controllers\Administrator\ProductController;
 use App\Http\Controllers\Administrator\ProductFlavourController;
@@ -46,6 +47,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('menu/items', MenuItemController::class)
         ->parameters(['items' => 'menu_item'])
         ->names('menu.items');
+
+    Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');
+    Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
 
     Route::resource('ingredients/categories', IngredientCategoryController::class)
         ->parameters(['categories' => 'ingredient_category'])

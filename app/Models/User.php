@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\UserRole;
 use App\Models\Concerns\HasRoles;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\CustomerResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -38,5 +39,16 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        if ($this->hasRole(UserRole::Customer)) {
+            $this->notify(new CustomerResetPasswordNotification($token));
+
+            return;
+        }
+
+        parent::sendPasswordResetNotification($token);
     }
 }

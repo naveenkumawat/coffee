@@ -21,10 +21,12 @@ Architecture source: [architecture.md](./architecture.md)
   - Product/menu domain coverage
   - Recipe and variant costing
   - Customer storefront
+  - Customer authentication and account
+  - Order workflow
   - Security and role segmentation
   - Administrator user management
 - Not started:
-  - Order, reporting, and customer account modules
+  - Reporting modules
 
 ## Phase 0 - Platform Foundation
 Status: Partial
@@ -49,7 +51,7 @@ Status: Partial
 - [x] Barista role modeled in code
 - [x] Customer role modeled in code
 - [x] Role-aware access checks exist for Administrator and Barista panels
-- [ ] Customer-facing authenticated area implemented
+- [x] Customer-facing authenticated area implemented
 - [ ] Fine-grained permission management implemented
 
 ### Authentication
@@ -58,10 +60,10 @@ Status: Partial
 - [x] Barista login implemented
 - [x] Wrong-role panel login blocked
 - [x] Guest redirect behavior implemented for protected internal routes
-- [ ] Customer registration implemented
-- [ ] Customer login/logout implemented
-- [ ] Forgot password and reset flow implemented
-- [ ] Customer profile management implemented
+- [x] Customer registration implemented
+- [x] Customer login/logout implemented
+- [x] Forgot password and reset flow implemented
+- [x] Customer profile management implemented
 
 ### User Management
 
@@ -234,7 +236,7 @@ Status: Partial
 - [ ] FAQ page implemented
 - [ ] Terms and Conditions page implemented
 - [ ] Privacy Policy page implemented
-- [ ] Customer account area implemented
+- [x] Customer account area implemented
 
 ### Homepage
 
@@ -269,20 +271,20 @@ Status: Partial
 - [ ] Payment instruction presentation implemented
 
 ## Phase 8 - Orders and Payment Workflow
-Status: Pending
+Status: Partial
 
-- [ ] Order model and migration implemented
-- [ ] Order item model and migration implemented
-- [ ] Unique order number generation implemented
-- [ ] Pending Payment initial state implemented
-- [ ] Manual payment confirmation workflow implemented
-- [ ] Order status workflow implemented
-- [ ] Prepared-by / assigned barista tracking implemented
-- [ ] Preparation timestamps implemented
-- [ ] Customer notes stored on orders implemented
-- [ ] Order history implemented
-- [ ] Order detail page implemented
-- [ ] Customer order tracking implemented
+- [x] Order model and migration implemented
+- [x] Order item model and migration implemented
+- [x] Unique order number generation implemented
+- [x] Pending Payment initial state implemented
+- [x] Manual payment confirmation workflow implemented
+- [x] Order status workflow implemented
+- [x] Prepared-by / assigned barista tracking implemented
+- [x] Preparation timestamps implemented
+- [x] Customer notes stored on orders implemented
+- [x] Order history implemented
+- [x] Order detail page implemented
+- [x] Customer order tracking implemented
 
 ## Phase 9 - Inventory-to-Order Automation
 Status: Pending

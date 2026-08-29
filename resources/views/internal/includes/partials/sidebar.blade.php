@@ -28,6 +28,12 @@
                 ] : [],
             ],
             [
+                'heading' => 'Orders',
+                'items' => $user?->canViewOrders() ? [
+                    ['label' => 'Orders', 'route' => 'administrator.orders.index', 'pattern' => 'administrator.orders.*', 'icon' => 'ki-delivery-2'],
+                ] : [],
+            ],
+            [
                 'heading' => 'Inventory',
                 'items' => $user?->canViewInventory() ? [
                     ['label' => 'Overview', 'route' => 'administrator.inventory.index', 'pattern' => 'administrator.inventory.index', 'icon' => 'ki-abstract-41'],
@@ -47,6 +53,7 @@
                 'heading' => 'Station',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-abstract-26'],
+                    ['label' => 'Orders', 'route' => 'barista.orders.index', 'pattern' => 'barista.orders.*', 'icon' => 'ki-delivery-2'],
                     ['label' => 'Products', 'route' => 'barista.products.index', 'pattern' => 'barista.products.*', 'icon' => 'ki-basket'],
                     ['label' => 'Recipes', 'route' => 'barista.recipes.index', 'pattern' => 'barista.recipes.*', 'icon' => 'ki-book'],
                     ['label' => 'Inventory', 'route' => 'barista.inventory.index', 'pattern' => 'barista.inventory.*', 'icon' => 'ki-abstract-41'],

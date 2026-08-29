@@ -16,6 +16,8 @@ use App\Repositories\Menu\MenuCategoryRepository;
 use App\Repositories\Menu\MenuCategoryRepositoryInterface;
 use App\Repositories\Menu\MenuItemRepository;
 use App\Repositories\Menu\MenuItemRepositoryInterface;
+use App\Repositories\Order\OrderRepository;
+use App\Repositories\Order\OrderRepositoryInterface;
 use App\Repositories\Product\ProductCategoryRepository;
 use App\Repositories\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Product\ProductFlavourRepository;
@@ -39,6 +41,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(InventoryRepositoryInterface::class, InventoryRepository::class);
         $this->app->bind(MenuCategoryRepositoryInterface::class, MenuCategoryRepository::class);
         $this->app->bind(MenuItemRepositoryInterface::class, MenuItemRepository::class);
+        $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(ProductCategoryRepositoryInterface::class, ProductCategoryRepository::class);
         $this->app->bind(ProductFlavourRepositoryInterface::class, ProductFlavourRepository::class);
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);

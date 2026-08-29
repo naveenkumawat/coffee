@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(function (Request $request): string {
             $routeName = (string) ($request->route()?->getName() ?? '');
 
+            if (str_starts_with($routeName, 'customer.')) {
+                return route('customer.login');
+            }
+
             return str_starts_with($routeName, 'barista.')
                 ? route('barista.login')
                 : route('administrator.login');

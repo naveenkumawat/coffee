@@ -16,6 +16,8 @@ use App\Parsers\Menu\MenuCategoryParser;
 use App\Parsers\Menu\MenuCategoryParserInterface;
 use App\Parsers\Menu\MenuItemParser;
 use App\Parsers\Menu\MenuItemParserInterface;
+use App\Parsers\Order\OrderParser;
+use App\Parsers\Order\OrderParserInterface;
 use App\Parsers\Product\ProductCategoryParser;
 use App\Parsers\Product\ProductCategoryParserInterface;
 use App\Parsers\Product\ProductFlavourParser;
@@ -39,6 +41,7 @@ class ParserServiceProvider extends ServiceProvider
         $this->app->bind(InventoryParserInterface::class, InventoryParser::class);
         $this->app->bind(MenuCategoryParserInterface::class, MenuCategoryParser::class);
         $this->app->bind(MenuItemParserInterface::class, MenuItemParser::class);
+        $this->app->bind(OrderParserInterface::class, OrderParser::class);
         $this->app->bind(ProductCategoryParserInterface::class, ProductCategoryParser::class);
         $this->app->bind(ProductFlavourParserInterface::class, ProductFlavourParser::class);
         $this->app->bind(ProductParserInterface::class, ProductParser::class);

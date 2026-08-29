@@ -9,6 +9,7 @@ use App\Models\InventoryRefillRequest;
 use App\Models\InventoryTransaction;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
@@ -21,6 +22,7 @@ use App\Policies\InventoryRefillRequestPolicy;
 use App\Policies\InventoryTransactionPolicy;
 use App\Policies\MenuCategoryPolicy;
 use App\Policies\MenuItemPolicy;
+use App\Policies\OrderPolicy;
 use App\Policies\ProductCategoryPolicy;
 use App\Policies\ProductFlavourPolicy;
 use App\Policies\ProductPolicy;
@@ -39,6 +41,7 @@ class AuthServiceProvider extends ServiceProvider
         InventoryTransaction::class => InventoryTransactionPolicy::class,
         MenuCategory::class => MenuCategoryPolicy::class,
         MenuItem::class => MenuItemPolicy::class,
+        Order::class => OrderPolicy::class,
         Product::class => ProductPolicy::class,
         ProductCategory::class => ProductCategoryPolicy::class,
         ProductFlavour::class => ProductFlavourPolicy::class,

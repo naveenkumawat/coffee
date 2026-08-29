@@ -70,6 +70,27 @@ trait HasRoles
         return $role->canViewInventory();
     }
 
+    public function canManageOrders(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canManageOrders();
+    }
+
+    public function canViewOrders(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canViewOrders();
+    }
+
+    public function canOperateOrders(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canOperateOrders();
+    }
+
     public function canAccessInternalPanel(string $panel): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);

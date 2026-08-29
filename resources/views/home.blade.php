@@ -16,7 +16,22 @@
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-4">
-                    <a href="{{ route('administrator.login') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                    @guest
+                        <a href="{{ route('customer.register') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                            Create customer account
+                        </a>
+                        <a href="{{ route('customer.login') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                            Customer sign in
+                        </a>
+                    @else
+                        <a href="{{ route('customer.account.show') }}" class="rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
+                            Open my account
+                        </a>
+                        <a href="{{ route('customer.orders.index') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
+                            View my orders
+                        </a>
+                    @endguest
+                    <a href="{{ route('administrator.login') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
                         Open administrator panel
                     </a>
                     <a href="{{ route('barista.login') }}" class="rounded-full border border-white/15 px-6 py-3 font-medium text-white transition hover:border-white/40 hover:bg-white/5">
