@@ -8,6 +8,10 @@ use App\Http\Controllers\Administrator\InventoryController;
 use App\Http\Controllers\Administrator\InventoryRefillRequestController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
+use App\Http\Controllers\Administrator\ProductCategoryController;
+use App\Http\Controllers\Administrator\ProductController;
+use App\Http\Controllers\Administrator\ProductFlavourController;
+use App\Http\Controllers\Administrator\RecipeController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +58,22 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('ingredients', IngredientController::class)
         ->parameters(['ingredients' => 'ingredient'])
         ->names('ingredients');
+
+    Route::resource('products/categories', ProductCategoryController::class)
+        ->parameters(['categories' => 'product_category'])
+        ->names('products.categories');
+
+    Route::resource('products/flavours', ProductFlavourController::class)
+        ->parameters(['flavours' => 'product_flavour'])
+        ->names('products.flavours');
+
+    Route::resource('products', ProductController::class)
+        ->parameters(['products' => 'product'])
+        ->names('products');
+
+    Route::resource('recipes', RecipeController::class)
+        ->parameters(['recipes' => 'recipe'])
+        ->names('recipes');
 
     Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::get('inventory/history', [InventoryController::class, 'history'])->name('inventory.history');

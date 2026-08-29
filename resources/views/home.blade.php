@@ -30,12 +30,12 @@
 
             <aside class="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20 backdrop-blur">
                 <div class="grid gap-4 sm:grid-cols-2">
-                    @foreach ($featuredItems as $item)
+                    @foreach ($featuredProducts as $product)
                         <article class="rounded-3xl bg-black/25 p-5">
-                            <p class="text-xs uppercase tracking-[0.3em] text-amber-200">{{ $item->category?->name }}</p>
-                            <h2 class="mt-3 text-xl font-semibold text-white">{{ $item->name }}</h2>
-                            <p class="mt-2 text-sm text-stone-300">{{ $item->description }}</p>
-                            <p class="mt-4 text-lg font-semibold text-emerald-300">${{ number_format((float) $item->price, 2) }}</p>
+                            <p class="text-xs uppercase tracking-[0.3em] text-amber-200">{{ $product->category?->name }}</p>
+                            <h2 class="mt-3 text-xl font-semibold text-white">{{ $product->name }}</h2>
+                            <p class="mt-2 text-sm text-stone-300">{{ $product->short_description ?: $product->description }}</p>
+                            <p class="mt-4 text-lg font-semibold text-emerald-300">${{ number_format((float) ($product->defaultVariant?->price ?? 0), 2) }}</p>
                         </article>
                     @endforeach
                 </div>
@@ -62,17 +62,17 @@
                                 <p class="mt-2 max-w-xl text-sm leading-7 text-stone-300">{{ $category->description }}</p>
                             </div>
                             <span class="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/60">
-                                {{ $category->menuItems->count() }} items
+                                {{ $category->products->count() }} products
                             </span>
                         </div>
                         <div class="mt-6 space-y-4">
-                            @foreach ($category->menuItems as $item)
+                            @foreach ($category->products as $product)
                                 <div class="flex items-start justify-between gap-4 border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
                                     <div>
-                                        <h4 class="text-lg font-medium text-white">{{ $item->name }}</h4>
-                                        <p class="mt-1 text-sm text-stone-400">{{ $item->description }}</p>
+                                        <h4 class="text-lg font-medium text-white">{{ $product->name }}</h4>
+                                        <p class="mt-1 text-sm text-stone-400">{{ $product->short_description ?: $product->description }}</p>
                                     </div>
-                                    <span class="text-base font-semibold text-emerald-300">${{ number_format((float) $item->price, 2) }}</span>
+                                    <span class="text-base font-semibold text-emerald-300">${{ number_format((float) ($product->defaultVariant?->price ?? 0), 2) }}</span>
                                 </div>
                             @endforeach
                         </div>

@@ -3,24 +3,28 @@
 namespace App\Http\Controllers\Administrator;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\Menu\MenuCategoryRepositoryInterface;
-use App\Repositories\Menu\MenuItemRepositoryInterface;
+use App\Repositories\Product\ProductCategoryRepositoryInterface;
+use App\Repositories\Product\ProductRepositoryInterface;
+use App\Transfers\Product\ProductCategoryFilterTransferInterface;
+use App\Transfers\Product\ProductFilterTransferInterface;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
 {
     public function __invoke(
-        MenuCategoryRepositoryInterface $categoryRepository,
-        MenuItemRepositoryInterface $itemRepository,
+        ProductCategoryRepositoryInterface $categoryRepository,
+        ProductRepositoryInterface $productRepository,
+        ProductCategoryFilterTransferInterface $categoryFilters,
+        ProductFilterTransferInterface $productFilters,
     ): View {
-        $categoryPage = $categoryRepository->paginateForAdmin(5);
-        $itemPage = $itemRepository->paginateForAdmin(5);
+        $categoryPage = $categoryRepository->paginateForAdmin($categoryFilters, 5);
+        $productPage = $productRepository->paginateForAdmin($productFilters, 5);
 
         return view('administrator.dashboard.index', [
             'categoryCount' => $categoryPage->total(),
-            'itemCount' => $itemPage->total(),
+            'itemCount' => $productPage->total(),
             'latestCategories' => $categoryPage->items(),
-            'latestItems' => $itemPage->items(),
+            'latestItems' => $productPage->items(),
         ]);
     }
 }

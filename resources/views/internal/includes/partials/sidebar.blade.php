@@ -11,10 +11,12 @@
                 ],
             ],
             [
-                'heading' => 'Catalog',
-                'items' => $user?->canManageMenuCatalog() ? [
-                    ['label' => 'Menu Categories', 'route' => 'administrator.menu.categories.index', 'pattern' => 'administrator.menu.categories.*', 'icon' => 'ki-category'],
-                    ['label' => 'Menu Items', 'route' => 'administrator.menu.items.index', 'pattern' => 'administrator.menu.items.*', 'icon' => 'ki-basket'],
+                'heading' => 'Products',
+                'items' => $user?->canManageProducts() ? [
+                    ['label' => 'Categories', 'route' => 'administrator.products.categories.index', 'pattern' => 'administrator.products.categories.*', 'icon' => 'ki-category'],
+                    ['label' => 'Flavours', 'route' => 'administrator.products.flavours.index', 'pattern' => 'administrator.products.flavours.*', 'icon' => 'ki-cup'],
+                    ['label' => 'Products', 'route' => 'administrator.products.index', 'pattern' => ['administrator.products.index', 'administrator.products.create', 'administrator.products.store', 'administrator.products.show', 'administrator.products.edit', 'administrator.products.update'], 'icon' => 'ki-basket'],
+                    ['label' => 'Recipes', 'route' => 'administrator.recipes.index', 'pattern' => 'administrator.recipes.*', 'icon' => 'ki-book'],
                 ] : [],
             ],
             [
@@ -45,6 +47,8 @@
                 'heading' => 'Station',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-abstract-26'],
+                    ['label' => 'Products', 'route' => 'barista.products.index', 'pattern' => 'barista.products.*', 'icon' => 'ki-basket'],
+                    ['label' => 'Recipes', 'route' => 'barista.recipes.index', 'pattern' => 'barista.recipes.*', 'icon' => 'ki-book'],
                     ['label' => 'Inventory', 'route' => 'barista.inventory.index', 'pattern' => 'barista.inventory.*', 'icon' => 'ki-abstract-41'],
                     ['label' => 'Refill Requests', 'route' => 'barista.refill-requests.index', 'pattern' => 'barista.refill-requests.*', 'icon' => 'ki-delivery-3'],
                 ],
@@ -83,7 +87,9 @@
 
                         @foreach ($section['items'] as $item)
                             @php
-                                $isActive = request()->routeIs($item['pattern']);
+                                $isActive = collect((array) $item['pattern'])->contains(
+                                    fn (string $pattern): bool => request()->routeIs($pattern),
+                                );
                             @endphp
                             <div class="menu-item">
                                 <a class="menu-link {{ $isActive ? 'active here show' : '' }}" href="{{ route($item['route']) }}">

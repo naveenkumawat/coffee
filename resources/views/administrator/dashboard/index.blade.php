@@ -11,17 +11,17 @@
 
 @section('toolbar-actions')
     <x-internal.button-group :items="[
-        ['label' => 'Add Menu Item', 'url' => route('administrator.menu.items.create'), 'variant' => 'success', 'icon' => 'ki-plus'],
+        ['label' => 'Add Product', 'url' => route('administrator.products.create'), 'variant' => 'success', 'icon' => 'ki-plus'],
     ]" />
 @endsection
 
 @section('content')
     <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
         <div class="col-md-4">
-            <x-internal.stat-card label="Menu Categories" :value="$categoryCount" icon="ki-category" color="warning" description="Shared catalog groups available for the storefront and future internal ordering flows." />
+            <x-internal.stat-card label="Product Categories" :value="$categoryCount" icon="ki-category" color="warning" description="Shared product groups available for the storefront and future recipe-driven catalog flows." />
         </div>
         <div class="col-md-4">
-            <x-internal.stat-card label="Menu Items" :value="$itemCount" icon="ki-basket" color="primary" description="Maintain the product catalog from the administrator side without affecting the public theme layer." />
+            <x-internal.stat-card label="Products" :value="$itemCount" icon="ki-basket" color="primary" description="Manage catalog records, flavours, and sellable variants without affecting the public theme layer." />
         </div>
         <div class="col-md-4">
             <x-internal.stat-card label="Theme Layer" value="1" icon="ki-layer" color="success" description="Administrator and Barista share one internal asset and component foundation." />
@@ -33,7 +33,7 @@
             <div class="card card-flush h-xl-100 internal-card">
                 <div class="card-header pt-7">
                     <div class="card-title">
-                        <h3 class="fw-bold text-gray-900">Latest catalog activity</h3>
+                        <h3 class="fw-bold text-gray-900">Latest product activity</h3>
                     </div>
                 </div>
                 <div class="card-body pt-5">
@@ -52,10 +52,10 @@
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <span class="text-gray-900 fw-bold">{{ $item->name }}</span>
-                                                <span class="text-muted">{{ $item->category?->name }} • ${{ number_format((float) $item->price, 2) }}</span>
+                                                <span class="text-muted">{{ $item->category?->name }} • ${{ number_format((float) ($item->defaultVariant?->price ?? 0), 2) }}</span>
                                             </div>
                                         </td>
-                                        <td>Menu item</td>
+                                        <td>Product</td>
                                         <td>
                                             <span class="badge {{ $item->is_available ? 'badge-light-success' : 'badge-light-danger' }}">
                                                 {{ $item->is_available ? 'Available' : 'Paused' }}
@@ -68,7 +68,7 @@
                                             <td>
                                                 <div class="d-flex flex-column">
                                                     <span class="text-gray-900 fw-bold">{{ $category->name }}</span>
-                                                    <span class="text-muted">{{ $category->menu_items_count }} linked menu items</span>
+                                                    <span class="text-muted">{{ $category->products_count }} linked products</span>
                                                 </div>
                                             </td>
                                             <td>Category</td>

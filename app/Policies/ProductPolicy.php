@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Product;
+use App\Models\User;
+
+class ProductPolicy
+{
+    public function viewAny(User $user): bool
+    {
+        return $user->canViewProducts();
+    }
+
+    public function view(User $user, Product $product): bool
+    {
+        if (! $user->canViewProducts()) {
+            return false;
+        }
+
+        if ($user->canManageProducts()) {
+            return true;
+        }
+
+        return $product->is_active;
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->canManageProducts();
+    }
+
+    public function update(User $user, Product $product): bool
+    {
+        return $user->canManageProducts();
+    }
+
+    public function delete(User $user, Product $product): bool
+    {
+        return $user->canManageProducts();
+    }
+}

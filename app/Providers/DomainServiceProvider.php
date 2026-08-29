@@ -20,6 +20,18 @@ use App\Services\Menu\MenuCategoryService;
 use App\Services\Menu\MenuCategoryServiceInterface;
 use App\Services\Menu\MenuItemService;
 use App\Services\Menu\MenuItemServiceInterface;
+use App\Services\Product\ProductCatalogService;
+use App\Services\Product\ProductCatalogServiceInterface;
+use App\Services\Product\ProductCategoryService;
+use App\Services\Product\ProductCategoryServiceInterface;
+use App\Services\Product\ProductFlavourService;
+use App\Services\Product\ProductFlavourServiceInterface;
+use App\Services\Product\ProductService;
+use App\Services\Product\ProductServiceInterface;
+use App\Services\Recipe\RecipeCostingService;
+use App\Services\Recipe\RecipeCostingServiceInterface;
+use App\Services\Recipe\RecipeService;
+use App\Services\Recipe\RecipeServiceInterface;
 use App\Services\User\UserService;
 use App\Services\User\UserServiceInterface;
 use Illuminate\Support\ServiceProvider;
@@ -37,6 +49,12 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(MenuCatalogServiceInterface::class, MenuCatalogService::class);
         $this->app->bind(MenuCategoryServiceInterface::class, MenuCategoryService::class);
         $this->app->bind(MenuItemServiceInterface::class, MenuItemService::class);
+        $this->app->bind(ProductCatalogServiceInterface::class, ProductCatalogService::class);
+        $this->app->bind(ProductCategoryServiceInterface::class, ProductCategoryService::class);
+        $this->app->bind(ProductFlavourServiceInterface::class, ProductFlavourService::class);
+        $this->app->bind(ProductServiceInterface::class, ProductService::class);
+        $this->app->bind(RecipeCostingServiceInterface::class, RecipeCostingService::class);
+        $this->app->bind(RecipeServiceInterface::class, RecipeService::class);
         $this->app->bind(UserServiceInterface::class, UserService::class);
     }
 }

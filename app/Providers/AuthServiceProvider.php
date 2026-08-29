@@ -9,6 +9,10 @@ use App\Models\InventoryRefillRequest;
 use App\Models\InventoryTransaction;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductFlavour;
+use App\Models\Recipe;
 use App\Models\User;
 use App\Policies\IngredientBrandPolicy;
 use App\Policies\IngredientCategoryPolicy;
@@ -17,6 +21,10 @@ use App\Policies\InventoryRefillRequestPolicy;
 use App\Policies\InventoryTransactionPolicy;
 use App\Policies\MenuCategoryPolicy;
 use App\Policies\MenuItemPolicy;
+use App\Policies\ProductCategoryPolicy;
+use App\Policies\ProductFlavourPolicy;
+use App\Policies\ProductPolicy;
+use App\Policies\RecipePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -31,6 +39,10 @@ class AuthServiceProvider extends ServiceProvider
         InventoryTransaction::class => InventoryTransactionPolicy::class,
         MenuCategory::class => MenuCategoryPolicy::class,
         MenuItem::class => MenuItemPolicy::class,
+        Product::class => ProductPolicy::class,
+        ProductCategory::class => ProductCategoryPolicy::class,
+        ProductFlavour::class => ProductFlavourPolicy::class,
+        Recipe::class => RecipePolicy::class,
         User::class => UserPolicy::class,
     ];
 

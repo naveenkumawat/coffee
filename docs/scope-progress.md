@@ -19,11 +19,12 @@ Architecture source: [architecture.md](./architecture.md)
   - Barista dashboard
   - Ingredient master data
   - Product/menu domain coverage
+  - Recipe and variant costing
   - Customer storefront
   - Security and role segmentation
   - Administrator user management
 - Not started:
-  - Inventory, recipe, order, reporting, and customer account modules
+  - Order, reporting, and customer account modules
 
 ## Phase 0 - Platform Foundation
 Status: Partial
@@ -153,64 +154,66 @@ Status: Partial
 
 ### Product Categories
 
-- [x] Basic category concept exists through current menu categories
-- [x] Category ordering and active flag exist
-- [ ] Category image support implemented
-- [ ] Category scope verified against final product taxonomy
+- [x] Product category model and migration implemented
+- [x] Administrator CRUD implemented
+- [x] Category ordering and active flag implemented
+- [x] Category image path foundation implemented
+- [x] Category to products relationship implemented
+- [x] Safe referenced archive handling implemented
 
 ### Flavours
 
-- [ ] Flavour model and migration implemented
-- [ ] Flavour CRUD implemented
-- [ ] Flavour-to-category applicability implemented
+- [x] Flavour model and migration implemented
+- [x] Flavour CRUD implemented
+- [x] Flavour-to-category applicability implemented
 
 ### Products
 
-- [x] Basic product concept exists through current menu items
-- [x] Product availability flag exists
-- [x] Featured flag exists
-- [x] Product/category relationship exists
-- [ ] Product code or SKU implemented
-- [ ] Detailed description strategy completed
-- [ ] Product image support implemented
-- [ ] Serving size implemented
-- [ ] Preparation time implemented
+- [x] Product model and migration implemented
+- [x] Product availability flag implemented
+- [x] Featured flag implemented
+- [x] Product/category relationship implemented
+- [x] Product code or SKU implemented
+- [x] Detailed description strategy implemented
+- [x] Product image path foundation implemented
+- [x] Serving size implemented through variants
+- [x] Preparation time implemented
 - [ ] New item / bestseller flags implemented
 - [ ] Vegetarian/non-vegetarian flags implemented
 - [ ] Customizable options implemented
-- [ ] Product list audited against final scope naming
+- [x] Product seed dataset and final naming baseline implemented
 
 ## Phase 5 - Variants, Recipes, and Costing
-Status: Pending
+Status: Partial
 
 ### Product Sizes / Variants
 
-- [ ] Product size model and migration implemented
-- [ ] Per-size selling price implemented
-- [ ] Per-size recipe support implemented
-- [ ] Per-size production cost support implemented
-- [ ] Per-size margin support implemented
+- [x] Product size model and migration implemented
+- [x] Per-size selling price implemented
+- [x] Per-size recipe support implemented
+- [x] Per-size production cost support implemented
+- [x] Per-size margin support implemented
 
 ### Recipe Management
 
-- [ ] Product recipe model and migration implemented
-- [ ] Product recipe item model and migration implemented
-- [ ] Internal preparation instructions implemented
-- [ ] Barista recipe access implemented
-- [ ] Customer recipe secrecy enforced in public views and APIs
+- [x] Product recipe model and migration implemented
+- [x] Product recipe item model and migration implemented
+- [x] Internal preparation instructions implemented
+- [x] Barista recipe access implemented
+- [x] Customer recipe secrecy enforced in public views and APIs
 
 ### Customer-Visible Ingredients vs Internal Recipe
 
 - [ ] Customer-visible ingredient summary implemented
 - [ ] Internal recipe kept separate from public presentation
-- [ ] Admin/barista-only recipe exposure enforced
+- [x] Admin/barista-only recipe exposure enforced
 
 ### Costing and Margin
 
-- [ ] Automatic production cost calculation implemented
+- [x] Automatic production cost calculation implemented
 - [ ] Packaging and operational cost support implemented
-- [ ] Selling margin calculation implemented
-- [ ] Administrator-only profitability visibility implemented
+- [x] Selling margin calculation implemented
+- [x] Administrator-only profitability visibility implemented
 
 ## Phase 6 - Barista Product Operations
 Status: Pending

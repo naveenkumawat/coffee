@@ -16,6 +16,14 @@ use App\Parsers\Menu\MenuCategoryParser;
 use App\Parsers\Menu\MenuCategoryParserInterface;
 use App\Parsers\Menu\MenuItemParser;
 use App\Parsers\Menu\MenuItemParserInterface;
+use App\Parsers\Product\ProductCategoryParser;
+use App\Parsers\Product\ProductCategoryParserInterface;
+use App\Parsers\Product\ProductFlavourParser;
+use App\Parsers\Product\ProductFlavourParserInterface;
+use App\Parsers\Product\ProductParser;
+use App\Parsers\Product\ProductParserInterface;
+use App\Parsers\Recipe\RecipeParser;
+use App\Parsers\Recipe\RecipeParserInterface;
 use App\Parsers\User\UserParser;
 use App\Parsers\User\UserParserInterface;
 use Illuminate\Support\ServiceProvider;
@@ -31,6 +39,10 @@ class ParserServiceProvider extends ServiceProvider
         $this->app->bind(InventoryParserInterface::class, InventoryParser::class);
         $this->app->bind(MenuCategoryParserInterface::class, MenuCategoryParser::class);
         $this->app->bind(MenuItemParserInterface::class, MenuItemParser::class);
+        $this->app->bind(ProductCategoryParserInterface::class, ProductCategoryParser::class);
+        $this->app->bind(ProductFlavourParserInterface::class, ProductFlavourParser::class);
+        $this->app->bind(ProductParserInterface::class, ProductParser::class);
+        $this->app->bind(RecipeParserInterface::class, RecipeParser::class);
         $this->app->bind(UserParserInterface::class, UserParser::class);
     }
 }

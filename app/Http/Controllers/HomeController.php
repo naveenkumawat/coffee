@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Menu\MenuCatalogServiceInterface;
+use App\Services\Product\ProductCatalogServiceInterface;
 use Illuminate\Contracts\View\View;
 
 class HomeController extends Controller
 {
-    public function __invoke(MenuCatalogServiceInterface $menuCatalogService): View
+    public function __invoke(ProductCatalogServiceInterface $productCatalogService): View
     {
         return view('home', [
-            'featuredItems' => $menuCatalogService->featuredItems(),
-            'categories' => $menuCatalogService->publicCatalog(),
+            'featuredProducts' => $productCatalogService->featuredProducts(),
+            'categories' => $productCatalogService->publicCatalog(),
         ]);
     }
 }

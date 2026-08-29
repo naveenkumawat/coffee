@@ -71,6 +71,11 @@ class Ingredient extends AbstractModel
         return $this->hasMany(InventoryTransaction::class);
     }
 
+    public function recipeLines(): HasMany
+    {
+        return $this->hasMany(RecipeLine::class);
+    }
+
     public function latestInventoryTransaction(): HasOne
     {
         return $this->hasOne(InventoryTransaction::class)->latestOfMany();

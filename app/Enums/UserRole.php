@@ -61,6 +61,22 @@ enum UserRole: string
         };
     }
 
+    public function canManageProducts(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            self::Barista, self::Cashier, self::Customer => false,
+        };
+    }
+
+    public function canViewProducts(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager, self::Barista => true,
+            self::Cashier, self::Customer => false,
+        };
+    }
+
     public function canViewInventory(): bool
     {
         return match ($this) {
