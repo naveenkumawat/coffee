@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\IngredientUnit;
+use App\Enums\InventoryStockStatus;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ingredient extends AbstractModel
@@ -61,5 +64,33 @@ class Ingredient extends AbstractModel
     public function brand(): BelongsTo
     {
         return $this->belongsTo(IngredientBrand::class, 'ingredient_brand_id');
+    }
+
+    public function inventoryTransactions(): HasMany
+    {
+        return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function latestInventoryTransaction(): HasOne
+    {
+        return $this->hasOne(InventoryTransaction::class)->latestOfMany();
+    }
+
+    public function stockStatus(): InventoryStockStatus
+    {
+        if (bccomp((string) $this->current_stock, '0', 3) <= 0) {
+            return InventoryStockStatus::OutOfStock;
+        }
+
+        $warningThreshold = bccomp((string) $this->reorder_level, '0', 3) === 1
+            ? (string) $this->reorder_level
+            : (string) $this->minimum_stock;
+
+        if (bccomp($warningThreshold, '0', 3) === 1
+            && bccomp((string) $this->current_stock, $warningThreshold, 3) <= 0) {
+            return InventoryStockStatus::LowStock;
+        }
+
+        return InventoryStockStatus::InStock;
     }
 }

@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\IngredientUnit;
+use App\Enums\InventoryTransactionType;
 use App\Models\Ingredient;
 use App\Models\IngredientBrand;
 use App\Models\IngredientCategory;
+use App\Models\InventoryTransaction;
 use App\Models\User;
 use App\Parsers\Ingredient\IngredientBrandParser;
 use App\Parsers\Ingredient\IngredientBrandParserInterface;
@@ -184,7 +186,6 @@ class AdministratorIngredientManagementTest extends TestCase
             'measurement_unit' => IngredientUnit::Liter->value,
             'purchase_quantity' => '1.000',
             'purchase_cost' => '70.00',
-            'current_stock' => '12.000',
             'minimum_stock' => '4.000',
             'reorder_level' => '6.000',
             'supplier_name' => 'Fresh Dairy',
@@ -202,10 +203,14 @@ class AdministratorIngredientManagementTest extends TestCase
         $this->assertSame(IngredientUnit::Milliliter, $ingredient->base_measurement_unit);
         $this->assertSame('1000.000', $ingredient->purchase_quantity_base);
         $this->assertSame('0.0700', $ingredient->cost_per_unit);
-        $this->assertSame('12000.000', $ingredient->current_stock);
+        $this->assertSame('0.000', $ingredient->current_stock);
+        $this->assertDatabaseMissing('inventory_transactions', [
+            'ingredient_id' => $ingredient->id,
+            'transaction_type' => InventoryTransactionType::OpeningBalance->value,
+        ]);
     }
 
-    public function test_manager_can_update_ingredient_and_preserve_decimal_precision(): void
+    public function test_manager_can_update_ingredient_and_preserve_decimal_precision_without_mutating_stock(): void
     {
         $manager = User::factory()->manager()->create();
         $category = IngredientCategory::factory()->create();
@@ -215,6 +220,7 @@ class AdministratorIngredientManagementTest extends TestCase
             'ingredient_brand_id' => $brand->id,
             'measurement_unit' => IngredientUnit::Gram,
             'base_measurement_unit' => IngredientUnit::Gram,
+            'current_stock' => '2500.000',
         ]);
 
         $this->actingAs($manager, 'admin')->put(route('administrator.ingredients.update', $ingredient), [
@@ -226,7 +232,6 @@ class AdministratorIngredientManagementTest extends TestCase
             'measurement_unit' => IngredientUnit::Kilogram->value,
             'purchase_quantity' => '1.250',
             'purchase_cost' => '625.50',
-            'current_stock' => '2.500',
             'minimum_stock' => '0.750',
             'reorder_level' => '1.250',
             'supplier_name' => 'Blue Tokai Wholesale',
@@ -246,6 +251,44 @@ class AdministratorIngredientManagementTest extends TestCase
         $this->assertFalse($ingredient->is_active);
     }
 
+    public function test_ingredient_master_form_does_not_render_or_apply_direct_stock_inputs(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $category = IngredientCategory::factory()->create();
+        $ingredient = Ingredient::factory()->create([
+            'ingredient_category_id' => $category->id,
+            'current_stock' => '80.000',
+        ]);
+
+        $this->actingAs($manager, 'admin')
+            ->get(route('administrator.ingredients.edit', $ingredient))
+            ->assertOk()
+            ->assertDontSee('name="current_stock"', false)
+            ->assertSee('Inventory module through audited stock movements');
+
+        $this->actingAs($manager, 'admin')->put(route('administrator.ingredients.update', $ingredient), [
+            'ingredient_category_id' => $category->id,
+            'ingredient_brand_id' => $ingredient->ingredient_brand_id,
+            'name' => 'Updated Ingredient',
+            'slug' => 'updated-ingredient',
+            'description' => 'Updated without direct stock edits.',
+            'measurement_unit' => IngredientUnit::Gram->value,
+            'purchase_quantity' => '100.000',
+            'purchase_cost' => '250.00',
+            'current_stock' => '999.000',
+            'minimum_stock' => '10.000',
+            'reorder_level' => '20.000',
+            'supplier_name' => 'Updated Supplier',
+            'supplier_email' => 'supplier@example.test',
+            'supplier_phone' => '9999999900',
+            'supplier_notes' => 'Stock should remain unchanged.',
+            'is_active' => 1,
+        ])->assertRedirect(route('administrator.ingredients.edit', $ingredient));
+
+        $this->assertSame('80.000', $ingredient->fresh()->current_stock);
+        $this->assertSame(0, InventoryTransaction::query()->count());
+    }
+
     public function test_reorder_level_cannot_be_lower_than_minimum_stock(): void
     {
         $manager = User::factory()->manager()->create();
@@ -258,7 +301,6 @@ class AdministratorIngredientManagementTest extends TestCase
                 'measurement_unit' => IngredientUnit::Gram->value,
                 'purchase_quantity' => '100.000',
                 'purchase_cost' => '600.00',
-                'current_stock' => '100.000',
                 'minimum_stock' => '20.000',
                 'reorder_level' => '10.000',
                 'is_active' => 1,

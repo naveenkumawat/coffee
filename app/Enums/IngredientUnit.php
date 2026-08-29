@@ -43,6 +43,19 @@ enum IngredientUnit: string
         );
     }
 
+    public function supportsBaseUnit(self $baseUnit): bool
+    {
+        return $this->baseUnit() === $baseUnit;
+    }
+
+    public static function optionsForBaseUnit(self $baseUnit): array
+    {
+        return collect(self::cases())
+            ->filter(fn (self $unit): bool => $unit->supportsBaseUnit($baseUnit))
+            ->mapWithKeys(fn (self $unit): array => [$unit->value => $unit->label()])
+            ->all();
+    }
+
     public static function options(): array
     {
         return collect(self::cases())

@@ -61,6 +61,14 @@ enum UserRole: string
         };
     }
 
+    public function canViewInventory(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager, self::Barista => true,
+            self::Cashier, self::Customer => false,
+        };
+    }
+
     public function canAccessAdministratorPanel(): bool
     {
         return match ($this) {

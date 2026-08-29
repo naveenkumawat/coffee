@@ -26,6 +26,14 @@
                 ] : [],
             ],
             [
+                'heading' => 'Inventory',
+                'items' => $user?->canViewInventory() ? [
+                    ['label' => 'Overview', 'route' => 'administrator.inventory.index', 'pattern' => 'administrator.inventory.index', 'icon' => 'ki-abstract-41'],
+                    ['label' => 'History', 'route' => 'administrator.inventory.history', 'pattern' => 'administrator.inventory.history', 'icon' => 'ki-time'],
+                    ['label' => 'Refill Requests', 'route' => 'administrator.inventory.refill-requests.index', 'pattern' => 'administrator.inventory.refill-requests.*', 'icon' => 'ki-delivery-3'],
+                ] : [],
+            ],
+            [
                 'heading' => 'Administration',
                 'items' => $user?->canManageUsers() ? [
                     ['label' => 'Users', 'route' => 'administrator.users.index', 'pattern' => 'administrator.users.*', 'icon' => 'ki-profile-circle'],
@@ -37,6 +45,8 @@
                 'heading' => 'Station',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-abstract-26'],
+                    ['label' => 'Inventory', 'route' => 'barista.inventory.index', 'pattern' => 'barista.inventory.*', 'icon' => 'ki-abstract-41'],
+                    ['label' => 'Refill Requests', 'route' => 'barista.refill-requests.index', 'pattern' => 'barista.refill-requests.*', 'icon' => 'ki-delivery-3'],
                 ],
             ],
         ],

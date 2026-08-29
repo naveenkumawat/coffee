@@ -133,20 +133,20 @@ Status: Partial
 
 ### Inventory
 
-- [ ] Inventory transaction model and migration implemented
-- [ ] Add stock flow implemented
-- [ ] Manual adjustment flow implemented
-- [ ] Wastage/damage/expiry flow implemented
-- [ ] Purchase history implemented
-- [ ] Inventory audit history implemented
+- [x] Inventory transaction model and migration implemented
+- [x] Add stock flow implemented
+- [x] Manual adjustment flow implemented
+- [x] Wastage/damage/expiry flow implemented
+- [x] Purchase history implemented
+- [x] Inventory audit history implemented
 
 ### Low Stock and Refill Requests
 
-- [ ] Minimum inventory threshold checks implemented
-- [ ] Low-stock warning lists implemented
-- [ ] Barista refill request workflow implemented
-- [ ] Administrator refill approval/rejection flow implemented
-- [ ] Inventory update on refill completion implemented
+- [x] Minimum inventory threshold checks implemented
+- [x] Low-stock warning lists implemented
+- [x] Barista refill request workflow implemented
+- [x] Administrator refill approval/rejection flow implemented
+- [x] Inventory update on refill completion implemented
 
 ## Phase 4 - Product Master Data
 Status: Partial

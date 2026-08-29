@@ -84,7 +84,7 @@
                             <th>Purchase</th>
                             <th>Unit Cost</th>
                             <th>Stock</th>
-                            <th>Status</th>
+                            <th>Availability</th>
                             <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
@@ -108,9 +108,12 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge {{ $ingredient->is_active ? 'badge-light-success' : 'badge-light-danger' }}">
-                                        {{ $ingredient->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
+                                    <div class="d-flex flex-column gap-2">
+                                        <x-internal.stock-badge :status="$ingredient->stockStatus()" />
+                                        <span class="badge {{ $ingredient->is_active ? 'badge-light-success' : 'badge-light-danger' }}">
+                                            {{ $ingredient->is_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="text-end internal-action-cell">
                                     <x-internal.action-dropdown :items="[
@@ -123,6 +126,16 @@
                                             'label' => 'Edit',
                                             'url' => route('administrator.ingredients.edit', $ingredient),
                                             'icon' => 'ki-notepad-edit',
+                                        ],
+                                        [
+                                            'label' => 'Inventory History',
+                                            'url' => route('administrator.inventory.history', ['ingredient_id' => $ingredient->id]),
+                                            'icon' => 'ki-time',
+                                        ],
+                                        [
+                                            'label' => 'Record Movement',
+                                            'url' => route('administrator.inventory.movements.create', ['ingredient_id' => $ingredient->id]),
+                                            'icon' => 'ki-plus-circle',
                                         ],
                                         ['type' => 'separator'],
                                         [

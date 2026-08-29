@@ -93,13 +93,6 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-                <div class="col-md-4">
-                    <label for="current_stock" class="form-label">Current Stock</label>
-                    <input id="current_stock" name="current_stock" type="number" min="0" step="0.001" value="{{ old('current_stock', $ingredient->current_stock) }}" class="form-control @error('current_stock') is-invalid @enderror" />
-                    @error('current_stock')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
                 <div class="col-md-6">
                     <label for="minimum_stock" class="form-label">Minimum Stock</label>
                     <input id="minimum_stock" name="minimum_stock" type="number" min="0" step="0.001" value="{{ old('minimum_stock', $ingredient->minimum_stock) }}" class="form-control @error('minimum_stock') is-invalid @enderror" />
@@ -113,6 +106,7 @@
                     @error('reorder_level')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text">Current stock is managed from the Inventory module through audited stock movements.</div>
                 </div>
             </div>
 

@@ -26,7 +26,7 @@ class IngredientService implements IngredientServiceInterface
     public function update(Ingredient $ingredient, IngredientTransferInterface $data): Ingredient
     {
         return DB::transaction(function () use ($ingredient, $data): Ingredient {
-            return $this->ingredients->update($ingredient, $this->prepareAttributes($data));
+            return $this->ingredients->update($ingredient, $this->prepareAttributes($data, $ingredient));
         });
     }
 
@@ -38,7 +38,7 @@ class IngredientService implements IngredientServiceInterface
         });
     }
 
-    protected function prepareAttributes(IngredientTransferInterface $data): array
+    protected function prepareAttributes(IngredientTransferInterface $data, ?Ingredient $ingredient = null): array
     {
         $unit = IngredientUnit::from((string) $data->getMeasurementUnit());
         $purchaseQuantityBase = $unit->normalize((string) $data->getPurchaseQuantity(), 3);
@@ -47,7 +47,9 @@ class IngredientService implements IngredientServiceInterface
 
         $minimumStock = $unit->normalize((string) ($data->getMinimumStock() ?? '0'), 3);
         $reorderLevel = $unit->normalize((string) ($data->getReorderLevel() ?? '0'), 3);
-        $currentStock = $unit->normalize((string) ($data->getCurrentStock() ?? '0'), 3);
+        $currentStock = $ingredient
+            ? $this->normalizeDecimal((string) $ingredient->current_stock, 3)
+            : '0.000';
 
         if (bccomp($reorderLevel, $minimumStock, 3) === -1) {
             throw ValidationException::withMessages([

@@ -28,7 +28,6 @@ class IngredientUpdateRequest extends AbstractRequest
             'measurement_unit' => ['required', 'string', Rule::in(array_keys(IngredientUnit::options()))],
             'purchase_quantity' => ['required', 'decimal:0,3', 'gt:0'],
             'purchase_cost' => ['required', 'decimal:0,2', 'gte:0'],
-            'current_stock' => ['nullable', 'decimal:0,3', 'gte:0'],
             'minimum_stock' => ['nullable', 'decimal:0,3', 'gte:0'],
             'reorder_level' => ['nullable', 'decimal:0,3', 'gte:0'],
             'supplier_name' => ['nullable', 'string', 'max:160'],

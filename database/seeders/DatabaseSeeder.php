@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
         if (app()->environment('local', 'testing')) {
             $this->call(IngredientBrandSeeder::class);
             $this->call(IngredientSeeder::class);
+            $this->call(InventoryTransactionSeeder::class);
         }
 
         if (filled(env('ADMIN_EMAIL')) && filled(env('ADMIN_PASSWORD'))) {

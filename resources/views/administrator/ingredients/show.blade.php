@@ -24,6 +24,12 @@
             'variant' => 'success',
             'icon' => 'ki-notepad-edit',
         ],
+        [
+            'label' => 'Inventory History',
+            'url' => route('administrator.inventory.history', ['ingredient_id' => $ingredient->id]),
+            'variant' => 'dark',
+            'icon' => 'ki-time',
+        ],
     ]" />
 @endsection
 
@@ -51,10 +57,13 @@
                             <div class="fw-bold text-gray-900">{{ $ingredient->brand?->name ?: 'Not assigned' }}</div>
                         </div>
                         <div class="col-md-6">
-                            <div class="text-muted fs-7 mb-1">Status</div>
-                            <span class="badge {{ $ingredient->is_active ? 'badge-light-success' : 'badge-light-danger' }}">
-                                {{ $ingredient->is_active ? 'Active' : 'Inactive' }}
-                            </span>
+                        <div class="text-muted fs-7 mb-1">Status</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <x-internal.stock-badge :status="$ingredient->stockStatus()" />
+                                <span class="badge {{ $ingredient->is_active ? 'badge-light-success' : 'badge-light-danger' }}">
+                                    {{ $ingredient->is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="text-muted fs-7 mb-1">Purchase Quantity</div>
@@ -92,6 +101,7 @@
                     <div class="mb-5">
                         <div class="text-muted fs-7 mb-1">Current Stock</div>
                         <div class="fw-bold text-gray-900">{{ number_format((float) $ingredient->current_stock, 3) }} {{ $ingredient->base_measurement_unit->value }}</div>
+                        <div class="text-gray-500 fs-7 mt-2">Managed through inventory transactions only.</div>
                     </div>
                     <div class="mb-5">
                         <div class="text-muted fs-7 mb-1">Minimum Stock</div>

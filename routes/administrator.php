@@ -4,6 +4,8 @@ use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
 use App\Http\Controllers\Administrator\IngredientController;
+use App\Http\Controllers\Administrator\InventoryController;
+use App\Http\Controllers\Administrator\InventoryRefillRequestController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
 use App\Http\Controllers\Administrator\UserController;
@@ -52,6 +54,15 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('ingredients', IngredientController::class)
         ->parameters(['ingredients' => 'ingredient'])
         ->names('ingredients');
+
+    Route::get('inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('inventory/history', [InventoryController::class, 'history'])->name('inventory.history');
+    Route::get('inventory/movements/create', [InventoryController::class, 'createMovement'])->name('inventory.movements.create');
+    Route::post('inventory/movements', [InventoryController::class, 'storeMovement'])->name('inventory.movements.store');
+    Route::get('inventory/refill-requests', [InventoryRefillRequestController::class, 'index'])->name('inventory.refill-requests.index');
+    Route::get('inventory/refill-requests/{inventoryRefillRequest}', [InventoryRefillRequestController::class, 'show'])->name('inventory.refill-requests.show');
+    Route::patch('inventory/refill-requests/{inventoryRefillRequest}/approve', [InventoryRefillRequestController::class, 'approve'])->name('inventory.refill-requests.approve');
+    Route::patch('inventory/refill-requests/{inventoryRefillRequest}/reject', [InventoryRefillRequestController::class, 'reject'])->name('inventory.refill-requests.reject');
 
     Route::resource('users', UserController::class);
 
