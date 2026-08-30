@@ -30,6 +30,10 @@ class ProductFactory extends Factory
             'is_active' => true,
             'is_available' => true,
             'is_featured' => fake()->boolean(35),
+            'is_new' => fake()->boolean(20),
+            'is_bestseller' => fake()->boolean(25),
+            'is_vegetarian' => fake()->boolean(60),
+            'is_customizable' => fake()->boolean(15),
         ];
     }
 }

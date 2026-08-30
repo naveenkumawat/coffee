@@ -31,6 +31,10 @@ class Product extends AbstractModel
         'is_active',
         'is_available',
         'is_featured',
+        'is_new',
+        'is_bestseller',
+        'is_vegetarian',
+        'is_customizable',
     ];
 
     protected function casts(): array
@@ -41,6 +45,10 @@ class Product extends AbstractModel
             'is_active' => 'boolean',
             'is_available' => 'boolean',
             'is_featured' => 'boolean',
+            'is_new' => 'boolean',
+            'is_bestseller' => 'boolean',
+            'is_vegetarian' => 'boolean',
+            'is_customizable' => 'boolean',
         ];
     }
 
@@ -68,5 +76,11 @@ class Product extends AbstractModel
         ], function ($query): void {
             $query->where('is_active', true)->where('is_available', true);
         });
+    }
+
+    public function favouritedByCustomers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'product_favourites', 'product_id', 'customer_id')
+            ->withTimestamps();
     }
 }

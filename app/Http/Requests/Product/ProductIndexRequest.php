@@ -16,6 +16,8 @@ class ProductIndexRequest extends AbstractRequest
             'status' => ['nullable', 'string', Rule::in(['active', 'inactive'])],
             'availability' => ['nullable', 'string', Rule::in(['available', 'unavailable'])],
             'featured' => ['nullable', 'string', Rule::in(['featured', 'standard'])],
+            'new' => ['nullable', 'string', Rule::in(['new'])],
+            'bestseller' => ['nullable', 'string', Rule::in(['bestseller'])],
         ];
     }
 }

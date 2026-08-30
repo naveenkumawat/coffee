@@ -15,7 +15,7 @@ export function CartItemCard({ item, isBusy = false, onChangeQuantity, onRemove 
 
   return (
     <article className="cart-item-card">
-      <img src={image} alt={item.product?.name ?? 'Cart item'} className="cart-item-image" />
+      <img src={image} alt={item.product?.name ?? 'Cart item'} className="cart-item-image" loading="lazy" decoding="async" />
       <div className="cart-item-body">
         <div>
           <h2>{item.product?.name ?? 'Coffee item'}</h2>

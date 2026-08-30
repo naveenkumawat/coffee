@@ -63,6 +63,8 @@ class ProductService implements ProductServiceInterface
                 'is_active' => false,
                 'is_available' => false,
                 'is_featured' => false,
+                'is_new' => false,
+                'is_bestseller' => false,
             ])->save();
 
             $this->products->delete($product);

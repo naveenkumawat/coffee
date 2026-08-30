@@ -64,5 +64,21 @@ interface ProductTransferInterface
 
     public function setIsFeatured(bool $isFeatured): void;
 
+    public function isNew(): bool;
+
+    public function setIsNew(bool $isNew): void;
+
+    public function isBestseller(): bool;
+
+    public function setIsBestseller(bool $isBestseller): void;
+
+    public function isVegetarian(): bool;
+
+    public function setIsVegetarian(bool $isVegetarian): void;
+
+    public function isCustomizable(): bool;
+
+    public function setIsCustomizable(bool $isCustomizable): void;
+
     public function toArray(): array;
 }

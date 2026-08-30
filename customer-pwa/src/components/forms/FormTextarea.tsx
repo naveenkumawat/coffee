@@ -8,6 +8,11 @@ interface FormTextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElem
 
 export function FormTextarea({ label, error, hint, id, ...textareaProps }: FormTextareaProps) {
   const fieldId = id ?? textareaProps.name;
+  const errorId = fieldId ? `${fieldId}-error` : undefined;
+  const hintId = fieldId ? `${fieldId}-hint` : undefined;
+  const describedBy = [error && errorId ? errorId : null, hint && hintId ? hintId : null]
+    .filter(Boolean)
+    .join(' ') || undefined;
 
   return (
     <label className="form-field" htmlFor={fieldId}>
@@ -16,9 +21,19 @@ export function FormTextarea({ label, error, hint, id, ...textareaProps }: FormT
         {...textareaProps}
         id={fieldId}
         className={`form-control coffee-input coffee-textarea ${error ? 'is-invalid' : ''}`}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
       />
-      {hint ? <small className="form-hint">{hint}</small> : null}
-      {error ? <span className="field-error">{error}</span> : null}
+      {hint ? (
+        <small id={hintId} className="form-hint">
+          {hint}
+        </small>
+      ) : null}
+      {error ? (
+        <span id={errorId} className="field-error" role="alert">
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }

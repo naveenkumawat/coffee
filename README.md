@@ -126,8 +126,11 @@ npm run build
 
 These seeded accounts are for local and development use only. Do not use them in production.
 
-- Administrator: `admin@coffee.local` / `password`
+- Administrator / Owner: `admin@coffee.local` / `password`
+- Manager: `manager@coffee.local` / `password`
 - Barista: `barista@coffee.local` / `password`
+- Customer (full demo activity): `customer@coffee.local` / `password`
+- Additional customers: `priya@coffee.local`, `arjun@coffee.local`, `empty@coffee.local` / `password`
 
 ## Testing
 

@@ -24,7 +24,7 @@ export function CheckoutItemCard({
 
   return (
     <article className="checkout-item-card">
-      <img src={image} alt={name} className="checkout-item-image" />
+      <img src={image} alt={name} className="checkout-item-image" loading="lazy" decoding="async" />
       <div className="checkout-item-body">
         <div>
           <h2>{name}</h2>

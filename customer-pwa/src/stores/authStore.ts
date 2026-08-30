@@ -3,6 +3,7 @@ import { fetchCurrentCustomer, loginCustomer, logoutCustomer, registerCustomer }
 import { ApiError, setUnauthorizedHandler } from '../api/client';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
 import { useCartStore } from './cartStore';
+import { useFavouriteStore } from './favouriteStore';
 
 type AuthStatus = 'idle' | 'initializing' | 'authenticated' | 'guest';
 
@@ -24,6 +25,14 @@ interface AuthState {
 function resetCustomerSession(set: (value: Partial<AuthState>) => void): void {
   set({ status: 'guest', customer: null, hasBootstrapped: true });
   useCartStore.getState().reset();
+  useFavouriteStore.getState().reset();
+}
+
+async function hydrateCustomerSession(): Promise<void> {
+  await Promise.all([
+    useCartStore.getState().refreshCount(),
+    useFavouriteStore.getState().refreshIds()
+  ]);
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -53,6 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const response = await fetchCurrentCustomer();
         set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
+        await hydrateCustomerSession();
 
         return true;
       } catch (error) {
@@ -75,14 +85,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (payload) => {
     const response = await loginCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    await useCartStore.getState().refreshCount();
+    await hydrateCustomerSession();
 
     return response.data;
   },
   register: async (payload) => {
     const response = await registerCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    await useCartStore.getState().refreshCount();
+    await hydrateCustomerSession();
 
     return response.data;
   },

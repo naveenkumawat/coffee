@@ -2,24 +2,36 @@ import { Link } from 'react-router-dom';
 import { Product } from '../../types/catalog';
 import { formatCurrency, joinLabels } from '../../utils/format';
 import { pickProductImage } from '../../utils/images';
+import { FavouriteToggle } from './FavouriteToggle';
+import { ProductBadges } from './ProductBadges';
 
 interface ProductCardProps {
   product: Product;
   onAddToCart?: (product: Product) => void;
   isBusy?: boolean;
+  showFavouriteToggle?: boolean;
 }
 
-export function ProductCard({ product, onAddToCart, isBusy = false }: ProductCardProps) {
+export function ProductCard({
+  product,
+  onAddToCart,
+  isBusy = false,
+  showFavouriteToggle = true
+}: ProductCardProps) {
   const image = pickProductImage(product.name, product.image_path);
 
   return (
     <article className="product-card">
-      <Link to={`/menu/${product.id}`} className="product-card-image">
-        <img src={image} alt={product.name} />
-      </Link>
+      <div className="product-card-media">
+        <Link to={`/menu/${product.id}`} className="product-card-image">
+          <img src={image} alt={product.name} loading="lazy" decoding="async" />
+        </Link>
+        {showFavouriteToggle ? <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" /> : null}
+      </div>
       <div className="product-card-body">
         <div className="product-card-copy">
           <span className="product-card-category">{product.category?.name ?? 'Coffee menu'}</span>
+          <ProductBadges product={product} />
           <Link to={`/menu/${product.id}`} className="product-card-title">
             {product.name}
           </Link>

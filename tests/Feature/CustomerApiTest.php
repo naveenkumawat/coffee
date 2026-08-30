@@ -169,10 +169,31 @@ class CustomerApiTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.is_featured', true);
 
+        $product->update([
+            'is_new' => true,
+            'is_bestseller' => true,
+            'is_vegetarian' => true,
+            'is_customizable' => false,
+        ]);
+
+        $this->getJson(route('api.v1.catalog.products.index', ['new' => 'new']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.is_new', true)
+            ->assertJsonPath('data.0.is_vegetarian', true)
+            ->assertJsonPath('data.0.is_customizable', false);
+
+        $this->getJson(route('api.v1.catalog.products.index', ['bestseller' => 'bestseller']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.is_bestseller', true);
+
         $this->getJson(route('api.v1.catalog.products.show', $product))
             ->assertOk()
             ->assertJsonPath('data.category.name', $category->name)
             ->assertJsonPath('data.default_variant.id', $variant->id)
+            ->assertJsonPath('data.is_new', true)
+            ->assertJsonPath('data.is_bestseller', true)
             ->assertJsonMissingPath('data.recipe')
             ->assertJsonMissingPath('data.internal_notes');
 
@@ -377,6 +398,11 @@ class CustomerApiTest extends TestCase
             'to_status' => OrderStatus::PendingPayment,
         ]);
 
+        config()->set('coffee.payments.display_name', 'UPI Transfer');
+        config()->set('coffee.payments.instructions', 'Pay via UPI and send a screenshot on WhatsApp.');
+        config()->set('coffee.payments.upi_id', 'coffee@upi');
+        config()->set('coffee.payments.whatsapp_number', '+919999999999');
+
         $this->actingAs($customer, 'web');
 
         $this->getJson(route('api.v1.orders.index'))
@@ -389,6 +415,9 @@ class CustomerApiTest extends TestCase
             ->assertJsonPath('data.order_number', $order->order_number)
             ->assertJsonPath('data.items.0.product_name', 'Mocha')
             ->assertJsonPath('data.status_timeline.0.to_status', OrderStatus::PendingPayment->value)
+            ->assertJsonPath('meta.payment.display_name', 'UPI Transfer')
+            ->assertJsonPath('meta.payment.upi_id', 'coffee@upi')
+            ->assertJsonPath('meta.payment.whatsapp_number', '+919999999999')
             ->assertJsonMissingPath('data.assigned_barista_id')
             ->assertJsonMissingPath('data.items.0.recipe_id')
             ->assertJsonMissingPath('data.status_timeline.0.changed_by')

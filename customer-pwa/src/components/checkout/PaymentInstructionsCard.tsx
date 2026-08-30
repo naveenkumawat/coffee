@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { CheckoutPaymentInstructions } from '../../types/checkout';
-import { Order } from '../../types/order';
+import { Order, OrderPaymentInstructions } from '../../types/order';
 import { formatCurrency } from '../../utils/format';
 
 interface PaymentInstructionsCardProps {
   order: Order;
-  payment: CheckoutPaymentInstructions | null;
+  payment: OrderPaymentInstructions | null;
+  secondaryHref?: string;
+  secondaryLabel?: string;
 }
 
 function toWhatsappHref(number: string, orderNumber: string): string {
@@ -15,7 +16,12 @@ function toWhatsappHref(number: string, orderNumber: string): string {
   return `https://wa.me/${normalized.replace(/^\+/, '')}?text=${message}`;
 }
 
-export function PaymentInstructionsCard({ order, payment }: PaymentInstructionsCardProps) {
+export function PaymentInstructionsCard({
+  order,
+  payment,
+  secondaryHref = '/orders',
+  secondaryLabel = 'My Orders'
+}: PaymentInstructionsCardProps) {
   const whatsappNumber = payment?.whatsapp_number?.trim() ?? '';
 
   return (
@@ -74,8 +80,8 @@ export function PaymentInstructionsCard({ order, payment }: PaymentInstructionsC
             Send on WhatsApp
           </a>
         ) : null}
-        <Link to="/orders" className="btn btn-outline-dark btn-lg rounded-pill">
-          My Orders
+        <Link to={secondaryHref} className="btn btn-outline-dark btn-lg rounded-pill">
+          {secondaryLabel}
         </Link>
       </div>
     </section>

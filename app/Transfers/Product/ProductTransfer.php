@@ -34,6 +34,14 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
 
     protected bool $isFeatured = false;
 
+    protected bool $isNew = false;
+
+    protected bool $isBestseller = false;
+
+    protected bool $isVegetarian = false;
+
+    protected bool $isCustomizable = false;
+
     public function getProductCategoryId(): ?int
     {
         return $this->productCategoryId;
@@ -174,6 +182,46 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
         $this->isFeatured = $isFeatured;
     }
 
+    public function isNew(): bool
+    {
+        return $this->isNew;
+    }
+
+    public function setIsNew(bool $isNew): void
+    {
+        $this->isNew = $isNew;
+    }
+
+    public function isBestseller(): bool
+    {
+        return $this->isBestseller;
+    }
+
+    public function setIsBestseller(bool $isBestseller): void
+    {
+        $this->isBestseller = $isBestseller;
+    }
+
+    public function isVegetarian(): bool
+    {
+        return $this->isVegetarian;
+    }
+
+    public function setIsVegetarian(bool $isVegetarian): void
+    {
+        $this->isVegetarian = $isVegetarian;
+    }
+
+    public function isCustomizable(): bool
+    {
+        return $this->isCustomizable;
+    }
+
+    public function setIsCustomizable(bool $isCustomizable): void
+    {
+        $this->isCustomizable = $isCustomizable;
+    }
+
     public function toArray(): array
     {
         return [
@@ -189,6 +237,10 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
             'is_active' => $this->isActive,
             'is_available' => $this->isAvailable,
             'is_featured' => $this->isFeatured,
+            'is_new' => $this->isNew,
+            'is_bestseller' => $this->isBestseller,
+            'is_vegetarian' => $this->isVegetarian,
+            'is_customizable' => $this->isCustomizable,
         ];
     }
 }

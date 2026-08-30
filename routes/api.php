@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\V1\Auth\CustomerAuthController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogController;
+use App\Http\Controllers\Api\V1\Content\WebsiteContentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerAccountController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
+use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +26,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/products/{product}', [CatalogController::class, 'show'])->name('products.show');
         Route::get('/variants', [CatalogController::class, 'variants'])->name('variants.index');
     });
+
+    Route::get('/content', [WebsiteContentController::class, 'show'])->name('content.show');
 
     Route::middleware(['auth:sanctum', 'role:customer'])->group(function (): void {
         Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -49,6 +53,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('checkout')->name('checkout.')->group(function (): void {
             Route::get('/summary', [CustomerCheckoutController::class, 'summary'])->name('summary');
             Route::post('/', [CustomerCheckoutController::class, 'store'])->name('store');
+        });
+
+        Route::prefix('favourites')->name('favourites.')->group(function (): void {
+            Route::get('/', [CustomerFavouriteController::class, 'index'])->name('index');
+            Route::get('/ids', [CustomerFavouriteController::class, 'ids'])->name('ids');
+            Route::post('/', [CustomerFavouriteController::class, 'store'])->name('store');
+            Route::delete('/{product}', [CustomerFavouriteController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('orders')->name('orders.')->group(function (): void {

@@ -36,11 +36,26 @@ export function getBackendBaseUrl(): string {
   const baseUrl = new URL(getApiBaseUrl(), window.location.origin);
   const normalizedPath = baseUrl.pathname.replace(/\/api\/v1\/?$/, '/');
 
-  baseUrl.pathname = normalizedPath;
+  baseUrl.pathname = normalizedPath.endsWith('/') ? normalizedPath : `${normalizedPath}/`;
   baseUrl.search = '';
   baseUrl.hash = '';
 
   return baseUrl.toString();
+}
+
+function readCookie(name: string): string | null {
+  const encodedName = `${encodeURIComponent(name)}=`;
+  const parts = document.cookie.split(';');
+
+  for (const part of parts) {
+    const cookie = part.trim();
+
+    if (cookie.startsWith(encodedName)) {
+      return decodeURIComponent(cookie.slice(encodedName.length));
+    }
+  }
+
+  return null;
 }
 
 function toUrl(path: string): string {
@@ -74,6 +89,12 @@ export async function request<TResponse>(path: string, init: RequestInit = {}): 
 
   if (isBodyJson && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+
+  const xsrfToken = readCookie('XSRF-TOKEN');
+
+  if (xsrfToken && !headers.has('X-XSRF-TOKEN') && !headers.has('X-CSRF-TOKEN')) {
+    headers.set('X-XSRF-TOKEN', xsrfToken);
   }
 
   const response = await fetch(toUrl(path), {

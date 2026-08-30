@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
+import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
+import { ProductBadges } from '../components/catalog/ProductBadges';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -82,7 +84,7 @@ export function ProductDetailPage() {
     );
   }
 
-  if (errorMessage) {
+  if (errorMessage && !product) {
     return (
       <div className="page-container">
         <PageHeader title="Product detail" showBack />
@@ -104,13 +106,21 @@ export function ProductDetailPage() {
 
   return (
     <div className="page-container detail-page">
-      <PageHeader title={product.name} description={product.category?.name ?? 'Coffee menu'} showBack />
+      <PageHeader
+        title={product.name}
+        description={product.category?.name ?? 'Coffee menu'}
+        showBack
+        rightSlot={<FavouriteToggle productId={product.id} />}
+      />
+
+      {errorMessage ? <p className="form-feedback form-feedback-error">{errorMessage}</p> : null}
 
       <section className="detail-hero">
         <div className="detail-image-wrap">
-          <img src={image} alt={product.name} className="detail-image" />
+          <img src={image} alt={product.name} className="detail-image" loading="eager" decoding="async" />
         </div>
         <div className="detail-panel">
+          <ProductBadges product={product} showCustomizable />
           <p className="detail-description">{product.description || product.short_description}</p>
           <p className="detail-meta">
             {joinLabels([
@@ -147,8 +157,10 @@ export function ProductDetailPage() {
       </section>
 
       <div className="page-note">
-        <span>Customer auth, checkout, and orders remain progressive follow-up slices.</span>
-        <Link to="/cart">Open cart</Link>
+        <span>Save drinks you love for quicker pickup next time.</span>
+        <Link to={product.category ? `/menu?category=${product.category.id}` : '/menu'}>
+          {product.category ? `More in ${product.category.name}` : 'Back to menu'}
+        </Link>
       </div>
     </div>
   );

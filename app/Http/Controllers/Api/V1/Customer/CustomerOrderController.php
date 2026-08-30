@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Models\Order;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,7 @@ class CustomerOrderController extends Controller
 
     public function __construct(
         protected OrderRepositoryInterface $orders,
+        protected WebsiteSettingServiceInterface $websiteSettings,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -36,6 +38,10 @@ class CustomerOrderController extends Controller
         return $this->respondWithResource(
             new OrderResource($order->load(['items', 'statusHistory'])),
             'Customer order detail retrieved.',
+            200,
+            [
+                'payment' => $this->websiteSettings->paymentInstructions(),
+            ],
         );
     }
 }

@@ -13,6 +13,7 @@ export interface ProductFlavour {
   slug: string;
   description: string | null;
   image_path: string | null;
+  products_count?: number | null;
 }
 
 export interface ProductServingSize {
@@ -41,6 +42,10 @@ export interface Product {
   image_path: string | null;
   preparation_time_minutes: number | null;
   is_featured: boolean;
+  is_new: boolean;
+  is_bestseller: boolean;
+  is_vegetarian: boolean;
+  is_customizable: boolean;
   category: ProductCategory | null;
   flavours: ProductFlavour[];
   default_variant: ProductVariant | null;

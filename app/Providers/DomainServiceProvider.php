@@ -8,6 +8,8 @@ use App\Services\Cart\CartService;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Checkout\CheckoutService;
 use App\Services\Checkout\CheckoutServiceInterface;
+use App\Services\Favourite\FavouriteService;
+use App\Services\Favourite\FavouriteServiceInterface;
 use App\Services\Ingredient\IngredientBrandService;
 use App\Services\Ingredient\IngredientBrandServiceInterface;
 use App\Services\Ingredient\IngredientCategoryService;
@@ -40,6 +42,8 @@ use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
 use App\Services\User\UserService;
 use App\Services\User\UserServiceInterface;
+use App\Services\WebsiteSetting\WebsiteSettingService;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -48,6 +52,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
+        $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);
         $this->app->bind(IngredientServiceInterface::class, IngredientService::class);
@@ -65,5 +70,6 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(RecipeCostingServiceInterface::class, RecipeCostingService::class);
         $this->app->bind(RecipeServiceInterface::class, RecipeService::class);
         $this->app->bind(UserServiceInterface::class, UserService::class);
+        $this->app->bind(WebsiteSettingServiceInterface::class, WebsiteSettingService::class);
     }
 }

@@ -38,6 +38,10 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setIsActive((bool) $product->is_active);
         $transfer->setIsAvailable((bool) $product->is_available);
         $transfer->setIsFeatured((bool) $product->is_featured);
+        $transfer->setIsNew((bool) $product->is_new);
+        $transfer->setIsBestseller((bool) $product->is_bestseller);
+        $transfer->setIsVegetarian((bool) $product->is_vegetarian);
+        $transfer->setIsCustomizable((bool) $product->is_customizable);
         $transfer->setCreatedAt($product->created_at);
         $transfer->setUpdatedAt($product->updated_at);
 
@@ -74,6 +78,10 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setIsActive((bool) ($productData['is_active'] ?? true));
         $transfer->setIsAvailable((bool) ($productData['is_available'] ?? true));
         $transfer->setIsFeatured((bool) ($productData['is_featured'] ?? false));
+        $transfer->setIsNew((bool) ($productData['is_new'] ?? false));
+        $transfer->setIsBestseller((bool) ($productData['is_bestseller'] ?? false));
+        $transfer->setIsVegetarian((bool) ($productData['is_vegetarian'] ?? false));
+        $transfer->setIsCustomizable((bool) ($productData['is_customizable'] ?? false));
 
         return $transfer;
     }

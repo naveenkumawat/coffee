@@ -43,9 +43,14 @@
             ],
             [
                 'heading' => 'Administration',
-                'items' => $user?->canManageUsers() ? [
-                    ['label' => 'Users', 'route' => 'administrator.users.index', 'pattern' => 'administrator.users.*', 'icon' => 'ki-profile-circle'],
-                ] : [],
+                'items' => array_values(array_filter([
+                    $user?->canManageUsers()
+                        ? ['label' => 'Users', 'route' => 'administrator.users.index', 'pattern' => 'administrator.users.*', 'icon' => 'ki-profile-circle']
+                        : null,
+                    $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Website Settings', 'route' => 'administrator.website-settings.edit', 'pattern' => 'administrator.website-settings.*', 'icon' => 'ki-setting-2']
+                        : null,
+                ])),
             ],
         ],
         'barista' => [

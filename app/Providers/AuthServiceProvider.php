@@ -14,9 +14,11 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductFavourite;
 use App\Models\ProductFlavour;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Models\WebsiteSetting;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
 use App\Policies\IngredientBrandPolicy;
@@ -28,10 +30,12 @@ use App\Policies\MenuCategoryPolicy;
 use App\Policies\MenuItemPolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\ProductCategoryPolicy;
+use App\Policies\ProductFavouritePolicy;
 use App\Policies\ProductFlavourPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\RecipePolicy;
 use App\Policies\UserPolicy;
+use App\Policies\WebsiteSettingPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -50,9 +54,11 @@ class AuthServiceProvider extends ServiceProvider
         Order::class => OrderPolicy::class,
         Product::class => ProductPolicy::class,
         ProductCategory::class => ProductCategoryPolicy::class,
+        ProductFavourite::class => ProductFavouritePolicy::class,
         ProductFlavour::class => ProductFlavourPolicy::class,
         Recipe::class => RecipePolicy::class,
         User::class => UserPolicy::class,
+        WebsiteSetting::class => WebsiteSettingPolicy::class,
     ];
 
     public function boot(): void

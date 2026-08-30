@@ -94,6 +94,10 @@ class ProductManagementTest extends TestCase
             'is_active' => 1,
             'is_available' => 1,
             'is_featured' => 1,
+            'is_new' => 1,
+            'is_bestseller' => 1,
+            'is_vegetarian' => 1,
+            'is_customizable' => 1,
             'variants' => [
                 [
                     'name' => 'Regular',
@@ -121,6 +125,10 @@ class ProductManagementTest extends TestCase
         $product = Product::query()->where('slug', 'citrus-espresso-tonic')->firstOrFail();
 
         $this->assertSame('TONIC-001', $product->sku);
+        $this->assertTrue($product->is_new);
+        $this->assertTrue($product->is_bestseller);
+        $this->assertTrue($product->is_vegetarian);
+        $this->assertTrue($product->is_customizable);
         $this->assertCount(2, $product->variants);
         $this->assertTrue($product->flavours->contains($flavour));
         $this->assertDatabaseHas('product_variants', [
@@ -241,8 +249,8 @@ class ProductManagementTest extends TestCase
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ProductFlavourSeeder']);
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ProductSeeder']);
 
-        $this->assertSame(4, ProductCategory::query()->count());
-        $this->assertSame(4, ProductFlavour::query()->count());
-        $this->assertSame(3, Product::query()->count());
+        $this->assertSame(5, ProductCategory::query()->count());
+        $this->assertSame(5, ProductFlavour::query()->count());
+        $this->assertSame(18, Product::query()->count());
     }
 }

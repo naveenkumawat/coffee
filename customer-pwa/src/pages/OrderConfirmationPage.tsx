@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { fetchOrder } from '../api/checkout';
+import { fetchOrder } from '../api/orders';
 import { ApiError } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
@@ -9,7 +9,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { CheckoutPaymentInstructions } from '../types/checkout';
-import { Order } from '../types/order';
+import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
 
 interface ConfirmationLocationState {
@@ -21,17 +21,17 @@ function getPaymentCacheKey(orderId: string): string {
   return `coffee:pwa:payment:${orderId}`;
 }
 
-function readCachedPayment(orderId: string): CheckoutPaymentInstructions | null {
+function readCachedPayment(orderId: string): OrderPaymentInstructions | null {
   try {
     const value = window.sessionStorage.getItem(getPaymentCacheKey(orderId));
 
-    return value ? JSON.parse(value) as CheckoutPaymentInstructions : null;
+    return value ? JSON.parse(value) as OrderPaymentInstructions : null;
   } catch {
     return null;
   }
 }
 
-function writeCachedPayment(orderId: string, payment: CheckoutPaymentInstructions): void {
+function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions): void {
   try {
     window.sessionStorage.setItem(getPaymentCacheKey(orderId), JSON.stringify(payment));
   } catch {
@@ -44,7 +44,7 @@ export function OrderConfirmationPage() {
   const location = useLocation();
   const locationState = location.state as ConfirmationLocationState | null;
   const [order, setOrder] = useState<Order | null>(locationState?.order ?? null);
-  const [payment, setPayment] = useState<CheckoutPaymentInstructions | null>(
+  const [payment, setPayment] = useState<OrderPaymentInstructions | null>(
     locationState?.payment ?? readCachedPayment(orderId)
   );
   const [isLoading, setIsLoading] = useState(order === null);
@@ -57,29 +57,43 @@ export function OrderConfirmationPage() {
   }, [locationState?.payment, orderId]);
 
   useEffect(() => {
-    if (!orderId || order) {
+    if (!orderId) {
+      return;
+    }
+
+    if (order && payment) {
       return;
     }
 
     async function loadOrder(): Promise<void> {
-      setIsLoading(true);
+      if (!order) {
+        setIsLoading(true);
+      }
+
       setErrorMessage(null);
 
       try {
         const response = await fetchOrder(orderId);
         setOrder(response.data);
+
+        if (response.meta?.payment) {
+          setPayment(response.meta.payment);
+          writeCachedPayment(orderId, response.meta.payment);
+        }
       } catch (error) {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your order confirmation.');
+        if (!order) {
+          setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your order confirmation.');
+        }
       } finally {
         setIsLoading(false);
       }
     }
 
     void loadOrder();
-  }, [order, orderId]);
+  }, [order, orderId, payment]);
 
   const timelineLabel = useMemo(() => {
-    return order?.status_timeline[0]?.to_status_label ?? order?.status_label ?? 'Pending Payment';
+    return order?.status_label ?? 'Pending Payment';
   }, [order]);
 
   if (isLoading) {
@@ -125,7 +139,12 @@ export function OrderConfirmationPage() {
         <p>We’ll keep this order in `Pending Payment` until the cafe team reviews your payment proof.</p>
       </section>
 
-      <PaymentInstructionsCard order={order} payment={payment} />
+      <PaymentInstructionsCard
+        order={order}
+        payment={payment}
+        secondaryHref={`/orders/${order.id}`}
+        secondaryLabel="Track order"
+      />
 
       <section className="account-section">
         <div className="account-section-heading">
@@ -161,8 +180,8 @@ export function OrderConfirmationPage() {
       </section>
 
       <div className="page-note">
-        <span>Need the full history later?</span>
-        <Link to="/orders">Open My Orders</Link>
+        <span>Need live tracking?</span>
+        <Link to={`/orders/${order.id}`}>Open order detail</Link>
       </div>
     </div>
   );

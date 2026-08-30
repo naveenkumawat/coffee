@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { updateCustomerPassword, updateCustomerProfile } from '../api/account';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { FormFeedback } from '../components/forms/FormFeedback';
@@ -140,6 +140,67 @@ export function AccountPage() {
         <h2>{customer.name}</h2>
         <p>{customer.email}</p>
         {customer.phone ? <p>{customer.phone}</p> : <p>Add a phone number to make pickup communication easier.</p>}
+      </section>
+
+      <section className="account-section">
+        <div className="account-section-heading">
+          <div>
+            <span className="auth-badge">Shortcuts</span>
+            <h2>Quick access</h2>
+            <p>Jump back into ordering without crowding the bottom navigation.</p>
+          </div>
+        </div>
+        <div className="account-link-list">
+          <Link to="/favourites" className="account-link-row">
+            <span>
+              <i className="bi bi-heart"></i>
+              Favourites
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/orders" className="account-link-row">
+            <span>
+              <i className="bi bi-receipt"></i>
+              Orders
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/about" className="account-link-row">
+            <span>
+              <i className="bi bi-info-circle"></i>
+              About
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/contact" className="account-link-row">
+            <span>
+              <i className="bi bi-chat-dots"></i>
+              Contact
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/faq" className="account-link-row">
+            <span>
+              <i className="bi bi-question-circle"></i>
+              FAQ
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/terms" className="account-link-row">
+            <span>
+              <i className="bi bi-file-text"></i>
+              Terms
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/privacy" className="account-link-row">
+            <span>
+              <i className="bi bi-shield-check"></i>
+              Privacy
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+        </div>
       </section>
 
       <section className="account-section">

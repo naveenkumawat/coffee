@@ -1,6 +1,6 @@
 # Coffee Cafe Scope Progress
 
-Last audited: August 29, 2026
+Last audited: August 30, 2026
 Requirements source: [scope.md](./scope.md)
 Architecture source: [architecture.md](./architecture.md)
 
@@ -189,10 +189,11 @@ Status: Partial
 - [x] Product image path foundation implemented
 - [x] Serving size implemented through variants
 - [x] Preparation time implemented
-- [ ] New item / bestseller flags implemented
-- [ ] Vegetarian/non-vegetarian flags implemented
-- [ ] Customizable options implemented
+- [x] New item / bestseller flags implemented
+- [x] Vegetarian/non-vegetarian flags implemented
+- [x] Customizable options implemented
 - [x] Product seed dataset and final naming baseline implemented
+- [x] Deterministic local/testing demo dataset covers catalog, inventory edge states, recipes, refill requests, favourites, carts, orders/status history, and website CMS content
 
 ## Phase 5 - Variants, Recipes, and Costing
 Status: Partial
@@ -242,16 +243,16 @@ Implementation note:
 - Backend/customer-domain functionality may be complete for some flows even where the final customer API/PWA frontend is still pending.
 - Existing customer Blade pages are transition/foundation work only and must not be treated as the final PWA implementation.
 - Customer API/PWA migration is pending.
-- Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout, and payment confirmation implemented; orders UI, favourites, and broader customer flows remain pending.
+- Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout, payment confirmation, orders/history/tracking, favourites, menu discovery, home CMS/content pages, and production hardening (manifest/SW/offline/update, route splitting, deploy checklist) implemented; remaining storefront polish (offers, quick view, etc.) remains pending.
 
 ### Website Structure
 
 - [x] Public homepage exists
-- [ ] About page implemented
-- [ ] Contact page implemented
-- [ ] FAQ page implemented
-- [ ] Terms and Conditions page implemented
-- [ ] Privacy Policy page implemented
+- [x] About page implemented
+- [x] Contact page implemented
+- [x] FAQ page implemented
+- [x] Terms and Conditions page implemented
+- [x] Privacy Policy page implemented
 - [x] Temporary customer Blade account area implemented
 - [x] Final customer PWA account area implemented
 
@@ -260,13 +261,13 @@ Implementation note:
 - [x] Public homepage data foundation exists
 - [x] Customer PWA home shell and featured catalog slice implemented
 - [ ] Final mobile-first PWA homepage implemented
-- [ ] Cafe branding content management implemented
-- [ ] Hero banner management implemented
-- [ ] Bestseller section implemented
-- [ ] New products section implemented
+- [x] Cafe branding content management implemented
+- [x] Hero banner management implemented
+- [x] Bestseller section implemented
+- [x] New products section implemented
 - [ ] Offers/promotions section implemented
-- [ ] Business information section completed
-- [ ] WhatsApp contact button implemented
+- [x] Business information section completed
+- [x] WhatsApp contact button implemented
 
 ### Menu and Product Discovery
 
@@ -275,21 +276,21 @@ Implementation note:
 - [x] Customer PWA menu page foundation implemented
 - [x] Customer PWA product detail and add-to-cart slice implemented
 - [x] Customer PWA category navigation foundation implemented
-- [ ] Dedicated PWA menu page implemented
-- [ ] Category navigation implemented in final PWA
+- [x] Dedicated PWA menu page implemented
+- [x] Category navigation implemented in final PWA
 - [ ] Product cards implemented to final PWA scope
 - [ ] Product quick view implemented
-- [ ] Product filters implemented
+- [x] Product filters implemented
 - [ ] Customer-visible ingredient summaries implemented
 
 ### Favourites, Cart, and Checkout
 
-- [ ] Favourite products implemented
+- [x] Favourite products implemented
 - [x] Cart domain/business flow implemented
 - [x] Customer PWA cart count and cart page foundation implemented
 - [x] Temporary customer Blade checkout page implemented
 - [x] Temporary customer Blade order confirmation/payment-instruction page implemented
-- [ ] Customer favourites API implemented
+- [x] Customer favourites API implemented
 - [x] Customer cart API implemented to final scope
 - [ ] Cart item notes implemented
 - [ ] Size selection implemented
@@ -316,7 +317,7 @@ Status: Partial
 - [x] Order detail domain support implemented
 - [x] Customer order tracking domain support implemented
 - [x] Customer orders/tracking API implemented to final scope
-- [ ] Final PWA orders/history/tracking experience implemented
+- [x] Final PWA orders/history/tracking experience implemented
 
 ## Phase 9 - Inventory-to-Order Automation
 Status: Pending
@@ -327,7 +328,7 @@ Status: Pending
 - [ ] Barista inventory warnings on unavailable ingredients implemented
 
 ## Phase 10 - Reports, Notifications, and Content Management
-Status: Pending
+Status: Partial
 
 ### Reports
 
@@ -340,15 +341,15 @@ Status: Pending
 
 ### Website Content Management
 
-- [ ] Website settings model and management UI implemented
-- [ ] Business information management implemented
-- [ ] Payment instruction management implemented
-- [ ] Static page content management implemented
+- [x] Website settings model and management UI implemented
+- [x] Business information management implemented
+- [x] Payment instruction management implemented
+- [x] Static page content management implemented
 
 ### Notifications and Search
 
 - [ ] Internal notification system implemented
-- [ ] Customer product search implemented
+- [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 
 ## Phase 11 - Security, Audit, and Responsive Completion
@@ -363,7 +364,7 @@ Status: Partial
 - [ ] Broader module policy coverage implemented
 - [ ] Inventory and order audit trail implemented
 - [ ] Full responsive coverage across all scoped screens implemented
-- [ ] Final customer PWA installability, manifest, service worker, and offline shell implemented
+- [x] Final customer PWA installability, manifest, service worker, and offline shell implemented
 
 ## Phase 12 - Phase 2 Enhancements
 Status: Pending

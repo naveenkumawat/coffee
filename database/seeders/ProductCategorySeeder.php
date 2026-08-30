@@ -15,6 +15,7 @@ class ProductCategorySeeder extends Seeder
             ['name' => 'Cold Coffee', 'description' => 'Chilled coffee drinks for all-day service.', 'sort_order' => 2],
             ['name' => 'Frappes', 'description' => 'Blended ice-based beverages with dessert-style presentation.', 'sort_order' => 3],
             ['name' => 'Tea & Matcha', 'description' => 'Tea-forward and matcha-based drinks.', 'sort_order' => 4],
+            ['name' => 'Pastries', 'description' => 'Baked pairings for coffee and tea orders.', 'sort_order' => 5],
         ];
 
         foreach ($categories as $category) {

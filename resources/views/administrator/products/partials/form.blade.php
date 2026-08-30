@@ -217,6 +217,34 @@
                         <label class="form-check-label" for="is_featured">Featured on the storefront</label>
                     </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="is_new" value="0">
+                        <input class="form-check-input" type="checkbox" id="is_new" name="is_new" value="1" @checked(old('is_new', $product->is_new))>
+                        <label class="form-check-label" for="is_new">Mark as new</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="is_bestseller" value="0">
+                        <input class="form-check-input" type="checkbox" id="is_bestseller" name="is_bestseller" value="1" @checked(old('is_bestseller', $product->is_bestseller))>
+                        <label class="form-check-label" for="is_bestseller">Mark as bestseller</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="is_vegetarian" value="0">
+                        <input class="form-check-input" type="checkbox" id="is_vegetarian" name="is_vegetarian" value="1" @checked(old('is_vegetarian', $product->is_vegetarian))>
+                        <label class="form-check-label" for="is_vegetarian">Vegetarian</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="is_customizable" value="0">
+                        <input class="form-check-input" type="checkbox" id="is_customizable" name="is_customizable" value="1" @checked(old('is_customizable', $product->is_customizable))>
+                        <label class="form-check-label" for="is_customizable">Customizable</label>
+                    </div>
+                </div>
             </div>
 
             <div class="d-flex justify-content-end internal-form-actions">

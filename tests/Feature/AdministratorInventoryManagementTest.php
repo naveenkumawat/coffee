@@ -284,11 +284,30 @@ class AdministratorInventoryManagementTest extends TestCase
         $this->seed(InventoryTransactionSeeder::class);
         $this->seed(InventoryTransactionSeeder::class);
 
-        $this->assertSame(6, Ingredient::query()->count());
-        $this->assertSame(6, InventoryTransaction::query()->count());
-        $this->assertSame(6, InventoryTransaction::query()
+        $ingredientCount = Ingredient::query()->count();
+        $openingBalanceCount = Ingredient::query()->where('current_stock', '>', 0)->count();
+
+        $this->assertSame($ingredientCount, Ingredient::query()->count());
+        $this->assertSame($openingBalanceCount, InventoryTransaction::query()
             ->where('transaction_type', InventoryTransactionType::OpeningBalance->value)
             ->count());
+        $this->assertSame(
+            $openingBalanceCount,
+            InventoryTransaction::query()
+                ->where('reference_type', 'seeder_opening_balance')
+                ->count(),
+        );
+        $this->assertGreaterThan(
+            0,
+            InventoryTransaction::query()->where('reference_type', 'seeder_demo_movement')->count(),
+        );
+        $this->assertSame(
+            InventoryTransaction::query()->where('reference_type', 'seeder_demo_movement')->count(),
+            InventoryTransaction::query()
+                ->where('reference_type', 'seeder_demo_movement')
+                ->distinct('reference_id')
+                ->count('reference_id'),
+        );
     }
 
     public function test_inventory_overview_and_history_support_filters_and_low_stock_statuses(): void

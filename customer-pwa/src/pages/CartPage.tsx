@@ -25,9 +25,13 @@ export function CartPage() {
   const [isClearing, setIsClearing] = useState(false);
 
   async function loadCartState(): Promise<void> {
-    void loadCart().catch((error: unknown) => {
+    setErrorMessage(null);
+
+    try {
+      await loadCart();
+    } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your cart.');
-    });
+    }
   }
 
   useEffect(() => {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#04764e" />
+    <meta name="robots" content="noindex" />
     <title>Offline | Coffee Cafe</title>
     <style>
       body {
@@ -13,7 +14,7 @@
         place-items: center;
         background: linear-gradient(180deg, #f6f1eb 0%, #efe2cf 100%);
         color: #2f241d;
-        font-family: Poppins, sans-serif;
+        font-family: Poppins, system-ui, sans-serif;
       }
       main {
         max-width: 28rem;
@@ -21,18 +22,38 @@
         text-align: center;
       }
       h1 {
-        margin-bottom: 0.75rem;
+        margin: 0 0 0.75rem;
+        font-size: 1.75rem;
       }
       p {
-        margin: 0;
+        margin: 0 0 1.25rem;
         line-height: 1.6;
+      }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.85rem 1.35rem;
+        background: #04764e;
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 2px solid #2f241d;
+        outline-offset: 3px;
       }
     </style>
   </head>
   <body>
     <main>
       <h1>You’re offline</h1>
-      <p>The Coffee app shell is available, but live account, cart, and order data need a connection.</p>
+      <p>
+        The Coffee app shell may still open, but live account, cart, checkout, and order data need a network
+        connection. Cached pages are not authoritative.
+      </p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
     </main>
   </body>
 </html>

@@ -14,6 +14,7 @@ use App\Http\Controllers\Administrator\ProductController;
 use App\Http\Controllers\Administrator\ProductFlavourController;
 use App\Http\Controllers\Administrator\RecipeController;
 use App\Http\Controllers\Administrator\UserController;
+use App\Http\Controllers\Administrator\WebsiteSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 
@@ -92,6 +93,9 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('inventory/refill-requests/{inventoryRefillRequest}/reject', [InventoryRefillRequestController::class, 'reject'])->name('inventory.refill-requests.reject');
 
     Route::resource('users', UserController::class);
+
+    Route::get('website-settings', [WebsiteSettingController::class, 'edit'])->name('website-settings.edit');
+    Route::put('website-settings', [WebsiteSettingController::class, 'update'])->name('website-settings.update');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->defaults('panel', 'administrator')

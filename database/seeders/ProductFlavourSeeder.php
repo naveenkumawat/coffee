@@ -12,10 +12,11 @@ class ProductFlavourSeeder extends Seeder
     public function run(): void
     {
         $flavours = [
-            ['name' => 'Vanilla', 'description' => 'Classic sweet vanilla pairing.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
+            ['name' => 'Vanilla', 'description' => 'Classic sweet vanilla pairing.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes', 'Tea & Matcha']],
             ['name' => 'Hazelnut', 'description' => 'Nutty syrup profile for espresso and iced drinks.', 'categories' => ['Hot Coffee', 'Cold Coffee']],
             ['name' => 'Caramel', 'description' => 'Rich caramel finish for signature beverages.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
             ['name' => 'Mocha', 'description' => 'Chocolate-driven profile for dessert coffee drinks.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
+            ['name' => 'Honey', 'description' => 'Light honey sweetness for tea and matcha drinks.', 'categories' => ['Tea & Matcha']],
         ];
 
         foreach ($flavours as $flavourData) {

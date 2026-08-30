@@ -32,6 +32,10 @@ class ProductResource extends JsonResource
             'image_path' => $product->image_path,
             'preparation_time_minutes' => $product->preparation_time_minutes,
             'is_featured' => (bool) $product->is_featured,
+            'is_new' => (bool) $product->is_new,
+            'is_bestseller' => (bool) $product->is_bestseller,
+            'is_vegetarian' => (bool) $product->is_vegetarian,
+            'is_customizable' => (bool) $product->is_customizable,
         ];
     }
 }

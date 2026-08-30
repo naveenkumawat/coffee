@@ -219,6 +219,29 @@ The first implementation pass should establish:
 - service worker and offline fallback shell
 - Home, Menu, Product Detail, Cart, Orders, and Account route skeletons
 
+## Production Hosting and Cutover
+
+Recommended shape:
+
+```text
+PWA static HTTPS host  ->  Laravel `/api/v1`
+```
+
+Required environment:
+
+- PWA: `VITE_API_BASE_URL`
+- Laravel: `COFFEE_PWA_URL`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, `SESSION_DOMAIN`
+- HTTPS for both hosts in production, with cookie domain aligned to the shared parent when using subdomains
+
+Operational rules:
+
+- Cache only the app shell/static assets via the post-build service worker (`customer-pwa/scripts/generate-sw.mjs`).
+- Never treat service-worker cache as authoritative for auth, cart, checkout, payment, or orders.
+- Exclude `/api/*` (and Sanctum routes) from fetch interception as authoritative responses; navigation falls back to the app shell/`offline.html`.
+- Keep customer Blade available until the PWA is verified live, then retire Blade in a separate cutover.
+
+See `customer-pwa/README.md` for the deployment checklist.
+
 ## Out of Scope for This Planning Phase
 
 - building the React project now

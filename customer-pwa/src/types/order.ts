@@ -1,3 +1,5 @@
+import { ApiEnvelope } from '../api/client';
+
 export interface OrderItem {
   id: number;
   product_id: number | null;
@@ -44,4 +46,40 @@ export interface Order {
   rejected_at: string | null;
   items: OrderItem[];
   status_timeline: OrderStatusTimelineItem[];
+}
+
+export type OrderStatusValue =
+  | 'pending_payment'
+  | 'payment_confirmed'
+  | 'accepted'
+  | 'preparing'
+  | 'ready_for_pickup'
+  | 'completed'
+  | 'cancelled'
+  | 'rejected';
+
+export interface OrderPaymentInstructions {
+  display_name: string | null;
+  instructions: string | null;
+  upi_id: string | null;
+  whatsapp_number: string | null;
+}
+
+export interface OrderListResponse extends ApiEnvelope<Order[]> {
+  meta?: {
+    pagination?: {
+      current_page: number;
+      last_page: number;
+      per_page: number;
+      total: number;
+      from: number | null;
+      to: number | null;
+    };
+  };
+}
+
+export interface OrderDetailResponse extends ApiEnvelope<Order> {
+  meta?: {
+    payment?: OrderPaymentInstructions;
+  };
 }

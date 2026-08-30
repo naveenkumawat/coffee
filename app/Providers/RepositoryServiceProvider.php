@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Cart\CartRepositoryInterface;
+use App\Repositories\Favourite\FavouriteRepository;
+use App\Repositories\Favourite\FavouriteRepositoryInterface;
 use App\Repositories\Ingredient\IngredientBrandRepository;
 use App\Repositories\Ingredient\IngredientBrandRepositoryInterface;
 use App\Repositories\Ingredient\IngredientCategoryRepository;
@@ -30,6 +32,8 @@ use App\Repositories\Recipe\RecipeRepository;
 use App\Repositories\Recipe\RecipeRepositoryInterface;
 use App\Repositories\User\UserRepository;
 use App\Repositories\User\UserRepositoryInterface;
+use App\Repositories\WebsiteSetting\WebsiteSettingRepository;
+use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -37,6 +41,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
+        $this->app->bind(FavouriteRepositoryInterface::class, FavouriteRepository::class);
         $this->app->bind(IngredientCategoryRepositoryInterface::class, IngredientCategoryRepository::class);
         $this->app->bind(IngredientBrandRepositoryInterface::class, IngredientBrandRepository::class);
         $this->app->bind(IngredientRepositoryInterface::class, IngredientRepository::class);
@@ -50,5 +55,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
         $this->app->bind(RecipeRepositoryInterface::class, RecipeRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(WebsiteSettingRepositoryInterface::class, WebsiteSettingRepository::class);
     }
 }
