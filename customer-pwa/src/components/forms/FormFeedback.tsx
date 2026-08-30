@@ -8,5 +8,13 @@ export function FormFeedback({ message, variant = 'success' }: FormFeedbackProps
     return null;
   }
 
-  return <div className={`form-feedback form-feedback-${variant}`}>{message}</div>;
+  return (
+    <div
+      className={`form-feedback form-feedback-${variant}`}
+      role={variant === 'error' ? 'alert' : 'status'}
+      aria-live={variant === 'error' ? 'assertive' : 'polite'}
+    >
+      {message}
+    </div>
+  );
 }

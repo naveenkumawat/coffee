@@ -23,6 +23,8 @@ class RecipeParser extends AbstractParser implements RecipeParserInterface
                 'quantity' => (string) $line->quantity,
                 'measurement_unit' => $line->measurement_unit?->value,
                 'sort_order' => (int) $line->sort_order,
+                'show_to_customer' => (bool) $line->show_to_customer,
+                'customer_label' => $line->customer_label,
             ];
         })->all());
         $transfer->setCreatedAt($recipe->created_at);
@@ -47,6 +49,8 @@ class RecipeParser extends AbstractParser implements RecipeParserInterface
                     'quantity' => filled($line['quantity'] ?? null) ? (string) $line['quantity'] : null,
                     'measurement_unit' => filled($line['measurement_unit'] ?? null) ? (string) $line['measurement_unit'] : null,
                     'sort_order' => (int) ($line['sort_order'] ?? 0),
+                    'show_to_customer' => (bool) ($line['show_to_customer'] ?? false),
+                    'customer_label' => filled($line['customer_label'] ?? null) ? trim((string) $line['customer_label']) : null,
                 ];
             })
             ->all());

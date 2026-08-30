@@ -96,12 +96,12 @@ export const router = createBrowserRouter([
         ]
       },
       {
+        path: 'cart',
+        element: <CartPage />
+      },
+      {
         element: <ProtectedRoute />,
         children: [
-          {
-            path: 'cart',
-            element: <CartPage />
-          },
           {
             path: 'checkout',
             element: <CheckoutPage />

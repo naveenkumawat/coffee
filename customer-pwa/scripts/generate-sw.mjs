@@ -109,6 +109,14 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
 
+        const contentType = response.headers.get('content-type') || '';
+
+        // Never cache HTML (or other documents) as static assets — prevents MIME mistakes
+        // when a host falls back unknown paths to index.html.
+        if (contentType.includes('text/html') || contentType.includes('text/xml')) {
+          return response;
+        }
+
         const copy = response.clone();
         void caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
         return response;

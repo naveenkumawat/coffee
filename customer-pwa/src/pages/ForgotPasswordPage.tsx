@@ -2,12 +2,15 @@ import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { forgotCustomerPassword } from '../api/auth';
 import { ApiError, ApiValidationErrors } from '../api/client';
+import { AuthCard } from '../components/auth/AuthCard';
 import { PageHeader } from '../components/common/PageHeader';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
+import { useToastStore } from '../stores/toastStore';
 import { getFieldError } from '../utils/forms';
 
 export function ForgotPasswordPage() {
+  const toastSuccess = useToastStore((state) => state.success);
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -23,13 +26,16 @@ export function ForgotPasswordPage() {
 
     try {
       const response = await forgotCustomerPassword({ email });
-      setSuccessMessage(response.message ?? 'Password reset instructions have been sent to your email address.');
+      const message =
+        response.message ?? 'If an account exists for that email, reset instructions are on the way.';
+      setSuccessMessage(message);
+      toastSuccess('Check your email');
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.errors);
         setErrorMessage(error.message);
       } else {
-        setErrorMessage('Unable to start the reset flow right now.');
+        setErrorMessage('Unable to send reset instructions right now. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -37,21 +43,20 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="page-container">
-      <PageHeader title="Forgot password" description="We’ll send reset instructions to your customer email address." showBack />
-      <section className="auth-card">
-        <div className="auth-card-copy">
-          <span className="auth-badge">Password help</span>
-          <h2>Reset your password</h2>
-          <p>Enter your email and we’ll hand the next step back to the secure reset flow.</p>
-        </div>
-
+    <div className="page-container auth-page">
+      <PageHeader title="Forgot password" description="We’ll email you a reset link." showBack />
+      <AuthCard
+        badge="Password help"
+        title="Reset your password"
+        description="Enter the email on your account and we’ll send the next step."
+        footer={<Link to="/login">Back to sign in</Link>}
+      >
         <FormFeedback message={successMessage} />
         <FormFeedback message={errorMessage} variant="error" />
 
-        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
+        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <FormField
-            label="Email address"
+            label="Email"
             name="email"
             type="email"
             autoComplete="email"
@@ -62,15 +67,16 @@ export function ForgotPasswordPage() {
             error={getFieldError(errors, 'email')}
             required
           />
-          <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSubmitting}>
-            {isSubmitting ? 'Sending link...' : 'Send reset instructions'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? 'Sending…' : 'Send reset link'}
           </button>
         </form>
-
-        <div className="auth-links">
-          <Link to="/login">Back to login</Link>
-        </div>
-      </section>
+      </AuthCard>
     </div>
   );
 }

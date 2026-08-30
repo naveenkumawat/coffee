@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
@@ -15,11 +16,26 @@ export function BottomNavigation() {
   const count = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const isAuthenticated = status === 'authenticated';
+  const previousCount = useRef(count);
+  const [badgeBump, setBadgeBump] = useState(false);
+
+  useEffect(() => {
+    if (count > previousCount.current) {
+      setBadgeBump(true);
+      const timer = window.setTimeout(() => setBadgeBump(false), 280);
+      previousCount.current = count;
+
+      return () => window.clearTimeout(timer);
+    }
+
+    previousCount.current = count;
+  }, [count]);
+
   const items: BottomNavItem[] = [
     { to: '/', label: 'Home', icon: 'bi-house-door', end: true },
     { to: '/menu', label: 'Menu', icon: 'bi-grid' },
     {
-      to: isAuthenticated ? '/cart' : buildLoginRedirect('/cart'),
+      to: '/cart',
       label: 'Cart',
       icon: 'bi-bag',
       ariaLabel: count > 0 ? `Cart, ${count} items` : 'Cart'
@@ -45,7 +61,7 @@ export function BottomNavigation() {
           <span className="bottom-nav-icon">
             <i className={`bi ${item.icon}`} aria-hidden="true"></i>
             {item.label === 'Cart' && count > 0 ? (
-              <small className="bottom-nav-badge" aria-hidden="true">
+              <small className={`bottom-nav-badge ${badgeBump ? 'is-bump' : ''}`} aria-hidden="true">
                 {count}
               </small>
             ) : null}

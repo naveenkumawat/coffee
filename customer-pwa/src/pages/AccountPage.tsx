@@ -7,22 +7,24 @@ import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
 import { PageHeader } from '../components/common/PageHeader';
 import { useAuthStore } from '../stores/authStore';
+import { useToastStore } from '../stores/toastStore';
 import { getFieldError } from '../utils/forms';
 
 export function AccountPage() {
   const customer = useAuthStore((state) => state.customer);
   const syncCustomer = useAuthStore((state) => state.syncCustomer);
   const logout = useAuthStore((state) => state.logout);
+  const toastSuccess = useToastStore((state) => state.success);
   const navigate = useNavigate();
   const [profileForm, setProfileForm] = useState({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
   });
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
     password: '',
-    password_confirmation: ''
+    password_confirmation: '',
   });
   const [profileErrors, setProfileErrors] = useState<ApiValidationErrors>({});
   const [passwordErrors, setPasswordErrors] = useState<ApiValidationErrors>({});
@@ -42,7 +44,7 @@ export function AccountPage() {
     setProfileForm({
       name: customer.name,
       email: customer.email,
-      phone: customer.phone ?? ''
+      phone: customer.phone ?? '',
     });
   }, [customer]);
 
@@ -56,10 +58,12 @@ export function AccountPage() {
     try {
       const response = await updateCustomerProfile({
         ...profileForm,
-        phone: profileForm.phone.trim() || null
+        phone: profileForm.phone.trim() || null,
       });
       syncCustomer(response.data);
-      setProfileMessage(response.message ?? 'Profile updated successfully.');
+      const message = response.message ?? 'Profile updated.';
+      setProfileMessage(message);
+      toastSuccess(message);
     } catch (error) {
       if (error instanceof ApiError) {
         setProfileErrors(error.errors);
@@ -87,9 +91,11 @@ export function AccountPage() {
       setPasswordForm({
         current_password: '',
         password: '',
-        password_confirmation: ''
+        password_confirmation: '',
       });
-      setPasswordMessage(response.message ?? 'Password updated successfully.');
+      const message = response.message ?? 'Password updated.';
+      setPasswordMessage(message);
+      toastSuccess(message);
     } catch (error) {
       if (error instanceof ApiError) {
         setPasswordErrors(error.errors);
@@ -118,85 +124,50 @@ export function AccountPage() {
   if (!customer) {
     return (
       <div className="page-container">
-        <PageHeader title="Account" description="Customer session is still loading." />
+        <PageHeader title="Account" description="Loading your account…" />
       </div>
     );
   }
 
-  return (
-    <div className="page-container">
-      <PageHeader
-        title="Account"
-        description="Manage your customer profile and session."
-        rightSlot={
-          <button type="button" className="btn btn-outline-dark rounded-pill btn-sm" onClick={() => void handleLogout()} disabled={isLoggingOut}>
-            {isLoggingOut ? 'Signing out...' : 'Logout'}
-          </button>
-        }
-      />
+  const firstName = customer.name.split(' ')[0] || customer.name;
 
-      <section className="account-hero">
-        <span className="account-hero-badge">Customer session active</span>
-        <h2>{customer.name}</h2>
+  return (
+    <div className="page-container account-page">
+      <PageHeader title="Account" description="Profile, orders, and cafe info" />
+
+      <section className="account-hero account-hero-clean motion-enter">
+        <p className="eyebrow">Signed in</p>
+        <h2>Hi, {firstName}</h2>
         <p>{customer.email}</p>
-        {customer.phone ? <p>{customer.phone}</p> : <p>Add a phone number to make pickup communication easier.</p>}
+        {customer.phone ? <p>{customer.phone}</p> : <p>Add a phone number for easier pickup updates.</p>}
       </section>
 
-      <section className="account-section">
+      <section className="account-section account-shortcuts-primary">
         <div className="account-section-heading">
           <div>
-            <span className="auth-badge">Shortcuts</span>
+            <span className="auth-badge">Ordering</span>
             <h2>Quick access</h2>
-            <p>Jump back into ordering without crowding the bottom navigation.</p>
           </div>
         </div>
         <div className="account-link-list">
-          <Link to="/favourites" className="account-link-row">
+          <Link to="/orders" className="account-link-row is-emphasis">
             <span>
-              <i className="bi bi-heart"></i>
+              <i className="bi bi-receipt" aria-hidden="true"></i>
+              My Orders
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/favourites" className="account-link-row is-emphasis">
+            <span>
+              <i className="bi bi-heart" aria-hidden="true"></i>
               Favourites
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
-          <Link to="/orders" className="account-link-row">
+          <Link to="/menu" className="account-link-row is-emphasis">
             <span>
-              <i className="bi bi-receipt"></i>
-              Orders
-            </span>
-            <i className="bi bi-chevron-right" aria-hidden="true"></i>
-          </Link>
-          <Link to="/about" className="account-link-row">
-            <span>
-              <i className="bi bi-info-circle"></i>
-              About
-            </span>
-            <i className="bi bi-chevron-right" aria-hidden="true"></i>
-          </Link>
-          <Link to="/contact" className="account-link-row">
-            <span>
-              <i className="bi bi-chat-dots"></i>
-              Contact
-            </span>
-            <i className="bi bi-chevron-right" aria-hidden="true"></i>
-          </Link>
-          <Link to="/faq" className="account-link-row">
-            <span>
-              <i className="bi bi-question-circle"></i>
-              FAQ
-            </span>
-            <i className="bi bi-chevron-right" aria-hidden="true"></i>
-          </Link>
-          <Link to="/terms" className="account-link-row">
-            <span>
-              <i className="bi bi-file-text"></i>
-              Terms
-            </span>
-            <i className="bi bi-chevron-right" aria-hidden="true"></i>
-          </Link>
-          <Link to="/privacy" className="account-link-row">
-            <span>
-              <i className="bi bi-shield-check"></i>
-              Privacy
+              <i className="bi bi-cup-hot" aria-hidden="true"></i>
+              Browse menu
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
@@ -206,12 +177,13 @@ export function AccountPage() {
       <section className="account-section">
         <div className="account-section-heading">
           <div>
-            <h2>Edit profile</h2>
-            <p>Keep your contact information current for order updates.</p>
+            <span className="auth-badge">Profile</span>
+            <h2>Edit details</h2>
+            <p>Used for order updates and pickup contact.</p>
           </div>
         </div>
         <FormFeedback message={profileMessage} variant={profileMessageVariant} />
-        <form className="auth-form" onSubmit={(event) => void handleProfileSubmit(event)}>
+        <form className="auth-form account-form" onSubmit={(event) => void handleProfileSubmit(event)}>
           <FormField
             label="Full name"
             name="name"
@@ -222,7 +194,7 @@ export function AccountPage() {
             required
           />
           <FormField
-            label="Email address"
+            label="Email"
             name="email"
             type="email"
             autoComplete="email"
@@ -233,7 +205,7 @@ export function AccountPage() {
             required
           />
           <FormField
-            label="Phone number"
+            label="Phone"
             name="phone"
             type="tel"
             autoComplete="tel"
@@ -243,7 +215,7 @@ export function AccountPage() {
             error={getFieldError(profileErrors, 'phone')}
           />
           <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSavingProfile}>
-            {isSavingProfile ? 'Saving profile...' : 'Save profile'}
+            {isSavingProfile ? 'Saving…' : 'Save profile'}
           </button>
         </form>
       </section>
@@ -251,18 +223,21 @@ export function AccountPage() {
       <section className="account-section">
         <div className="account-section-heading">
           <div>
+            <span className="auth-badge">Security</span>
             <h2>Change password</h2>
-            <p>The backend remains authoritative for current-password validation.</p>
+            <p>Enter your current password to choose a new one.</p>
           </div>
         </div>
         <FormFeedback message={passwordMessage} variant={passwordMessageVariant} />
-        <form className="auth-form" onSubmit={(event) => void handlePasswordSubmit(event)}>
+        <form className="auth-form account-form" onSubmit={(event) => void handlePasswordSubmit(event)}>
           <PasswordField
             label="Current password"
             name="current_password"
             autoComplete="current-password"
             value={passwordForm.current_password}
-            onChange={(event) => setPasswordForm((currentValue) => ({ ...currentValue, current_password: event.target.value }))}
+            onChange={(event) =>
+              setPasswordForm((currentValue) => ({ ...currentValue, current_password: event.target.value }))
+            }
             error={getFieldError(passwordErrors, 'current_password')}
             required
           />
@@ -280,14 +255,73 @@ export function AccountPage() {
             name="password_confirmation"
             autoComplete="new-password"
             value={passwordForm.password_confirmation}
-            onChange={(event) => setPasswordForm((currentValue) => ({ ...currentValue, password_confirmation: event.target.value }))}
+            onChange={(event) =>
+              setPasswordForm((currentValue) => ({ ...currentValue, password_confirmation: event.target.value }))
+            }
             error={getFieldError(passwordErrors, 'password_confirmation')}
             required
           />
           <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSavingPassword}>
-            {isSavingPassword ? 'Updating password...' : 'Update password'}
+            {isSavingPassword ? 'Updating…' : 'Update password'}
           </button>
         </form>
+      </section>
+
+      <section className="account-section account-shortcuts-secondary">
+        <div className="account-section-heading">
+          <div>
+            <span className="auth-badge">Cafe</span>
+            <h2>More info</h2>
+          </div>
+        </div>
+        <div className="account-link-list is-quiet">
+          <Link to="/about" className="account-link-row">
+            <span>
+              <i className="bi bi-info-circle" aria-hidden="true"></i>
+              About
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/contact" className="account-link-row">
+            <span>
+              <i className="bi bi-chat-dots" aria-hidden="true"></i>
+              Contact
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/faq" className="account-link-row">
+            <span>
+              <i className="bi bi-question-circle" aria-hidden="true"></i>
+              FAQ
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/terms" className="account-link-row">
+            <span>
+              <i className="bi bi-file-text" aria-hidden="true"></i>
+              Terms
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/privacy" className="account-link-row">
+            <span>
+              <i className="bi bi-shield-check" aria-hidden="true"></i>
+              Privacy
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+        </div>
+      </section>
+
+      <section className="account-logout-block">
+        <button
+          type="button"
+          className="btn btn-outline-dark btn-lg rounded-pill w-100"
+          onClick={() => void handleLogout()}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? 'Signing out…' : 'Log out'}
+        </button>
       </section>
     </div>
   );

@@ -130,6 +130,10 @@ class RecipeRepository extends AbstractRepository implements RecipeRepositoryInt
                 'base_quantity' => $line['base_quantity'],
                 'base_measurement_unit' => $line['base_measurement_unit'],
                 'sort_order' => $line['sort_order'] ?: ($index + 1),
+                'show_to_customer' => (bool) ($line['show_to_customer'] ?? false),
+                'customer_label' => filled($line['customer_label'] ?? null)
+                    ? trim((string) $line['customer_label'])
+                    : null,
             ];
 
             if ($lineModel && (int) $lineModel->recipe_id === (int) $recipe->getKey()) {

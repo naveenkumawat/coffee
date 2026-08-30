@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
@@ -9,11 +9,13 @@ import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { QuantityStepper } from '../components/common/QuantityStepper';
+import { StickyActionBar } from '../components/common/StickyActionBar';
 import { useCartStore } from '../stores/cartStore';
+import { useToastStore } from '../stores/toastStore';
 import { Product } from '../types/catalog';
-import { formatCurrency, joinLabels } from '../utils/format';
-import { pickProductImage } from '../utils/images';
-import { buildLoginRedirect } from '../utils/navigation';
+import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
+import { formatCurrency } from '../utils/format';
+import { ProductImage } from '../components/common/ProductImage';
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams();
@@ -24,8 +26,8 @@ export function ProductDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const addItem = useCartStore((state) => state.addItem);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const toastSuccess = useToastStore((state) => state.success);
+  const toastError = useToastStore((state) => state.error);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -34,10 +36,17 @@ export function ProductDetailPage() {
 
       try {
         const response = await fetchProduct(productId);
-        setProduct(response.data);
-        setSelectedVariantId(response.data.default_variant?.id ?? response.data.variants[0]?.id ?? null);
+        const nextProduct = response.data;
+        setProduct(nextProduct);
+
+        const preferred =
+          nextProduct.default_variant && nextProduct.default_variant.is_available
+            ? nextProduct.default_variant
+            : nextProduct.variants.find((variant) => variant.is_available) ?? nextProduct.variants[0] ?? null;
+
+        setSelectedVariantId(preferred?.id ?? null);
       } catch (error) {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load the product detail.');
+        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this drink.');
       } finally {
         setIsLoading(false);
       }
@@ -47,29 +56,39 @@ export function ProductDetailPage() {
   }, [productId]);
 
   const selectedVariant = useMemo(
-    () => product?.variants.find((variant) => variant.id === selectedVariantId) ?? product?.default_variant ?? null,
-    [product, selectedVariantId]
+    () => product?.variants.find((variant) => variant.id === selectedVariantId) ?? null,
+    [product, selectedVariantId],
   );
 
-  async function handleAddToCart(): Promise<void> {
+  const lineTotal = useMemo(() => {
     if (!selectedVariant) {
+      return 0;
+    }
+
+    return Number(selectedVariant.price) * quantity;
+  }, [quantity, selectedVariant]);
+
+  const canAdd = Boolean(selectedVariant?.is_available) && !isSubmitting;
+
+  async function handleAddToCart(): Promise<void> {
+    if (!selectedVariant?.is_available) {
       return;
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
 
     try {
       await addItem({
         product_variant_id: selectedVariant.id,
-        quantity
+        quantity,
+        display: product ? buildCartDisplayFromProduct(product, selectedVariant) : undefined,
       });
-      navigate('/cart');
+      toastSuccess(`${product?.name ?? 'Item'} added to cart`);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        navigate(buildLoginRedirect(location.pathname, location.search));
-      } else {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to add this item.');
-      }
+      const message = error instanceof ApiError ? error.message : 'Unable to add this item.';
+      setErrorMessage(message);
+      toastError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -78,8 +97,8 @@ export function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="page-container">
-        <PageHeader title="Product detail" showBack />
-        <LoadingSkeleton cardCount={2} lines={5} />
+        <PageHeader title="Product" showBack />
+        <LoadingSkeleton cardCount={1} lines={5} variant="hero" />
       </div>
     );
   }
@@ -87,7 +106,7 @@ export function ProductDetailPage() {
   if (errorMessage && !product) {
     return (
       <div className="page-container">
-        <PageHeader title="Product detail" showBack />
+        <PageHeader title="Product" showBack />
         <ErrorState description={errorMessage} onRetry={() => window.location.reload()} />
       </div>
     );
@@ -96,72 +115,168 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className="page-container">
-        <PageHeader title="Product detail" showBack />
-        <EmptyState title="Product not found" description="This menu item is no longer available." actionLabel="Back to menu" actionHref="/menu" />
+        <PageHeader title="Product" showBack />
+        <EmptyState
+          title="Product not found"
+          description="This menu item is no longer available."
+          actionLabel="Back to menu"
+          actionHref="/menu"
+        />
       </div>
     );
   }
 
-  const image = pickProductImage(product.name, product.image_path);
+  const hasAvailableVariant = product.variants.some((variant) => variant.is_available);
 
   return (
-    <div className="page-container detail-page">
+    <div className="page-container detail-page has-sticky-cta">
       <PageHeader
-        title={product.name}
-        description={product.category?.name ?? 'Coffee menu'}
+        title={product.category?.name ?? 'Menu'}
+        description="Choose size and add to cart"
         showBack
         rightSlot={<FavouriteToggle productId={product.id} />}
       />
 
       {errorMessage ? <p className="form-feedback form-feedback-error">{errorMessage}</p> : null}
 
-      <section className="detail-hero">
+      <section className="detail-hero motion-enter">
         <div className="detail-image-wrap">
-          <img src={image} alt={product.name} className="detail-image" loading="eager" decoding="async" />
+          <ProductImage
+            name={product.name}
+            imagePath={product.image_path}
+            alt={product.name}
+            className="detail-image"
+            eager
+          />
         </div>
+
         <div className="detail-panel">
+          <div className="detail-heading">
+            <h1 className="detail-title">{product.name}</h1>
+            <p className="detail-price-live" aria-live="polite">
+              {selectedVariant ? formatCurrency(selectedVariant.price) : 'Unavailable'}
+            </p>
+          </div>
+
           <ProductBadges product={product} showCustomizable />
-          <p className="detail-description">{product.description || product.short_description}</p>
-          <p className="detail-meta">
-            {joinLabels([
-              product.customer_ingredient_summary,
-              product.preparation_time_minutes ? `${product.preparation_time_minutes} min prep` : null
-            ])}
+
+          <p className="detail-description">
+            {product.description || product.short_description || 'Freshly prepared for quick pickup.'}
           </p>
 
+          {product.customer_ingredient_summary ? (
+            <div className="detail-info-block">
+              <span className="detail-info-label">About this drink</span>
+              <p>{product.customer_ingredient_summary}</p>
+            </div>
+          ) : null}
+
+          {(selectedVariant?.major_ingredients?.length ?? 0) > 0 ? (
+            <div className="detail-info-block">
+              <span className="detail-info-label">Contains</span>
+              <div className="detail-ingredient-chips" aria-label="Major ingredients">
+                {selectedVariant?.major_ingredients?.map((ingredient, index) => (
+                  <span
+                    key={ingredient.id}
+                    className="detail-ingredient-chip motion-chip"
+                    style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
+                  >
+                    {ingredient.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {product.flavours.length > 0 ? (
+            <div className="detail-info-block">
+              <span className="detail-info-label">Available flavours</span>
+              <div className="detail-flavour-chips">
+                {product.flavours.map((flavour) => (
+                  <span key={flavour.id} className="detail-flavour-chip">
+                    {flavour.name}
+                  </span>
+                ))}
+              </div>
+              {product.is_customizable ? (
+                <p className="detail-meta">Customizable — tell the barista your preferred flavour at pickup.</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {product.preparation_time_minutes ? (
+            <p className="detail-meta">{product.preparation_time_minutes} min prep</p>
+          ) : null}
+
           <div className="variant-group">
-            <h2>Choose a variant</h2>
-            <div className="variant-options">
-              {product.variants.map((variant) => (
-                <button
-                  type="button"
-                  key={variant.id}
-                  className={`variant-option ${selectedVariant?.id === variant.id ? 'active' : ''}`}
-                  onClick={() => setSelectedVariantId(variant.id)}
-                >
-                  <span>{variant.name}</span>
-                  <small>{variant.serving_size.label}</small>
-                  <strong>{formatCurrency(variant.price)}</strong>
-                </button>
-              ))}
+            <div className="variant-group-header">
+              <h2>Choose a size</h2>
+              {selectedVariant ? (
+                <span className="detail-selected-size" aria-live="polite">
+                  {selectedVariant.name} · {formatCurrency(selectedVariant.price)}
+                </span>
+              ) : null}
+            </div>
+            <div className="variant-options" role="radiogroup" aria-label="Size options">
+              {product.variants.map((variant) => {
+                const isSelected = selectedVariant?.id === variant.id;
+                const isDisabled = !variant.is_available;
+
+                return (
+                  <button
+                    type="button"
+                    key={variant.id}
+                    role="radio"
+                    aria-checked={isSelected}
+                    disabled={isDisabled}
+                    className={`variant-option ${isSelected ? 'active' : ''} ${isDisabled ? 'is-disabled' : ''}`}
+                    onClick={() => setSelectedVariantId(variant.id)}
+                  >
+                    <span>{variant.name}</span>
+                    <small>{isDisabled ? 'Unavailable' : variant.serving_size.label}</small>
+                    <strong>{formatCurrency(variant.price)}</strong>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="detail-actions">
-            <QuantityStepper value={quantity} onChange={setQuantity} />
-            <button type="button" className="btn btn-primary btn-lg rounded-pill flex-grow-1" onClick={handleAddToCart} disabled={!selectedVariant || isSubmitting}>
-              {isSubmitting ? 'Adding to cart...' : `Add ${formatCurrency(Number(selectedVariant?.price ?? 0) * quantity)}`}
-            </button>
-          </div>
+          {!hasAvailableVariant ? (
+            <p className="summary-warning">This drink is currently unavailable. Browse another size or menu item.</p>
+          ) : null}
         </div>
       </section>
 
       <div className="page-note">
-        <span>Save drinks you love for quicker pickup next time.</span>
+        <span>Looking for more like this?</span>
         <Link to={product.category ? `/menu?category=${product.category.id}` : '/menu'}>
           {product.category ? `More in ${product.category.name}` : 'Back to menu'}
         </Link>
       </div>
+
+      <StickyActionBar
+        eyebrow="Add to cart"
+        title={selectedVariant?.is_available ? selectedVariant.name : 'Unavailable'}
+        value={formatCurrency(lineTotal)}
+        note={selectedVariant?.is_available ? `${quantity} × ${formatCurrency(selectedVariant.price)}` : 'Pick an available size'}
+      >
+        <div className="sticky-action-inline">
+          <QuantityStepper
+            value={quantity}
+            onChange={setQuantity}
+            disabled={!selectedVariant?.is_available || isSubmitting}
+          />
+          <button
+            type="button"
+            className="btn btn-primary btn-lg rounded-pill flex-grow-1"
+            onClick={() => void handleAddToCart()}
+            disabled={!canAdd}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? 'Adding…' : 'Add to cart'}
+          </button>
+        </div>
+      </StickyActionBar>
     </div>
   );
 }

@@ -36,8 +36,9 @@ export function CheckoutPage() {
     pickup_name: '',
     pickup_phone: '',
     customer_notes: '',
-    pickup_notes: ''
+    pickup_notes: '',
   });
+  const [sameAsContact, setSameAsContact] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<ApiValidationErrors>({});
@@ -58,15 +59,17 @@ export function CheckoutPage() {
 
       if (!didHydrateDefaults.current || !preserveForm) {
         const customerPhone = response.meta.customer.phone ?? '';
+        const customerName = response.meta.customer.name || '';
 
         setForm((currentValue) => ({
           ...currentValue,
-          customer_name: response.meta.customer.name || currentValue.customer_name,
+          customer_name: customerName || currentValue.customer_name,
           customer_email: response.meta.customer.email || currentValue.customer_email,
           customer_phone: currentValue.customer_phone || customerPhone,
-          pickup_name: currentValue.pickup_name || response.meta.customer.name || '',
-          pickup_phone: currentValue.pickup_phone || customerPhone
+          pickup_name: currentValue.pickup_name || customerName,
+          pickup_phone: currentValue.pickup_phone || customerPhone,
         }));
+        setSameAsContact(true);
         didHydrateDefaults.current = true;
       }
     } catch (error) {
@@ -88,7 +91,33 @@ export function CheckoutPage() {
   }, []);
 
   function updateField(field: keyof typeof form, value: string): void {
-    setForm((currentValue) => ({ ...currentValue, [field]: value }));
+    setForm((currentValue) => {
+      const nextValue = { ...currentValue, [field]: value };
+
+      if (sameAsContact && (field === 'customer_name' || field === 'customer_phone')) {
+        if (field === 'customer_name') {
+          nextValue.pickup_name = value;
+        }
+
+        if (field === 'customer_phone') {
+          nextValue.pickup_phone = value;
+        }
+      }
+
+      return nextValue;
+    });
+  }
+
+  function handleSameAsContactChange(checked: boolean): void {
+    setSameAsContact(checked);
+
+    if (checked) {
+      setForm((currentValue) => ({
+        ...currentValue,
+        pickup_name: currentValue.customer_name,
+        pickup_phone: currentValue.customer_phone,
+      }));
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -102,16 +131,19 @@ export function CheckoutPage() {
     setErrors({});
     setMessage(null);
 
+    const pickupName = sameAsContact ? form.customer_name : form.pickup_name;
+    const pickupPhone = sameAsContact ? form.customer_phone : form.pickup_phone;
+
     try {
       const response = await submitCheckout({
         checkout_token: summaryMeta.checkout_token,
         customer_name: form.customer_name,
         customer_email: form.customer_email,
         customer_phone: form.customer_phone,
-        pickup_name: form.pickup_name,
-        pickup_phone: form.pickup_phone,
+        pickup_name: pickupName,
+        pickup_phone: pickupPhone,
         customer_notes: form.customer_notes.trim() || null,
-        pickup_notes: form.pickup_notes.trim() || null
+        pickup_notes: form.pickup_notes.trim() || null,
       });
 
       resetCart();
@@ -119,8 +151,8 @@ export function CheckoutPage() {
         replace: true,
         state: {
           order: response.data,
-          payment: response.meta.payment
-        } satisfies CheckoutNavigationState
+          payment: response.meta.payment,
+        } satisfies CheckoutNavigationState,
       });
     } catch (error) {
       if (error instanceof ApiError) {
@@ -141,8 +173,8 @@ export function CheckoutPage() {
   if (isLoading) {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm your details and pickup order." showBack />
-        <LoadingSkeleton cardCount={3} lines={5} />
+        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
+        <LoadingSkeleton cardCount={3} lines={4} />
       </div>
     );
   }
@@ -150,7 +182,7 @@ export function CheckoutPage() {
   if (displayState === 'error') {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm your details and pickup order." showBack />
+        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
         <ErrorState description={message ?? 'Unable to load checkout right now.'} onRetry={() => void loadSummary()} />
       </div>
     );
@@ -159,7 +191,7 @@ export function CheckoutPage() {
   if (displayState === 'empty') {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm your details and pickup order." showBack />
+        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
         <EmptyState
           title="Your cart is empty"
           description={message ?? 'Add a few menu items before continuing to checkout.'}
@@ -173,10 +205,10 @@ export function CheckoutPage() {
   if (displayState === 'review-cart' || !cart || !summaryMeta) {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm your details and pickup order." showBack />
+        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
         <EmptyState
           title="Review your cart first"
-          description={message ?? 'One or more items changed in price or availability. Please review your cart before retrying checkout.'}
+          description={message ?? 'One or more items changed. Please review your cart before trying again.'}
           actionLabel="Back to cart"
           actionHref="/cart"
         />
@@ -185,19 +217,21 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="page-container checkout-page">
-      <PageHeader title="Checkout" description="Live totals and availability are verified by the server before your order is placed." showBack />
+    <div className="page-container checkout-page has-sticky-cta">
+      <PageHeader title="Checkout" description="Confirm details, then pay after placing the order." showBack />
 
       <FormFeedback message={message} variant="error" />
 
-      <section className="account-section">
+      <section className="account-section checkout-summary-section">
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Order summary</span>
-            <h2>Review server totals</h2>
-            <p>{summaryMeta.summary.item_count} item(s) ready for pickup checkout.</p>
+            <h2>Your pickup order</h2>
+            <p>{summaryMeta.summary.item_count} item(s) · pay after you place the order</p>
           </div>
-          <Link to="/cart" className="link-button">Edit cart</Link>
+          <Link to="/cart" className="link-button">
+            Edit cart
+          </Link>
         </div>
 
         <div className="checkout-list">
@@ -207,7 +241,7 @@ export function CheckoutPage() {
               name={item.product?.name ?? 'Coffee item'}
               subtitle={joinLabels([
                 item.variant?.name,
-                item.variant ? `${item.variant.serving_size_value} ${item.variant.serving_size_unit ?? ''}`.trim() : null
+                item.variant ? `${item.variant.serving_size_value} ${item.variant.serving_size_unit ?? ''}`.trim() : null,
               ])}
               detail={item.product?.customer_ingredient_summary}
               imageName={item.product?.name}
@@ -223,105 +257,143 @@ export function CheckoutPage() {
             <span>Subtotal</span>
             <strong>{formatCurrency(summaryMeta.summary.subtotal)}</strong>
           </div>
-          <div>
-            <span>Total</span>
+          <div className="cart-summary-total">
+            <span>Total due</span>
             <strong>{formatCurrency(summaryMeta.summary.total)}</strong>
           </div>
         </div>
       </section>
 
-      <section className="account-section">
-        <div className="account-section-heading">
-          <div>
-            <span className="auth-badge">Pickup details</span>
-            <h2>Tell us who is collecting</h2>
-            <p>We’ve prefilled your account details where possible to keep checkout quick on mobile.</p>
+      <form className="checkout-form" onSubmit={(event) => void handleSubmit(event)}>
+        <section className="account-section">
+          <div className="account-section-heading">
+            <div>
+              <span className="auth-badge">Contact</span>
+              <h2>Your details</h2>
+              <p>We’ll use these for order updates.</p>
+            </div>
           </div>
-        </div>
 
-        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
-          <FormField
-            label="Customer name"
-            name="customer_name"
-            autoComplete="name"
-            value={form.customer_name}
-            onChange={(event) => updateField('customer_name', event.target.value)}
-            error={getFieldError(errors, 'customer_name')}
-            required
-          />
-          <FormField
-            label="Customer email"
-            name="customer_email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            value={form.customer_email}
-            onChange={(event) => updateField('customer_email', event.target.value)}
-            error={getFieldError(errors, 'customer_email')}
-            required
-          />
-          <FormField
-            label="Customer phone"
-            name="customer_phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            value={form.customer_phone}
-            onChange={(event) => updateField('customer_phone', event.target.value)}
-            error={getFieldError(errors, 'customer_phone')}
-            required
-          />
-          <FormField
-            label="Pickup name"
-            name="pickup_name"
-            autoComplete="name"
-            value={form.pickup_name}
-            onChange={(event) => updateField('pickup_name', event.target.value)}
-            error={getFieldError(errors, 'pickup_name')}
-            required
-          />
-          <FormField
-            label="Pickup phone"
-            name="pickup_phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            value={form.pickup_phone}
-            onChange={(event) => updateField('pickup_phone', event.target.value)}
-            error={getFieldError(errors, 'pickup_phone')}
-            required
-          />
-          <FormTextarea
-            label="Customer notes"
-            name="customer_notes"
-            rows={3}
-            placeholder="Optional notes for the cafe"
-            value={form.customer_notes}
-            onChange={(event) => updateField('customer_notes', event.target.value)}
-            error={getFieldError(errors, 'customer_notes')}
-          />
-          <FormTextarea
-            label="Pickup notes"
-            name="pickup_notes"
-            rows={3}
-            placeholder="Optional pickup notes"
-            value={form.pickup_notes}
-            onChange={(event) => updateField('pickup_notes', event.target.value)}
-            error={getFieldError(errors, 'pickup_notes')}
-          />
+          <div className="checkout-field-group">
+            <FormField
+              label="Full name"
+              name="customer_name"
+              autoComplete="name"
+              value={form.customer_name}
+              onChange={(event) => updateField('customer_name', event.target.value)}
+              error={getFieldError(errors, 'customer_name')}
+              required
+            />
+            <FormField
+              label="Email"
+              name="customer_email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              value={form.customer_email}
+              onChange={(event) => updateField('customer_email', event.target.value)}
+              error={getFieldError(errors, 'customer_email')}
+              required
+            />
+            <FormField
+              label="Phone"
+              name="customer_phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              value={form.customer_phone}
+              onChange={(event) => updateField('customer_phone', event.target.value)}
+              error={getFieldError(errors, 'customer_phone')}
+              required
+            />
+          </div>
+        </section>
 
-          <StickyActionBar
-            eyebrow="Checkout token secured"
-            title="Place order"
-            value={formatCurrency(summaryMeta.summary.total)}
-            note="The backend validates price, availability, and ownership again before creating the order."
+        <section className="account-section">
+          <div className="account-section-heading">
+            <div>
+              <span className="auth-badge">Pickup</span>
+              <h2>Who is collecting?</h2>
+              <p>Cafe pickup only — no delivery.</p>
+            </div>
+          </div>
+
+          <label className="choice-row checkout-choice">
+            <input
+              type="checkbox"
+              checked={sameAsContact}
+              onChange={(event) => handleSameAsContactChange(event.target.checked)}
+            />
+            <span>Same as my contact details</span>
+          </label>
+
+          {!sameAsContact ? (
+            <div className="checkout-field-group">
+              <FormField
+                label="Pickup name"
+                name="pickup_name"
+                autoComplete="name"
+                value={form.pickup_name}
+                onChange={(event) => updateField('pickup_name', event.target.value)}
+                error={getFieldError(errors, 'pickup_name')}
+                required
+              />
+              <FormField
+                label="Pickup phone"
+                name="pickup_phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                value={form.pickup_phone}
+                onChange={(event) => updateField('pickup_phone', event.target.value)}
+                error={getFieldError(errors, 'pickup_phone')}
+                required
+              />
+            </div>
+          ) : null}
+
+          <div className="checkout-field-group">
+            <FormTextarea
+              label="Notes for the cafe (optional)"
+              name="customer_notes"
+              rows={2}
+              placeholder="Extra hot, less sweet, allergy notes…"
+              value={form.customer_notes}
+              onChange={(event) => updateField('customer_notes', event.target.value)}
+              error={getFieldError(errors, 'customer_notes')}
+            />
+            <FormTextarea
+              label="Pickup notes (optional)"
+              name="pickup_notes"
+              rows={2}
+              placeholder="Arriving in 10 minutes…"
+              value={form.pickup_notes}
+              onChange={(event) => updateField('pickup_notes', event.target.value)}
+              error={getFieldError(errors, 'pickup_notes')}
+            />
+          </div>
+        </section>
+
+        <p className="checkout-payment-note">
+          After you place the order, you’ll get UPI payment instructions. The cafe confirms payment before preparing.
+        </p>
+
+        <StickyActionBar
+          eyebrow="Total due"
+          title={isSubmitting ? 'Placing order…' : 'Place order'}
+          value={formatCurrency(summaryMeta.summary.total)}
+          note="You’ll pay next — Pending Payment until confirmed"
+        >
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
           >
-            <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSubmitting}>
-              {isSubmitting ? 'Placing order...' : 'Confirm order'}
-            </button>
-          </StickyActionBar>
-        </form>
-      </section>
+            {isSubmitting ? 'Placing order…' : 'Confirm & place order'}
+          </button>
+        </StickyActionBar>
+      </form>
     </div>
   );
 }

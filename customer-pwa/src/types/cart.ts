@@ -52,4 +52,16 @@ export interface CartCountResponse {
 export interface CartItemMutationPayload {
   product_variant_id: number;
   quantity: number;
+  display?: {
+    product: CartProductSummary | null;
+    variant: CartVariantSummary | null;
+  };
+}
+
+export interface CartMergePayload {
+  items: Array<{
+    product_variant_id: number;
+    quantity: number;
+  }>;
+  idempotency_key?: string | null;
 }

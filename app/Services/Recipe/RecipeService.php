@@ -124,6 +124,10 @@ class RecipeService implements RecipeServiceInterface
                 'base_quantity' => $baseQuantity,
                 'base_measurement_unit' => $baseUnit->value,
                 'sort_order' => (int) ($line['sort_order'] ?? ($index + 1)),
+                'show_to_customer' => (bool) ($line['show_to_customer'] ?? false),
+                'customer_label' => filled($line['customer_label'] ?? null)
+                    ? trim((string) $line['customer_label'])
+                    : null,
             ];
         }
 

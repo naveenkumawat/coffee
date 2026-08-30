@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchWebsiteContent } from '../../api/content';
 import { ApiError } from '../../api/client';
 import { ErrorState } from '../common/ErrorState';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { PageHeader } from '../common/PageHeader';
 import { ContentPageKey, WebsiteContent } from '../../types/content';
-import { buildWhatsAppUrl } from '../../utils/content';
+import { parseFaqItems } from '../../utils/contentPages';
+import { ContactActions } from './ContactActions';
+import { FaqAccordion } from './FaqAccordion';
 
 const pageMeta: Record<ContentPageKey, { title: string; description: string }> = {
   about: {
@@ -60,49 +62,55 @@ export function ContentPage({ page }: ContentPageProps) {
 
   const body = content?.pages[page]?.trim() ?? '';
   const business = content?.business;
-  const whatsappUrl = buildWhatsAppUrl(business?.whatsapp_number);
+  const faqItems = useMemo(() => (page === 'faq' ? parseFaqItems(body) : []), [body, page]);
+  const isLongForm = page === 'terms' || page === 'privacy';
 
   return (
-    <div className="page-container">
+    <div className={`page-container content-page content-page-${page}`}>
       <PageHeader title={meta.title} description={meta.description} showBack />
 
       {isLoading ? <LoadingSkeleton cardCount={1} lines={6} /> : null}
       {errorMessage ? <ErrorState description={errorMessage} onRetry={() => window.location.reload()} /> : null}
 
       {!isLoading && !errorMessage ? (
-        <section className="section-shell content-page-card">
-          {body ? <div className="content-body content-preline">{body}</div> : (
-            <p className="content-empty">This page has not been published yet.</p>
-          )}
-
-          {page === 'contact' && business ? (
-            <div className="contact-facts mt-4">
-              {business.name ? <p className="fw-semibold">{business.name}</p> : null}
-              {business.address ? <p>{business.address}</p> : null}
-              {business.opening_hours ? <p className="content-preline">{business.opening_hours}</p> : null}
-              {business.phone ? (
-                <a href={`tel:${business.phone}`} className="text-link">
-                  {business.phone}
-                </a>
-              ) : null}
-              {business.email ? (
-                <a href={`mailto:${business.email}`} className="text-link">
-                  {business.email}
-                </a>
-              ) : null}
-              {whatsappUrl ? (
-                <a
-                  href={whatsappUrl}
-                  className="btn btn-success btn-lg rounded-pill w-100 mt-3"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Chat on WhatsApp
-                </a>
-              ) : null}
-            </div>
+        <div className="content-shell motion-enter">
+          {page === 'about' ? (
+            <section className="content-about-hero">
+              <p className="eyebrow">{business?.name ?? 'Coffee Cafe'}</p>
+              <h2>Crafted for pickup</h2>
+              {business?.about_short ? <p>{business.about_short}</p> : null}
+            </section>
           ) : null}
-        </section>
+
+          {page === 'contact' && business ? <ContactActions business={business} /> : null}
+
+          {page === 'faq' && faqItems.length > 0 ? (
+            <section className="content-section" aria-label="Frequently asked questions">
+              <FaqAccordion items={faqItems} />
+            </section>
+          ) : null}
+
+          {body && !(page === 'faq' && faqItems.length > 0) ? (
+            <section
+              className={`content-section ${isLongForm ? 'is-longform' : ''} ${page === 'about' ? 'is-story' : ''}`.trim()}
+            >
+              <div className="content-body content-preline">{body}</div>
+            </section>
+          ) : null}
+
+          {!body && page !== 'contact' && !(page === 'faq' && faqItems.length > 0) ? (
+            <section className="content-section">
+              <p className="content-empty">This page has not been published yet.</p>
+            </section>
+          ) : null}
+
+          {page === 'contact' && body ? (
+            <section className="content-section is-secondary">
+              <h2 className="content-section-title">More details</h2>
+              <div className="content-body content-preline">{body}</div>
+            </section>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

@@ -11,7 +11,10 @@ import { PageHeader } from '../components/common/PageHeader';
 import { useCartStore } from '../stores/cartStore';
 import { useFavouriteStore } from '../stores/favouriteStore';
 import { Product } from '../types/catalog';
+import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
+import { canQuickAddProduct, getProductVariants } from '../utils/productActions';
 import { buildLoginRedirect } from '../utils/navigation';
+import { useToastStore } from '../stores/toastStore';
 
 export function FavouritesPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,6 +25,8 @@ export function FavouritesPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingProductId, setPendingProductId] = useState<number | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const toastSuccess = useToastStore((state) => state.success);
+  const toastError = useToastStore((state) => state.error);
   const favouriteIds = useFavouriteStore((state) => state.ids);
   const hasLoadedFavourites = useFavouriteStore((state) => state.hasLoaded);
   const refreshIds = useFavouriteStore((state) => state.refreshIds);
@@ -71,24 +76,25 @@ export function FavouritesPage() {
   }, []);
 
   async function handleAddToCart(product: Product): Promise<void> {
-    if (!product.default_variant) {
+    if (!canQuickAddProduct(product)) {
+      navigate(`/menu/${product.id}`);
       return;
     }
 
+    const variant = getProductVariants(product)[0];
     setPendingProductId(product.id);
 
     try {
       await addItem({
-        product_variant_id: product.default_variant.id,
-        quantity: 1
+        product_variant_id: variant.id,
+        quantity: 1,
+        display: buildCartDisplayFromProduct(product, variant),
       });
-      navigate('/cart');
+      toastSuccess(`${product.name} added to cart`);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        navigate(buildLoginRedirect(location.pathname, location.search));
-      } else {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to add this favourite to your cart.');
-      }
+      const message = error instanceof ApiError ? error.message : 'Unable to add this favourite to your cart.';
+      setErrorMessage(message);
+      toastError(message);
     } finally {
       setPendingProductId(null);
     }
@@ -103,7 +109,7 @@ export function FavouritesPage() {
     <div className="page-container">
       <PageHeader
         title="Favourites"
-        description="Your saved drinks, refreshed from the server."
+        description="Your saved drinks for quicker ordering."
         showBack
         rightSlot={
           <button type="button" className="link-button" onClick={() => void loadFavourites(1)} disabled={isLoading}>

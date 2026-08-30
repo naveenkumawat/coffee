@@ -12,8 +12,11 @@
             <form method="POST" action="{{ route('customer.login.store') }}" class="space-y-5">
                 @csrf
                 <div>
-                    <label for="email" class="mb-2 block text-sm font-medium text-stone-200">Email</label>
-                    <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-amber-300/50" />
+                    <label for="login" class="mb-2 block text-sm font-medium text-stone-200">Email or mobile number</label>
+                    <input id="login" name="login" type="text" value="{{ old('login', old('email')) }}" required autofocus autocomplete="username" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-amber-300/50" />
+                    @error('login')
+                        <p class="mt-2 text-sm text-rose-300">{{ $message }}</p>
+                    @enderror
                     @error('email')
                         <p class="mt-2 text-sm text-rose-300">{{ $message }}</p>
                     @enderror

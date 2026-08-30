@@ -6,6 +6,8 @@
             'quantity' => is_object($line) ? (string) $line->quantity : ($line['quantity'] ?? null),
             'measurement_unit' => is_object($line) ? $line->measurement_unit?->value : ($line['measurement_unit'] ?? 'g'),
             'sort_order' => is_object($line) ? (int) $line->sort_order : ($line['sort_order'] ?? 0),
+            'show_to_customer' => is_object($line) ? (bool) $line->show_to_customer : (bool) ($line['show_to_customer'] ?? false),
+            'customer_label' => is_object($line) ? $line->customer_label : ($line['customer_label'] ?? null),
         ];
     })->all()))
         ->pad(5, [
@@ -14,6 +16,8 @@
             'quantity' => null,
             'measurement_unit' => 'g',
             'sort_order' => 0,
+            'show_to_customer' => false,
+            'customer_label' => null,
         ])
         ->values();
 @endphp
@@ -58,7 +62,7 @@
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-4 mb-6">
                 <div>
                     <h4 class="fw-bold text-gray-900 mb-1">Ingredient Lines</h4>
-                    <div class="text-muted fs-7">Compatible units follow each ingredient's base unit. Duplicate ingredients are blocked.</div>
+                    <div class="text-muted fs-7">Compatible units follow each ingredient's base unit. Duplicate ingredients are blocked. Customer-visible lines appear on the product detail page without quantities.</div>
                 </div>
             </div>
 
@@ -68,7 +72,7 @@
                         <div class="border border-gray-200 rounded-3 p-5">
                             <input type="hidden" name="lines[{{ $index }}][id]" value="{{ $line['id'] }}">
                             <div class="row g-4 align-items-end">
-                                <div class="col-lg-6">
+                                <div class="col-lg-5">
                                     <label for="lines_{{ $index }}_ingredient_id" class="required form-label">Ingredient</label>
                                     <select id="lines_{{ $index }}_ingredient_id" name="lines[{{ $index }}][ingredient_id]" class="form-select @error("lines.$index.ingredient_id") is-invalid @enderror" data-control="select2" data-placeholder="Select an ingredient">
                                         <option></option>
@@ -98,10 +102,40 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-lg-2">
+                                <div class="col-lg-1">
                                     <label for="lines_{{ $index }}_sort_order" class="form-label">Order</label>
                                     <input id="lines_{{ $index }}_sort_order" name="lines[{{ $index }}][sort_order]" type="number" min="0" step="1" value="{{ $line['sort_order'] }}" class="form-control @error("lines.$index.sort_order") is-invalid @enderror" />
                                     @error("lines.$index.sort_order")
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-lg-2">
+                                    <label class="form-label d-block">Customer</label>
+                                    <div class="form-check form-switch form-check-custom form-check-solid mt-2">
+                                        <input type="hidden" name="lines[{{ $index }}][show_to_customer]" value="0">
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            id="lines_{{ $index }}_show_to_customer"
+                                            name="lines[{{ $index }}][show_to_customer]"
+                                            value="1"
+                                            @checked($line['show_to_customer'])
+                                        >
+                                        <label class="form-check-label" for="lines_{{ $index }}_show_to_customer">Show to customer</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <label for="lines_{{ $index }}_customer_label" class="form-label">Customer label</label>
+                                    <input
+                                        id="lines_{{ $index }}_customer_label"
+                                        name="lines[{{ $index }}][customer_label]"
+                                        type="text"
+                                        maxlength="120"
+                                        value="{{ $line['customer_label'] }}"
+                                        placeholder="Optional friendlier name (e.g. Vanilla)"
+                                        class="form-control @error("lines.$index.customer_label") is-invalid @enderror"
+                                    />
+                                    @error("lines.$index.customer_label")
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>

@@ -44,6 +44,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('cart')->name('cart.')->group(function (): void {
             Route::get('/', [CustomerCartController::class, 'show'])->name('show');
             Route::get('/count', [CustomerCartController::class, 'count'])->name('count');
+            Route::post('/merge', [CustomerCartController::class, 'merge'])->name('merge');
             Route::post('/items', [CustomerCartController::class, 'store'])->name('items.store');
             Route::put('/items/{cartItem}', [CustomerCartController::class, 'update'])->name('items.update');
             Route::delete('/items/{cartItem}', [CustomerCartController::class, 'destroy'])->name('items.destroy');

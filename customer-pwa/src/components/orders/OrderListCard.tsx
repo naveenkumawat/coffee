@@ -1,30 +1,61 @@
 import { Link } from 'react-router-dom';
 import { Order } from '../../types/order';
 import { formatCurrency, formatDateTime } from '../../utils/format';
-import { primaryItemLabel } from '../../utils/orders';
+import {
+  isActiveOrder,
+  isPendingPayment,
+  isReadyForPickup,
+  orderListActionLabel,
+  primaryItemLabel,
+  statusTone,
+} from '../../utils/orders';
+import { OrderStatusBadge } from './OrderStatusBadge';
 
 interface OrderListCardProps {
   order: Order;
 }
 
 export function OrderListCard({ order }: OrderListCardProps) {
+  const tone = statusTone(order.status);
+  const active = isActiveOrder(order.status);
+  const actionLabel = orderListActionLabel(order.status);
+
   return (
-    <Link to={`/orders/${order.id}`} className="order-list-card">
+    <Link
+      to={`/orders/${order.id}`}
+      className={[
+        'order-list-card',
+        `is-${tone}`,
+        active ? 'is-active-order' : 'is-quiet-order',
+        isPendingPayment(order.status) ? 'needs-payment' : '',
+        isReadyForPickup(order.status) ? 'is-ready' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="order-list-card-top">
-        <div>
-          <span className="auth-badge">{order.status_label ?? 'Order'}</span>
-          <h2>Order {order.order_number}</h2>
-          <p>{formatDateTime(order.placed_at)}</p>
+        <div className="order-list-card-copy">
+          <OrderStatusBadge status={order.status} label={order.status_label} />
+          <h2>{order.order_number}</h2>
+          <p className="order-list-date">{formatDateTime(order.placed_at)}</p>
         </div>
-        <strong>{formatCurrency(order.total_amount)}</strong>
+        <strong className="order-list-total">{formatCurrency(order.total_amount)}</strong>
       </div>
+
       <div className="order-list-card-bottom">
-        <p>{primaryItemLabel(order)}</p>
-        <span>
-          Track
+        <p className="order-list-items">{primaryItemLabel(order)}</p>
+        <span className="order-list-action">
+          {actionLabel}
           <i className="bi bi-chevron-right" aria-hidden="true"></i>
         </span>
       </div>
+
+      {isPendingPayment(order.status) ? (
+        <p className="order-list-callout">Payment needed to start preparation</p>
+      ) : null}
+      {isReadyForPickup(order.status) ? (
+        <p className="order-list-callout is-ready-callout">Ready at the cafe — come pick it up</p>
+      ) : null}
     </Link>
   );
 }

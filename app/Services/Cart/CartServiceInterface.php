@@ -19,6 +19,11 @@ interface CartServiceInterface
 
     public function clear(User $customer): Cart;
 
+    /**
+     * @param  list<array{product_variant_id: int, quantity: int}>  $items
+     */
+    public function mergeGuestItems(User $customer, array $items, ?string $idempotencyKey = null): Cart;
+
     public function count(User $customer): int;
 
     public function summarize(Cart $cart): array;

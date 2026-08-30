@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   fetchBestsellerProducts,
   fetchCategories,
   fetchFeaturedProducts,
-  fetchNewProducts
+  fetchNewProducts,
 } from '../api/catalog';
 import { fetchWebsiteContent } from '../api/content';
 import { ApiError } from '../api/client';
 import { FeaturedHero } from '../components/catalog/FeaturedHero';
 import { ProductCard } from '../components/catalog/ProductCard';
+import { ProductRail } from '../components/catalog/ProductRail';
 import { HomeContentSections } from '../components/content/HomeContentSections';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -18,7 +19,9 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory } from '../types/catalog';
 import { WebsiteContent } from '../types/content';
 import { useCartStore } from '../stores/cartStore';
-import { buildLoginRedirect } from '../utils/navigation';
+import { useToastStore } from '../stores/toastStore';
+import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
+import { canQuickAddProduct, getProductVariants } from '../utils/productActions';
 
 export function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -29,10 +32,10 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingProductId, setPendingProductId] = useState<number | null>(null);
-  const count = useCartStore((state) => state.count);
   const addItem = useCartStore((state) => state.addItem);
+  const toastSuccess = useToastStore((state) => state.success);
+  const toastError = useToastStore((state) => state.error);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -44,7 +47,7 @@ export function HomePage() {
           fetchFeaturedProducts(),
           fetchCategories(),
           fetchNewProducts(),
-          fetchBestsellerProducts()
+          fetchBestsellerProducts(),
         ]);
 
         setFeaturedProducts(featuredResponse.data);
@@ -59,7 +62,7 @@ export function HomePage() {
           setWebsiteContent(null);
         }
       } catch (error) {
-        const message = error instanceof ApiError ? error.message : 'Unable to load the Coffee storefront.';
+        const message = error instanceof ApiError ? error.message : 'Unable to load the cafe menu right now.';
         setErrorMessage(message);
       } finally {
         setIsLoading(false);
@@ -70,46 +73,51 @@ export function HomePage() {
   }, []);
 
   async function handleAddToCart(product: Product): Promise<void> {
-    if (!product.default_variant) {
+    if (!canQuickAddProduct(product)) {
+      navigate(`/menu/${product.id}`);
       return;
     }
 
+    const variant = getProductVariants(product)[0];
     setPendingProductId(product.id);
 
     try {
       await addItem({
-        product_variant_id: product.default_variant.id,
-        quantity: 1
+        product_variant_id: variant.id,
+        quantity: 1,
+        display: buildCartDisplayFromProduct(product, variant),
       });
+      toastSuccess(`${product.name} added to cart`);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        navigate(buildLoginRedirect(location.pathname, location.search));
-      } else {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to add the item right now.');
-      }
+      const message = error instanceof ApiError ? error.message : 'Unable to add the item right now.';
+      toastError(message);
     } finally {
       setPendingProductId(null);
     }
   }
 
   return (
-    <div className="page-container">
-      <Header cartCount={count} />
+    <div className="page-container home-page">
+      <Header />
       <FeaturedHero hero={websiteContent?.hero} businessName={websiteContent?.business.name} />
 
-      <section className="section-shell">
+      <section className="section-shell home-categories">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Browse by category</p>
-            <h2>Fresh menu categories</h2>
+            <p className="eyebrow">Categories</p>
+            <h2>Browse the menu</h2>
           </div>
+          <Link to="/menu" className="text-link">
+            Full menu
+          </Link>
         </div>
-        <div className="category-pills static">
-          {categories.slice(0, 5).map((category) => (
+        <div className="category-pills static home-category-rail" role="list">
+          {categories.slice(0, 6).map((category) => (
             <Link
               key={category.id}
               to={`/menu?category=${category.id}`}
-              className="category-pill active-soft"
+              className="category-pill"
+              role="listitem"
             >
               {category.name}
             </Link>
@@ -117,7 +125,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {isLoading ? <LoadingSkeleton cardCount={2} lines={4} /> : null}
+      {isLoading ? <LoadingSkeleton cardCount={2} lines={4} variant="list" /> : null}
       {errorMessage ? <ErrorState description={errorMessage} onRetry={() => window.location.reload()} /> : null}
 
       {!isLoading && !errorMessage ? (
@@ -125,16 +133,19 @@ export function HomePage() {
           <section className="section-shell">
             <div className="section-header">
               <div>
-                <p className="eyebrow">Featured right now</p>
-                <h2>Pickup-ready favourites</h2>
+                <p className="eyebrow">Featured</p>
+                <h2>Pickup-ready picks</h2>
               </div>
+              <Link to="/menu" className="text-link">
+                See all
+              </Link>
             </div>
 
             {featuredProducts.length === 0 ? (
               <EmptyState
-                title="No featured products yet"
-                description="The customer PWA shell is ready, but there are no featured menu items available right now."
-                actionLabel="Open full menu"
+                title="No featured drinks yet"
+                description="Browse the full menu to find something to order for pickup."
+                actionLabel="Open menu"
                 actionHref="/menu"
               />
             ) : (
@@ -152,45 +163,38 @@ export function HomePage() {
           </section>
 
           {newProducts.length > 0 ? (
-            <section className="section-shell">
-              <div className="section-header">
-                <div>
-                  <p className="eyebrow">Just landed</p>
-                  <h2>New on the menu</h2>
-                </div>
-              </div>
-              <div className="product-grid">
-                {newProducts.map((product) => (
+            <ProductRail eyebrow="Just landed" title="New on the menu" seeAllHref="/menu" seeAllLabel="See all">
+              {newProducts.map((product) => (
+                <div key={product.id} className="product-rail-item" role="listitem">
                   <ProductCard
-                    key={product.id}
                     product={product}
+                    layout="rail"
                     isBusy={pendingProductId === product.id}
                     onAddToCart={handleAddToCart}
                   />
-                ))}
-              </div>
-            </section>
+                </div>
+              ))}
+            </ProductRail>
           ) : null}
 
           {bestsellerProducts.length > 0 ? (
-            <section className="section-shell">
-              <div className="section-header">
-                <div>
-                  <p className="eyebrow">Customer favourites</p>
-                  <h2>Bestsellers</h2>
-                </div>
-              </div>
-              <div className="product-grid">
-                {bestsellerProducts.map((product) => (
+            <ProductRail
+              eyebrow="Customer favourites"
+              title="Bestsellers"
+              seeAllHref="/menu"
+              seeAllLabel="See all"
+            >
+              {bestsellerProducts.map((product) => (
+                <div key={product.id} className="product-rail-item" role="listitem">
                   <ProductCard
-                    key={product.id}
                     product={product}
+                    layout="rail"
                     isBusy={pendingProductId === product.id}
                     onAddToCart={handleAddToCart}
                   />
-                ))}
-              </div>
-            </section>
+                </div>
+              ))}
+            </ProductRail>
           ) : null}
 
           {websiteContent ? <HomeContentSections business={websiteContent.business} /> : null}

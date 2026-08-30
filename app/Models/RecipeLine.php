@@ -20,6 +20,8 @@ class RecipeLine extends AbstractModel
         'base_quantity',
         'base_measurement_unit',
         'sort_order',
+        'show_to_customer',
+        'customer_label',
     ];
 
     protected function casts(): array
@@ -30,6 +32,7 @@ class RecipeLine extends AbstractModel
             'quantity' => 'decimal:3',
             'base_quantity' => 'decimal:3',
             'sort_order' => 'integer',
+            'show_to_customer' => 'boolean',
         ];
     }
 

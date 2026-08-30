@@ -9,6 +9,7 @@ interface ServiceWorkerUpdateState {
 export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
   const [needRefresh, setNeedRefresh] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const refreshingRef = useRef(false);
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
@@ -29,6 +30,17 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
 
     let cancelled = false;
     let updateIntervalId: number | undefined;
+
+    function onControllerChange(): void {
+      if (refreshingRef.current) {
+        return;
+      }
+
+      refreshingRef.current = true;
+      window.location.reload();
+    }
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
 
     async function register(): Promise<void> {
       try {
@@ -74,6 +86,7 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
 
     return () => {
       cancelled = true;
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
 
       if (updateIntervalId !== undefined) {
         window.clearInterval(updateIntervalId);
@@ -92,11 +105,6 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
     }
 
     waiting.postMessage({ type: 'SKIP_WAITING' });
-    waiting.addEventListener('statechange', () => {
-      if (waiting.state === 'activated') {
-        window.location.reload();
-      }
-    });
   }, []);
 
   const dismiss = useCallback(() => {
@@ -106,6 +114,6 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
   return {
     needRefresh,
     applyUpdate,
-    dismiss
+    dismiss,
   };
 }

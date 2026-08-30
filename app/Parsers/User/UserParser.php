@@ -4,6 +4,7 @@ namespace App\Parsers\User;
 
 use App\Models\User;
 use App\Parsers\AbstractParser;
+use App\Support\PhoneNumber;
 use App\Transfers\User\UserFilterTransferInterface;
 use App\Transfers\User\UserTransferInterface;
 
@@ -29,7 +30,11 @@ class UserParser extends AbstractParser implements UserParserInterface
         $transfer = $this->make(UserTransferInterface::class);
         $transfer->setName(trim((string) $userData['name']));
         $transfer->setEmail(strtolower(trim((string) $userData['email'])));
-        $transfer->setPhone(filled($userData['phone'] ?? null) ? trim((string) $userData['phone']) : null);
+        $transfer->setPhone(
+            filled($userData['phone'] ?? null)
+                ? PhoneNumber::normalize((string) $userData['phone'])
+                : null
+        );
         $transfer->setRole((string) $userData['role']);
         $transfer->setIsActive((bool) ($userData['is_active'] ?? true));
         $transfer->setPassword(filled($userData['password'] ?? null) ? (string) $userData['password'] : null);

@@ -30,6 +30,8 @@ class RecipeCreateRequest extends AbstractRequest
             'lines.*.quantity' => ['nullable', 'decimal:0,3', 'gt:0', 'required_with:lines.*.ingredient_id'],
             'lines.*.measurement_unit' => ['nullable', 'string', 'required_with:lines.*.ingredient_id', Rule::in(array_keys(IngredientUnit::options()))],
             'lines.*.sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            'lines.*.show_to_customer' => ['nullable', 'boolean'],
+            'lines.*.customer_label' => ['nullable', 'string', 'max:120'],
         ];
     }
 }

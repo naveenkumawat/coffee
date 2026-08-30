@@ -1,19 +1,24 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, ApiValidationErrors } from '../api/client';
+import { AuthCard } from '../components/auth/AuthCard';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
 import { PageHeader } from '../components/common/PageHeader';
 import { useAuthStore } from '../stores/authStore';
+import { useToastStore } from '../stores/toastStore';
+import { withRedirectQuery } from '../utils/contentPages';
 import { getFieldError } from '../utils/forms';
 import { normalizeRedirectPath } from '../utils/navigation';
 
 export function LoginPage() {
   const login = useAuthStore((state) => state.login);
+  const toastSuccess = useToastStore((state) => state.success);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const redirect = searchParams.get('redirect');
+  const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<ApiValidationErrors>({});
@@ -27,14 +32,15 @@ export function LoginPage() {
     setMessage(null);
 
     try {
-      await login({ email, password, remember });
-      navigate(normalizeRedirectPath(searchParams.get('redirect')), { replace: true });
+      const result = await login({ login: loginValue.trim(), password, remember });
+      toastSuccess(result.mergedGuestCart ? 'Signed in — your cart was updated' : 'Signed in');
+      navigate(normalizeRedirectPath(redirect), { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.errors);
         setMessage(error.message);
       } else {
-        setMessage('Unable to sign you in right now.');
+        setMessage('Unable to sign you in right now. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -42,54 +48,62 @@ export function LoginPage() {
   }
 
   return (
-    <div className="page-container">
-      <PageHeader title="Login" description="Sign in to sync your cart, orders, and account details." />
-      <section className="auth-card">
-        <div className="auth-card-copy">
-          <span className="auth-badge">Sanctum session</span>
-          <h2>Welcome back</h2>
-          <p>Use your customer account to continue with the live Coffee ordering flow.</p>
-        </div>
-
+    <div className="page-container auth-page">
+      <PageHeader title="Sign in" description="Continue ordering and track pickups." showBack />
+      <AuthCard
+        badge="Customer account"
+        title="Welcome back"
+        description="Sign in with your email or mobile number to keep favourites and orders in sync."
+        footer={
+          <>
+            <Link to="/forgot-password">Forgot password?</Link>
+            <Link to={withRedirectQuery('/register', redirect)}>Create account</Link>
+          </>
+        }
+      >
         <FormFeedback message={message} variant="error" />
 
-        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
+        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <FormField
-            label="Email address"
-            name="email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            error={getFieldError(errors, 'email')}
+            label="Email or mobile number"
+            name="login"
+            type="text"
+            autoComplete="username"
+            inputMode="text"
+            placeholder="you@example.com or mobile"
+            value={loginValue}
+            onChange={(event) => setLoginValue(event.target.value)}
+            error={getFieldError(errors, 'login') ?? getFieldError(errors, 'email')}
             required
           />
           <PasswordField
             label="Password"
             name="password"
             autoComplete="current-password"
-            placeholder="Enter your password"
+            placeholder="Your password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             error={getFieldError(errors, 'password')}
             required
           />
           <label className="choice-row">
-            <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+            />
             <span>Keep me signed in on this device</span>
           </label>
-          <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-
-        <div className="auth-links">
-          <Link to="/forgot-password">Forgot password?</Link>
-          <Link to={`/register${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect') ?? '')}` : ''}`}>Create account</Link>
-        </div>
-      </section>
+      </AuthCard>
     </div>
   );
 }

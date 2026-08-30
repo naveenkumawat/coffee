@@ -1,24 +1,29 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, ApiValidationErrors } from '../api/client';
+import { AuthCard } from '../components/auth/AuthCard';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
 import { PageHeader } from '../components/common/PageHeader';
 import { useAuthStore } from '../stores/authStore';
+import { useToastStore } from '../stores/toastStore';
+import { withRedirectQuery } from '../utils/contentPages';
 import { getFieldError } from '../utils/forms';
 import { normalizeRedirectPath } from '../utils/navigation';
 
 export function RegisterPage() {
   const register = useAuthStore((state) => state.register);
+  const toastSuccess = useToastStore((state) => state.success);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const redirect = searchParams.get('redirect');
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
-    password_confirmation: ''
+    password_confirmation: '',
   });
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -35,17 +40,18 @@ export function RegisterPage() {
     setMessage(null);
 
     try {
-      await register({
+      const result = await register({
         ...form,
-        phone: form.phone.trim() || null
+        phone: form.phone.trim() || null,
       });
-      navigate(normalizeRedirectPath(searchParams.get('redirect')), { replace: true });
+      toastSuccess(result.mergedGuestCart ? 'Account created — your cart was saved' : 'Account created');
+      navigate(normalizeRedirectPath(redirect), { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.errors);
         setMessage(error.message);
       } else {
-        setMessage('Unable to create your account right now.');
+        setMessage('Unable to create your account right now. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -53,18 +59,19 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="page-container">
-      <PageHeader title="Register" description="Create a customer account for faster ordering and account access." />
-      <section className="auth-card">
-        <div className="auth-card-copy">
-          <span className="auth-badge">Mobile-first signup</span>
-          <h2>Start your Coffee account</h2>
-          <p>We only ask for the essentials so you can get into the menu quickly.</p>
-        </div>
-
+    <div className="page-container auth-page">
+      <PageHeader title="Create account" description="Faster checkout and order tracking." showBack />
+      <AuthCard
+        badge="Join Coffee Cafe"
+        title="Create your account"
+        description="Just the essentials so you can get into the menu quickly."
+        footer={
+          <Link to={withRedirectQuery('/login', redirect)}>Already have an account? Sign in</Link>
+        }
+      >
         <FormFeedback message={message} variant="error" />
 
-        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
+        <form className="auth-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <FormField
             label="Full name"
             name="name"
@@ -76,7 +83,7 @@ export function RegisterPage() {
             required
           />
           <FormField
-            label="Email address"
+            label="Email"
             name="email"
             type="email"
             autoComplete="email"
@@ -88,12 +95,12 @@ export function RegisterPage() {
             required
           />
           <FormField
-            label="Phone number"
+            label="Phone (optional)"
             name="phone"
             type="tel"
             autoComplete="tel"
             inputMode="tel"
-            placeholder="Optional"
+            placeholder="For pickup updates"
             value={form.phone}
             onChange={(event) => updateField('phone', event.target.value)}
             error={getFieldError(errors, 'phone')}
@@ -119,15 +126,16 @@ export function RegisterPage() {
             error={getFieldError(errors, 'password_confirmation')}
             required
           />
-          <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating account...' : 'Create account'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isSubmitting}
+            aria-busy={isSubmitting}
+          >
+            {isSubmitting ? 'Creating account…' : 'Create account'}
           </button>
         </form>
-
-        <div className="auth-links">
-          <Link to={`/login${searchParams.get('redirect') ? `?redirect=${encodeURIComponent(searchParams.get('redirect') ?? '')}` : ''}`}>Already have an account?</Link>
-        </div>
-      </section>
+      </AuthCard>
     </div>
   );
 }

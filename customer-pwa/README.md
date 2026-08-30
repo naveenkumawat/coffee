@@ -104,13 +104,15 @@ npm run preview
 
 ## Production Deployment / Cutover Checklist
 
+See also: [`docs/pwa-launch-checklist.md`](../docs/pwa-launch-checklist.md) (C6 QA results, blockers, smoke tests).
+
 1. **Build**
    - Set `VITE_API_BASE_URL` to the production Laravel `/api/v1` URL
    - Run `npm run typecheck && npm run build && npm audit`
    - Deploy `customer-pwa/dist` to the PWA HTTPS host
 2. **Env**
    - Set Laravel `COFFEE_PWA_URL`, `SANCTUM_STATEFUL_DOMAINS`, `CORS_ALLOWED_ORIGINS`, `SESSION_DOMAIN`
-   - Confirm cookie/HTTPS settings for the shared parent domain
+   - Confirm cookie/HTTPS settings for the shared parent domain (`SESSION_SECURE_COOKIE=true` in production)
 3. **HTTPS**
    - Verify PWA and API certificates and HSTS as applicable
 4. **CORS / Sanctum**
@@ -119,6 +121,7 @@ npm run preview
    - Install/open the PWA once, ship a new build, confirm the in-app “new version” refresh banner appears
    - Confirm offline visit still loads the shell and shows offline messaging
    - Confirm Network panel: API/auth/cart/checkout/orders are not served from Cache Storage as authoritative responses
+   - Confirm `/sw.js` and hashed assets are not served as `text/html`
 6. **Smoke test**
    - Auth register/login/logout
    - Menu browse + product detail

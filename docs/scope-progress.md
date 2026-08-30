@@ -70,6 +70,7 @@ Status: Partial
 - [x] Guest redirect behavior implemented for protected internal routes
 - [x] Customer registration business flow implemented
 - [x] Customer login/logout business flow implemented
+- [x] Customer login accepts email or normalized phone (password auth)
 - [x] Forgot password and reset business flow implemented
 - [x] Customer profile management business flow implemented
 - [x] Final PWA auth/account experience implemented
@@ -216,9 +217,11 @@ Status: Partial
 
 ### Customer-Visible Ingredients vs Internal Recipe
 
-- [ ] Customer-visible ingredient summary implemented
-- [ ] Internal recipe kept separate from public presentation
+- [x] Customer-visible ingredient summary implemented
+- [x] Internal recipe kept separate from public presentation
 - [x] Admin/barista-only recipe exposure enforced
+- [x] Per-recipe-line customer visibility and optional customer label implemented
+- [x] Customer API/PWA major-ingredient chips (no quantities/cost/prep) implemented
 
 ### Costing and Margin
 
@@ -244,6 +247,13 @@ Implementation note:
 - Existing customer Blade pages are transition/foundation work only and must not be treated as the final PWA implementation.
 - Customer API/PWA migration is pending.
 - Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout, payment confirmation, orders/history/tracking, favourites, menu discovery, home CMS/content pages, and production hardening (manifest/SW/offline/update, route splitting, deploy checklist) implemented; remaining storefront polish (offers, quick view, etc.) remains pending.
+- [x] Customer PWA UI/UX audit documented in `docs/ui-ux-audit.md` (redesign not started)
+- [x] Customer PWA shared design foundation (C1): tokens, sticky CTA, toast feedback, copy/motion/nav clearance
+- [x] Customer PWA ordering path polish (C2): Product Detail → Cart → Checkout → Confirmation
+- [x] Customer PWA Home + Menu catalog polish (C3): slim header, rails, compact cards, sticky filters
+- [x] Customer PWA Orders + Tracking + Account polish (C4): status emphasis, tracker, payment reuse, account sections
+- [x] Customer PWA Auth + Content polish (C5): AuthCard, forms, FAQ accordion, Contact/About/Terms/Privacy
+- [x] Customer PWA final QA + launch readiness (C6): responsive/PWA/offline fixes, imagery fallbacks, `docs/pwa-launch-checklist.md`
 
 ### Website Structure
 
@@ -281,7 +291,9 @@ Implementation note:
 - [ ] Product cards implemented to final PWA scope
 - [ ] Product quick view implemented
 - [x] Product filters implemented
-- [ ] Customer-visible ingredient summaries implemented
+- [x] Customer-visible ingredient summaries implemented
+- [x] Guest cart (local persist, checkout auth gate, post-login merge) implemented
+- [x] Customer login by email or phone implemented
 
 ### Favourites, Cart, and Checkout
 
@@ -292,6 +304,7 @@ Implementation note:
 - [x] Temporary customer Blade order confirmation/payment-instruction page implemented
 - [x] Customer favourites API implemented
 - [x] Customer cart API implemented to final scope
+- [x] Guest cart local persistence and authenticated merge endpoint implemented
 - [ ] Cart item notes implemented
 - [ ] Size selection implemented
 - [ ] Flavour selection implemented

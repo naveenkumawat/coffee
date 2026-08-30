@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import { useAuthStore } from '../../stores/authStore';
 import { useFavouriteStore } from '../../stores/favouriteStore';
+import { useToastStore } from '../../stores/toastStore';
 import { buildLoginRedirect } from '../../utils/navigation';
 
 interface FavouriteToggleProps {
@@ -15,6 +16,8 @@ export function FavouriteToggle({ productId, className = '', size = 'md' }: Favo
   const isFavourite = useFavouriteStore((state) => state.isFavourite(productId));
   const isPending = useFavouriteStore((state) => state.isPending(productId));
   const toggle = useFavouriteStore((state) => state.toggle);
+  const toastSuccess = useToastStore((state) => state.success);
+  const toastError = useToastStore((state) => state.error);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,12 +27,18 @@ export function FavouriteToggle({ productId, className = '', size = 'md' }: Favo
       return;
     }
 
+    const wasFavourite = isFavourite;
+
     try {
       await toggle(productId);
+      toastSuccess(wasFavourite ? 'Removed from favourites' : 'Saved to favourites');
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         navigate(buildLoginRedirect(location.pathname, location.search));
+        return;
       }
+
+      toastError(error instanceof ApiError ? error.message : 'Unable to update favourites.');
     }
   }
 

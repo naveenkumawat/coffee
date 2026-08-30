@@ -100,8 +100,17 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
-                'defaultVariant',
+                'defaultVariant.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'defaultVariant.recipe.lines.ingredient',
                 'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+                'variants.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'variants.recipe.lines.ingredient',
             ])
             ->where('is_active', true)
             ->where('is_available', true)
@@ -168,8 +177,17 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
-                'defaultVariant',
+                'defaultVariant.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'defaultVariant.recipe.lines.ingredient',
                 'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+                'variants.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'variants.recipe.lines.ingredient',
             ])
             ->whereKey($productId)
             ->where('is_active', true)

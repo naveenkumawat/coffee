@@ -7,7 +7,9 @@ use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Cart\CartRepositoryInterface;
+use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -90,6 +92,43 @@ class CartService implements CartServiceInterface
 
             return $this->carts->refreshCart($cart);
         });
+    }
+
+    public function mergeGuestItems(User $customer, array $items, ?string $idempotencyKey = null): Cart
+    {
+        $cacheKey = null;
+
+        if (filled($idempotencyKey)) {
+            $cacheKey = sprintf('cart-merge:%d:%s', (int) $customer->getKey(), $idempotencyKey);
+
+            if (Cache::has($cacheKey)) {
+                return $this->getForCustomer($customer);
+            }
+        }
+
+        $quantitiesByVariant = [];
+
+        foreach ($items as $item) {
+            $variantId = (int) $item['product_variant_id'];
+            $quantitiesByVariant[$variantId] = ($quantitiesByVariant[$variantId] ?? 0) + (int) $item['quantity'];
+        }
+
+        $cart = DB::transaction(function () use ($customer, $quantitiesByVariant): Cart {
+            foreach ($quantitiesByVariant as $variantId => $quantity) {
+                $transfer = new CartItemTransfer;
+                $transfer->setProductVariantId($variantId);
+                $transfer->setQuantity($quantity);
+                $this->addItem($customer, $transfer);
+            }
+
+            return $this->getForCustomer($customer);
+        });
+
+        if ($cacheKey !== null) {
+            Cache::put($cacheKey, true, now()->addHour());
+        }
+
+        return $cart;
     }
 
     public function count(User $customer): int

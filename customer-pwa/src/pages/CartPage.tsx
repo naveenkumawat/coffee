@@ -8,8 +8,11 @@ import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { FormFeedback } from '../components/forms/FormFeedback';
+import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
+import { useToastStore } from '../stores/toastStore';
 import { formatCurrency } from '../utils/format';
+import { buildLoginRedirect } from '../utils/navigation';
 
 export function CartPage() {
   const cart = useCartStore((state) => state.cart);
@@ -19,6 +22,9 @@ export function CartPage() {
   const updateItemQuantity = useCartStore((state) => state.updateItemQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
+  const authStatus = useAuthStore((state) => state.status);
+  const toastSuccess = useToastStore((state) => state.success);
+  const toastError = useToastStore((state) => state.error);
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingItemId, setPendingItemId] = useState<number | null>(null);
@@ -36,7 +42,7 @@ export function CartPage() {
 
   useEffect(() => {
     void loadCartState();
-  }, [loadCart]);
+  }, [loadCart, authStatus]);
 
   async function handleQuantityChange(cartItemId: number, quantity: number): Promise<void> {
     setPendingItemId(cartItemId);
@@ -44,8 +50,11 @@ export function CartPage() {
 
     try {
       await updateItemQuantity(cartItemId, quantity);
+      toastSuccess('Quantity updated');
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to update your cart item.');
+      const message = error instanceof ApiError ? error.message : 'Unable to update your cart item.';
+      setErrorMessage(message);
+      toastError(message);
       await loadCartState();
     } finally {
       setPendingItemId(null);
@@ -58,8 +67,11 @@ export function CartPage() {
 
     try {
       await removeItem(cartItemId);
+      toastSuccess('Item removed');
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to remove this item right now.');
+      const message = error instanceof ApiError ? error.message : 'Unable to remove this item right now.';
+      setErrorMessage(message);
+      toastError(message);
       await loadCartState();
     } finally {
       setPendingItemId(null);
@@ -72,33 +84,53 @@ export function CartPage() {
 
     try {
       await clear();
+      toastSuccess('Cart cleared');
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to clear your cart right now.');
+      const message = error instanceof ApiError ? error.message : 'Unable to clear your cart right now.';
+      setErrorMessage(message);
+      toastError(message);
       await loadCartState();
     } finally {
       setIsClearing(false);
     }
   }
 
+  function handleCheckout(): void {
+    if (authStatus !== 'authenticated') {
+      navigate(buildLoginRedirect('/checkout'));
+
+      return;
+    }
+
+    navigate('/checkout');
+  }
+
   return (
-    <div className="page-container">
+    <div className={`page-container ${cart?.items.length ? 'has-sticky-cta' : ''}`.trim()}>
       <PageHeader
         title="Cart"
-        description={summary ? `${summary.item_count} item(s) synced from the API` : 'Live server-backed cart state'}
+        description={summary ? `${summary.item_count} item(s) ready for pickup` : 'Review your pickup order'}
         rightSlot={
           cart?.items.length ? (
-            <button type="button" className="btn btn-link text-decoration-none text-dark" onClick={() => void handleClear()} disabled={isClearing}>
-              {isClearing ? 'Clearing...' : 'Clear'}
+            <button type="button" className="link-button" onClick={() => void handleClear()} disabled={isClearing}>
+              {isClearing ? 'Clearing...' : 'Clear all'}
             </button>
           ) : null
         }
       />
 
-      {isLoading ? <LoadingSkeleton cardCount={2} lines={4} /> : null}
+      {isLoading ? <LoadingSkeleton cardCount={2} lines={3} variant="list" /> : null}
       {!isLoading && errorMessage ? <FormFeedback message={errorMessage} variant="error" /> : null}
-      {!isLoading && errorMessage && !cart?.items.length ? <ErrorState description={errorMessage} onRetry={() => void loadCartState()} /> : null}
+      {!isLoading && errorMessage && !cart?.items.length ? (
+        <ErrorState description={errorMessage} onRetry={() => void loadCartState()} />
+      ) : null}
       {!isLoading && !errorMessage && (!cart || cart.items.length === 0) ? (
-        <EmptyState title="Your cart is empty" description="Add a few items from the menu to see them here." actionLabel="Browse menu" actionHref="/menu" />
+        <EmptyState
+          title="Your cart is empty"
+          description="Browse the menu and add a drink to get started."
+          actionLabel="Browse menu"
+          actionHref="/menu"
+        />
       ) : null}
       {!isLoading && cart?.items.length ? (
         <>
@@ -113,38 +145,47 @@ export function CartPage() {
               />
             ))}
           </div>
-          <section className="summary-card">
+
+          <section className="summary-card cart-summary-card">
             <div>
               <span>Subtotal</span>
               <strong>{formatCurrency(summary?.subtotal ?? 0)}</strong>
             </div>
-            <div>
+            <div className="cart-summary-total">
               <span>Total</span>
               <strong>{formatCurrency(summary?.total ?? 0)}</strong>
             </div>
             {summary?.has_unavailable_items ? (
-              <p className="summary-warning">One or more items need a live availability refresh before checkout.</p>
+              <p className="summary-warning">Remove unavailable items before checkout.</p>
             ) : null}
+            {authStatus !== 'authenticated' ? (
+              <p className="summary-warning">Sign in is required at checkout. Your cart stays on this device until then.</p>
+            ) : null}
+            <Link to="/menu" className="link-button cart-add-more">
+              Add more items
+            </Link>
           </section>
+
           <StickyActionBar
-            eyebrow="Server totals"
+            eyebrow="Pickup total"
             title="Ready to checkout?"
             value={formatCurrency(summary?.total ?? 0)}
-            note={summary?.has_unavailable_items ? 'Please fix unavailable items before continuing.' : 'The backend remains authoritative for totals and availability.'}
+            note={
+              summary?.has_unavailable_items
+                ? 'Fix unavailable items to continue.'
+                : authStatus === 'authenticated'
+                  ? 'Next: confirm pickup details'
+                  : 'Next: sign in to continue'
+            }
           >
-            <div className="sticky-action-stack">
-              <button
-                type="button"
-                className="btn btn-primary btn-lg rounded-pill w-100"
-                disabled={Boolean(summary?.has_unavailable_items) || isClearing || pendingItemId !== null}
-                onClick={() => navigate('/checkout')}
-              >
-                Continue to checkout
-              </button>
-              <Link to="/menu" className="btn btn-outline-dark btn-lg rounded-pill w-100">
-                Add more items
-              </Link>
-            </div>
+            <button
+              type="button"
+              className="btn btn-primary btn-lg rounded-pill w-100"
+              disabled={Boolean(summary?.has_unavailable_items) || isClearing || pendingItemId !== null}
+              onClick={handleCheckout}
+            >
+              {authStatus === 'authenticated' ? 'Continue to checkout' : 'Sign in to checkout'}
+            </button>
           </StickyActionBar>
         </>
       ) : null}

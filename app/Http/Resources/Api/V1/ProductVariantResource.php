@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\ProductVariant;
+use App\Support\CustomerVisibleIngredients;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +31,7 @@ class ProductVariantResource extends JsonResource
             ],
             'price' => $variant->price,
             'is_available' => (bool) $variant->is_available,
+            'major_ingredients' => CustomerVisibleIngredients::forVariant($variant),
         ];
     }
 }

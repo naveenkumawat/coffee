@@ -1,5 +1,5 @@
 import { formatCurrency } from '../../utils/format';
-import { pickProductImage } from '../../utils/images';
+import { ProductImage } from '../common/ProductImage';
 
 interface CheckoutItemCardProps {
   name: string;
@@ -18,13 +18,17 @@ export function CheckoutItemCard({
   imageName,
   imagePath,
   quantity,
-  amount
+  amount,
 }: CheckoutItemCardProps) {
-  const image = pickProductImage(imageName ?? name, imagePath ?? null);
-
   return (
     <article className="checkout-item-card">
-      <img src={image} alt={name} className="checkout-item-image" loading="lazy" decoding="async" />
+      <ProductImage
+        name={imageName ?? name}
+        imagePath={imagePath ?? null}
+        alt={name}
+        className="checkout-item-image"
+        fit="cover"
+      />
       <div className="checkout-item-body">
         <div>
           <h2>{name}</h2>

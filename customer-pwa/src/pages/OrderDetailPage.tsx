@@ -8,10 +8,11 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
+import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
 import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
-import { isPendingPayment } from '../utils/orders';
+import { isPendingPayment, statusTone } from '../utils/orders';
 
 export function OrderDetailPage() {
   const { orderId = '' } = useParams();
@@ -50,8 +51,8 @@ export function OrderDetailPage() {
   if (isLoading) {
     return (
       <div className="page-container">
-        <PageHeader title="Order detail" description="Refreshing live order status from the server." showBack />
-        <LoadingSkeleton cardCount={3} lines={4} />
+        <PageHeader title="Order" description="Loading status…" showBack />
+        <LoadingSkeleton cardCount={3} lines={4} variant="list" />
       </div>
     );
   }
@@ -59,7 +60,7 @@ export function OrderDetailPage() {
   if (errorMessage) {
     return (
       <div className="page-container">
-        <PageHeader title="Order detail" description="Refreshing live order status from the server." showBack />
+        <PageHeader title="Order" description="Track your pickup order." showBack />
         <ErrorState description={errorMessage} onRetry={() => void loadOrder()} />
       </div>
     );
@@ -68,7 +69,7 @@ export function OrderDetailPage() {
   if (!order) {
     return (
       <div className="page-container">
-        <PageHeader title="Order detail" description="Refreshing live order status from the server." showBack />
+        <PageHeader title="Order" description="Track your pickup order." showBack />
         <EmptyState
           title="Order not found"
           description="We couldn’t find that order in your account."
@@ -79,11 +80,14 @@ export function OrderDetailPage() {
     );
   }
 
+  const tone = statusTone(order.status);
+  const pendingPayment = isPendingPayment(order.status);
+
   return (
-    <div className="page-container checkout-page">
+    <div className="page-container order-detail-page">
       <PageHeader
-        title="Order detail"
-        description="Server-authoritative status, totals, and payment guidance."
+        title="Order"
+        description="Status, payment, and pickup details"
         showBack
         rightSlot={
           <button type="button" className="link-button" onClick={() => void loadOrder()}>
@@ -92,25 +96,24 @@ export function OrderDetailPage() {
         }
       />
 
-      <section className="account-hero">
-        <span className="account-hero-badge">{order.status_label ?? 'Order'}</span>
-        <h2>Order {order.order_number}</h2>
-        <p>Placed {formatDateTime(order.placed_at)}</p>
-        <p>Total {formatCurrency(order.total_amount)}</p>
+      <section className={`order-status-hero is-${tone} motion-enter`}>
+        <OrderStatusBadge status={order.status} label={order.status_label} />
+        <h1 className="order-status-number">{order.order_number}</h1>
+        <p className="order-status-total">Total {formatCurrency(order.total_amount)}</p>
+        <p className="order-status-meta">Placed {formatDateTime(order.placed_at)}</p>
       </section>
 
-      <OrderStatusTimeline order={order} />
-
-      {isPendingPayment(order.status) ? (
-        <PaymentInstructionsCard order={order} payment={payment} />
+      {pendingPayment ? (
+        <PaymentInstructionsCard order={order} payment={payment} showSecondaryAction={false} />
       ) : null}
+
+      <OrderStatusTimeline order={order} />
 
       <section className="account-section">
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Items</span>
             <h2>What you ordered</h2>
-            <p>Product, variant, quantity, and line totals from the server snapshot.</p>
           </div>
         </div>
 
@@ -119,8 +122,7 @@ export function OrderDetailPage() {
             <CheckoutItemCard
               key={item.id}
               name={item.product_name}
-              subtitle={joinLabels([item.variant_name, `${formatCurrency(item.unit_price)} each`])}
-              detail={item.customer_ingredient_summary}
+              subtitle={joinLabels([item.variant_name, item.customer_ingredient_summary])}
               quantity={item.quantity}
               amount={item.line_subtotal}
             />
@@ -132,33 +134,32 @@ export function OrderDetailPage() {
             <span>Subtotal</span>
             <strong>{formatCurrency(order.subtotal)}</strong>
           </div>
-          <div>
+          <div className="cart-summary-total">
             <span>Total</span>
             <strong>{formatCurrency(order.total_amount)}</strong>
           </div>
         </div>
       </section>
 
-      <section className="account-section">
+      <section className="account-section order-pickup-section">
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Pickup</span>
             <h2>Collection details</h2>
-            <p>Contact details captured at checkout for this order.</p>
           </div>
         </div>
         <div className="order-meta-grid">
           <div>
-            <span>Pickup name</span>
+            <span>Name</span>
             <strong>{order.pickup_name}</strong>
           </div>
           <div>
-            <span>Pickup phone</span>
+            <span>Phone</span>
             <strong>{order.pickup_phone}</strong>
           </div>
           {order.customer_notes ? (
             <div>
-              <span>Customer notes</span>
+              <span>Notes for cafe</span>
               <strong>{order.customer_notes}</strong>
             </div>
           ) : null}
@@ -172,7 +173,7 @@ export function OrderDetailPage() {
       </section>
 
       <div className="page-note">
-        <span>Looking for another order?</span>
+        <span>Need another order?</span>
         <Link to="/orders">Back to My Orders</Link>
       </div>
     </div>

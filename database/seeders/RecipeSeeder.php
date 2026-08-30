@@ -58,6 +58,8 @@ class RecipeSeeder extends Seeder
                     'base_quantity' => $line['base_quantity'],
                     'base_measurement_unit' => $line['base_unit'],
                     'sort_order' => $index + 1,
+                    'show_to_customer' => (bool) ($line['show_to_customer'] ?? false),
+                    'customer_label' => $line['customer_label'] ?? null,
                 ]);
             }
         }
@@ -80,6 +82,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '18.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Espresso',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -87,6 +91,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '200.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Milk',
                     ],
                 ],
             ],
@@ -101,6 +107,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '22.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Espresso',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -108,6 +116,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '280.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Milk',
                     ],
                 ],
             ],
@@ -122,6 +132,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '18.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Espresso',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -129,6 +141,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '180.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Milk',
                     ],
                     [
                         'ingredient' => 'Vanilla Syrup',
@@ -136,6 +150,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Bottle,
                         'base_quantity' => '0.020',
                         'base_unit' => IngredientUnit::Bottle,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Vanilla',
                     ],
                     [
                         'ingredient' => 'Cubed Ice',
@@ -143,6 +159,7 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '120.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => false,
                     ],
                 ],
             ],
@@ -157,6 +174,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '16.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Espresso',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -164,6 +183,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '150.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Milk',
                     ],
                     [
                         'ingredient' => 'Chocolate Sauce',
@@ -171,6 +192,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '30.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Chocolate',
                     ],
                     [
                         'ingredient' => 'Vanilla Ice Cream',
@@ -178,6 +201,7 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '80.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => false,
                     ],
                     [
                         'ingredient' => 'Cubed Ice',
@@ -185,6 +209,7 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '150.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => false,
                     ],
                 ],
             ],
@@ -199,6 +224,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '3.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Matcha',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -206,6 +233,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '240.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Milk',
                     ],
                 ],
             ],
@@ -220,6 +249,8 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Gram,
                         'base_quantity' => '8.000',
                         'base_unit' => IngredientUnit::Gram,
+                        'show_to_customer' => true,
+                        'customer_label' => 'Assam tea',
                     ],
                     [
                         'ingredient' => 'Full Fat Milk',
@@ -227,6 +258,7 @@ class RecipeSeeder extends Seeder
                         'unit' => IngredientUnit::Milliliter,
                         'base_quantity' => '180.000',
                         'base_unit' => IngredientUnit::Milliliter,
+                        'show_to_customer' => false,
                     ],
                 ],
             ],

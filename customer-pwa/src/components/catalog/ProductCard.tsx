@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Product } from '../../types/catalog';
-import { formatCurrency, joinLabels } from '../../utils/format';
-import { pickProductImage } from '../../utils/images';
+import { formatCurrency } from '../../utils/format';
+import { canQuickAddProduct, hasMultipleVariants, isProductUnavailable } from '../../utils/productActions';
+import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
 import { ProductBadges } from './ProductBadges';
 
@@ -10,52 +11,68 @@ interface ProductCardProps {
   onAddToCart?: (product: Product) => void;
   isBusy?: boolean;
   showFavouriteToggle?: boolean;
+  layout?: 'grid' | 'rail';
 }
 
 export function ProductCard({
   product,
   onAddToCart,
   isBusy = false,
-  showFavouriteToggle = true
+  showFavouriteToggle = true,
+  layout = 'grid',
 }: ProductCardProps) {
-  const image = pickProductImage(product.name, product.image_path);
+  const unavailable = isProductUnavailable(product);
+  const quickAdd = canQuickAddProduct(product);
+  const multiVariant = hasMultipleVariants(product);
+  const detailHref = `/menu/${product.id}`;
+  const price = product.default_variant?.price ?? product.variants.find((variant) => variant.is_available)?.price;
 
   return (
-    <article className="product-card">
+    <article
+      className={`product-card product-card-${layout} ${unavailable ? 'is-unavailable' : ''} ${isBusy ? 'is-busy' : ''}`.trim()}
+    >
       <div className="product-card-media">
-        <Link to={`/menu/${product.id}`} className="product-card-image">
-          <img src={image} alt={product.name} loading="lazy" decoding="async" />
+        <Link to={detailHref} className="product-card-image" tabIndex={-1} aria-hidden="true">
+          <ProductImage name={product.name} imagePath={product.image_path} alt="" />
         </Link>
-        {showFavouriteToggle ? <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" /> : null}
+        {showFavouriteToggle ? (
+          <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" />
+        ) : null}
+        <ProductBadges product={product} compact />
       </div>
+
       <div className="product-card-body">
         <div className="product-card-copy">
-          <span className="product-card-category">{product.category?.name ?? 'Coffee menu'}</span>
-          <ProductBadges product={product} />
-          <Link to={`/menu/${product.id}`} className="product-card-title">
+          <span className="product-card-category">{product.category?.name ?? 'Menu'}</span>
+          <Link to={detailHref} className="product-card-title">
             {product.name}
           </Link>
-          <p className="product-card-description">
-            {product.short_description || product.description || 'Freshly prepared for quick pickup.'}
-          </p>
-          <p className="product-card-meta">
-            {joinLabels([
-              product.customer_ingredient_summary,
-              product.default_variant?.serving_size.label,
-              product.preparation_time_minutes ? `${product.preparation_time_minutes} min` : null
-            ])}
-          </p>
+          {unavailable ? <span className="availability-chip">Unavailable</span> : null}
         </div>
+
         <div className="product-card-footer">
-          <strong>{formatCurrency(product.default_variant?.price ?? 0)}</strong>
-          <button
-            type="button"
-            className="btn btn-primary rounded-pill px-3"
-            disabled={!product.default_variant || isBusy}
-            onClick={() => onAddToCart?.(product)}
-          >
-            {isBusy ? 'Adding...' : 'Add'}
-          </button>
+          <strong className="product-card-price">{price ? formatCurrency(price) : '—'}</strong>
+
+          {unavailable ? (
+            <span className="product-card-action is-disabled">Unavailable</span>
+          ) : multiVariant ? (
+            <Link to={detailHref} className="btn btn-outline-dark btn-sm rounded-pill product-card-action">
+              Choose size
+            </Link>
+          ) : quickAdd ? (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm rounded-pill product-card-action"
+              disabled={isBusy || !onAddToCart}
+              onClick={() => onAddToCart?.(product)}
+            >
+              {isBusy ? 'Adding…' : 'Add'}
+            </button>
+          ) : (
+            <Link to={detailHref} className="btn btn-outline-dark btn-sm rounded-pill product-card-action">
+              View
+            </Link>
+          )}
         </div>
       </div>
     </article>

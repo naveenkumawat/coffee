@@ -1,30 +1,71 @@
 import { Order, OrderStatusTimelineItem, OrderStatusValue } from '../types/order';
 
-export const ORDER_PROGRESS_STEPS: Array<{ status: OrderStatusValue; label: string }> = [
-  { status: 'pending_payment', label: 'Pending Payment' },
+/** Cafe preparation path after payment (excludes Pending Payment). */
+export const ORDER_PREPARATION_STEPS: Array<{ status: OrderStatusValue; label: string }> = [
   { status: 'payment_confirmed', label: 'Payment Confirmed' },
   { status: 'accepted', label: 'Accepted' },
   { status: 'preparing', label: 'Preparing' },
   { status: 'ready_for_pickup', label: 'Ready for Pickup' },
-  { status: 'completed', label: 'Completed' }
+  { status: 'completed', label: 'Completed' },
 ];
+
+/** @deprecated Prefer ORDER_PREPARATION_STEPS for the customer tracker UI. */
+export const ORDER_PROGRESS_STEPS = ORDER_PREPARATION_STEPS;
 
 const TERMINAL_FAILURE_STATUSES: OrderStatusValue[] = ['cancelled', 'rejected'];
 
+const ACTIVE_STATUSES: OrderStatusValue[] = [
+  'pending_payment',
+  'payment_confirmed',
+  'accepted',
+  'preparing',
+  'ready_for_pickup',
+];
+
+export type OrderStatusTone = 'payment' | 'ready' | 'active' | 'done' | 'danger' | 'neutral';
+
 export function isPendingPayment(status: string | null | undefined): boolean {
   return status === 'pending_payment';
+}
+
+export function isReadyForPickup(status: string | null | undefined): boolean {
+  return status === 'ready_for_pickup';
 }
 
 export function isTerminalFailure(status: string | null | undefined): boolean {
   return TERMINAL_FAILURE_STATUSES.includes(status as OrderStatusValue);
 }
 
+export function isActiveOrder(status: string | null | undefined): boolean {
+  return ACTIVE_STATUSES.includes(status as OrderStatusValue);
+}
+
+export function statusTone(status: string | null | undefined): OrderStatusTone {
+  switch (status) {
+    case 'pending_payment':
+      return 'payment';
+    case 'ready_for_pickup':
+      return 'ready';
+    case 'payment_confirmed':
+    case 'accepted':
+    case 'preparing':
+      return 'active';
+    case 'completed':
+      return 'done';
+    case 'cancelled':
+    case 'rejected':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
 export function progressStepIndex(status: string | null | undefined): number {
-  if (!status || isTerminalFailure(status)) {
+  if (!status || isTerminalFailure(status) || isPendingPayment(status)) {
     return -1;
   }
 
-  return ORDER_PROGRESS_STEPS.findIndex((step) => step.status === status);
+  return ORDER_PREPARATION_STEPS.findIndex((step) => step.status === status);
 }
 
 export function timelineTimestampForStatus(order: Order, status: OrderStatusValue): string | null {
@@ -36,7 +77,7 @@ export function timelineTimestampForStatus(order: Order, status: OrderStatusValu
     ready_for_pickup: order.ready_for_pickup_at,
     completed: order.completed_at,
     cancelled: order.cancelled_at,
-    rejected: order.rejected_at
+    rejected: order.rejected_at,
   };
 
   return timestampByStatus[status] ?? null;
@@ -67,4 +108,47 @@ export function primaryItemLabel(order: Order): string {
   }
 
   return `${firstItem.product_name} +${order.items.length - 1} more`;
+}
+
+export function sortOrdersForDisplay(orders: Order[]): Order[] {
+  const priority: Record<string, number> = {
+    ready_for_pickup: 0,
+    pending_payment: 1,
+    preparing: 2,
+    accepted: 3,
+    payment_confirmed: 4,
+    completed: 50,
+    cancelled: 60,
+    rejected: 61,
+  };
+
+  return [...orders].sort((left, right) => {
+    const leftRank = priority[left.status ?? ''] ?? 40;
+    const rightRank = priority[right.status ?? ''] ?? 40;
+
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+
+    const leftTime = left.placed_at ? Date.parse(left.placed_at) : 0;
+    const rightTime = right.placed_at ? Date.parse(right.placed_at) : 0;
+
+    return rightTime - leftTime;
+  });
+}
+
+export function orderListActionLabel(status: string | null | undefined): string {
+  if (isPendingPayment(status)) {
+    return 'Pay now';
+  }
+
+  if (isReadyForPickup(status)) {
+    return 'Pickup';
+  }
+
+  if (isActiveOrder(status)) {
+    return 'Track';
+  }
+
+  return 'View';
 }

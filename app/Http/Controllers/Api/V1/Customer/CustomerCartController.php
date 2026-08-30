@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Customer;
 
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Cart\CartGuestMergeRequest;
 use App\Http\Requests\Cart\CartItemStoreRequest;
 use App\Http\Requests\Cart\CartItemUpdateRequest;
 use App\Http\Resources\Api\V1\CartResource;
@@ -110,6 +111,27 @@ class CustomerCartController extends Controller
         return $this->respondWithResource(
             new CartResource($cart),
             'Cart cleared successfully.',
+            200,
+            [
+                'summary' => $this->cartService->summarize($cart),
+            ],
+        );
+    }
+
+    public function merge(CartGuestMergeRequest $request): JsonResponse
+    {
+        $this->authorize('create', Cart::class);
+
+        $validated = $request->validated();
+        $cart = $this->cartService->mergeGuestItems(
+            $request->user(),
+            $validated['items'],
+            $validated['idempotency_key'] ?? null,
+        );
+
+        return $this->respondWithResource(
+            new CartResource($cart),
+            'Guest cart merged.',
             200,
             [
                 'summary' => $this->cartService->summarize($cart),

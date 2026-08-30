@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { fetchCurrentCustomer, loginCustomer, logoutCustomer, registerCustomer } from '../api/auth';
 import { ApiError, setUnauthorizedHandler } from '../api/client';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
+import { setSessionAuthenticated } from '../utils/authSession';
 import { useCartStore } from './cartStore';
 import { useFavouriteStore } from './favouriteStore';
 
@@ -14,8 +15,8 @@ interface AuthState {
   customer: Customer | null;
   hasBootstrapped: boolean;
   bootstrap: () => Promise<boolean>;
-  login: (payload: LoginPayload) => Promise<Customer>;
-  register: (payload: RegisterPayload) => Promise<Customer>;
+  login: (payload: LoginPayload) => Promise<{ customer: Customer; mergedGuestCart: boolean }>;
+  register: (payload: RegisterPayload) => Promise<{ customer: Customer; mergedGuestCart: boolean }>;
   logout: () => Promise<void>;
   syncCustomer: (customer: Customer) => void;
   clearAuth: () => void;
@@ -23,16 +24,29 @@ interface AuthState {
 }
 
 function resetCustomerSession(set: (value: Partial<AuthState>) => void): void {
+  setSessionAuthenticated(false);
   set({ status: 'guest', customer: null, hasBootstrapped: true });
-  useCartStore.getState().reset();
+  useCartStore.getState().hydrateGuest();
   useFavouriteStore.getState().reset();
 }
 
-async function hydrateCustomerSession(): Promise<void> {
+async function hydrateAuthenticatedSession(): Promise<boolean> {
+  setSessionAuthenticated(true);
+
+  let mergedGuestCart = false;
+
+  try {
+    mergedGuestCart = await useCartStore.getState().mergeGuestCart();
+  } catch {
+    mergedGuestCart = false;
+  }
+
   await Promise.all([
     useCartStore.getState().refreshCount(),
-    useFavouriteStore.getState().refreshIds()
+    useFavouriteStore.getState().refreshIds(),
   ]);
+
+  return mergedGuestCart;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -62,7 +76,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const response = await fetchCurrentCustomer();
         set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-        await hydrateCustomerSession();
+        await hydrateAuthenticatedSession();
 
         return true;
       } catch (error) {
@@ -85,22 +99,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (payload) => {
     const response = await loginCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    await hydrateCustomerSession();
+    setSessionAuthenticated(true);
 
-    return response.data;
+    let mergedGuestCart = false;
+
+    try {
+      mergedGuestCart = await useCartStore.getState().mergeGuestCart();
+    } catch {
+      mergedGuestCart = false;
+    }
+
+    await Promise.all([
+      useCartStore.getState().refreshCount(),
+      useFavouriteStore.getState().refreshIds(),
+    ]);
+
+    return { customer: response.data, mergedGuestCart };
   },
   register: async (payload) => {
     const response = await registerCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    await hydrateCustomerSession();
+    setSessionAuthenticated(true);
 
-    return response.data;
+    let mergedGuestCart = false;
+
+    try {
+      mergedGuestCart = await useCartStore.getState().mergeGuestCart();
+    } catch {
+      mergedGuestCart = false;
+    }
+
+    await Promise.all([
+      useCartStore.getState().refreshCount(),
+      useFavouriteStore.getState().refreshIds(),
+    ]);
+
+    return { customer: response.data, mergedGuestCart };
   },
   logout: async () => {
     await logoutCustomer();
     resetCustomerSession(set);
   },
   syncCustomer: (customer) => {
+    setSessionAuthenticated(true);
     set({ status: 'authenticated', customer, hasBootstrapped: true });
   },
   clearAuth: () => {
@@ -108,5 +149,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   setGuest: () => {
     resetCustomerSession(set);
-  }
+  },
 }));

@@ -22,6 +22,11 @@ export interface ProductServingSize {
   label: string;
 }
 
+export interface ProductMajorIngredient {
+  id: number;
+  label: string;
+}
+
 export interface ProductVariant {
   id: number;
   product_id: number;
@@ -30,6 +35,7 @@ export interface ProductVariant {
   serving_size: ProductServingSize;
   price: string;
   is_available: boolean;
+  major_ingredients?: ProductMajorIngredient[];
 }
 
 export interface Product {

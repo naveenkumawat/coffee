@@ -8,6 +8,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
+import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
@@ -25,7 +26,7 @@ function readCachedPayment(orderId: string): OrderPaymentInstructions | null {
   try {
     const value = window.sessionStorage.getItem(getPaymentCacheKey(orderId));
 
-    return value ? JSON.parse(value) as OrderPaymentInstructions : null;
+    return value ? (JSON.parse(value) as OrderPaymentInstructions) : null;
   } catch {
     return null;
   }
@@ -35,7 +36,7 @@ function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions):
   try {
     window.sessionStorage.setItem(getPaymentCacheKey(orderId), JSON.stringify(payment));
   } catch {
-    // Session storage is best-effort only for non-authoritative confirmation metadata.
+    // Best-effort cache for confirmation payment metadata only.
   }
 }
 
@@ -45,7 +46,7 @@ export function OrderConfirmationPage() {
   const locationState = location.state as ConfirmationLocationState | null;
   const [order, setOrder] = useState<Order | null>(locationState?.order ?? null);
   const [payment, setPayment] = useState<OrderPaymentInstructions | null>(
-    locationState?.payment ?? readCachedPayment(orderId)
+    locationState?.payment ?? readCachedPayment(orderId),
   );
   const [isLoading, setIsLoading] = useState(order === null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,15 +93,13 @@ export function OrderConfirmationPage() {
     void loadOrder();
   }, [order, orderId, payment]);
 
-  const timelineLabel = useMemo(() => {
-    return order?.status_label ?? 'Pending Payment';
-  }, [order]);
+  const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
 
   if (isLoading) {
     return (
       <div className="page-container">
-        <PageHeader title="Order confirmation" description="Your order is waiting for manual payment confirmation." showBack />
-        <LoadingSkeleton cardCount={3} lines={4} />
+        <PageHeader title="Order placed" description="Loading your confirmation…" showBack />
+        <LoadingSkeleton cardCount={2} lines={4} />
       </div>
     );
   }
@@ -108,7 +107,7 @@ export function OrderConfirmationPage() {
   if (errorMessage) {
     return (
       <div className="page-container">
-        <PageHeader title="Order confirmation" description="Your order is waiting for manual payment confirmation." showBack />
+        <PageHeader title="Order placed" description="We couldn’t load this confirmation." showBack />
         <ErrorState description={errorMessage} onRetry={() => window.location.reload()} />
       </div>
     );
@@ -117,10 +116,10 @@ export function OrderConfirmationPage() {
   if (!order) {
     return (
       <div className="page-container">
-        <PageHeader title="Order confirmation" description="Your order is waiting for manual payment confirmation." showBack />
+        <PageHeader title="Order placed" showBack />
         <EmptyState
-          title="Order confirmation not available"
-          description="We couldn’t find that customer order. Please open your latest confirmation from checkout or visit My Orders."
+          title="Confirmation not available"
+          description="Open My Orders to find your latest pickup order."
           actionLabel="My Orders"
           actionHref="/orders"
         />
@@ -130,13 +129,18 @@ export function OrderConfirmationPage() {
 
   return (
     <div className="page-container checkout-page">
-      <PageHeader title="Order confirmation" description="Your order has been placed and is waiting for manual payment confirmation." showBack />
+      <PageHeader title="Order placed" description="Next step: complete payment." showBack={false} />
 
-      <section className="account-hero">
-        <span className="account-hero-badge">{timelineLabel}</span>
-        <h2>Order {order.order_number}</h2>
-        <p>Total due: {formatCurrency(order.total_amount)}</p>
-        <p>We’ll keep this order in `Pending Payment` until the cafe team reviews your payment proof.</p>
+      <section className="confirmation-success motion-enter" aria-live="polite">
+        <span className="confirmation-success-icon" aria-hidden="true">
+          <i className="bi bi-check-lg"></i>
+        </span>
+        <p className="eyebrow">Thank you</p>
+        <h1>Order placed</h1>
+        <p className="confirmation-order-number">{order.order_number}</p>
+        <p className="confirmation-total">Total due {formatCurrency(order.total_amount)}</p>
+        <OrderStatusBadge status={order.status} label={statusLabel} />
+        <p className="confirmation-next-step">Pay now, then share your screenshot so the cafe can start preparing.</p>
       </section>
 
       <PaymentInstructionsCard
@@ -149,9 +153,8 @@ export function OrderConfirmationPage() {
       <section className="account-section">
         <div className="account-section-heading">
           <div>
-            <span className="auth-badge">Final order summary</span>
+            <span className="auth-badge">Summary</span>
             <h2>What you ordered</h2>
-            <p>These are the server-confirmed order snapshots created at checkout.</p>
           </div>
         </div>
 
@@ -172,16 +175,17 @@ export function OrderConfirmationPage() {
             <span>Subtotal</span>
             <strong>{formatCurrency(order.subtotal)}</strong>
           </div>
-          <div>
-            <span>Total</span>
+          <div className="cart-summary-total">
+            <span>Total due</span>
             <strong>{formatCurrency(order.total_amount)}</strong>
           </div>
         </div>
       </section>
 
-      <div className="page-note">
-        <span>Need live tracking?</span>
-        <Link to={`/orders/${order.id}`}>Open order detail</Link>
+      <div className="confirmation-footer-actions">
+        <Link to="/menu" className="btn btn-outline-dark btn-lg rounded-pill w-100">
+          Continue shopping
+        </Link>
       </div>
     </div>
   );

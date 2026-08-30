@@ -23,6 +23,8 @@ class RecipeLineFactory extends Factory
             'base_quantity' => '10.000',
             'base_measurement_unit' => IngredientUnit::Gram,
             'sort_order' => 1,
+            'show_to_customer' => false,
+            'customer_label' => null,
         ];
     }
 }
