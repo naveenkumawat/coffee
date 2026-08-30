@@ -1,6 +1,6 @@
 # Coffee Cafe Scope Progress
 
-Last audited: August 30, 2026
+Last audited: August 29, 2026
 Requirements source: [scope.md](./scope.md)
 Architecture source: [architecture.md](./architecture.md)
 
@@ -14,6 +14,9 @@ Architecture source: [architecture.md](./architecture.md)
   - Menu category and menu item architecture foundation
   - Public homepage using cached menu catalog data
   - Base policies, role middleware, parser/transfer/service/repository flow
+  - Customer PWA scope and theme planning documentation
+  - Customer React/Vite/TypeScript PWA foundation and first catalog slice
+  - Customer PWA password-reset URL integration and verified Node toolchain baseline
 - Partial foundations:
   - Administrator dashboard
   - Barista dashboard
@@ -38,8 +41,9 @@ Status: Partial
 - [x] Administrator internal panel bootstrapped
 - [x] Barista internal panel bootstrapped
 - [x] Public storefront shell started
-- [ ] Customer API transport foundation finalized
-- [ ] Customer PWA shell finalized
+- [x] Customer API transport foundation finalized
+- [x] Customer PWA shell finalized
+- [x] Customer PWA scope and theme planning documentation completed
 - [ ] Queue-backed workflows implemented
 - [ ] Notification infrastructure implemented
 - [ ] Audit trail infrastructure implemented
@@ -55,7 +59,7 @@ Status: Partial
 - [x] Customer role modeled in code
 - [x] Role-aware access checks exist for Administrator and Barista panels
 - [x] Customer-facing authenticated area implemented in temporary Blade foundation
-- [ ] Customer API auth/account transport implemented to final scope
+- [x] Customer API auth/account transport implemented to final scope
 - [ ] Fine-grained permission management implemented
 
 ### Authentication
@@ -68,7 +72,7 @@ Status: Partial
 - [x] Customer login/logout business flow implemented
 - [x] Forgot password and reset business flow implemented
 - [x] Customer profile management business flow implemented
-- [ ] Final PWA auth/account experience implemented
+- [x] Final PWA auth/account experience implemented
 
 ### User Management
 
@@ -238,6 +242,7 @@ Implementation note:
 - Backend/customer-domain functionality may be complete for some flows even where the final customer API/PWA frontend is still pending.
 - Existing customer Blade pages are transition/foundation work only and must not be treated as the final PWA implementation.
 - Customer API/PWA migration is pending.
+- Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout, and payment confirmation implemented; orders UI, favourites, and broader customer flows remain pending.
 
 ### Website Structure
 
@@ -248,11 +253,12 @@ Implementation note:
 - [ ] Terms and Conditions page implemented
 - [ ] Privacy Policy page implemented
 - [x] Temporary customer Blade account area implemented
-- [ ] Final customer PWA account area implemented
+- [x] Final customer PWA account area implemented
 
 ### Homepage
 
 - [x] Public homepage data foundation exists
+- [x] Customer PWA home shell and featured catalog slice implemented
 - [ ] Final mobile-first PWA homepage implemented
 - [ ] Cafe branding content management implemented
 - [ ] Hero banner management implemented
@@ -265,7 +271,10 @@ Implementation note:
 ### Menu and Product Discovery
 
 - [x] Catalog/product domain foundation implemented on backend
-- [ ] Customer catalog API implemented to final scope
+- [x] Customer catalog API implemented to final scope
+- [x] Customer PWA menu page foundation implemented
+- [x] Customer PWA product detail and add-to-cart slice implemented
+- [x] Customer PWA category navigation foundation implemented
 - [ ] Dedicated PWA menu page implemented
 - [ ] Category navigation implemented in final PWA
 - [ ] Product cards implemented to final PWA scope
@@ -277,18 +286,19 @@ Implementation note:
 
 - [ ] Favourite products implemented
 - [x] Cart domain/business flow implemented
+- [x] Customer PWA cart count and cart page foundation implemented
 - [x] Temporary customer Blade checkout page implemented
 - [x] Temporary customer Blade order confirmation/payment-instruction page implemented
 - [ ] Customer favourites API implemented
-- [ ] Customer cart API implemented to final scope
+- [x] Customer cart API implemented to final scope
 - [ ] Cart item notes implemented
 - [ ] Size selection implemented
 - [ ] Flavour selection implemented
 - [x] Checkout authentication requirement implemented
 - [x] Checkout flow business logic implemented
 - [x] Payment instruction presentation/business support implemented
-- [ ] Customer checkout API implemented to final scope
-- [ ] Final PWA cart and checkout experience implemented
+- [x] Customer checkout API implemented to final scope
+- [x] Final PWA cart and checkout experience implemented
 
 ## Phase 8 - Orders and Payment Workflow
 Status: Partial
@@ -305,7 +315,7 @@ Status: Partial
 - [x] Order history domain support implemented
 - [x] Order detail domain support implemented
 - [x] Customer order tracking domain support implemented
-- [ ] Customer orders/tracking API implemented to final scope
+- [x] Customer orders/tracking API implemented to final scope
 - [ ] Final PWA orders/history/tracking experience implemented
 
 ## Phase 9 - Inventory-to-Order Automation
@@ -349,7 +359,7 @@ Status: Partial
 - [x] Custom non-debug production exception views exist
 - [x] Structured request/exception logging exists
 - [x] Shared internal responsive shell exists
-- [ ] Customer data isolation rules implemented for order/account modules
+- [x] Customer data isolation rules implemented for order/account modules
 - [ ] Broader module policy coverage implemented
 - [ ] Inventory and order audit trail implemented
 - [ ] Full responsive coverage across all scoped screens implemented
@@ -389,4 +399,4 @@ Status: Pending
 - [ ] Expand menu into full product categories, products, flavours, and variants
 - [ ] Implement recipes and costing before order fulfillment
 - [ ] Build orders, checkout, payment confirmation, and barista operational flows
-- [ ] Complete customer API surface and mobile-first PWA migration
+- [ ] Build the mobile-first customer PWA on top of the implemented customer API surface

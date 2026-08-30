@@ -2,6 +2,8 @@
 
 namespace App\Services\Product;
 
+use App\Models\Product;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 interface ProductCatalogServiceInterface
@@ -9,6 +11,12 @@ interface ProductCatalogServiceInterface
     public function publicCatalog(): Collection;
 
     public function featuredProducts(): Collection;
+
+    public function paginatePublicProducts(array $filters = [], int $perPage = 12): LengthAwarePaginator;
+
+    public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    public function findPublicProduct(int $productId): ?Product;
 
     public function flushPublicCache(): void;
 }

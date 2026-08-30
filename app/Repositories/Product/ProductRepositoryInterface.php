@@ -23,6 +23,12 @@ interface ProductRepositoryInterface
 
     public function featured(int $limit = 4): Collection;
 
+    public function paginatePublic(array $filters = [], int $perPage = 12): LengthAwarePaginator;
+
+    public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator;
+
+    public function findPublicById(int $productId): ?Product;
+
     public function create(array $attributes): Product;
 
     public function update(Product $product, array $attributes): Product;

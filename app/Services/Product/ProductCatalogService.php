@@ -2,7 +2,9 @@
 
 namespace App\Services\Product;
 
+use App\Models\Product;
 use App\Repositories\Product\ProductRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -32,6 +34,21 @@ class ProductCatalogService implements ProductCatalogServiceInterface
             now()->addMinutes((int) config('coffee.cache.menu_ttl', 15)),
             fn (): Collection => $this->products->featured(),
         );
+    }
+
+    public function paginatePublicProducts(array $filters = [], int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->products->paginatePublic($filters, $perPage);
+    }
+
+    public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->products->paginatePublicVariants($filters, $perPage);
+    }
+
+    public function findPublicProduct(int $productId): ?Product
+    {
+        return $this->products->findPublicById($productId);
     }
 
     public function flushPublicCache(): void

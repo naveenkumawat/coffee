@@ -5,6 +5,7 @@ namespace App\Repositories\Product;
 use App\Models\ProductCategory;
 use App\Transfers\Product\ProductCategoryFilterTransferInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface ProductCategoryRepositoryInterface
 {
@@ -13,6 +14,8 @@ interface ProductCategoryRepositoryInterface
     public function allOptions(): array;
 
     public function activeOptions(): array;
+
+    public function publicCatalog(): Collection;
 
     public function create(array $attributes): ProductCategory;
 

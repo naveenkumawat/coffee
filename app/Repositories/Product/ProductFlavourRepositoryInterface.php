@@ -5,6 +5,7 @@ namespace App\Repositories\Product;
 use App\Models\ProductFlavour;
 use App\Transfers\Product\ProductFlavourFilterTransferInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 interface ProductFlavourRepositoryInterface
 {
@@ -13,6 +14,8 @@ interface ProductFlavourRepositoryInterface
     public function allOptions(): array;
 
     public function activeOptions(): array;
+
+    public function publicCatalog(): Collection;
 
     public function create(array $attributes): ProductFlavour;
 

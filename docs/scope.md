@@ -34,10 +34,10 @@ The system should be designed so that online payment, delivery integration, loya
 
 * Internal Administrator frontend: Laravel Blade
 * Internal Barista frontend: Laravel Blade
-* Customer frontend target: API-driven mobile-first Progressive Web App (PWA)
-* HTML5
-* CSS3
-* JavaScript
+* Customer frontend target: React + Vite + TypeScript mobile-first Progressive Web App (PWA)
+* React
+* Vite
+* TypeScript
 
 ### Architecture Considerations
 
@@ -45,7 +45,7 @@ The system should be designed so that online payment, delivery integration, loya
 * Repository/service layer where appropriate
 * Role-based permissions
 * Internal panels remain Blade-rendered
-* Customer storefront is a mobile-first PWA that consumes Laravel REST APIs
+* Customer storefront is a mobile-first React PWA that consumes Laravel REST APIs
 * Existing customer Blade views/controllers are temporary transition foundations and are not the final storefront architecture
 * Responsive web design with customer mobile-first priority
 * Secure authentication
@@ -62,11 +62,16 @@ Internal management surfaces:
 
 Customer ordering surface:
 
-* Customer = API-driven mobile-first PWA
-* Laravel provides the REST API and business backend for the customer app
+* Customer = React + Vite + TypeScript mobile-first PWA
+* Laravel provides the `/api/v1` REST API and business backend for the customer app
 * The customer PWA consumes the API and should not be treated as a Blade-first architecture
 * Existing customer Blade authentication/account/cart/checkout flows are temporary foundation work only and must not be expanded as the long-term storefront
 * Existing customer Blade work should not be deleted yet; Blade and API may coexist during migration
+
+Reference planning docs:
+
+* Customer PWA scope: `docs/pwa-scope.md`
+* Customer PWA theme mapping: `docs/pwa-theme-map.md`
 
 ---
 

@@ -1,0 +1,229 @@
+# Coffee Customer PWA Scope
+
+Last updated: August 30, 2026
+Theme reference: `theme/pwa/ombe-bootstrap-pwa.vercel.app`
+Canonical backend/API architecture: `Laravel /api/v1 -> existing Services -> Repositories -> Models`
+
+## Purpose
+
+This document defines the target scope for the Coffee customer-facing Progressive Web App.
+
+The PWA is the canonical long-term customer frontend.
+
+It is separate from:
+
+- the internal Administrator Blade panel
+- the internal Barista Blade panel
+- the temporary customer Blade auth/account/cart/checkout foundation currently present during migration
+
+## Canonical Frontend Architecture
+
+```text
+React + Vite + TypeScript PWA
+  -> Laravel /api/v1
+  -> existing Services
+  -> Repositories
+  -> Models / Database
+```
+
+Rules:
+
+- Administrator remains Laravel Blade.
+- Barista remains Laravel Blade.
+- Existing customer Blade pages are transitional only.
+- Customer Blade pages must not be expanded as the final storefront architecture.
+- Customer API and temporary Blade flows may coexist during migration.
+- Domain logic must remain in the existing Laravel Services, not duplicated in frontend-specific or `Api*Service` classes.
+
+## Core Product Principle
+
+- Mobile-first design is mandatory.
+- Primary target device is the smartphone.
+- Touch-first interaction is the default assumption.
+- Desktop and tablet layouts remain responsive fallbacks, not the primary design center.
+
+## PWA Delivery Requirements
+
+The customer frontend must support:
+
+- installable behavior on supported Android and iOS browsers where capabilities allow
+- web app manifest with Coffee-specific app name, short name, icons, theme color, and background color
+- standalone display mode where supported
+- service worker for safe static asset and shell caching
+- offline fallback shell or offline page
+- fast repeat loads
+- graceful handling of slow or intermittent mobile networks
+- release/update strategy that avoids customers being stuck on stale frontend assets
+
+## Offline and Caching Rules
+
+Safe to cache:
+
+- app shell assets
+- static icons
+- fonts where licensing allows bundling
+- non-sensitive public catalog media with appropriate cache strategy
+- low-risk read-only marketing content
+
+Do not treat offline cache as source of truth for:
+
+- authenticated account state
+- cart pricing
+- stock or availability
+- checkout submissions
+- payment status
+- live order status
+- private order history details
+
+Rules:
+
+- backend remains authoritative for authentication, prices, availability, cart totals, checkout validation, payment state, and order state
+- offline support must never bypass server validation
+- sensitive or rapidly changing customer data must be fetched from the server and refreshed appropriately
+
+## Customer Flows In Scope
+
+The PWA foundation must support these flows over time:
+
+- Home / storefront
+- Product browsing
+- Categories and flavours
+- Product detail and variant selection
+- Customer registration, login, logout
+- Forgot/reset password if supported by current backend flow
+- Account and profile
+- Favourites
+- Cart
+- Checkout summary and submission
+- Payment instructions
+- Order confirmation
+- Order tracking and order history
+- Reorder later when implemented
+
+## API Dependencies
+
+The current customer API target is `/api/v1`.
+
+PWA features depend on:
+
+- auth/account endpoints
+- catalog endpoints for categories, flavours, products, featured products, product detail, variants
+- cart endpoints for show, add, update quantity, remove, clear, count/totals
+- checkout endpoints for summary and submit
+- orders endpoints for own list and own detail
+
+Future API additions expected:
+
+- favourites CRUD
+- richer order timeline/status presentation if needed
+- push notification registration endpoints if notifications are introduced later
+- loyalty/rewards endpoints if added later
+
+## Mobile UX Requirements
+
+- touch-friendly targets and spacing
+- simple navigation with primary actions quickly reachable
+- visible cart and order state
+- minimal typing during ordering
+- mobile-friendly forms and keyboard/input types
+- lightweight responsive images
+- card and list views preferred over desktop-style dense tables
+- sticky bottom actions may be used where they improve ordering flow
+- avoid unnecessary modals and heavy multi-step friction
+
+## Proposed Navigation Model
+
+Primary mobile navigation should use a restrained bottom navigation with up to five destinations:
+
+- Home
+- Menu
+- Cart
+- Orders
+- Account
+
+Secondary navigation may use:
+
+- top app bar with contextual back navigation
+- lightweight drawers or sheets for filters and support content
+- inline category chips or tabs for menu browsing
+
+Avoid:
+
+- overcrowded bottom nav
+- mixing internal/admin concepts into customer navigation
+- large floating side menus as the primary mobile navigation pattern
+
+## Performance Requirements
+
+- prioritize fast first load
+- keep JavaScript payload small
+- keep CSS focused on the customer app only
+- lazy-load route chunks and heavy views where appropriate
+- optimize images and icons
+- minimize network requests
+- cache static shell assets efficiently
+- preserve good Core Web Vitals on mobile networks
+
+Avoid introducing heavy libraries unless they clearly reduce implementation risk or provide sustained value.
+
+## Security and Ordering Integrity
+
+Before accepting checkout or order creation, the backend must continue validating:
+
+- authenticated customer
+- cart ownership
+- product and variant availability
+- current selling price
+- totals
+- order state
+- payment/manual confirmation rules
+
+The frontend must never:
+
+- trust client-calculated totals as authoritative
+- expose recipes, ingredient quantities, costs, margins, internal notes, or staff-only data
+- imply payment has been confirmed before Administrator action
+
+## Theme Adoption Guidance
+
+The Ombe theme is a visual and structural reference only.
+
+Use it to guide:
+
+- mobile layout rhythm
+- card composition
+- sticky action placement
+- catalog and order-list presentation
+- profile and auth screen framing
+
+Do not copy forward theme features that conflict with Coffee scope, especially:
+
+- delivery-first patterns where Coffee currently uses pickup/manual payment
+- wallet/card storage patterns
+- chat, rewards, review, and unrelated demo pages
+- jQuery plugin assumptions that do not fit the React/Vite architecture
+
+See [pwa-theme-map.md](./pwa-theme-map.md) for the detailed theme inventory and mapping plan.
+
+## Recommended PWA Foundation Deliverables
+
+The first implementation pass should establish:
+
+- React + Vite + TypeScript app scaffold
+- app routing and route shells
+- Coffee design tokens derived from the theme direction
+- bottom navigation and top app bar system
+- API client foundation for `/api/v1`
+- auth/session bootstrap for first-party Sanctum flow
+- manifest and initial icons
+- service worker and offline fallback shell
+- Home, Menu, Product Detail, Cart, Orders, and Account route skeletons
+
+## Out of Scope for This Planning Phase
+
+- building the React project now
+- replacing the temporary Blade customer frontend now
+- implementing a payment gateway
+- implementing inventory consumption from orders
+- implementing push notifications now
+- modifying internal Blade Administrator or Barista surfaces

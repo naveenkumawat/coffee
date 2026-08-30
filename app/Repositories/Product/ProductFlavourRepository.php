@@ -6,6 +6,7 @@ use App\Models\ProductFlavour;
 use App\Repositories\AbstractRepository;
 use App\Transfers\Product\ProductFlavourFilterTransferInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductFlavourRepository extends AbstractRepository implements ProductFlavourRepositoryInterface
 {
@@ -50,6 +51,19 @@ class ProductFlavourRepository extends AbstractRepository implements ProductFlav
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
+    }
+
+    public function publicCatalog(): Collection
+    {
+        return $this->model->newQuery()
+            ->where('is_active', true)
+            ->whereHas('products', fn ($query) => $query->where('is_active', true)->where('is_available', true))
+            ->withCount([
+                'products' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+            ])
+            ->with(['categories' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name')])
+            ->orderBy('name')
+            ->get();
     }
 
     public function create(array $attributes): ProductFlavour

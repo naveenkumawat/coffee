@@ -6,6 +6,7 @@ use App\Models\ProductCategory;
 use App\Repositories\AbstractRepository;
 use App\Transfers\Product\ProductCategoryFilterTransferInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductCategoryRepository extends AbstractRepository implements ProductCategoryRepositoryInterface
 {
@@ -52,6 +53,19 @@ class ProductCategoryRepository extends AbstractRepository implements ProductCat
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();
+    }
+
+    public function publicCatalog(): Collection
+    {
+        return $this->model->newQuery()
+            ->where('is_active', true)
+            ->whereHas('products', fn ($query) => $query->where('is_active', true)->where('is_available', true))
+            ->withCount([
+                'products' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+            ])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 
     public function create(array $attributes): ProductCategory

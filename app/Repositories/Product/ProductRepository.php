@@ -5,6 +5,7 @@ namespace App\Repositories\Product;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
+use App\Models\ProductVariant;
 use App\Repositories\AbstractRepository;
 use App\Transfers\Product\ProductFilterTransferInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -14,6 +15,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
 {
     public function __construct(
         protected Product $model,
+        protected ProductVariant $variantModel,
     ) {}
 
     public function paginateForAdmin(ProductFilterTransferInterface $filters, int $perPage = 12): LengthAwarePaginator
@@ -90,6 +92,86 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->orderBy('name')
             ->limit($limit)
             ->get();
+    }
+
+    public function paginatePublic(array $filters = [], int $perPage = 12): LengthAwarePaginator
+    {
+        return $this->model->newQuery()
+            ->with([
+                'category',
+                'flavours',
+                'defaultVariant',
+                'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+            ])
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
+                $search = trim((string) $filters['search']);
+
+                $query->where(function ($nestedQuery) use ($search): void {
+                    $nestedQuery
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('short_description', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('customer_ingredient_summary', 'like', "%{$search}%");
+                });
+            })
+            ->when(filled($filters['product_category_id'] ?? null), fn ($query) => $query->where('product_category_id', (int) $filters['product_category_id']))
+            ->when(filled($filters['product_flavour_id'] ?? null), fn ($query) => $query->whereHas('flavours', fn ($flavourQuery) => $flavourQuery->whereKey((int) $filters['product_flavour_id'])->where('is_active', true)))
+            ->when(($filters['featured'] ?? null) === 'featured', fn ($query) => $query->where('is_featured', true))
+            ->orderByDesc('is_featured')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->variantModel->newQuery()
+            ->with(['product.category'])
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->whereHas('product', function ($query) use ($filters): void {
+                $query
+                    ->where('is_active', true)
+                    ->where('is_available', true)
+                    ->whereHas('category', fn ($categoryQuery) => $categoryQuery->where('is_active', true))
+                    ->when(filled($filters['product_id'] ?? null), fn ($productQuery) => $productQuery->whereKey((int) $filters['product_id']))
+                    ->when(filled($filters['product_category_id'] ?? null), fn ($productQuery) => $productQuery->where('product_category_id', (int) $filters['product_category_id']))
+                    ->when(filled($filters['product_flavour_id'] ?? null), fn ($productQuery) => $productQuery->whereHas('flavours', fn ($flavourQuery) => $flavourQuery->whereKey((int) $filters['product_flavour_id'])->where('is_active', true)))
+                    ->when(filled($filters['search'] ?? null), function ($productQuery) use ($filters): void {
+                        $search = trim((string) $filters['search']);
+
+                        $productQuery->where(function ($nestedQuery) use ($search): void {
+                            $nestedQuery
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('short_description', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
+                        });
+                    });
+            })
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function findPublicById(int $productId): ?Product
+    {
+        return $this->model->newQuery()
+            ->with([
+                'category',
+                'flavours',
+                'defaultVariant',
+                'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+            ])
+            ->whereKey($productId)
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+            ->first();
     }
 
     public function create(array $attributes): Product

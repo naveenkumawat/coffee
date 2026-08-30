@@ -9,8 +9,8 @@ Internal surfaces:
 
 Customer surface:
 
-- Customer = API-driven mobile-first PWA
-- Laravel provides the REST API transport and business backend for the customer app
+- Customer = React + Vite + TypeScript mobile-first PWA
+- Laravel provides the `/api/v1` REST API transport and business backend for the customer app
 - The customer PWA consumes the API and is the canonical long-term storefront architecture
 - Existing customer Blade auth/account/cart/checkout flows are transition/foundation work only
 - Existing customer Blade customer work must not be expanded as the final storefront architecture, but it should not be deleted yet
@@ -20,8 +20,8 @@ Customer surface:
 Customer PWA:
 
 ```text
-Customer PWA
-  -> Laravel API controllers
+React + Vite + TypeScript PWA
+  -> Laravel /api/v1 API controllers
   -> existing Services
   -> Repositories
   -> Models / Database
@@ -49,9 +49,21 @@ Transition rules:
 - Mobile-first and touch-first UX is the primary requirement.
 - Installable PWA behavior should be supported where the browser/device allows it.
 - The customer app should use a manifest, service worker, and offline shell.
+- The canonical implementation target is React + Vite + TypeScript, not Blade-rendered customer pages.
 - Responsive desktop fallback is still required, but it is secondary to smartphone UX.
 - Offline support must never treat sensitive or live customer/account/order/payment data as the source of truth.
 - The backend remains authoritative for authentication, pricing, availability, cart state, checkout validation, payment state, and order state.
+
+## Customer PWA Foundation Docs
+
+- Scope reference: [pwa-scope.md](./pwa-scope.md)
+- Theme mapping reference: [pwa-theme-map.md](./pwa-theme-map.md)
+
+Theme usage rules:
+
+- The Ombe theme under `theme/pwa/ombe-bootstrap-pwa.vercel.app` is a planning and design reference only.
+- Do not treat the static Bootstrap/jQuery theme as the target runtime architecture.
+- Rebuild the selected patterns as React components over the existing Laravel API.
 
 ## ZYLM Patterns Identified
 
