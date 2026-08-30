@@ -80,6 +80,11 @@ class CheckoutService implements CheckoutServiceInterface
             $orderTransfer->setPickupPhone($data->getPickupPhone());
             $orderTransfer->setCustomerNotes($data->getCustomerNotes());
             $orderTransfer->setPickupNotes($data->getPickupNotes());
+            $orderTransfer->setFulfilmentMethod($data->getFulfilmentMethod());
+            $orderTransfer->setDeliveryAddress($data->getDeliveryAddress());
+            $orderTransfer->setDeliveryPhone($data->getDeliveryPhone());
+            $orderTransfer->setDeliveryContactName($data->getDeliveryContactName());
+            $orderTransfer->setDeliveryNotes($data->getDeliveryNotes());
             $orderTransfer->setItems(
                 $cart->items
                     ->map(fn (CartItem $item): array => [

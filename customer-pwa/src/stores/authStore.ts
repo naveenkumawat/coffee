@@ -42,7 +42,7 @@ async function hydrateAuthenticatedSession(): Promise<boolean> {
   }
 
   await Promise.all([
-    useCartStore.getState().refreshCount(),
+    useCartStore.getState().loadCart(),
     useFavouriteStore.getState().refreshIds(),
   ]);
 
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     await Promise.all([
-      useCartStore.getState().refreshCount(),
+      useCartStore.getState().loadCart(),
       useFavouriteStore.getState().refreshIds(),
     ]);
 
@@ -130,7 +130,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     await Promise.all([
-      useCartStore.getState().refreshCount(),
+      useCartStore.getState().loadCart(),
       useFavouriteStore.getState().refreshIds(),
     ]);
 

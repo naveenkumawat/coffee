@@ -328,6 +328,7 @@ class CustomerApiTest extends TestCase
 
         $payload = [
             'checkout_token' => $checkoutToken,
+            'fulfilment_method' => 'takeaway',
             'customer_name' => 'Riya Customer',
             'customer_email' => 'riya@example.test',
             'customer_phone' => '7777777777',

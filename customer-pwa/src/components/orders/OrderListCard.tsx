@@ -3,6 +3,7 @@ import { Order } from '../../types/order';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import {
   isActiveOrder,
+  isDeliveryOrder,
   isPendingPayment,
   isReadyForPickup,
   orderListActionLabel,
@@ -18,7 +19,8 @@ interface OrderListCardProps {
 export function OrderListCard({ order }: OrderListCardProps) {
   const tone = statusTone(order.status);
   const active = isActiveOrder(order.status);
-  const actionLabel = orderListActionLabel(order.status);
+  const actionLabel = orderListActionLabel(order);
+  const delivery = isDeliveryOrder(order);
 
   return (
     <Link
@@ -37,7 +39,10 @@ export function OrderListCard({ order }: OrderListCardProps) {
         <div className="order-list-card-copy">
           <OrderStatusBadge status={order.status} label={order.status_label} />
           <h2>{order.order_number}</h2>
-          <p className="order-list-date">{formatDateTime(order.placed_at)}</p>
+          <p className="order-list-date">
+            {formatDateTime(order.placed_at)}
+            {order.fulfilment_method_label ? ` · ${order.fulfilment_method_label}` : ''}
+          </p>
         </div>
         <strong className="order-list-total">{formatCurrency(order.total_amount)}</strong>
       </div>
@@ -54,7 +59,11 @@ export function OrderListCard({ order }: OrderListCardProps) {
         <p className="order-list-callout">Payment needed to start preparation</p>
       ) : null}
       {isReadyForPickup(order.status) ? (
-        <p className="order-list-callout is-ready-callout">Ready at the cafe — come pick it up</p>
+        <p className="order-list-callout is-ready-callout">
+          {delivery
+            ? 'Ready for delivery handover — third-party charges are separate'
+            : 'Ready at the cafe — come pick it up'}
+        </p>
       ) : null}
     </Link>
   );

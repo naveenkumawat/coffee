@@ -103,6 +103,7 @@ class CustomerCheckoutTest extends TestCase
         $response = $this->actingAs($customer, 'web')
             ->post(route('customer.checkout.store'), [
                 'checkout_token' => $checkoutToken,
+                'fulfilment_method' => 'takeaway',
                 'customer_name' => 'Nina Customer',
                 'customer_email' => 'nina@example.test',
                 'customer_phone' => '9999999999',
@@ -118,6 +119,7 @@ class CustomerCheckoutTest extends TestCase
             ->assertRedirect(route('customer.checkout.confirmation', $order));
 
         $this->assertSame(OrderStatus::PendingPayment, $order->status);
+        $this->assertSame('takeaway', $order->fulfilment_method?->value);
         $this->assertSame('25.00', $order->total_amount);
         $this->assertSame('Nina Customer', $order->customer_name);
         $this->assertSame('nina@example.test', $order->customer_email);
@@ -165,6 +167,7 @@ class CustomerCheckoutTest extends TestCase
 
         $payload = [
             'checkout_token' => $checkoutToken,
+            'fulfilment_method' => 'takeaway',
             'customer_name' => $customer->name,
             'customer_email' => $customer->email,
             'customer_phone' => $customer->phone ?? '9999999999',
@@ -226,6 +229,7 @@ class CustomerCheckoutTest extends TestCase
             $this->actingAs($customer, 'web')
                 ->post(route('customer.checkout.store'), [
                     'checkout_token' => $checkoutToken,
+                    'fulfilment_method' => 'takeaway',
                     'customer_name' => $customer->name,
                     'customer_email' => $customer->email,
                     'customer_phone' => $customer->phone,
@@ -260,6 +264,7 @@ class CustomerCheckoutTest extends TestCase
         $this->actingAs($customer, 'web')
             ->post(route('customer.checkout.store'), [
                 'checkout_token' => $checkoutToken,
+                'fulfilment_method' => 'takeaway',
                 'customer_name' => $customer->name,
                 'customer_email' => $customer->email,
                 'customer_phone' => $customer->phone,

@@ -27,6 +27,8 @@ class WebsiteSettingController extends Controller
                 'display_name' => config('coffee.payments.display_name'),
                 'instructions' => config('coffee.payments.instructions'),
                 'upi_id' => config('coffee.payments.upi_id'),
+                'phone' => config('coffee.payments.phone'),
+                'qr_image_path' => config('coffee.payments.qr_image_path'),
                 'whatsapp_number' => config('coffee.payments.whatsapp_number'),
             ],
         ]);

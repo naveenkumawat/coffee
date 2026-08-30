@@ -40,6 +40,26 @@ interface OrderTransferInterface
 
     public function setPickupNotes(?string $pickupNotes): void;
 
+    public function getFulfilmentMethod(): ?string;
+
+    public function setFulfilmentMethod(?string $fulfilmentMethod): void;
+
+    public function getDeliveryAddress(): ?string;
+
+    public function setDeliveryAddress(?string $deliveryAddress): void;
+
+    public function getDeliveryPhone(): ?string;
+
+    public function setDeliveryPhone(?string $deliveryPhone): void;
+
+    public function getDeliveryContactName(): ?string;
+
+    public function setDeliveryContactName(?string $deliveryContactName): void;
+
+    public function getDeliveryNotes(): ?string;
+
+    public function setDeliveryNotes(?string $deliveryNotes): void;
+
     public function getItems(): array;
 
     public function setItems(array $items): void;

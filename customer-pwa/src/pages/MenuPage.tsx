@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { buildProductQuery, fetchCategories, fetchFlavours, fetchProducts } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { CategoryPills } from '../components/catalog/CategoryPills';
@@ -9,11 +9,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
-import { useCartStore } from '../stores/cartStore';
-import { useToastStore } from '../stores/toastStore';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
-import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
-import { canQuickAddProduct, getProductVariants } from '../utils/productActions';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -36,11 +32,6 @@ export function MenuPage() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingProductId, setPendingProductId] = useState<number | null>(null);
-  const addItem = useCartStore((state) => state.addItem);
-  const toastSuccess = useToastStore((state) => state.success);
-  const toastError = useToastStore((state) => state.error);
-  const navigate = useNavigate();
   const productRequestId = useRef(0);
 
   const activeCategoryId = useMemo(() => parsePositiveInt(searchParams.get('category')), [searchParams]);
@@ -207,30 +198,6 @@ export function MenuPage() {
     });
   }
 
-  async function handleAddToCart(product: Product): Promise<void> {
-    if (!canQuickAddProduct(product)) {
-      navigate(`/menu/${product.id}`);
-      return;
-    }
-
-    const variant = getProductVariants(product)[0];
-    setPendingProductId(product.id);
-
-    try {
-      await addItem({
-        product_variant_id: variant.id,
-        quantity: 1,
-        display: buildCartDisplayFromProduct(product, variant),
-      });
-      toastSuccess(`${product.name} added to cart`);
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Unable to add this item.';
-      toastError(message);
-    } finally {
-      setPendingProductId(null);
-    }
-  }
-
   const emptyDescription = hasActiveFilters
     ? 'No drinks match these filters. Clear them or try another search.'
     : 'No drinks are available on the menu right now.';
@@ -333,12 +300,7 @@ export function MenuPage() {
       {!isBootstrapping && !isLoadingProducts && !errorMessage && products.length > 0 ? (
         <div className="product-grid menu-results motion-enter">
           {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              isBusy={pendingProductId === product.id}
-              onAddToCart={handleAddToCart}
-            />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       ) : null}

@@ -21,6 +21,11 @@ class CheckoutParser implements CheckoutParserInterface
         $transfer->setPickupPhone(filled($checkoutData['pickup_phone'] ?? null) ? trim((string) $checkoutData['pickup_phone']) : null);
         $transfer->setCustomerNotes(filled($checkoutData['customer_notes'] ?? null) ? trim((string) $checkoutData['customer_notes']) : null);
         $transfer->setPickupNotes(filled($checkoutData['pickup_notes'] ?? null) ? trim((string) $checkoutData['pickup_notes']) : null);
+        $transfer->setFulfilmentMethod(filled($checkoutData['fulfilment_method'] ?? null) ? trim((string) $checkoutData['fulfilment_method']) : null);
+        $transfer->setDeliveryAddress(filled($checkoutData['delivery_address'] ?? null) ? trim((string) $checkoutData['delivery_address']) : null);
+        $transfer->setDeliveryPhone(filled($checkoutData['delivery_phone'] ?? null) ? trim((string) $checkoutData['delivery_phone']) : null);
+        $transfer->setDeliveryContactName(filled($checkoutData['delivery_contact_name'] ?? null) ? trim((string) $checkoutData['delivery_contact_name']) : null);
+        $transfer->setDeliveryNotes(filled($checkoutData['delivery_notes'] ?? null) ? trim((string) $checkoutData['delivery_notes']) : null);
 
         return $transfer;
     }

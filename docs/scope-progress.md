@@ -246,7 +246,7 @@ Implementation note:
 - Backend/customer-domain functionality may be complete for some flows even where the final customer API/PWA frontend is still pending.
 - Existing customer Blade pages are transition/foundation work only and must not be treated as the final PWA implementation.
 - Customer API/PWA migration is pending.
-- Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout, payment confirmation, orders/history/tracking, favourites, menu discovery, home CMS/content pages, and production hardening (manifest/SW/offline/update, route splitting, deploy checklist) implemented; remaining storefront polish (offers, quick view, etc.) remains pending.
+- Customer React/Vite/TypeScript PWA foundation now exists, with auth/account, cart, checkout (takeaway/delivery), payment confirmation + proof upload, orders/history/tracking, favourites, menu discovery, home CMS/content pages, and production hardening (manifest/SW/offline/update, route splitting, deploy checklist) implemented; remaining storefront polish (offers, quick view, etc.) remains pending.
 - [x] Customer PWA UI/UX audit documented in `docs/ui-ux-audit.md` (redesign not started)
 - [x] Customer PWA shared design foundation (C1): tokens, sticky CTA, toast feedback, copy/motion/nav clearance
 - [x] Customer PWA ordering path polish (C2): Product Detail → Cart → Checkout → Confirmation
@@ -288,8 +288,8 @@ Implementation note:
 - [x] Customer PWA category navigation foundation implemented
 - [x] Dedicated PWA menu page implemented
 - [x] Category navigation implemented in final PWA
-- [ ] Product cards implemented to final PWA scope
-- [ ] Product quick view implemented
+- [x] Product cards implemented to final PWA scope
+- [x] Product quick view implemented
 - [x] Product filters implemented
 - [x] Customer-visible ingredient summaries implemented
 - [x] Guest cart (local persist, checkout auth gate, post-login merge) implemented
@@ -306,7 +306,7 @@ Implementation note:
 - [x] Customer cart API implemented to final scope
 - [x] Guest cart local persistence and authenticated merge endpoint implemented
 - [ ] Cart item notes implemented
-- [ ] Size selection implemented
+- [x] Size selection implemented
 - [ ] Flavour selection implemented
 - [x] Checkout authentication requirement implemented
 - [x] Checkout flow business logic implemented
@@ -322,6 +322,10 @@ Status: Partial
 - [x] Unique order number generation implemented
 - [x] Pending Payment initial state implemented
 - [x] Manual payment confirmation workflow implemented
+- [x] Takeaway and delivery fulfilment methods implemented
+- [x] Delivery address snapshot and third-party delivery disclaimer implemented
+- [x] Customer payment proof upload (image) implemented
+- [x] Administrator payment proof review / replacement request implemented
 - [x] Order status workflow implemented
 - [x] Prepared-by / assigned barista tracking implemented
 - [x] Preparation timestamps implemented

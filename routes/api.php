@@ -66,6 +66,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('orders')->name('orders.')->group(function (): void {
             Route::get('/', [CustomerOrderController::class, 'index'])->name('index');
             Route::get('/{order}', [CustomerOrderController::class, 'show'])->name('show');
+            Route::post('/{order}/payment-proof', [CustomerOrderController::class, 'uploadPaymentProof'])->name('payment-proof.upload');
+            Route::get('/{order}/payment-proof', [CustomerOrderController::class, 'paymentProof'])->name('payment-proof.show');
         });
     });
 });

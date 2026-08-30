@@ -4,30 +4,26 @@ import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
 import { ProductBadges } from '../components/catalog/ProductBadges';
+import { ProductCartControl } from '../components/catalog/ProductCartControl';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
-import { QuantityStepper } from '../components/common/QuantityStepper';
 import { StickyActionBar } from '../components/common/StickyActionBar';
 import { useCartStore } from '../stores/cartStore';
-import { useToastStore } from '../stores/toastStore';
 import { Product } from '../types/catalog';
-import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
+import { quantityForVariant } from '../utils/cartQuantity';
 import { formatCurrency } from '../utils/format';
+import { getPreferredVariant } from '../utils/productActions';
 import { ProductImage } from '../components/common/ProductImage';
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const addItem = useCartStore((state) => state.addItem);
-  const toastSuccess = useToastStore((state) => state.success);
-  const toastError = useToastStore((state) => state.error);
+  const cart = useCartStore((state) => state.cart);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -38,13 +34,7 @@ export function ProductDetailPage() {
         const response = await fetchProduct(productId);
         const nextProduct = response.data;
         setProduct(nextProduct);
-
-        const preferred =
-          nextProduct.default_variant && nextProduct.default_variant.is_available
-            ? nextProduct.default_variant
-            : nextProduct.variants.find((variant) => variant.is_available) ?? nextProduct.variants[0] ?? null;
-
-        setSelectedVariantId(preferred?.id ?? null);
+        setSelectedVariantId(getPreferredVariant(nextProduct)?.id ?? null);
       } catch (error) {
         setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this drink.');
       } finally {
@@ -60,39 +50,9 @@ export function ProductDetailPage() {
     [product, selectedVariantId],
   );
 
-  const lineTotal = useMemo(() => {
-    if (!selectedVariant) {
-      return 0;
-    }
-
-    return Number(selectedVariant.price) * quantity;
-  }, [quantity, selectedVariant]);
-
-  const canAdd = Boolean(selectedVariant?.is_available) && !isSubmitting;
-
-  async function handleAddToCart(): Promise<void> {
-    if (!selectedVariant?.is_available) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    try {
-      await addItem({
-        product_variant_id: selectedVariant.id,
-        quantity,
-        display: product ? buildCartDisplayFromProduct(product, selectedVariant) : undefined,
-      });
-      toastSuccess(`${product?.name ?? 'Item'} added to cart`);
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Unable to add this item.';
-      setErrorMessage(message);
-      toastError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const cartQuantity = selectedVariant ? quantityForVariant(cart, selectedVariant.id) : 0;
+  const displayQuantity = Math.max(cartQuantity, 1);
+  const lineTotal = selectedVariant ? Number(selectedVariant.price) * displayQuantity : 0;
 
   if (isLoading) {
     return (
@@ -255,27 +215,26 @@ export function ProductDetailPage() {
       </div>
 
       <StickyActionBar
-        eyebrow="Add to cart"
+        eyebrow={cartQuantity > 0 ? 'In your cart' : 'Add to cart'}
         title={selectedVariant?.is_available ? selectedVariant.name : 'Unavailable'}
         value={formatCurrency(lineTotal)}
-        note={selectedVariant?.is_available ? `${quantity} × ${formatCurrency(selectedVariant.price)}` : 'Pick an available size'}
+        note={
+          !selectedVariant?.is_available
+            ? 'Pick an available size'
+            : cartQuantity > 0
+              ? `${cartQuantity} × ${formatCurrency(selectedVariant.price)}`
+              : formatCurrency(selectedVariant.price)
+        }
       >
-        <div className="sticky-action-inline">
-          <QuantityStepper
-            value={quantity}
-            onChange={setQuantity}
-            disabled={!selectedVariant?.is_available || isSubmitting}
+        {product && selectedVariant ? (
+          <ProductCartControl
+            product={product}
+            variant={selectedVariant}
+            size="lg"
+            addLabel="Add"
+            className="product-detail-cart-control"
           />
-          <button
-            type="button"
-            className="btn btn-primary btn-lg rounded-pill flex-grow-1"
-            onClick={() => void handleAddToCart()}
-            disabled={!canAdd}
-            aria-busy={isSubmitting}
-          >
-            {isSubmitting ? 'Adding…' : 'Add to cart'}
-          </button>
-        </div>
+        ) : null}
       </StickyActionBar>
     </div>
   );

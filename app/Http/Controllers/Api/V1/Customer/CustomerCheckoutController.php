@@ -45,6 +45,15 @@ class CustomerCheckoutController extends Controller
                     'email' => $request->user()->email,
                     'phone' => $request->user()->phone,
                 ],
+                'fulfilment' => [
+                    'methods' => [
+                        ['value' => 'takeaway', 'label' => 'Takeaway'],
+                        ['value' => 'delivery', 'label' => 'Delivery'],
+                    ],
+                    'pickup_address' => $this->websiteSettings->customerContent()['business']['address'] ?? null,
+                    'delivery_disclaimer' => (string) config('coffee.fulfilment.delivery_disclaimer'),
+                ],
+                'payment' => $this->paymentInstructions(),
             ],
         );
     }

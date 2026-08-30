@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Order extends AbstractModel
 {
@@ -31,6 +35,23 @@ class Order extends AbstractModel
         'total_amount',
         'customer_notes',
         'pickup_notes',
+        'fulfilment_method',
+        'delivery_address',
+        'delivery_phone',
+        'delivery_contact_name',
+        'delivery_notes',
+        'delivery_provider',
+        'delivery_fee_amount',
+        'delivery_tracking_reference',
+        'payment_method',
+        'payment_status',
+        'payment_reference',
+        'payment_proof_path',
+        'payment_proof_disk',
+        'payment_proof_mime',
+        'payment_proof_size',
+        'payment_proof_uploaded_at',
+        'payment_proof_rejection_notes',
         'placed_at',
         'payment_confirmed_at',
         'accepted_at',
@@ -45,12 +66,18 @@ class Order extends AbstractModel
     {
         return [
             'status' => OrderStatus::class,
+            'fulfilment_method' => OrderFulfilmentMethod::class,
+            'payment_method' => PaymentMethod::class,
+            'payment_status' => PaymentStatus::class,
             'order_date' => 'date',
             'daily_sequence' => 'integer',
             'subtotal' => 'decimal:2',
             'discount_total' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'delivery_fee_amount' => 'decimal:2',
+            'payment_proof_size' => 'integer',
             'placed_at' => 'datetime',
+            'payment_proof_uploaded_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
             'accepted_at' => 'datetime',
             'preparing_at' => 'datetime',
@@ -79,5 +106,53 @@ class Order extends AbstractModel
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at')->orderBy('id');
+    }
+
+    public function isDelivery(): bool
+    {
+        return $this->fulfilment_method === OrderFulfilmentMethod::Delivery;
+    }
+
+    public function isTakeaway(): bool
+    {
+        return $this->fulfilment_method === OrderFulfilmentMethod::Takeaway;
+    }
+
+    public function customerLabelForStatus(?OrderStatus $status): string
+    {
+        if ($status === OrderStatus::ReadyForPickup && $this->isDelivery()) {
+            return 'Ready for delivery';
+        }
+
+        return $status?->label() ?? '';
+    }
+
+    public function customerStatusLabel(): string
+    {
+        return $this->customerLabelForStatus($this->status instanceof OrderStatus ? $this->status : null);
+    }
+
+    public function hasPaymentProof(): bool
+    {
+        return filled($this->payment_proof_path);
+    }
+
+    public function canUploadPaymentProof(): bool
+    {
+        return $this->status === OrderStatus::PendingPayment
+            && in_array($this->payment_status, [PaymentStatus::Pending, PaymentStatus::AwaitingReview, PaymentStatus::Rejected], true);
+    }
+
+    public function clearPaymentProofFiles(): void
+    {
+        if (! filled($this->payment_proof_path)) {
+            return;
+        }
+
+        $disk = $this->payment_proof_disk ?: 'local';
+
+        if (Storage::disk($disk)->exists($this->payment_proof_path)) {
+            Storage::disk($disk)->delete($this->payment_proof_path);
+        }
     }
 }

@@ -2,7 +2,10 @@
 
 namespace App\Services\Order;
 
+use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
 use App\Models\Order;
 use App\Models\ProductVariant;
@@ -10,8 +13,10 @@ use App\Models\User;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OrderService implements OrderServiceInterface
@@ -48,6 +53,9 @@ class OrderService implements OrderServiceInterface
             $placedAt = now();
             $dailySequence = $this->orders->nextDailySequenceForDate(Carbon::instance($placedAt));
 
+            $fulfilmentMethod = OrderFulfilmentMethod::tryFrom((string) ($data->getFulfilmentMethod() ?: OrderFulfilmentMethod::Takeaway->value))
+                ?? OrderFulfilmentMethod::Takeaway;
+
             $order = $this->orders->create([
                 'order_number' => $this->formatOrderNumber(Carbon::instance($placedAt), $dailySequence),
                 'order_date' => $placedAt->toDateString(),
@@ -56,8 +64,12 @@ class OrderService implements OrderServiceInterface
                 'customer_name' => $data->getCustomerName() ?: $customer?->name,
                 'customer_email' => $data->getCustomerEmail() ?: $customer?->email,
                 'customer_phone' => $data->getCustomerPhone() ?: $customer?->phone,
-                'pickup_name' => $data->getPickupName(),
-                'pickup_phone' => $data->getPickupPhone(),
+                'pickup_name' => $fulfilmentMethod === OrderFulfilmentMethod::Takeaway
+                    ? ($data->getPickupName() ?: $data->getCustomerName() ?: $customer?->name)
+                    : null,
+                'pickup_phone' => $fulfilmentMethod === OrderFulfilmentMethod::Takeaway
+                    ? ($data->getPickupPhone() ?: $data->getCustomerPhone() ?: $customer?->phone)
+                    : null,
                 'assigned_barista_id' => null,
                 'checkout_token' => $data->getCheckoutToken(),
                 'status' => OrderStatus::PendingPayment->value,
@@ -65,7 +77,19 @@ class OrderService implements OrderServiceInterface
                 'discount_total' => '0.00',
                 'total_amount' => $subtotal,
                 'customer_notes' => $data->getCustomerNotes(),
-                'pickup_notes' => $data->getPickupNotes(),
+                'pickup_notes' => $fulfilmentMethod === OrderFulfilmentMethod::Takeaway ? $data->getPickupNotes() : null,
+                'fulfilment_method' => $fulfilmentMethod->value,
+                'delivery_address' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryAddress() : null,
+                'delivery_phone' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryPhone() : null,
+                'delivery_contact_name' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryContactName() : null,
+                'delivery_notes' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery
+                    ? ($data->getDeliveryNotes() ?: $data->getPickupNotes())
+                    : null,
+                'delivery_provider' => null,
+                'delivery_fee_amount' => null,
+                'delivery_tracking_reference' => null,
+                'payment_method' => PaymentMethod::Manual->value,
+                'payment_status' => PaymentStatus::Pending->value,
                 'placed_at' => $placedAt,
             ]);
 
@@ -125,6 +149,11 @@ class OrderService implements OrderServiceInterface
                 default => null,
             };
 
+            if ($nextStatus === OrderStatus::PaymentConfirmed) {
+                $attributes['payment_status'] = PaymentStatus::Confirmed->value;
+                $attributes['payment_proof_rejection_notes'] = null;
+            }
+
             if (
                 $actor->hasRole(UserRole::Barista)
                 && in_array($nextStatus, [OrderStatus::Accepted, OrderStatus::Preparing, OrderStatus::ReadyForPickup, OrderStatus::Completed], true)
@@ -139,6 +168,90 @@ class OrderService implements OrderServiceInterface
                 'to_status' => $nextStatus->value,
                 'changed_by' => $actor->getKey(),
                 'notes' => $data->getNotes(),
+            ]);
+
+            return $order->fresh([
+                'customer',
+                'assignedBarista',
+                'items.recipe.lines.ingredient.brand',
+                'statusHistory.changedBy',
+            ]);
+        });
+    }
+
+    public function uploadPaymentProof(Order $order, User $customer, UploadedFile $file): Order
+    {
+        if ((int) $order->customer_id !== (int) $customer->getKey()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'You can only upload payment proof for your own orders.',
+            ]);
+        }
+
+        if (! $order->canUploadPaymentProof()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Payment proof can only be uploaded while the order is awaiting payment confirmation.',
+            ]);
+        }
+
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $safeExtension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) ? $extension : 'jpg';
+        $filename = Str::uuid()->toString().'.'.$safeExtension;
+        $directory = 'payment-proofs/'.$order->getKey();
+        $path = $file->storeAs($directory, $filename, 'local');
+
+        if (! is_string($path) || $path === '') {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Unable to store the payment proof. Please try again.',
+            ]);
+        }
+
+        $order->clearPaymentProofFiles();
+
+        return $this->orders->update($order, [
+            'payment_proof_path' => $path,
+            'payment_proof_disk' => 'local',
+            'payment_proof_mime' => $file->getMimeType(),
+            'payment_proof_size' => $file->getSize(),
+            'payment_proof_uploaded_at' => now(),
+            'payment_status' => PaymentStatus::AwaitingReview->value,
+            'payment_proof_rejection_notes' => null,
+        ])->fresh([
+            'items',
+            'statusHistory.changedBy',
+        ]);
+    }
+
+    public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order
+    {
+        if (! $actor->canManageOrders()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Only administrators can request a payment proof replacement.',
+            ]);
+        }
+
+        if ($order->status !== OrderStatus::PendingPayment) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Payment proof can only be rejected while the order is pending payment.',
+            ]);
+        }
+
+        if (! $order->hasPaymentProof()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'This order does not have an uploaded payment proof.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($order, $actor, $notes): Order {
+            $order = $this->orders->update($order, [
+                'payment_status' => PaymentStatus::Rejected->value,
+                'payment_proof_rejection_notes' => filled($notes) ? trim($notes) : 'Please upload a clearer payment screenshot.',
+            ]);
+
+            $this->orders->createStatusHistory($order, [
+                'from_status' => OrderStatus::PendingPayment->value,
+                'to_status' => OrderStatus::PendingPayment->value,
+                'changed_by' => $actor->getKey(),
+                'notes' => 'Payment proof replacement requested.'.(filled($notes) ? ' '.$notes : ''),
             ]);
 
             return $order->fresh([

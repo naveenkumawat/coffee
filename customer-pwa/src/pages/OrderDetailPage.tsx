@@ -104,7 +104,12 @@ export function OrderDetailPage() {
       </section>
 
       {pendingPayment ? (
-        <PaymentInstructionsCard order={order} payment={payment} showSecondaryAction={false} />
+        <PaymentInstructionsCard
+          order={order}
+          payment={payment}
+          showSecondaryAction={false}
+          onOrderUpdated={setOrder}
+        />
       ) : null}
 
       <OrderStatusTimeline order={order} />
@@ -144,29 +149,60 @@ export function OrderDetailPage() {
       <section className="account-section order-pickup-section">
         <div className="account-section-heading">
           <div>
-            <span className="auth-badge">Pickup</span>
-            <h2>Collection details</h2>
+            <span className="auth-badge">{order.fulfilment_method === 'delivery' ? 'Delivery' : 'Takeaway'}</span>
+            <h2>{order.fulfilment_method === 'delivery' ? 'Delivery details' : 'Pickup details'}</h2>
           </div>
         </div>
         <div className="order-meta-grid">
-          <div>
-            <span>Name</span>
-            <strong>{order.pickup_name}</strong>
-          </div>
-          <div>
-            <span>Phone</span>
-            <strong>{order.pickup_phone}</strong>
-          </div>
+          {order.fulfilment_method === 'delivery' ? (
+            <>
+              <div>
+                <span>Contact</span>
+                <strong>{order.delivery_contact_name || order.customer_name}</strong>
+              </div>
+              <div>
+                <span>Phone</span>
+                <strong>{order.delivery_phone}</strong>
+              </div>
+              <div>
+                <span>Address</span>
+                <strong style={{ whiteSpace: 'pre-wrap' }}>{order.delivery_address}</strong>
+              </div>
+              {order.delivery_notes ? (
+                <div>
+                  <span>Delivery notes</span>
+                  <strong>{order.delivery_notes}</strong>
+                </div>
+              ) : null}
+              {order.delivery_disclaimer ? (
+                <div>
+                  <span>Note</span>
+                  <strong>{order.delivery_disclaimer}</strong>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div>
+                <span>Name</span>
+                <strong>{order.pickup_name}</strong>
+              </div>
+              <div>
+                <span>Phone</span>
+                <strong>{order.pickup_phone}</strong>
+              </div>
+              {order.pickup_notes ? (
+                <div>
+                  <span>Pickup notes</span>
+                  <strong>{order.pickup_notes}</strong>
+                </div>
+              ) : null}
+            </>
+          )}
           {order.customer_notes ? (
             <div>
               <span>Notes for cafe</span>
               <strong>{order.customer_notes}</strong>
-            </div>
-          ) : null}
-          {order.pickup_notes ? (
-            <div>
-              <span>Pickup notes</span>
-              <strong>{order.pickup_notes}</strong>
             </div>
           ) : null}
         </div>

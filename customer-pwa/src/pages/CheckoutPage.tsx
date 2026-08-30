@@ -13,7 +13,11 @@ import { FormField } from '../components/forms/FormField';
 import { FormTextarea } from '../components/forms/FormTextarea';
 import { useCartStore } from '../stores/cartStore';
 import { Cart } from '../types/cart';
-import { CheckoutPaymentInstructions, CheckoutSummaryMeta } from '../types/checkout';
+import {
+  CheckoutFulfilmentMethod,
+  CheckoutPaymentInstructions,
+  CheckoutSummaryMeta,
+} from '../types/checkout';
 import { Order } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
 import { getFieldError } from '../utils/forms';
@@ -29,6 +33,7 @@ export function CheckoutPage() {
   const resetCart = useCartStore((state) => state.reset);
   const [cart, setCart] = useState<Cart | null>(null);
   const [summaryMeta, setSummaryMeta] = useState<CheckoutSummaryMeta | null>(null);
+  const [fulfilmentMethod, setFulfilmentMethod] = useState<CheckoutFulfilmentMethod>('takeaway');
   const [form, setForm] = useState({
     customer_name: '',
     customer_email: '',
@@ -37,6 +42,10 @@ export function CheckoutPage() {
     pickup_phone: '',
     customer_notes: '',
     pickup_notes: '',
+    delivery_address: '',
+    delivery_phone: '',
+    delivery_contact_name: '',
+    delivery_notes: '',
   });
   const [sameAsContact, setSameAsContact] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,6 +77,8 @@ export function CheckoutPage() {
           customer_phone: currentValue.customer_phone || customerPhone,
           pickup_name: currentValue.pickup_name || customerName,
           pickup_phone: currentValue.pickup_phone || customerPhone,
+          delivery_phone: currentValue.delivery_phone || customerPhone,
+          delivery_contact_name: currentValue.delivery_contact_name || customerName,
         }));
         setSameAsContact(true);
         didHydrateDefaults.current = true;
@@ -97,10 +108,12 @@ export function CheckoutPage() {
       if (sameAsContact && (field === 'customer_name' || field === 'customer_phone')) {
         if (field === 'customer_name') {
           nextValue.pickup_name = value;
+          nextValue.delivery_contact_name = value;
         }
 
         if (field === 'customer_phone') {
           nextValue.pickup_phone = value;
+          nextValue.delivery_phone = value;
         }
       }
 
@@ -116,6 +129,8 @@ export function CheckoutPage() {
         ...currentValue,
         pickup_name: currentValue.customer_name,
         pickup_phone: currentValue.customer_phone,
+        delivery_contact_name: currentValue.customer_name,
+        delivery_phone: currentValue.customer_phone,
       }));
     }
   }
@@ -133,17 +148,29 @@ export function CheckoutPage() {
 
     const pickupName = sameAsContact ? form.customer_name : form.pickup_name;
     const pickupPhone = sameAsContact ? form.customer_phone : form.pickup_phone;
+    const deliveryContactName = sameAsContact ? form.customer_name : form.delivery_contact_name;
+    const deliveryPhone = sameAsContact ? form.customer_phone : form.delivery_phone;
 
     try {
       const response = await submitCheckout({
         checkout_token: summaryMeta.checkout_token,
+        fulfilment_method: fulfilmentMethod,
         customer_name: form.customer_name,
         customer_email: form.customer_email,
         customer_phone: form.customer_phone,
-        pickup_name: pickupName,
-        pickup_phone: pickupPhone,
         customer_notes: form.customer_notes.trim() || null,
-        pickup_notes: form.pickup_notes.trim() || null,
+        ...(fulfilmentMethod === 'takeaway'
+          ? {
+              pickup_name: pickupName,
+              pickup_phone: pickupPhone,
+              pickup_notes: form.pickup_notes.trim() || null,
+            }
+          : {
+              delivery_address: form.delivery_address.trim(),
+              delivery_phone: deliveryPhone,
+              delivery_contact_name: deliveryContactName.trim() || null,
+              delivery_notes: form.delivery_notes.trim() || null,
+            }),
       });
 
       resetCart();
@@ -173,7 +200,7 @@ export function CheckoutPage() {
   if (isLoading) {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
+        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
         <LoadingSkeleton cardCount={3} lines={4} />
       </div>
     );
@@ -182,7 +209,7 @@ export function CheckoutPage() {
   if (displayState === 'error') {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
+        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
         <ErrorState description={message ?? 'Unable to load checkout right now.'} onRetry={() => void loadSummary()} />
       </div>
     );
@@ -191,7 +218,7 @@ export function CheckoutPage() {
   if (displayState === 'empty') {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
+        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
         <EmptyState
           title="Your cart is empty"
           description={message ?? 'Add a few menu items before continuing to checkout.'}
@@ -205,7 +232,7 @@ export function CheckoutPage() {
   if (displayState === 'review-cart' || !cart || !summaryMeta) {
     return (
       <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm pickup details." showBack />
+        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
         <EmptyState
           title="Review your cart first"
           description={message ?? 'One or more items changed. Please review your cart before trying again.'}
@@ -215,6 +242,11 @@ export function CheckoutPage() {
       </div>
     );
   }
+
+  const pickupAddress = summaryMeta.fulfilment?.pickup_address;
+  const deliveryDisclaimer =
+    summaryMeta.fulfilment?.delivery_disclaimer ||
+    'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.';
 
   return (
     <div className="page-container checkout-page has-sticky-cta">
@@ -226,8 +258,8 @@ export function CheckoutPage() {
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Order summary</span>
-            <h2>Your pickup order</h2>
-            <p>{summaryMeta.summary.item_count} item(s) · pay after you place the order</p>
+            <h2>Your order</h2>
+            <p>{summaryMeta.summary.item_count} item(s) · cafe total only — no delivery fee added</p>
           </div>
           <Link to="/cart" className="link-button">
             Edit cart
@@ -258,13 +290,52 @@ export function CheckoutPage() {
             <strong>{formatCurrency(summaryMeta.summary.subtotal)}</strong>
           </div>
           <div className="cart-summary-total">
-            <span>Total due</span>
+            <span>Total due to cafe</span>
             <strong>{formatCurrency(summaryMeta.summary.total)}</strong>
           </div>
         </div>
       </section>
 
       <form className="checkout-form" onSubmit={(event) => void handleSubmit(event)}>
+        <section className="account-section">
+          <div className="account-section-heading">
+            <div>
+              <span className="auth-badge">Fulfilment</span>
+              <h2>How will you get it?</h2>
+              <p>Takeaway pickup or third-party delivery.</p>
+            </div>
+          </div>
+
+          <div className="checkout-fulfilment-toggle" role="radiogroup" aria-label="Fulfilment method">
+            {(summaryMeta.fulfilment?.methods ?? [
+              { value: 'takeaway' as const, label: 'Takeaway' },
+              { value: 'delivery' as const, label: 'Delivery' },
+            ]).map((method) => (
+              <label
+                key={method.value}
+                className={[
+                  'choice-row checkout-choice',
+                  fulfilmentMethod === method.value ? 'is-selected' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                <input
+                  type="radio"
+                  name="fulfilment_method"
+                  value={method.value}
+                  checked={fulfilmentMethod === method.value}
+                  onChange={() => setFulfilmentMethod(method.value)}
+                />
+                <span>{method.label}</span>
+              </label>
+            ))}
+          </div>
+          {getFieldError(errors, 'fulfilment_method') ? (
+            <p className="form-error-text">{getFieldError(errors, 'fulfilment_method')}</p>
+          ) : null}
+        </section>
+
         <section className="account-section">
           <div className="account-section-heading">
             <div>
@@ -309,77 +380,163 @@ export function CheckoutPage() {
           </div>
         </section>
 
-        <section className="account-section">
-          <div className="account-section-heading">
-            <div>
-              <span className="auth-badge">Pickup</span>
-              <h2>Who is collecting?</h2>
-              <p>Cafe pickup only — no delivery.</p>
+        {fulfilmentMethod === 'takeaway' ? (
+          <section className="account-section">
+            <div className="account-section-heading">
+              <div>
+                <span className="auth-badge">Takeaway</span>
+                <h2>Pickup details</h2>
+                <p>Collect from the cafe when ready.</p>
+              </div>
             </div>
-          </div>
 
-          <label className="choice-row checkout-choice">
-            <input
-              type="checkbox"
-              checked={sameAsContact}
-              onChange={(event) => handleSameAsContactChange(event.target.checked)}
-            />
-            <span>Same as my contact details</span>
-          </label>
+            {pickupAddress ? (
+              <div className="checkout-pickup-address">
+                <span>Cafe address</span>
+                <strong style={{ whiteSpace: 'pre-wrap' }}>{pickupAddress}</strong>
+              </div>
+            ) : null}
 
-          {!sameAsContact ? (
+            <label className="choice-row checkout-choice">
+              <input
+                type="checkbox"
+                checked={sameAsContact}
+                onChange={(event) => handleSameAsContactChange(event.target.checked)}
+              />
+              <span>Same as my contact details</span>
+            </label>
+
+            {!sameAsContact ? (
+              <div className="checkout-field-group">
+                <FormField
+                  label="Pickup name"
+                  name="pickup_name"
+                  autoComplete="name"
+                  value={form.pickup_name}
+                  onChange={(event) => updateField('pickup_name', event.target.value)}
+                  error={getFieldError(errors, 'pickup_name')}
+                  required
+                />
+                <FormField
+                  label="Pickup phone"
+                  name="pickup_phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={form.pickup_phone}
+                  onChange={(event) => updateField('pickup_phone', event.target.value)}
+                  error={getFieldError(errors, 'pickup_phone')}
+                  required
+                />
+              </div>
+            ) : null}
+
             <div className="checkout-field-group">
-              <FormField
-                label="Pickup name"
-                name="pickup_name"
-                autoComplete="name"
-                value={form.pickup_name}
-                onChange={(event) => updateField('pickup_name', event.target.value)}
-                error={getFieldError(errors, 'pickup_name')}
-                required
+              <FormTextarea
+                label="Notes for the cafe (optional)"
+                name="customer_notes"
+                rows={2}
+                placeholder="Extra hot, less sweet, allergy notes…"
+                value={form.customer_notes}
+                onChange={(event) => updateField('customer_notes', event.target.value)}
+                error={getFieldError(errors, 'customer_notes')}
               />
-              <FormField
-                label="Pickup phone"
-                name="pickup_phone"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                value={form.pickup_phone}
-                onChange={(event) => updateField('pickup_phone', event.target.value)}
-                error={getFieldError(errors, 'pickup_phone')}
-                required
+              <FormTextarea
+                label="Pickup notes (optional)"
+                name="pickup_notes"
+                rows={2}
+                placeholder="Arriving in 10 minutes…"
+                value={form.pickup_notes}
+                onChange={(event) => updateField('pickup_notes', event.target.value)}
+                error={getFieldError(errors, 'pickup_notes')}
               />
             </div>
-          ) : null}
+          </section>
+        ) : (
+          <section className="account-section">
+            <div className="account-section-heading">
+              <div>
+                <span className="auth-badge">Delivery</span>
+                <h2>Delivery details</h2>
+                <p>Third-party delivery — charges paid separately.</p>
+              </div>
+            </div>
 
-          <div className="checkout-field-group">
-            <FormTextarea
-              label="Notes for the cafe (optional)"
-              name="customer_notes"
-              rows={2}
-              placeholder="Extra hot, less sweet, allergy notes…"
-              value={form.customer_notes}
-              onChange={(event) => updateField('customer_notes', event.target.value)}
-              error={getFieldError(errors, 'customer_notes')}
-            />
-            <FormTextarea
-              label="Pickup notes (optional)"
-              name="pickup_notes"
-              rows={2}
-              placeholder="Arriving in 10 minutes…"
-              value={form.pickup_notes}
-              onChange={(event) => updateField('pickup_notes', event.target.value)}
-              error={getFieldError(errors, 'pickup_notes')}
-            />
-          </div>
-        </section>
+            <div className="checkout-delivery-disclaimer" role="note">
+              {deliveryDisclaimer}
+            </div>
+
+            <label className="choice-row checkout-choice">
+              <input
+                type="checkbox"
+                checked={sameAsContact}
+                onChange={(event) => handleSameAsContactChange(event.target.checked)}
+              />
+              <span>Contact name and phone same as above</span>
+            </label>
+
+            {!sameAsContact ? (
+              <div className="checkout-field-group">
+                <FormField
+                  label="Delivery contact name"
+                  name="delivery_contact_name"
+                  autoComplete="name"
+                  value={form.delivery_contact_name}
+                  onChange={(event) => updateField('delivery_contact_name', event.target.value)}
+                  error={getFieldError(errors, 'delivery_contact_name')}
+                />
+                <FormField
+                  label="Delivery phone"
+                  name="delivery_phone"
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  value={form.delivery_phone}
+                  onChange={(event) => updateField('delivery_phone', event.target.value)}
+                  error={getFieldError(errors, 'delivery_phone')}
+                  required
+                />
+              </div>
+            ) : null}
+
+            <div className="checkout-field-group">
+              <FormTextarea
+                label="Delivery address"
+                name="delivery_address"
+                rows={3}
+                placeholder="Full address with landmark…"
+                value={form.delivery_address}
+                onChange={(event) => updateField('delivery_address', event.target.value)}
+                error={getFieldError(errors, 'delivery_address')}
+              />
+              <FormTextarea
+                label="Notes for the cafe (optional)"
+                name="customer_notes"
+                rows={2}
+                placeholder="Extra hot, less sweet, allergy notes…"
+                value={form.customer_notes}
+                onChange={(event) => updateField('customer_notes', event.target.value)}
+                error={getFieldError(errors, 'customer_notes')}
+              />
+              <FormTextarea
+                label="Delivery notes (optional)"
+                name="delivery_notes"
+                rows={2}
+                placeholder="Gate code, leave with concierge…"
+                value={form.delivery_notes}
+                onChange={(event) => updateField('delivery_notes', event.target.value)}
+                error={getFieldError(errors, 'delivery_notes')}
+              />
+            </div>
+          </section>
+        )}
 
         <p className="checkout-payment-note">
           After you place the order, you’ll get UPI payment instructions. The cafe confirms payment before preparing.
         </p>
 
         <StickyActionBar
-          eyebrow="Total due"
+          eyebrow="Total due to cafe"
           title={isSubmitting ? 'Placing order…' : 'Place order'}
           value={formatCurrency(summaryMeta.summary.total)}
           note="You’ll pay next — Pending Payment until confirmed"

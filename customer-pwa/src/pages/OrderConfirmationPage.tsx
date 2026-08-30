@@ -148,6 +148,7 @@ export function OrderConfirmationPage() {
         payment={payment}
         secondaryHref={`/orders/${order.id}`}
         secondaryLabel="Track order"
+        onOrderUpdated={setOrder}
       />
 
       <section className="account-section">

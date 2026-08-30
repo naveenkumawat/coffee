@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   fetchBestsellerProducts,
   fetchCategories,
@@ -18,10 +18,6 @@ import { Header } from '../components/common/Header';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory } from '../types/catalog';
 import { WebsiteContent } from '../types/content';
-import { useCartStore } from '../stores/cartStore';
-import { useToastStore } from '../stores/toastStore';
-import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
-import { canQuickAddProduct, getProductVariants } from '../utils/productActions';
 
 export function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -31,11 +27,6 @@ export function HomePage() {
   const [websiteContent, setWebsiteContent] = useState<WebsiteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingProductId, setPendingProductId] = useState<number | null>(null);
-  const addItem = useCartStore((state) => state.addItem);
-  const toastSuccess = useToastStore((state) => state.success);
-  const toastError = useToastStore((state) => state.error);
-  const navigate = useNavigate();
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -71,30 +62,6 @@ export function HomePage() {
 
     void load();
   }, []);
-
-  async function handleAddToCart(product: Product): Promise<void> {
-    if (!canQuickAddProduct(product)) {
-      navigate(`/menu/${product.id}`);
-      return;
-    }
-
-    const variant = getProductVariants(product)[0];
-    setPendingProductId(product.id);
-
-    try {
-      await addItem({
-        product_variant_id: variant.id,
-        quantity: 1,
-        display: buildCartDisplayFromProduct(product, variant),
-      });
-      toastSuccess(`${product.name} added to cart`);
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Unable to add the item right now.';
-      toastError(message);
-    } finally {
-      setPendingProductId(null);
-    }
-  }
 
   return (
     <div className="page-container home-page">
@@ -151,12 +118,7 @@ export function HomePage() {
             ) : (
               <div className="product-grid">
                 {featuredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    isBusy={pendingProductId === product.id}
-                    onAddToCart={handleAddToCart}
-                  />
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             )}
@@ -166,12 +128,7 @@ export function HomePage() {
             <ProductRail eyebrow="Just landed" title="New on the menu" seeAllHref="/menu" seeAllLabel="See all">
               {newProducts.map((product) => (
                 <div key={product.id} className="product-rail-item" role="listitem">
-                  <ProductCard
-                    product={product}
-                    layout="rail"
-                    isBusy={pendingProductId === product.id}
-                    onAddToCart={handleAddToCart}
-                  />
+                  <ProductCard product={product} layout="rail" />
                 </div>
               ))}
             </ProductRail>
@@ -186,12 +143,7 @@ export function HomePage() {
             >
               {bestsellerProducts.map((product) => (
                 <div key={product.id} className="product-rail-item" role="listitem">
-                  <ProductCard
-                    product={product}
-                    layout="rail"
-                    isBusy={pendingProductId === product.id}
-                    onAddToCart={handleAddToCart}
-                  />
+                  <ProductCard product={product} layout="rail" />
                 </div>
               ))}
             </ProductRail>

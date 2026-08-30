@@ -64,7 +64,9 @@
                                         $configKey = str_replace('payment_', '', $key->value);
                                         $fallback = $paymentConfig[$configKey] ?? null;
                                     @endphp
-                                    @if (filled($fallback))
+                                    @if ($key === \App\Enums\WebsiteSettingKey::PaymentQrImagePath)
+                                        <div class="form-text">Absolute URL or public path shown on the customer payment card. Empty falls back to config/env.</div>
+                                    @elseif (filled($fallback))
                                         <div class="form-text">Config fallback: {{ $fallback }}</div>
                                     @else
                                         <div class="form-text">No config fallback set for this field.</div>

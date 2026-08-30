@@ -24,6 +24,22 @@ const ACTIVE_STATUSES: OrderStatusValue[] = [
 
 export type OrderStatusTone = 'payment' | 'ready' | 'active' | 'done' | 'danger' | 'neutral';
 
+export function isDeliveryOrder(order: Pick<Order, 'fulfilment_method'> | null | undefined): boolean {
+  return order?.fulfilment_method === 'delivery';
+}
+
+export function preparationStepsForOrder(
+  order: Pick<Order, 'fulfilment_method'>,
+): Array<{ status: OrderStatusValue; label: string }> {
+  return ORDER_PREPARATION_STEPS.map((step) => {
+    if (step.status === 'ready_for_pickup' && isDeliveryOrder(order)) {
+      return { ...step, label: 'Ready for delivery' };
+    }
+
+    return step;
+  });
+}
+
 export function isPendingPayment(status: string | null | undefined): boolean {
   return status === 'pending_payment';
 }
@@ -137,16 +153,16 @@ export function sortOrdersForDisplay(orders: Order[]): Order[] {
   });
 }
 
-export function orderListActionLabel(status: string | null | undefined): string {
-  if (isPendingPayment(status)) {
+export function orderListActionLabel(order: Pick<Order, 'status' | 'fulfilment_method'>): string {
+  if (isPendingPayment(order.status)) {
     return 'Pay now';
   }
 
-  if (isReadyForPickup(status)) {
-    return 'Pickup';
+  if (isReadyForPickup(order.status)) {
+    return isDeliveryOrder(order) ? 'Ready' : 'Pickup';
   }
 
-  if (isActiveOrder(status)) {
+  if (isActiveOrder(order.status)) {
     return 'Track';
   }
 

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { fetchFavourites } from '../api/favourites';
 import { ApiError } from '../api/client';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
@@ -8,13 +8,9 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
-import { useCartStore } from '../stores/cartStore';
 import { useFavouriteStore } from '../stores/favouriteStore';
 import { Product } from '../types/catalog';
-import { buildCartDisplayFromProduct } from '../utils/cartDisplay';
-import { canQuickAddProduct, getProductVariants } from '../utils/productActions';
 import { buildLoginRedirect } from '../utils/navigation';
-import { useToastStore } from '../stores/toastStore';
 
 export function FavouritesPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -23,15 +19,10 @@ export function FavouritesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingProductId, setPendingProductId] = useState<number | null>(null);
-  const addItem = useCartStore((state) => state.addItem);
-  const toastSuccess = useToastStore((state) => state.success);
-  const toastError = useToastStore((state) => state.error);
   const favouriteIds = useFavouriteStore((state) => state.ids);
   const hasLoadedFavourites = useFavouriteStore((state) => state.hasLoaded);
   const refreshIds = useFavouriteStore((state) => state.refreshIds);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const visibleProducts = useMemo(() => {
     if (!hasLoadedFavourites) {
@@ -75,31 +66,6 @@ export function FavouritesPage() {
     void loadFavourites(1);
   }, []);
 
-  async function handleAddToCart(product: Product): Promise<void> {
-    if (!canQuickAddProduct(product)) {
-      navigate(`/menu/${product.id}`);
-      return;
-    }
-
-    const variant = getProductVariants(product)[0];
-    setPendingProductId(product.id);
-
-    try {
-      await addItem({
-        product_variant_id: variant.id,
-        quantity: 1,
-        display: buildCartDisplayFromProduct(product, variant),
-      });
-      toastSuccess(`${product.name} added to cart`);
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : 'Unable to add this favourite to your cart.';
-      setErrorMessage(message);
-      toastError(message);
-    } finally {
-      setPendingProductId(null);
-    }
-  }
-
   function handleLoadMore(event: FormEvent): void {
     event.preventDefault();
     void loadFavourites(page + 1, true);
@@ -111,11 +77,6 @@ export function FavouritesPage() {
         title="Favourites"
         description="Your saved drinks for quicker ordering."
         showBack
-        rightSlot={
-          <button type="button" className="link-button" onClick={() => void loadFavourites(1)} disabled={isLoading}>
-            Refresh
-          </button>
-        }
       />
 
       {isLoading ? <LoadingSkeleton cardCount={3} lines={3} /> : null}
@@ -134,12 +95,7 @@ export function FavouritesPage() {
             {visibleProducts.map((product) => (
               <div key={product.id} className="favourite-product-wrap">
                 <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" />
-                <ProductCard
-                  product={product}
-                  onAddToCart={handleAddToCart}
-                  isBusy={pendingProductId === product.id}
-                  showFavouriteToggle={false}
-                />
+                <ProductCard product={product} showFavouriteToggle={false} />
               </div>
             ))}
           </div>

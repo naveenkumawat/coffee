@@ -17,6 +17,8 @@ enum WebsiteSettingKey: string
     case PaymentDisplayName = 'payment_display_name';
     case PaymentInstructions = 'payment_instructions';
     case PaymentUpiId = 'payment_upi_id';
+    case PaymentPhone = 'payment_phone';
+    case PaymentQrImagePath = 'payment_qr_image_path';
     case PaymentWhatsappNumber = 'payment_whatsapp_number';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
@@ -29,7 +31,7 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
             self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours => 'business',
-            self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentWhatsappNumber => 'payment',
+            self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -67,6 +69,8 @@ enum WebsiteSettingKey: string
             self::PaymentDisplayName => 'Payment display name',
             self::PaymentInstructions => 'Payment instructions',
             self::PaymentUpiId => 'UPI ID',
+            self::PaymentPhone => 'Payment phone / number',
+            self::PaymentQrImagePath => 'Payment QR image path',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact page',
@@ -80,7 +84,7 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle, self::BusinessName, self::PaymentDisplayName => 120,
-            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentWhatsappNumber => 255,
+            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 255,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions => 2000,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
@@ -91,7 +95,7 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::BusinessEmail => 'email',
-            self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentWhatsappNumber => 'tel',
+            self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
             default => 'text',
         };
     }

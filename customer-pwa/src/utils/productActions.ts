@@ -1,4 +1,4 @@
-import { Product } from '../types/catalog';
+import { Product, ProductVariant } from '../types/catalog';
 
 export function getProductVariants(product: Product): Product['variants'] {
   if (product.variants.length > 0) {
@@ -22,4 +22,23 @@ export function isProductUnavailable(product: Product): boolean {
 
 export function hasMultipleVariants(product: Product): boolean {
   return getProductVariants(product).length > 1;
+}
+
+/** Prefer default when available; otherwise first available; else first listed. */
+export function getPreferredVariant(product: Product): ProductVariant | null {
+  const variants = getProductVariants(product);
+
+  if (variants.length === 0) {
+    return null;
+  }
+
+  if (product.default_variant?.is_available) {
+    const matched = variants.find((variant) => variant.id === product.default_variant?.id);
+
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return variants.find((variant) => variant.is_available) ?? variants[0] ?? null;
 }

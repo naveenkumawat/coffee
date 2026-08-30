@@ -90,6 +90,14 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 $values->get(WebsiteSettingKey::PaymentUpiId->value),
                 config('coffee.payments.upi_id'),
             ),
+            'phone' => $this->resolveWithConfigFallback(
+                $values->get(WebsiteSettingKey::PaymentPhone->value),
+                config('coffee.payments.phone'),
+            ),
+            'qr_image_path' => $this->resolveWithConfigFallback(
+                $values->get(WebsiteSettingKey::PaymentQrImagePath->value),
+                config('coffee.payments.qr_image_path'),
+            ),
             'whatsapp_number' => $this->resolveWithConfigFallback(
                 $values->get(WebsiteSettingKey::PaymentWhatsappNumber->value),
                 config('coffee.payments.whatsapp_number'),

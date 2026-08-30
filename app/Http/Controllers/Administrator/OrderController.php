@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\OrderCreateRequest;
 use App\Http\Requests\Order\OrderIndexRequest;
+use App\Http\Requests\Order\OrderPaymentProofRejectRequest;
 use App\Http\Requests\Order\OrderStatusUpdateRequest;
 use App\Models\Order;
 use App\Parsers\Order\OrderParserInterface;
@@ -13,6 +14,8 @@ use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\Order\OrderServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -86,6 +89,42 @@ class OrderController extends Controller
         return redirect()
             ->route('administrator.orders.show', $order)
             ->with('status', 'Order status updated successfully.');
+    }
+
+    public function rejectPaymentProof(OrderPaymentProofRejectRequest $request, Order $order): RedirectResponse
+    {
+        $this->authorize('rejectPaymentProof', $order);
+
+        $this->service->rejectPaymentProof(
+            $order,
+            $request->user('admin'),
+            $request->validated('notes'),
+        );
+
+        return redirect()
+            ->route('administrator.orders.show', $order)
+            ->with('status', 'Payment proof replacement requested.');
+    }
+
+    public function paymentProof(Order $order): StreamedResponse
+    {
+        $this->authorize('viewPaymentProof', $order);
+
+        abort_unless($order->hasPaymentProof(), 404);
+
+        $disk = $order->payment_proof_disk ?: 'local';
+        $path = (string) $order->payment_proof_path;
+
+        abort_unless(Storage::disk($disk)->exists($path), 404);
+
+        return Storage::disk($disk)->response(
+            $path,
+            basename($path),
+            [
+                'Content-Type' => $order->payment_proof_mime ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+            ],
+        );
     }
 
     protected function defaultItems(): array

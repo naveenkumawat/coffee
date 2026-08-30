@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Order } from '../../types/order';
 import { formatDateTime } from '../../utils/format';
 import {
-  ORDER_PREPARATION_STEPS,
+  isDeliveryOrder,
   isPendingPayment,
   isReadyForPickup,
   isTerminalFailure,
+  preparationStepsForOrder,
   progressStepIndex,
   sortedTimeline,
   timelineTimestampForStatus,
@@ -20,6 +22,8 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
   const failed = isTerminalFailure(order.status);
   const pendingPayment = isPendingPayment(order.status);
   const ready = isReadyForPickup(order.status);
+  const delivery = isDeliveryOrder(order);
+  const steps = preparationStepsForOrder(order);
   const history = sortedTimeline(order.status_timeline);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -62,7 +66,9 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
             {pendingPayment
               ? 'Preparation starts after the cafe confirms your payment.'
               : ready
-                ? 'Your drinks are ready — head to the cafe when you can.'
+                ? delivery
+                  ? 'Your order is ready for the delivery partner.'
+                  : 'Your drinks are ready — head to the cafe when you can.'
                 : 'Live updates from the cafe team. Refresh anytime.'}
           </p>
         </div>
@@ -71,19 +77,23 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
       {pendingPayment ? (
         <div className="order-next-step is-payment">
           <strong>Awaiting payment</strong>
-          <p>Complete UPI payment and send your screenshot so the cafe can confirm and start preparing.</p>
+          <p>Complete UPI payment and upload your screenshot so the cafe can confirm and start preparing.</p>
         </div>
       ) : null}
 
       {ready ? (
         <div className="order-next-step is-ready motion-enter">
-          <strong>Ready for pickup</strong>
-          <p>Show your order number at the counter. Enjoy!</p>
+          <strong>{delivery ? 'Ready for delivery' : 'Ready for pickup'}</strong>
+          <p>
+            {delivery
+              ? 'The cafe will hand this order to a third-party delivery service. Delivery charges are paid separately.'
+              : 'Show your order number at the counter. Enjoy!'}
+          </p>
         </div>
       ) : null}
 
       <ol className="order-progress-list" aria-label="Preparation progress">
-        {ORDER_PREPARATION_STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isComplete = currentIndex > index;
           const isCurrent = currentIndex === index;
           const isFuture = currentIndex < index;

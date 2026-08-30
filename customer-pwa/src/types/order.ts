@@ -1,4 +1,5 @@
 import { ApiEnvelope } from '../api/client';
+import { CheckoutFulfilmentMethod, CheckoutPaymentInstructions } from './checkout';
 
 export interface OrderItem {
   id: number;
@@ -21,21 +22,45 @@ export interface OrderStatusTimelineItem {
   created_at: string | null;
 }
 
+export interface OrderPaymentProof {
+  uploaded: boolean;
+  uploaded_at: string | null;
+  mime: string | null;
+  size: number | null;
+  can_upload: boolean;
+  rejection_notes: string | null;
+}
+
 export interface Order {
   id: number;
   order_number: string;
   status: string | null;
   status_label: string | null;
+  fulfilment_method: CheckoutFulfilmentMethod | null;
+  fulfilment_method_label: string | null;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
-  pickup_name: string;
-  pickup_phone: string;
+  pickup_name: string | null;
+  pickup_phone: string | null;
   customer_notes: string | null;
   pickup_notes: string | null;
+  delivery_address: string | null;
+  delivery_phone: string | null;
+  delivery_contact_name: string | null;
+  delivery_notes: string | null;
+  delivery_provider: string | null;
+  delivery_fee_amount: string | null;
+  delivery_tracking_reference: string | null;
+  delivery_disclaimer: string | null;
   subtotal: string;
   discount_total: string;
   total_amount: string;
+  payment_method: string | null;
+  payment_status: string | null;
+  payment_status_label: string | null;
+  payment_reference: string | null;
+  payment_proof: OrderPaymentProof | null;
   placed_at: string | null;
   payment_confirmed_at: string | null;
   accepted_at: string | null;
@@ -58,12 +83,7 @@ export type OrderStatusValue =
   | 'cancelled'
   | 'rejected';
 
-export interface OrderPaymentInstructions {
-  display_name: string | null;
-  instructions: string | null;
-  upi_id: string | null;
-  whatsapp_number: string | null;
-}
+export type OrderPaymentInstructions = CheckoutPaymentInstructions;
 
 export interface OrderListResponse extends ApiEnvelope<Order[]> {
   meta?: {

@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -31,6 +34,9 @@ class OrderFactory extends Factory
             'assigned_barista_id' => null,
             'checkout_token' => fake()->optional()->sha1(),
             'status' => OrderStatus::PendingPayment,
+            'fulfilment_method' => OrderFulfilmentMethod::Takeaway,
+            'payment_method' => PaymentMethod::Manual,
+            'payment_status' => PaymentStatus::Pending,
             'subtotal' => '120.00',
             'discount_total' => '0.00',
             'total_amount' => '120.00',
@@ -45,5 +51,32 @@ class OrderFactory extends Factory
             'cancelled_at' => null,
             'rejected_at' => null,
         ];
+    }
+
+    public function delivery(): static
+    {
+        return $this->state(fn (): array => [
+            'fulfilment_method' => OrderFulfilmentMethod::Delivery,
+            'pickup_name' => null,
+            'pickup_phone' => null,
+            'pickup_notes' => null,
+            'delivery_address' => fake()->address(),
+            'delivery_phone' => fake()->numerify('9#########'),
+            'delivery_contact_name' => fake()->name(),
+            'delivery_notes' => fake()->optional()->sentence(),
+            'delivery_fee_amount' => null,
+        ]);
+    }
+
+    public function withPaymentProof(): static
+    {
+        return $this->state(fn (): array => [
+            'payment_status' => PaymentStatus::AwaitingReview,
+            'payment_proof_path' => 'payment-proofs/demo/proof.jpg',
+            'payment_proof_disk' => 'local',
+            'payment_proof_mime' => 'image/jpeg',
+            'payment_proof_size' => 1024,
+            'payment_proof_uploaded_at' => now(),
+        ]);
     }
 }

@@ -1,29 +1,55 @@
+import { CART_MAX_QUANTITY } from '../../utils/cartQuantity';
+
 interface QuantityStepperProps {
   value: number;
   min?: number;
   max?: number;
   disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  /** When true, decreasing at 1 emits 0 so the parent can remove the line. */
+  allowRemove?: boolean;
   onChange: (value: number) => void;
 }
 
-export function QuantityStepper({ value, min = 1, max = 20, disabled = false, onChange }: QuantityStepperProps) {
+export function QuantityStepper({
+  value,
+  min = 1,
+  max = CART_MAX_QUANTITY,
+  disabled = false,
+  size = 'md',
+  allowRemove = false,
+  onChange,
+}: QuantityStepperProps) {
+  const canDecrease = allowRemove ? value > 0 : value > min;
+  const canIncrease = value < max;
+
   return (
-    <div className="quantity-stepper" role="group" aria-label="Quantity">
+    <div className={`quantity-stepper size-${size}`} role="group" aria-label="Quantity">
       <button
         type="button"
         className="icon-button"
-        aria-label="Decrease quantity"
-        disabled={disabled || value <= min}
-        onClick={() => onChange(Math.max(min, value - 1))}
+        aria-label={allowRemove && value <= 1 ? 'Remove from cart' : 'Decrease quantity'}
+        disabled={disabled || !canDecrease}
+        onClick={() => {
+          if (allowRemove && value <= 1) {
+            onChange(0);
+
+            return;
+          }
+
+          onChange(Math.max(min, value - 1));
+        }}
       >
         <i className="bi bi-dash-lg" aria-hidden="true"></i>
       </button>
-      <span aria-live="polite">{value}</span>
+      <span className="quantity-stepper-value" aria-live="polite" key={value}>
+        {value}
+      </span>
       <button
         type="button"
         className="icon-button"
         aria-label="Increase quantity"
-        disabled={disabled || value >= max}
+        disabled={disabled || !canIncrease}
         onClick={() => onChange(Math.min(max, value + 1))}
       >
         <i className="bi bi-plus-lg" aria-hidden="true"></i>

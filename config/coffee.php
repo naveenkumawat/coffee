@@ -22,6 +22,12 @@ return [
             'Please complete the payment and share your payment screenshot with the order number on WhatsApp.',
         ),
         'upi_id' => env('COFFEE_UPI_ID'),
+        'phone' => env('COFFEE_PAYMENT_PHONE'),
+        'qr_image_path' => env('COFFEE_PAYMENT_QR_IMAGE_PATH'),
         'whatsapp_number' => env('COFFEE_WHATSAPP_NUMBER'),
+        'proof_max_kilobytes' => (int) env('COFFEE_PAYMENT_PROOF_MAX_KB', 5120),
+    ],
+    'fulfilment' => [
+        'delivery_disclaimer' => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
     ],
 ];

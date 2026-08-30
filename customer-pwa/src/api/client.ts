@@ -133,6 +133,13 @@ export function post<TResponse, TPayload>(path: string, body?: TPayload): Promis
   });
 }
 
+export function postForm<TResponse>(path: string, body: FormData): Promise<TResponse> {
+  return request<TResponse>(path, {
+    method: 'POST',
+    body
+  });
+}
+
 export function put<TResponse, TPayload>(path: string, body: TPayload): Promise<TResponse> {
   return request<TResponse>(path, {
     method: 'PUT',

@@ -31,6 +31,7 @@
                             <div class="text-muted fs-7 mb-1">Status</div>
                             <x-internal.order-status-badge :status="$order->status" />
                         </div>
+                        @include('internal.orders.partials.fulfilment', ['order' => $order])
                         <div>
                             <div class="text-muted fs-7 mb-1">Customer</div>
                             <div class="fw-bold text-gray-900">{{ $order->customer?->name ?: 'Walk-in / internal order' }}</div>
@@ -86,6 +87,11 @@
         'order' => $order,
         'availableTransitions' => $availableTransitions,
         'routeName' => 'administrator.orders.status.update',
+    ])
+
+    @include('internal.orders.partials.payment-proof', [
+        'order' => $order,
+        'showAdminActions' => true,
     ])
 
     <div class="card card-flush internal-card mb-7">

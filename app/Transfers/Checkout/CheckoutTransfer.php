@@ -22,6 +22,16 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
 
     protected ?string $pickupNotes = null;
 
+    protected ?string $fulfilmentMethod = null;
+
+    protected ?string $deliveryAddress = null;
+
+    protected ?string $deliveryPhone = null;
+
+    protected ?string $deliveryContactName = null;
+
+    protected ?string $deliveryNotes = null;
+
     public function getCheckoutToken(): ?string
     {
         return $this->checkoutToken;
@@ -102,6 +112,56 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
         $this->pickupNotes = $pickupNotes;
     }
 
+    public function getFulfilmentMethod(): ?string
+    {
+        return $this->fulfilmentMethod;
+    }
+
+    public function setFulfilmentMethod(?string $fulfilmentMethod): void
+    {
+        $this->fulfilmentMethod = $fulfilmentMethod;
+    }
+
+    public function getDeliveryAddress(): ?string
+    {
+        return $this->deliveryAddress;
+    }
+
+    public function setDeliveryAddress(?string $deliveryAddress): void
+    {
+        $this->deliveryAddress = $deliveryAddress;
+    }
+
+    public function getDeliveryPhone(): ?string
+    {
+        return $this->deliveryPhone;
+    }
+
+    public function setDeliveryPhone(?string $deliveryPhone): void
+    {
+        $this->deliveryPhone = $deliveryPhone;
+    }
+
+    public function getDeliveryContactName(): ?string
+    {
+        return $this->deliveryContactName;
+    }
+
+    public function setDeliveryContactName(?string $deliveryContactName): void
+    {
+        $this->deliveryContactName = $deliveryContactName;
+    }
+
+    public function getDeliveryNotes(): ?string
+    {
+        return $this->deliveryNotes;
+    }
+
+    public function setDeliveryNotes(?string $deliveryNotes): void
+    {
+        $this->deliveryNotes = $deliveryNotes;
+    }
+
     public function toArray(): array
     {
         return [
@@ -113,6 +173,11 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
             'pickup_phone' => $this->pickupPhone,
             'customer_notes' => $this->customerNotes,
             'pickup_notes' => $this->pickupNotes,
+            'fulfilment_method' => $this->fulfilmentMethod,
+            'delivery_address' => $this->deliveryAddress,
+            'delivery_phone' => $this->deliveryPhone,
+            'delivery_contact_name' => $this->deliveryContactName,
+            'delivery_notes' => $this->deliveryNotes,
         ];
     }
 }

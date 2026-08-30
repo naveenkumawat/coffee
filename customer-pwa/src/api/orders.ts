@@ -1,4 +1,4 @@
-import { ApiEnvelope, get } from './client';
+import { get, postForm } from './client';
 import { OrderDetailResponse, OrderListResponse } from '../types/order';
 
 export function fetchOrders(page = 1, perPage = 20): Promise<OrderListResponse> {
@@ -12,4 +12,15 @@ export function fetchOrders(page = 1, perPage = 20): Promise<OrderListResponse> 
 
 export function fetchOrder(orderId: number | string): Promise<OrderDetailResponse> {
   return get<OrderDetailResponse>(`/orders/${orderId}`);
+}
+
+export function uploadPaymentProof(orderId: number | string, file: File): Promise<OrderDetailResponse> {
+  const body = new FormData();
+  body.append('payment_proof', file);
+
+  return postForm<OrderDetailResponse>(`/orders/${orderId}/payment-proof`, body);
+}
+
+export function paymentProofUrl(orderId: number | string): string {
+  return `/orders/${orderId}/payment-proof`;
 }

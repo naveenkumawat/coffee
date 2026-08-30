@@ -27,4 +27,24 @@ class OrderPolicy
     {
         return $user->canManageOrders() || $user->canOperateOrders();
     }
+
+    public function uploadPaymentProof(User $user, Order $order): bool
+    {
+        return $user->hasRole('customer')
+            && (int) $order->customer_id === (int) $user->getKey()
+            && $order->canUploadPaymentProof();
+    }
+
+    public function rejectPaymentProof(User $user, Order $order): bool
+    {
+        return $user->canManageOrders();
+    }
+
+    public function viewPaymentProof(User $user, Order $order): bool
+    {
+        return ($user->canManageOrders() && $order->hasPaymentProof())
+            || ($user->hasRole('customer')
+                && (int) $order->customer_id === (int) $user->getKey()
+                && $order->hasPaymentProof());
+    }
 }

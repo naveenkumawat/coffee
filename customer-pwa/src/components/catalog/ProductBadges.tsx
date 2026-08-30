@@ -8,25 +8,31 @@ interface ProductBadgesProps {
 
 export function ProductBadges({ product, showCustomizable = false, compact = false }: ProductBadgesProps) {
   const badges = [
-    product.is_new ? { key: 'new', label: 'New', className: 'is-new' } : null,
-    product.is_bestseller ? { key: 'bestseller', label: compact ? 'Top' : 'Bestseller', className: 'is-bestseller' } : null,
-    product.is_vegetarian ? { key: 'veg', label: 'Veg', className: 'is-veg' } : null,
-    showCustomizable && product.is_customizable
-      ? { key: 'customizable', label: compact ? 'Custom' : 'Customizable', className: 'is-customizable' }
+    product.is_new ? { key: 'new', label: 'NEW', className: 'is-new' } : null,
+    product.is_bestseller ? { key: 'bestseller', label: 'TOP', className: 'is-bestseller' } : null,
+    product.is_vegetarian
+      ? {
+          key: 'veg',
+          label: 'VEG',
+          className: 'is-veg',
+          icon: 'bi-circle-fill',
+        }
       : null,
-  ].filter(Boolean) as Array<{ key: string; label: string; className: string }>;
+    showCustomizable && product.is_customizable
+      ? { key: 'customizable', label: compact ? 'CUSTOM' : 'CUSTOM', className: 'is-customizable' }
+      : null,
+  ].filter(Boolean) as Array<{ key: string; label: string; className: string; icon?: string }>;
 
   if (badges.length === 0) {
     return null;
   }
 
-  const visible = compact ? badges.slice(0, 2) : badges;
-
   return (
-    <div className={`product-badges ${compact ? 'is-compact' : ''}`.trim()}>
-      {visible.map((badge) => (
+    <div className={`product-badges ${compact ? 'is-compact' : ''}`.trim()} aria-label="Product badges">
+      {badges.map((badge) => (
         <span key={badge.key} className={`product-badge ${badge.className}`}>
-          {badge.label}
+          {badge.icon ? <i className={badge.icon} aria-hidden="true"></i> : null}
+          <span>{badge.label}</span>
         </span>
       ))}
     </div>
