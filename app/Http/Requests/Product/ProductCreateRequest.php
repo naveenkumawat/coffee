@@ -4,6 +4,7 @@ namespace App\Http\Requests\Product;
 
 use App\Enums\ProductServingUnit;
 use App\Http\Requests\AbstractRequest;
+use App\Support\PublicMedia;
 use Illuminate\Validation\Rule;
 
 class ProductCreateRequest extends AbstractRequest
@@ -23,6 +24,8 @@ class ProductCreateRequest extends AbstractRequest
             'description' => ['nullable', 'string'],
             'customer_ingredient_summary' => ['nullable', 'string', 'max:255'],
             'image_path' => ['nullable', 'string', 'max:255'],
+            'image' => PublicMedia::uploadRules(),
+            'remove_image' => ['nullable', 'boolean'],
             'preparation_time_minutes' => ['nullable', 'integer', 'min:0', 'max:999'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'product_flavour_ids' => ['nullable', 'array'],

@@ -61,7 +61,13 @@ class ProductController extends Controller
 
     public function store(ProductCreateRequest $request): RedirectResponse
     {
-        $product = $this->service->store($this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $product = $this->service->store($this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage(
+            $product,
+            $request->file('image'),
+            $request->boolean('remove_image'),
+        );
 
         return redirect()
             ->route('administrator.products.edit', $product)
@@ -94,7 +100,13 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        $this->service->update($product, $this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $product = $this->service->update($product, $this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage(
+            $product,
+            $request->file('image'),
+            $request->boolean('remove_image'),
+        );
 
         return redirect()
             ->route('administrator.products.edit', $product)

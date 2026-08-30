@@ -35,7 +35,7 @@
         </div>
     </div>
     <div class="card-body pt-0">
-        <form method="POST" action="{{ $action }}" class="form">
+        <form method="POST" action="{{ $action }}" class="form" enctype="multipart/form-data">
             @csrf
             @if ($method !== 'POST')
                 @method($method)
@@ -97,11 +97,46 @@
                     @enderror
                 </div>
                 <div class="col-md-3">
-                    <label for="image_path" class="form-label">Image Path</label>
-                    <input id="image_path" name="image_path" type="text" value="{{ old('image_path', $product->image_path) }}" class="form-control @error('image_path') is-invalid @enderror" />
-                    @error('image_path')
+                    <label for="image" class="form-label">Product image</label>
+                    @php
+                        $currentImageUrl = \App\Support\PublicMedia::url(old('image_path', $product->image_path));
+                    @endphp
+                    @if ($currentImageUrl)
+                        <div class="mb-3">
+                            <img
+                                src="{{ $currentImageUrl }}"
+                                alt="{{ $product->name ?: 'Product image' }}"
+                                class="rounded border"
+                                style="max-width: 8rem; max-height: 8rem; object-fit: contain; background: #f5f5f5;"
+                            />
+                        </div>
+                        <input type="hidden" name="image_path" value="{{ old('image_path', $product->image_path) }}" />
+                        <div class="form-check mb-3">
+                            <input
+                                id="remove_image"
+                                name="remove_image"
+                                type="checkbox"
+                                value="1"
+                                class="form-check-input @error('remove_image') is-invalid @enderror"
+                                @checked(old('remove_image'))
+                            />
+                            <label for="remove_image" class="form-check-label">Remove current image</label>
+                            @error('remove_image')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    @endif
+                    <input
+                        id="image"
+                        name="image"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                        class="form-control @error('image') is-invalid @enderror"
+                    />
+                    @error('image')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text">JPEG / PNG / WebP, max {{ \App\Support\PublicMedia::maxKilobytes() }} KB. Prefer WebP around 50–150 KB.</div>
                 </div>
                 <div class="col-12">
                     <label for="description" class="form-label">Detailed Description</label>

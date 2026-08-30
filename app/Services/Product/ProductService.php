@@ -5,7 +5,9 @@ namespace App\Services\Product;
 use App\Models\Product;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Repositories\Product\ProductRepositoryInterface;
+use App\Support\PublicMedia;
 use App\Transfers\Product\ProductTransferInterface;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -71,6 +73,28 @@ class ProductService implements ProductServiceInterface
         });
 
         $this->catalog->flushPublicCache();
+    }
+
+    public function syncImage(Product $product, ?UploadedFile $image, bool $remove): Product
+    {
+        $previous = $product->image_path;
+
+        if ($image !== null) {
+            $path = PublicMedia::store($image, PublicMedia::DIRECTORY_PRODUCTS);
+            $product = $this->products->update($product, ['image_path' => $path]);
+            PublicMedia::deleteManaged($previous);
+            $this->catalog->flushPublicCache();
+
+            return $product;
+        }
+
+        if ($remove) {
+            $product = $this->products->update($product, ['image_path' => null]);
+            PublicMedia::deleteManaged($previous);
+            $this->catalog->flushPublicCache();
+        }
+
+        return $product;
     }
 
     protected function prepareAttributes(ProductTransferInterface $data, ?int $ignoreId = null): array

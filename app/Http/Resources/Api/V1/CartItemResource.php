@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\CartItem;
+use App\Support\PublicMedia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,7 +42,7 @@ class CartItemResource extends JsonResource
                 'slug' => $product->slug,
                 'short_description' => $product->short_description,
                 'customer_ingredient_summary' => $product->customer_ingredient_summary,
-                'image_path' => $product->image_path,
+                'image_path' => PublicMedia::url($product->image_path),
             ] : null,
             'variant' => $variant ? [
                 'id' => $variant->getKey(),

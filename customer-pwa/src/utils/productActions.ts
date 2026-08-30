@@ -42,3 +42,77 @@ export function getPreferredVariant(product: Product): ProductVariant | null {
 
   return variants.find((variant) => variant.is_available) ?? variants[0] ?? null;
 }
+
+export type VariantCupKind = 'small' | 'large' | null;
+
+function normalizeVariantName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Cup icon only for clearly sized drink variants — never invent mappings. */
+export function getVariantCupKind(variant: ProductVariant): VariantCupKind {
+  const name = normalizeVariantName(variant.name);
+
+  if (['small', 's', 'short', 'tall', 'regular', 'reg', 'medium', 'm'].includes(name)) {
+    return 'small';
+  }
+
+  if (['large', 'l', 'grande', 'venti', 'xl', 'extra large', 'extra-large'].includes(name)) {
+    return 'large';
+  }
+
+  return null;
+}
+
+export function getVariantShortLabel(variant: ProductVariant): string {
+  const name = normalizeVariantName(variant.name);
+
+  if (name === 'small' || name === 's' || name === 'short' || name === 'tall') {
+    return 'S';
+  }
+
+  if (name === 'regular' || name === 'reg') {
+    return 'R';
+  }
+
+  if (name === 'medium' || name === 'm') {
+    return 'M';
+  }
+
+  if (name === 'large' || name === 'l' || name === 'grande') {
+    return 'L';
+  }
+
+  if (name === 'xl' || name === 'extra large' || name === 'extra-large' || name === 'venti') {
+    return 'XL';
+  }
+
+  const compact = variant.name.replace(/[^A-Za-z0-9]/g, '');
+
+  return compact.slice(0, 3).toUpperCase() || variant.name.slice(0, 2).toUpperCase();
+}
+
+export function startingPrice(product: Product): string | null {
+  const prices = getProductVariants(product)
+    .filter((variant) => variant.is_available)
+    .map((variant) => Number(variant.price))
+    .filter((price) => Number.isFinite(price));
+
+  if (prices.length === 0) {
+    return product.default_variant?.price ?? null;
+  }
+
+  return Math.min(...prices).toFixed(2);
+}
+
+/** True when every variant maps to a known cup size (inline S/L controls). */
+export function hasRecognizedSizeControls(product: Product): boolean {
+  const variants = getProductVariants(product);
+
+  return variants.length >= 2 && variants.every((variant) => getVariantCupKind(variant) !== null);
+}
+
+/** Multi-variant products that need QuickAdd instead of inline cups. */
+export function needsQuickAddFallback(product: Product): boolean {
+  return hasMultipleVariants(product) && !hasRecognizedSizeControls(product);
+}

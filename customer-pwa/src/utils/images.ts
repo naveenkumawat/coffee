@@ -25,8 +25,9 @@ export function pickHeroImage(index = 0): string {
 }
 
 /**
- * Resolve CMS/catalog media for both absolute URLs and Laravel-relative storage paths.
- * Falls back when the path is empty or unresolvable.
+ * Resolve CMS/catalog media for absolute URLs and Laravel public-disk paths.
+ * Falls back when the path is empty or unresolvable. Never hardcodes a host —
+ * uses VITE_API_BASE_URL / current origin via getBackendBaseUrl().
  */
 export function resolveCatalogMediaUrl(path: string | null | undefined, fallback: string): string {
   const value = path?.trim();
@@ -40,7 +41,20 @@ export function resolveCatalogMediaUrl(path: string | null | undefined, fallback
   }
 
   try {
-    return new URL(value.replace(/^\//, ''), getBackendBaseUrl()).toString();
+    const backend = getBackendBaseUrl();
+    let relative = value.replace(/^\//, '');
+
+    // Managed public-disk paths are served under /storage/...
+    if (
+      !relative.startsWith('storage/') &&
+      (relative.startsWith('products/') ||
+        relative.startsWith('categories/') ||
+        relative.startsWith('website/'))
+    ) {
+      relative = `storage/${relative}`;
+    }
+
+    return new URL(relative, backend.endsWith('/') ? backend : `${backend}/`).toString();
   } catch {
     return fallback;
   }

@@ -4,6 +4,7 @@ namespace App\Services\Product;
 
 use App\Models\Product;
 use App\Transfers\Product\ProductTransferInterface;
+use Illuminate\Http\UploadedFile;
 
 interface ProductServiceInterface
 {
@@ -12,4 +13,6 @@ interface ProductServiceInterface
     public function update(Product $product, ProductTransferInterface $data): Product;
 
     public function delete(Product $product): void;
+
+    public function syncImage(Product $product, ?UploadedFile $image, bool $remove): Product;
 }

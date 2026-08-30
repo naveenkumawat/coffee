@@ -4,6 +4,7 @@ namespace App\Services\WebsiteSetting;
 
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Support\PublicMedia;
 
 class WebsiteSettingService implements WebsiteSettingServiceInterface
 {
@@ -49,7 +50,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
             'hero' => [
                 'title' => $this->filledOrNull($values[WebsiteSettingKey::HeroTitle->value] ?? null),
                 'subtitle' => $this->filledOrNull($values[WebsiteSettingKey::HeroSubtitle->value] ?? null),
-                'image_path' => $this->filledOrNull($values[WebsiteSettingKey::HeroImagePath->value] ?? null),
+                'image_path' => PublicMedia::url($this->filledOrNull($values[WebsiteSettingKey::HeroImagePath->value] ?? null)),
             ],
             'business' => [
                 'name' => $this->filledOrNull($values[WebsiteSettingKey::BusinessName->value] ?? null)
@@ -94,10 +95,10 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 $values->get(WebsiteSettingKey::PaymentPhone->value),
                 config('coffee.payments.phone'),
             ),
-            'qr_image_path' => $this->resolveWithConfigFallback(
+            'qr_image_path' => PublicMedia::url($this->resolveWithConfigFallback(
                 $values->get(WebsiteSettingKey::PaymentQrImagePath->value),
                 config('coffee.payments.qr_image_path'),
-            ),
+            )),
             'whatsapp_number' => $this->resolveWithConfigFallback(
                 $values->get(WebsiteSettingKey::PaymentWhatsappNumber->value),
                 config('coffee.payments.whatsapp_number'),

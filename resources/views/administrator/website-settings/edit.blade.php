@@ -17,9 +17,13 @@
             'payment' => 'Payment display',
             'pages' => 'Static pages',
         ];
+        $mediaKeys = [
+            \App\Enums\WebsiteSettingKey::HeroImagePath->value,
+            \App\Enums\WebsiteSettingKey::PaymentQrImagePath->value,
+        ];
     @endphp
 
-    <form method="POST" action="{{ route('administrator.website-settings.update') }}" class="form">
+    <form method="POST" action="{{ route('administrator.website-settings.update') }}" class="form" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -40,13 +44,82 @@
                             @continue($key->section() !== $sectionKey)
                             <div class="col-12 {{ $key->valueType() === 'string' ? 'col-md-6' : '' }}">
                                 <label for="{{ $key->value }}" class="form-label">{{ $key->label() }}</label>
-                                @if ($key->valueType() === 'text')
+
+                                @if (in_array($key->value, $mediaKeys, true))
+                                    @php
+                                        $storedPath = old($key->value, $values[$key->value] ?? null);
+                                        $previewUrl = \App\Support\PublicMedia::url(is_string($storedPath) ? $storedPath : null);
+                                        $fileInputName = $key === \App\Enums\WebsiteSettingKey::HeroImagePath ? 'hero_image' : 'payment_qr_image';
+                                        $removeInputName = $key === \App\Enums\WebsiteSettingKey::HeroImagePath ? 'remove_hero_image' : 'remove_payment_qr_image';
+                                    @endphp
+
+                                    @if ($previewUrl)
+                                        <div class="mb-3">
+                                            <img
+                                                src="{{ $previewUrl }}"
+                                                alt="{{ $key->label() }}"
+                                                class="rounded border"
+                                                style="max-width: 10rem; max-height: 10rem; object-fit: contain; background: #f5f5f5;"
+                                            />
+                                        </div>
+                                        <input type="hidden" name="{{ $key->value }}" value="{{ $storedPath }}" />
+                                        <div class="form-check mb-3">
+                                            <input
+                                                id="{{ $removeInputName }}"
+                                                name="{{ $removeInputName }}"
+                                                type="checkbox"
+                                                value="1"
+                                                class="form-check-input @error($removeInputName) is-invalid @enderror"
+                                                @checked(old($removeInputName))
+                                            />
+                                            <label for="{{ $removeInputName }}" class="form-check-label">Remove current image</label>
+                                            @error($removeInputName)
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    @else
+                                        <input
+                                            id="{{ $key->value }}"
+                                            name="{{ $key->value }}"
+                                            type="text"
+                                            value="{{ old($key->value, $values[$key->value] ?? '') }}"
+                                            class="form-control mb-3 @error($key->value) is-invalid @enderror"
+                                            placeholder="Optional absolute URL or leave blank and upload below"
+                                        />
+                                        @error($key->value)
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    @endif
+
+                                    <input
+                                        id="{{ $fileInputName }}"
+                                        name="{{ $fileInputName }}"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                                        class="form-control @error($fileInputName) is-invalid @enderror"
+                                    />
+                                    @error($fileInputName)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">
+                                        Upload JPEG / PNG / WebP (max {{ \App\Support\PublicMedia::maxKilobytes() }} KB), or set an absolute URL when no file is stored.
+                                        @if ($key === \App\Enums\WebsiteSettingKey::PaymentQrImagePath)
+                                            Empty falls back to config/env.
+                                        @endif
+                                    </div>
+                                @elseif ($key->valueType() === 'text')
                                     <textarea
                                         id="{{ $key->value }}"
                                         name="{{ $key->value }}"
                                         rows="{{ str_starts_with($key->value, 'pages_') ? 8 : 4 }}"
                                         class="form-control @error($key->value) is-invalid @enderror"
                                     >{{ old($key->value, $values[$key->value] ?? '') }}</textarea>
+                                    @error($key->value)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    @if (str_starts_with($key->value, 'pages_'))
+                                        <div class="form-text">Plain text only. HTML and scripts are stripped on save.</div>
+                                    @endif
                                 @else
                                     <input
                                         id="{{ $key->value }}"
@@ -55,26 +128,20 @@
                                         value="{{ old($key->value, $values[$key->value] ?? '') }}"
                                         class="form-control @error($key->value) is-invalid @enderror"
                                     />
-                                @endif
-                                @error($key->value)
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                @if ($sectionKey === 'payment')
-                                    @php
-                                        $configKey = str_replace('payment_', '', $key->value);
-                                        $fallback = $paymentConfig[$configKey] ?? null;
-                                    @endphp
-                                    @if ($key === \App\Enums\WebsiteSettingKey::PaymentQrImagePath)
-                                        <div class="form-text">Absolute URL or public path shown on the customer payment card. Empty falls back to config/env.</div>
-                                    @elseif (filled($fallback))
-                                        <div class="form-text">Config fallback: {{ $fallback }}</div>
-                                    @else
-                                        <div class="form-text">No config fallback set for this field.</div>
+                                    @error($key->value)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    @if ($sectionKey === 'payment')
+                                        @php
+                                            $configKey = str_replace('payment_', '', $key->value);
+                                            $fallback = $paymentConfig[$configKey] ?? null;
+                                        @endphp
+                                        @if (filled($fallback))
+                                            <div class="form-text">Config fallback: {{ $fallback }}</div>
+                                        @else
+                                            <div class="form-text">No config fallback set for this field.</div>
+                                        @endif
                                     @endif
-                                @elseif ($key === \App\Enums\WebsiteSettingKey::HeroImagePath)
-                                    <div class="form-text">Absolute URL or site-relative path. Leave blank to use the PWA default art.</div>
-                                @elseif (str_starts_with($key->value, 'pages_'))
-                                    <div class="form-text">Plain text only. HTML and scripts are stripped on save.</div>
                                 @endif
                             </div>
                         @endforeach

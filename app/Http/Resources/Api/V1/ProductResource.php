@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Product;
+use App\Support\PublicMedia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,7 +30,7 @@ class ProductResource extends JsonResource
             'short_description' => $product->short_description,
             'description' => $product->description,
             'customer_ingredient_summary' => $product->customer_ingredient_summary,
-            'image_path' => $product->image_path,
+            'image_path' => PublicMedia::url($product->image_path),
             'preparation_time_minutes' => $product->preparation_time_minutes,
             'is_featured' => (bool) $product->is_featured,
             'is_new' => (bool) $product->is_new,

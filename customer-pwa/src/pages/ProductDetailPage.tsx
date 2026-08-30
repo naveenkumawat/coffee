@@ -231,7 +231,7 @@ export function ProductDetailPage() {
             product={product}
             variant={selectedVariant}
             size="lg"
-            addLabel="Add"
+            addLabel="Add to order"
             className="product-detail-cart-control"
           />
         ) : null}

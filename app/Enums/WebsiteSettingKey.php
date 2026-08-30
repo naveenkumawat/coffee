@@ -58,7 +58,7 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::HeroTitle => 'Hero title',
             self::HeroSubtitle => 'Hero subtitle',
-            self::HeroImagePath => 'Hero image path',
+            self::HeroImagePath => 'Hero image',
             self::BusinessName => 'Business name',
             self::BusinessAboutShort => 'Short about text',
             self::BusinessPhone => 'Phone',
@@ -70,7 +70,7 @@ enum WebsiteSettingKey: string
             self::PaymentInstructions => 'Payment instructions',
             self::PaymentUpiId => 'UPI ID',
             self::PaymentPhone => 'Payment phone / number',
-            self::PaymentQrImagePath => 'Payment QR image path',
+            self::PaymentQrImagePath => 'Payment QR image',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact page',
