@@ -67,10 +67,14 @@
   /* Touch / chrome */
   --coffee-touch: 2.75rem;
   --coffee-shell-max: 34rem;
-  --coffee-bottom-nav-height: 4.35rem;
+  --bottom-nav-height: 4.35rem;
+  --coffee-bottom-nav-height: var(--bottom-nav-height);
   --coffee-safe-bottom: env(safe-area-inset-bottom, 0px);
-  --coffee-nav-offset: calc(var(--coffee-bottom-nav-height) + var(--coffee-safe-bottom));
+  --coffee-nav-offset: calc(var(--bottom-nav-height) + var(--coffee-safe-bottom));
   --coffee-sticky-cta-height: 8.75rem;
+  --z-bottom-nav: 40;
+  --z-sticky-cta: 35;
+  --z-toast: 50;
 
   /* Motion */
   --motion-fast: 140ms;
@@ -116,8 +120,8 @@ button {
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(22px);
+  /* Opaque shell — avoid backdrop-filter here so position:fixed chrome stays viewport-fixed. */
+  background: #ffffff;
   box-shadow: var(--coffee-shadow);
 }
 
@@ -130,6 +134,7 @@ button {
 }
 
 .page-container.has-sticky-cta {
+  /* Sticky CTA sits above the fixed nav; clear both. */
   padding-bottom: calc(var(--coffee-sticky-cta-height) + var(--space-4));
 }
 
@@ -469,11 +474,16 @@ a.category-pill {
   display: grid;
   grid-template-columns: 6.75rem minmax(0, 1fr);
   gap: 0.95rem;
-  overflow: hidden;
+  /* Visible so overlay tags are not vertically/horizontally clipped by the card shell. */
+  overflow: visible;
 }
 
 .product-card-media {
   position: relative;
+  z-index: 1;
+  overflow: visible;
+  align-self: stretch;
+  min-width: 0;
 }
 
 .product-card-media > .product-card-image {
@@ -522,27 +532,29 @@ a.category-pill {
 
 .product-tags-compact {
   flex-wrap: nowrap;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.2rem;
   max-width: 100%;
+  overflow: visible;
 }
 
 .product-tag {
   display: inline-flex;
   align-items: center;
-  flex: 0 0 auto;
-  max-width: 7.5rem;
-  min-height: 1.2rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 1.25rem;
   border-radius: 999px;
-  padding: 0.16rem 0.42rem;
+  padding: 0.2rem 0.4rem;
   border: 1px solid transparent;
   font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.03em;
-  line-height: 1;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 
@@ -698,22 +710,30 @@ a.category-pill {
 
 .bottom-navigation {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 40;
-  width: min(100%, var(--coffee-shell-max));
-  transform: translateX(-50%);
+  z-index: var(--z-bottom-nav);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  transform: none;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.35rem;
-  padding: 0.7rem 0.75rem calc(0.7rem + var(--coffee-safe-bottom));
+  min-height: var(--bottom-nav-height);
+  padding: 0.55rem 0.65rem;
+  padding-bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--coffee-border);
-  background: var(--coffee-surface);
-  backdrop-filter: blur(22px);
-  box-shadow: 0 -10px 28px rgba(27, 22, 16, 0.06);
+  background: #ffffff;
+  box-shadow: 0 -8px 28px rgba(27, 22, 16, 0.1);
+  overflow: visible;
+  /* Prevent iOS rubber-band / overscroll from painting content through. */
+  isolation: isolate;
 }
 
 .bottom-nav-link {
+  position: relative;
   display: grid;
   justify-items: center;
   align-content: center;
@@ -722,6 +742,7 @@ a.category-pill {
   color: var(--coffee-muted);
   font-size: 0.75rem;
   font-weight: 600;
+  overflow: visible;
   transition: color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
 }
 
@@ -731,21 +752,38 @@ a.category-pill {
 
 .bottom-nav-icon {
   position: relative;
+  display: inline-grid;
+  place-items: center;
   font-size: 1.25rem;
+  line-height: 1;
+  overflow: visible;
 }
 
 .bottom-nav-badge {
   position: absolute;
-  top: -0.35rem;
-  right: -0.55rem;
-  min-width: 1.15rem;
-  height: 1.15rem;
+  top: -0.4rem;
+  right: -0.65rem;
+  z-index: 2;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.28rem;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: var(--coffee-accent);
+  border: 1.5px solid var(--coffee-surface-strong);
+  background: var(--brand-primary);
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.bottom-nav-link.active .bottom-nav-badge {
+  background: var(--brand-primary-hover);
+  border-color: #fff;
 }
 
 .state-card,
@@ -1480,10 +1518,12 @@ select:focus-visible,
     padding: 0 1.5rem calc(var(--coffee-nav-offset) + 2rem);
   }
 
-  .bottom-navigation,
-  .sticky-action-bar,
+  .sticky-action-bar {
+    max-width: min(100%, 72rem);
+  }
+
   .toast-host {
-    width: min(100%, 72rem);
+    max-width: min(calc(100% - 1.5rem), calc(72rem - 1.5rem));
   }
 
   .hero-card,
@@ -1701,19 +1741,21 @@ textarea.coffee-input:focus {
 
 .sticky-action-bar {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: var(--coffee-nav-offset);
-  z-index: 35;
-  width: min(100%, var(--coffee-shell-max));
-  transform: translateX(-50%);
+  z-index: var(--z-sticky-cta);
+  width: 100%;
+  max-width: var(--coffee-shell-max);
+  margin: 0 auto;
+  transform: none;
   display: grid;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4) var(--space-3);
   border-top: 1px solid var(--coffee-border);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
   box-shadow: 0 -12px 30px rgba(27, 22, 16, 0.1);
-  backdrop-filter: blur(18px);
 }
 
 .sticky-action-copy h2 {
@@ -1752,11 +1794,14 @@ textarea.coffee-input:focus {
 /* ——— Foundation: toast ——— */
 .toast-host {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: calc(var(--coffee-nav-offset) + var(--space-3));
-  z-index: 50;
-  width: min(100% - 1.5rem, calc(var(--coffee-shell-max) - 1.5rem));
-  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  width: calc(100% - 1.5rem);
+  max-width: calc(var(--coffee-shell-max) - 1.5rem);
+  margin: 0 auto;
+  transform: none;
   display: grid;
   gap: var(--space-2);
   pointer-events: none;
@@ -3117,16 +3162,42 @@ textarea.coffee-input:focus {
 
 .product-card .product-tags-compact {
   position: absolute;
-  left: 0.35rem;
-  bottom: 0.35rem;
+  left: 0.28rem;
+  right: 0.28rem;
+  bottom: 0.28rem;
   z-index: 2;
   margin: 0;
-  max-width: calc(100% - 4.2rem);
+  max-width: none;
+  width: auto;
   pointer-events: auto;
+  /* Eye/favourite sit top — use full bottom width for pills. */
+  overflow: visible;
 }
 
 .product-card .product-tag {
   backdrop-filter: none;
+  flex: 0 1 auto;
+  max-width: 100%;
+  font-size: 0.56rem;
+  padding: 0.18rem 0.34rem;
+  min-height: 1.15rem;
+  line-height: 1.2;
+  /* Ellipsis only when a pill still cannot fit the thumbnail width. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-card .product-tag-more {
+  flex: 0 0 auto;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  padding-inline: 0.3rem;
+}
+
+.product-card-rail .product-tag {
+  max-width: 7.5rem;
+  font-size: 0.6rem;
 }
 
 .product-card-details {
@@ -3896,16 +3967,20 @@ textarea.coffee-input {
   height: auto;
 }
 
-.bottom-nav-link span {
+/* Label text only — do not clip the icon wrapper (cart badge sits outside the glyph). */
+.bottom-nav-link > span:not(.bottom-nav-icon) {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.bottom-nav-link {
+  overflow: visible;
+}
+
 .sticky-action-bar,
-.toast-host,
-.bottom-navigation {
+.toast-host {
   max-width: min(100%, var(--coffee-shell-max));
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
@@ -50,7 +51,12 @@ export function BottomNavigation() {
     },
   ];
 
-  return (
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  /* Portal to body so fixed positioning is never trapped by app-shell filters/transforms. */
+  return createPortal(
     <nav className="bottom-navigation" aria-label="Primary">
       {items.map((item) => (
         <NavLink
@@ -71,6 +77,7 @@ export function BottomNavigation() {
           <span>{item.label}</span>
         </NavLink>
       ))}
-    </nav>
+    </nav>,
+    document.body,
   );
 }
