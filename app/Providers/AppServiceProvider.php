@@ -39,6 +39,25 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('customerCartCount', $customerCartCount);
         });
+
+        View::composer('internal.includes.partials.header', function ($view): void {
+            $user = auth('admin')->user();
+            $staffNotifications = collect();
+            $staffUnreadCount = 0;
+
+            if ($user) {
+                $staffNotifications = $user->notifications()
+                    ->latest()
+                    ->limit(12)
+                    ->get();
+                $staffUnreadCount = $user->unreadNotifications()->count();
+            }
+
+            $view->with([
+                'staffNotifications' => $staffNotifications,
+                'staffUnreadCount' => $staffUnreadCount,
+            ]);
+        });
     }
 
     protected function configureRateLimiting(): void

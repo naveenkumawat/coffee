@@ -2,12 +2,17 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\BuildsCustomerMail;
+use App\Support\CustomerAppUrl;
+use App\Support\CustomerEmailBrand;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class CustomerResetPasswordNotification extends Notification
+class CustomerResetPasswordNotification extends Notification implements ShouldQueue
 {
+    use BuildsCustomerMail;
     use Queueable;
 
     public function __construct(
@@ -21,23 +26,24 @@ class CustomerResetPasswordNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $url = $this->getCustomerResetUrl($notifiable);
+        $brand = CustomerEmailBrand::snapshot();
+        $name = $notifiable->name ?? null;
+        $email = $notifiable->getEmailForPasswordReset();
+        $url = CustomerAppUrl::resetPassword($this->token, $email);
+        $expireMinutes = (int) config('auth.passwords.users.expire', 60);
 
-        return (new MailMessage)
-            ->subject('Reset Your Coffee Account Password')
-            ->line('You requested a password reset for your Coffee customer account.')
-            ->action('Reset Password', $url)
-            ->line('If you did not request a password reset, no further action is required.');
-    }
-
-    protected function getCustomerResetUrl(object $notifiable): string
-    {
-        $baseUrl = rtrim((string) config('coffee.pwa.url', config('app.url')), '/');
-        $query = http_build_query([
-            'token' => $this->token,
-            'email' => $notifiable->getEmailForPasswordReset(),
-        ]);
-
-        return "{$baseUrl}/reset-password?{$query}";
+        return $this->customerMail(
+            subject: 'Reset your '.$brand['business_name'].' password',
+            greeting: $this->greetingFor(is_string($name) ? $name : null),
+            introLines: [
+                'We received a request to reset the password for your customer account.',
+                'This reset link expires in '.$expireMinutes.' minutes.',
+            ],
+            actionText: 'Reset Password',
+            actionUrl: $url,
+            outroLines: [
+                'If you did not request a password reset, you can ignore this email.',
+            ],
+        );
     }
 }

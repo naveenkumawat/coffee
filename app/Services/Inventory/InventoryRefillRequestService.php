@@ -4,6 +4,8 @@ namespace App\Services\Inventory;
 
 use App\Enums\IngredientUnit;
 use App\Enums\InventoryRefillRequestStatus;
+use App\Events\Inventory\InventoryRefillRequestCreated;
+use App\Events\Inventory\InventoryRefillRequestStatusChanged;
 use App\Models\InventoryRefillRequest;
 use App\Models\InventoryTransaction;
 use App\Models\User;
@@ -47,7 +49,7 @@ class InventoryRefillRequestService implements InventoryRefillRequestServiceInte
             $quantity = $this->normalizeDecimal((string) $data->getQuantity(), 3);
             $baseQuantity = $measurementUnit->normalize($quantity, 3);
 
-            return $this->requests->create([
+            $request = $this->requests->create([
                 'ingredient_id' => $ingredient->getKey(),
                 'quantity' => $quantity,
                 'base_quantity' => $baseQuantity,
@@ -57,6 +59,10 @@ class InventoryRefillRequestService implements InventoryRefillRequestServiceInte
                 'requested_by' => $requestedBy->getKey(),
                 'status' => InventoryRefillRequestStatus::Pending->value,
             ])->fresh(['ingredient.brand', 'ingredient.category', 'requestedBy', 'reviewedBy']);
+
+            InventoryRefillRequestCreated::dispatch($request);
+
+            return $request;
         });
     }
 
@@ -64,13 +70,22 @@ class InventoryRefillRequestService implements InventoryRefillRequestServiceInte
     {
         return DB::transaction(function () use ($request, $reviewer, $reviewNotes): InventoryRefillRequest {
             $this->ensurePending($request);
+            $fromStatus = $request->status;
 
-            return $this->requests->update($request, [
+            $updated = $this->requests->update($request, [
                 'status' => InventoryRefillRequestStatus::Approved->value,
                 'reviewed_by' => $reviewer->getKey(),
                 'reviewed_at' => now(),
                 'review_notes' => filled($reviewNotes) ? trim($reviewNotes) : null,
             ])->fresh(['ingredient.brand', 'ingredient.category', 'requestedBy', 'reviewedBy']);
+
+            InventoryRefillRequestStatusChanged::dispatch(
+                $updated,
+                $fromStatus,
+                InventoryRefillRequestStatus::Approved,
+            );
+
+            return $updated;
         });
     }
 
@@ -78,13 +93,22 @@ class InventoryRefillRequestService implements InventoryRefillRequestServiceInte
     {
         return DB::transaction(function () use ($request, $reviewer, $reviewNotes): InventoryRefillRequest {
             $this->ensurePending($request);
+            $fromStatus = $request->status;
 
-            return $this->requests->update($request, [
+            $updated = $this->requests->update($request, [
                 'status' => InventoryRefillRequestStatus::Rejected->value,
                 'reviewed_by' => $reviewer->getKey(),
                 'reviewed_at' => now(),
                 'review_notes' => filled($reviewNotes) ? trim($reviewNotes) : null,
             ])->fresh(['ingredient.brand', 'ingredient.category', 'requestedBy', 'reviewedBy']);
+
+            InventoryRefillRequestStatusChanged::dispatch(
+                $updated,
+                $fromStatus,
+                InventoryRefillRequestStatus::Rejected,
+            );
+
+            return $updated;
         });
     }
 
@@ -120,9 +144,17 @@ class InventoryRefillRequestService implements InventoryRefillRequestServiceInte
             ]);
         }
 
-        $this->requests->update($request, [
+        $fromStatus = $request->status;
+
+        $updated = $this->requests->update($request, [
             'status' => InventoryRefillRequestStatus::Completed->value,
-        ]);
+        ])->fresh(['ingredient.brand', 'ingredient.category', 'requestedBy', 'reviewedBy']);
+
+        InventoryRefillRequestStatusChanged::dispatch(
+            $updated,
+            $fromStatus,
+            InventoryRefillRequestStatus::Completed,
+        );
     }
 
     public function approvedOptionsForIngredient(int $ingredientId): array

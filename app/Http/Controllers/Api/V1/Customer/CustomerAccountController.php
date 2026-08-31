@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Customer;
 
+use App\Events\Customer\CustomerPasswordChanged;
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\CustomerPasswordUpdateRequest;
@@ -56,6 +57,8 @@ class CustomerAccountController extends Controller
                 'password' => (string) $request->validated('password'),
             ]);
         });
+
+        CustomerPasswordChanged::dispatch($customer);
 
         return $this->respondWithResource(
             new CustomerResource($customer),

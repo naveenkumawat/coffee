@@ -1,11 +1,17 @@
 @php
     use App\Enums\UserRole;
+    use Illuminate\Support\Str;
 
     $user = auth('admin')->user();
     $panelName = $panel === 'administrator' ? 'Administrator' : 'Barista';
     $dashboardRoute = $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard');
     $logoutRoute = $panel === 'administrator' ? route('administrator.logout') : route('barista.logout');
+    $notificationsReadAllRoute = $panel === 'administrator'
+        ? route('administrator.notifications.read-all')
+        : route('barista.notifications.read-all');
     $roleLabel = $user?->role instanceof UserRole ? $user->role->label() : null;
+    $staffNotifications = $staffNotifications ?? collect();
+    $staffUnreadCount = (int) ($staffUnreadCount ?? 0);
 @endphp
 
 <div id="kt_app_header" class="app-header">
@@ -51,6 +57,91 @@
                 </div>
 
                 @if ($user)
+                    <div class="app-navbar-item ms-1 ms-md-4">
+                        <div
+                            class="btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-35px h-35px position-relative"
+                            data-kt-menu-trigger="{default: 'click', lg: 'hover'}"
+                            data-kt-menu-attach="parent"
+                            data-kt-menu-placement="bottom-end"
+                            title="Notifications"
+                        >
+                            <i class="ki-duotone ki-notification-on fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                                <span class="path3"></span>
+                                <span class="path4"></span>
+                                <span class="path5"></span>
+                            </i>
+                            @if ($staffUnreadCount > 0)
+                                <span class="bullet bullet-dot bg-success h-6px w-6px position-absolute translate-middle top-0 start-50 animation-blink"></span>
+                                <span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger" style="min-width:1.1rem;height:1.1rem;line-height:1.1rem;font-size:0.65rem;">
+                                    {{ $staffUnreadCount > 99 ? '99+' : $staffUnreadCount }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true">
+                            <div class="d-flex flex-column bgi-no-repeat rounded-top" style="background-color:#3d2918;">
+                                <h3 class="text-white fw-semibold px-9 mt-6 mb-6">
+                                    Notifications
+                                    <span class="fs-8 opacity-75 ps-3">{{ $staffUnreadCount }} unread</span>
+                                </h3>
+                            </div>
+
+                            <div class="scroll-y mh-325px my-2 px-4">
+                                @forelse ($staffNotifications as $notification)
+                                    @php
+                                        $data = $notification->data;
+                                        $title = (string) ($data['title'] ?? 'Notification');
+                                        $message = (string) ($data['message'] ?? '');
+                                        $url = (string) ($data['url'] ?? $dashboardRoute);
+                                        $readRoute = $panel === 'administrator'
+                                            ? route('administrator.notifications.read', $notification)
+                                            : route('barista.notifications.read', $notification);
+                                    @endphp
+                                    <div class="d-flex flex-stack py-4 {{ $notification->read_at ? '' : 'bg-light-primary rounded px-2' }}">
+                                        <div class="d-flex align-items-center">
+                                            <div class="mb-0 me-2">
+                                                <a href="{{ $url }}" class="fs-6 text-gray-800 text-hover-primary fw-bold">
+                                                    {{ $title }}
+                                                </a>
+                                                @if (! empty($data['severity']))
+                                                    <span class="badge {{ \App\Enums\StaffNotificationSeverity::tryFrom((string) $data['severity'])?->badgeClass() ?? 'badge-light' }} fs-9 ms-1">
+                                                        {{ ucfirst((string) $data['severity']) }}
+                                                    </span>
+                                                @endif
+                                                @if ($message !== '')
+                                                    <div class="text-gray-500 fs-7">{{ Str::limit($message, 90) }}</div>
+                                                @endif
+                                                <div class="text-muted fs-8">{{ $notification->created_at?->diffForHumans() }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            <a href="{{ $url }}" class="btn btn-sm btn-light">Open</a>
+                                            @unless ($notification->read_at)
+                                                <form method="POST" action="{{ $readRoute }}">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-link px-0">Mark read</button>
+                                                </form>
+                                            @endunless
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center text-muted fs-7 py-10">No notifications yet.</div>
+                                @endforelse
+                            </div>
+
+                            @if ($staffUnreadCount > 0)
+                                <div class="py-3 text-center border-top">
+                                    <form method="POST" action="{{ $notificationsReadAllRoute }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-color-gray-600 btn-active-color-primary">Mark all as read</button>
+                                    </form>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
                     <div class="app-navbar-item ms-1 ms-md-4" id="kt_header_user_menu_toggle">
                         <div
                             class="cursor-pointer symbol symbol-35px"

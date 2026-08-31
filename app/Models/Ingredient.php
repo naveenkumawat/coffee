@@ -83,7 +83,12 @@ class Ingredient extends AbstractModel
 
     public function stockStatus(): InventoryStockStatus
     {
-        if (bccomp((string) $this->current_stock, '0', 3) <= 0) {
+        return $this->stockStatusFor((string) $this->current_stock);
+    }
+
+    public function stockStatusFor(string $quantity): InventoryStockStatus
+    {
+        if (bccomp($quantity, '0', 3) <= 0) {
             return InventoryStockStatus::OutOfStock;
         }
 
@@ -92,7 +97,7 @@ class Ingredient extends AbstractModel
             : (string) $this->minimum_stock;
 
         if (bccomp($warningThreshold, '0', 3) === 1
-            && bccomp((string) $this->current_stock, $warningThreshold, 3) <= 0) {
+            && bccomp($quantity, $warningThreshold, 3) <= 0) {
             return InventoryStockStatus::LowStock;
         }
 

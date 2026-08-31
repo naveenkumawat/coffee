@@ -7,6 +7,7 @@ use App\Http\Controllers\Barista\InventoryRefillRequestController;
 use App\Http\Controllers\Barista\OrderController;
 use App\Http\Controllers\Barista\ProductController;
 use App\Http\Controllers\Barista\RecipeController;
+use App\Http\Controllers\Internal\StaffNotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -34,6 +35,10 @@ Route::middleware(['auth:admin', 'role:barista'])->group(function (): void {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
+    Route::post('/notifications/read-all', [StaffNotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])
+        ->name('notifications.read');
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
     Route::get('/recipes', [RecipeController::class, 'index'])->name('recipes.index');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
+use App\Events\Customer\CustomerPasswordChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\CustomerResetPasswordRequest;
 use App\Models\User;
@@ -39,6 +40,8 @@ class CustomerNewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                     'last_login_at' => now(),
                 ])->save();
+
+                CustomerPasswordChanged::dispatch($user);
 
                 Auth::guard('web')->login($user);
             }

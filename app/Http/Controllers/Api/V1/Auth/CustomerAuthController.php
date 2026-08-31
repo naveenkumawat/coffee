@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Enums\UserRole;
+use App\Events\Customer\CustomerPasswordChanged;
+use App\Events\Customer\CustomerRegistered;
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\CustomerForgotPasswordRequest;
@@ -41,6 +43,8 @@ class CustomerAuthController extends Controller
             $this->parser->getTransferFromArrayData($data)->toArray()
             + ['email_verified_at' => now(), 'last_login_at' => now()],
         ));
+
+        CustomerRegistered::dispatch($user);
 
         Auth::guard('web')->login($user);
 
@@ -147,6 +151,8 @@ class CustomerAuthController extends Controller
                     'remember_token' => Str::random(60),
                     'last_login_at' => now(),
                 ])->save();
+
+                CustomerPasswordChanged::dispatch($user);
 
                 Auth::guard('web')->login($user);
                 $resolvedUser = $user;

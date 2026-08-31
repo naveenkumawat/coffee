@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\WhatsApp\WhatsAppNotificationProviderInterface;
 use App\Services\Auth\RoleService;
 use App\Services\Auth\RoleServiceInterface;
 use App\Services\Cart\CartService;
@@ -28,6 +29,10 @@ use App\Services\Menu\MenuCategoryService;
 use App\Services\Menu\MenuCategoryServiceInterface;
 use App\Services\Menu\MenuItemService;
 use App\Services\Menu\MenuItemServiceInterface;
+use App\Services\Notification\CustomerNotificationDispatcher;
+use App\Services\Notification\CustomerNotificationDispatcherInterface;
+use App\Services\Notification\StaffNotificationDispatcher;
+use App\Services\Notification\StaffNotificationDispatcherInterface;
 use App\Services\Order\OrderService;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\Product\ProductCatalogService;
@@ -54,6 +59,7 @@ use App\Services\User\UserService;
 use App\Services\User\UserServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingService;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
+use App\Services\WhatsApp\MetaWhatsAppCloudProvider;
 use Illuminate\Support\ServiceProvider;
 
 class DomainServiceProvider extends ServiceProvider
@@ -74,6 +80,9 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(MenuCatalogServiceInterface::class, MenuCatalogService::class);
         $this->app->bind(MenuCategoryServiceInterface::class, MenuCategoryService::class);
         $this->app->bind(MenuItemServiceInterface::class, MenuItemService::class);
+        $this->app->bind(CustomerNotificationDispatcherInterface::class, CustomerNotificationDispatcher::class);
+        $this->app->bind(StaffNotificationDispatcherInterface::class, StaffNotificationDispatcher::class);
+        $this->app->bind(WhatsAppNotificationProviderInterface::class, MetaWhatsAppCloudProvider::class);
         $this->app->bind(OrderServiceInterface::class, OrderService::class);
         $this->app->bind(ProductCatalogServiceInterface::class, ProductCatalogService::class);
         $this->app->bind(ProductCategoryServiceInterface::class, ProductCategoryService::class);

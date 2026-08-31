@@ -7,6 +7,10 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
+use App\Events\Order\OrderPaymentProofReceived;
+use App\Events\Order\OrderPaymentProofRejected;
+use App\Events\Order\OrderPlaced;
+use App\Events\Order\OrderStatusChanged;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -101,12 +105,16 @@ class OrderService implements OrderServiceInterface
                 'notes' => 'Order created.',
             ]);
 
-            return $order->fresh([
+            $order = $order->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
             ]);
+
+            OrderPlaced::dispatch($order);
+
+            return $order;
         });
     }
 
@@ -170,12 +178,21 @@ class OrderService implements OrderServiceInterface
                 'notes' => $data->getNotes(),
             ]);
 
-            return $order->fresh([
+            $order = $order->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
             ]);
+
+            OrderStatusChanged::dispatch(
+                $order,
+                $currentStatus,
+                $nextStatus,
+                $data->getNotes(),
+            );
+
+            return $order;
         });
     }
 
@@ -193,6 +210,9 @@ class OrderService implements OrderServiceInterface
             ]);
         }
 
+        $isResubmission = $order->hasPaymentProof()
+            || $order->payment_status === PaymentStatus::Rejected;
+
         $extension = strtolower((string) $file->getClientOriginalExtension());
         $safeExtension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) ? $extension : 'jpg';
         $filename = Str::uuid()->toString().'.'.$safeExtension;
@@ -207,7 +227,7 @@ class OrderService implements OrderServiceInterface
 
         $order->clearPaymentProofFiles();
 
-        return $this->orders->update($order, [
+        $order = $this->orders->update($order, [
             'payment_proof_path' => $path,
             'payment_proof_disk' => 'local',
             'payment_proof_mime' => $file->getMimeType(),
@@ -216,9 +236,14 @@ class OrderService implements OrderServiceInterface
             'payment_status' => PaymentStatus::AwaitingReview->value,
             'payment_proof_rejection_notes' => null,
         ])->fresh([
+            'customer',
             'items',
             'statusHistory.changedBy',
         ]);
+
+        OrderPaymentProofReceived::dispatch($order, $isResubmission);
+
+        return $order;
     }
 
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order
@@ -242,9 +267,13 @@ class OrderService implements OrderServiceInterface
         }
 
         return DB::transaction(function () use ($order, $actor, $notes): Order {
+            $customerFacingReason = filled($notes)
+                ? trim($notes)
+                : 'Please upload a clearer payment screenshot.';
+
             $order = $this->orders->update($order, [
                 'payment_status' => PaymentStatus::Rejected->value,
-                'payment_proof_rejection_notes' => filled($notes) ? trim($notes) : 'Please upload a clearer payment screenshot.',
+                'payment_proof_rejection_notes' => $customerFacingReason,
             ]);
 
             $this->orders->createStatusHistory($order, [
@@ -254,12 +283,16 @@ class OrderService implements OrderServiceInterface
                 'notes' => 'Payment proof replacement requested.'.(filled($notes) ? ' '.$notes : ''),
             ]);
 
-            return $order->fresh([
+            $order = $order->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
             ]);
+
+            OrderPaymentProofRejected::dispatch($order, $customerFacingReason);
+
+            return $order;
         });
     }
 

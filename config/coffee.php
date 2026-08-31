@@ -9,7 +9,8 @@ return [
         'support_email' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
     ],
     'pwa' => [
-        'url' => env('COFFEE_PWA_URL', env('APP_URL', 'http://localhost')),
+        // Prefer CUSTOMER_APP_URL; COFFEE_PWA_URL remains supported for existing deploys.
+        'url' => env('CUSTOMER_APP_URL', env('COFFEE_PWA_URL', env('APP_URL', 'http://localhost'))),
     ],
     'checkout' => [
         'session_token_key' => 'customer_checkout.token',

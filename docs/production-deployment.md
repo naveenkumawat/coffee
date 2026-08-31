@@ -54,13 +54,38 @@ CORS_ALLOWED_ORIGINS=https://app.example.com
 
 FILESYSTEM_DISK=local       # private payment proofs
 COFFEE_MEDIA_DISK=public
+CUSTOMER_APP_URL=https://app.example.com
 COFFEE_PWA_URL=https://app.example.com
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=orders@example.com
+MAIL_FROM_NAME="The88Coffees"
 
 TRUSTED_PROXIES=*           # or comma-separated proxy IPs behind a load balancer
 
-QUEUE_CONNECTION=database   # listeners are sync today; keep for future jobs
+QUEUE_CONNECTION=database   # WhatsApp jobs + queued mail; run a worker in production
 CACHE_STORE=database
 LOG_LEVEL=warning
+
+# WhatsApp Cloud API — keep disabled until Meta templates/credentials are ready.
+WHATSAPP_NOTIFICATIONS_ENABLED=false
+WHATSAPP_API_VERSION=v21.0
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_BUSINESS_ACCOUNT_ID=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_TEMPLATE_LANGUAGE=en
+WHATSAPP_SEND_PREPARING=false
+# Set approved template names only (never invent):
+# WHATSAPP_TEMPLATE_ORDER_PLACED=...
+# WHATSAPP_TEMPLATE_PAYMENT_CONFIRMED=...
+# WHATSAPP_TEMPLATE_ORDER_READY_PICKUP=...
+# WHATSAPP_TEMPLATE_ORDER_READY_DELIVERY=...
+# (see .env.example for the full mapping list)
 ```
 
 Optional Owner bootstrap (not demo catalog):
@@ -71,7 +96,7 @@ ADMIN_EMAIL=owner@example.com
 ADMIN_PASSWORD=...          # set only in server .env — never commit
 ```
 
-Never commit secrets. Prefer Website Settings for café UPI/contact content; keep `COFFEE_*` as infrastructure fallbacks.
+Never commit secrets. Prefer Website Settings for café UPI/contact content; keep `COFFEE_*` as infrastructure fallbacks. Meta WhatsApp credentials (`WHATSAPP_*`) are infrastructure only — never put access tokens in Website Settings or public APIs.
 
 ---
 
@@ -192,13 +217,18 @@ CSRF continues to derive from `VITE_API_BASE_URL` origin → `/sanctum/csrf-cook
 
 ## I. Queue / scheduler
 
-**Queue:** domain events (e.g. menu cache flush) run synchronously today. No Supervisor worker is required for launch. Keep `QUEUE_CONNECTION=database` ready; if you add `ShouldQueue` jobs later, run:
+**Queue:** transactional email notifications and WhatsApp Cloud API sends are queue-ready (`ShouldQueue` notifications + `SendCustomerWhatsAppMessage`). With `QUEUE_CONNECTION=database`, run a worker in production once WhatsApp or queued mail is enabled:
 
 ```bash
 php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 # after each deploy: php artisan queue:restart
 ```
 
+Keep `WHATSAPP_NOTIFICATIONS_ENABLED=false` until Meta credentials and approved templates are configured.
+
+**Live Meta setup (31 Aug 2026):** not completed — no `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` / approved `WHATSAPP_TEMPLATE_*` names / test destination were available in this environment. Do not invent IDs, tokens, or template names. Checklist live items stay unchecked until a controlled provider test and workflow verification succeed on a real WABA.
+
+**Webhook delivery tracking:** deferred. Successful Cloud API responses are logged as submitted/`sent` with `provider_message_id`; do not treat that as delivered/read until Meta webhooks are implemented later.
 **Scheduler:** no application schedules are registered yet (`routes/console.php` has only the sample `inspire` command). Optional cron (harmless no-op until jobs exist):
 
 ```cron

@@ -20,6 +20,7 @@ use App\Http\Controllers\Administrator\SocialLinkController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Administrator\WebsiteSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Internal\StaffNotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -75,6 +76,11 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
     Route::post('orders/{order}/payment-proof/reject', [OrderController::class, 'rejectPaymentProof'])->name('orders.payment-proof.reject');
     Route::get('orders/{order}/payment-proof', [OrderController::class, 'paymentProof'])->name('orders.payment-proof.show');
+
+    Route::post('notifications/read-all', [StaffNotificationController::class, 'markAllRead'])
+        ->name('notifications.read-all');
+    Route::post('notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])
+        ->name('notifications.read');
 
     Route::resource('ingredients/categories', IngredientCategoryController::class)
         ->parameters(['categories' => 'ingredient_category'])

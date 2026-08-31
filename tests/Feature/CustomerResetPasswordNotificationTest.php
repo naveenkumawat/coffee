@@ -30,15 +30,12 @@ class CustomerResetPasswordNotificationTest extends TestCase
             $customer,
             CustomerResetPasswordNotification::class,
             function (CustomerResetPasswordNotification $notification, array $channels) use ($customer): bool {
-                $mail = $notification->toMail($customer)->toArray();
-                $query = [];
-
-                parse_str((string) parse_url((string) $mail['actionUrl'], PHP_URL_QUERY), $query);
+                $html = $notification->toMail($customer)->render();
 
                 $this->assertSame(['mail'], $channels);
-                $this->assertSame('https://pwa.example.test/reset-password', strtok((string) $mail['actionUrl'], '?'));
-                $this->assertSame('sample-token', $query['token'] ?? null);
-                $this->assertSame($customer->email, $query['email'] ?? null);
+                $this->assertStringContainsString('https://pwa.example.test/reset-password?', $html);
+                $this->assertStringContainsString('token=sample-token', $html);
+                $this->assertStringContainsString('email=reset.customer%40example.test', $html);
 
                 return true;
             }

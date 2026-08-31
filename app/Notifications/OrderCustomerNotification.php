@@ -1,0 +1,207 @@
+<?php
+
+namespace App\Notifications;
+
+use App\Enums\CustomerNotificationType;
+use App\Enums\OrderFulfilmentMethod;
+use App\Models\Order;
+use App\Notifications\Concerns\BuildsCustomerMail;
+use App\Support\CustomerAppUrl;
+use App\Support\CustomerEmailBrand;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
+
+class OrderCustomerNotification extends Notification implements ShouldQueue
+{
+    use BuildsCustomerMail;
+    use Queueable;
+    use SerializesModels;
+
+    public function __construct(
+        public Order $order,
+        public CustomerNotificationType $type,
+        public ?string $customerFacingReason = null,
+    ) {}
+
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $this->order->loadMissing('items');
+        $brand = CustomerEmailBrand::snapshot();
+        $name = $this->order->customer_name ?: ($notifiable->name ?? null);
+        $orderUrl = CustomerAppUrl::order($this->order->getKey());
+        $content = $this->content($brand);
+
+        return $this->customerMail(
+            subject: $content['subject'],
+            greeting: $this->greetingFor(is_string($name) ? $name : null),
+            introLines: $content['intro'],
+            actionText: $content['actionText'],
+            actionUrl: $orderUrl,
+            outroLines: $content['outro'],
+            extra: [
+                'order' => $this->order,
+                'statusLabel' => $content['statusLabel'],
+                'statusTone' => $content['statusTone'],
+            ],
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $brand
+     * @return array{subject: string, intro: list<string>, outro: list<string>, actionText: string, statusLabel: string, statusTone: string}
+     */
+    protected function content(array $brand): array
+    {
+        $number = (string) $this->order->order_number;
+        $isDelivery = $this->order->fulfilment_method === OrderFulfilmentMethod::Delivery;
+        $readyLabel = $isDelivery ? 'Ready for Delivery' : 'Ready for Pickup';
+        $business = (string) $brand['business_name'];
+
+        return match ($this->type) {
+            CustomerNotificationType::OrderPlaced => [
+                'subject' => 'Order received — #'.$number,
+                'statusLabel' => 'Pending Payment',
+                'statusTone' => 'warning',
+                'intro' => [
+                    'We received your order at '.$business.'.',
+                    'Please complete payment and upload your payment screenshot from the order page.',
+                ],
+                'actionText' => 'View Order & Pay',
+                'outro' => [
+                    'Your order stays in Pending Payment until the café confirms your transfer.',
+                ],
+            ],
+            CustomerNotificationType::PaymentProofReceived => [
+                'subject' => 'Payment confirmation received — #'.$number,
+                'statusLabel' => 'Pending Payment',
+                'statusTone' => 'warning',
+                'intro' => [
+                    'We received your payment confirmation for order #'.$number.'.',
+                    'Your order remains Pending Payment while the café reviews your screenshot.',
+                ],
+                'actionText' => 'View Order',
+                'outro' => [
+                    'You will get another email when payment is confirmed.',
+                ],
+            ],
+            CustomerNotificationType::PaymentConfirmed => [
+                'subject' => 'Payment confirmed — #'.$number,
+                'statusLabel' => 'Payment Confirmed',
+                'statusTone' => 'success',
+                'intro' => [
+                    'Payment for order #'.$number.' has been confirmed.',
+                    'The café will accept and prepare your order next.',
+                ],
+                'actionText' => 'Track Order',
+                'outro' => [],
+            ],
+            CustomerNotificationType::PaymentProofRejected => [
+                'subject' => 'Please re-upload payment proof — #'.$number,
+                'statusLabel' => 'Payment proof needs replacement',
+                'statusTone' => 'danger',
+                'intro' => array_values(array_filter([
+                    'We need a clearer payment screenshot for order #'.$number.'.',
+                    filled($this->customerFacingReason) ? $this->customerFacingReason : null,
+                    'Please upload a replacement proof from your order page.',
+                ])),
+                'actionText' => 'Upload Payment Proof',
+                'outro' => [],
+            ],
+            CustomerNotificationType::OrderAccepted => [
+                'subject' => 'Order accepted — #'.$number,
+                'statusLabel' => 'Accepted',
+                'statusTone' => 'success',
+                'intro' => [
+                    $business.' has accepted order #'.$number.'.',
+                    'Next up: your order will move to Preparing.',
+                ],
+                'actionText' => 'Track Order',
+                'outro' => [],
+            ],
+            CustomerNotificationType::OrderPreparing => [
+                'subject' => 'Your order is being prepared — #'.$number,
+                'statusLabel' => 'Preparing',
+                'statusTone' => 'neutral',
+                'intro' => [
+                    'Your order #'.$number.' is being prepared now.',
+                ],
+                'actionText' => 'Track Order',
+                'outro' => [],
+            ],
+            CustomerNotificationType::OrderReady => [
+                'subject' => $isDelivery
+                    ? 'Your order is ready for delivery — #'.$number
+                    : 'Your order is ready for pickup — #'.$number,
+                'statusLabel' => $readyLabel,
+                'statusTone' => 'success',
+                'intro' => $isDelivery
+                    ? array_values(array_filter([
+                        'Order #'.$number.' is ready for delivery.',
+                        filled($brand['delivery_disclaimer']) ? (string) $brand['delivery_disclaimer'] : null,
+                    ]))
+                    : array_values(array_filter([
+                        'Order #'.$number.' is ready for pickup.',
+                        filled($brand['address']) ? 'Pickup address: '.$brand['address'] : null,
+                    ])),
+                'actionText' => 'View Order',
+                'outro' => array_values(array_filter([
+                    filled($brand['whatsapp']) ? 'WhatsApp: '.$brand['whatsapp'] : null,
+                    filled($brand['phone']) ? 'Phone: '.$brand['phone'] : null,
+                ])),
+            ],
+            CustomerNotificationType::OrderCompleted => [
+                'subject' => 'Thank you — order #'.$number.' completed',
+                'statusLabel' => 'Completed',
+                'statusTone' => 'success',
+                'intro' => [
+                    'Order #'.$number.' is complete. Thank you for choosing '.$business.'.',
+                    'You can open the order to review your items and leave a rating when available.',
+                ],
+                'actionText' => 'View Order',
+                'outro' => [],
+            ],
+            CustomerNotificationType::OrderCancelled => [
+                'subject' => 'Order cancelled — #'.$number,
+                'statusLabel' => 'Cancelled',
+                'statusTone' => 'danger',
+                'intro' => array_values(array_filter([
+                    'Order #'.$number.' has been cancelled.',
+                    filled($this->customerFacingReason) ? $this->customerFacingReason : null,
+                ])),
+                'actionText' => 'View Order',
+                'outro' => [
+                    'If you have questions, contact the café using the details below.',
+                ],
+            ],
+            CustomerNotificationType::OrderRejected => [
+                'subject' => 'Order rejected — #'.$number,
+                'statusLabel' => 'Rejected',
+                'statusTone' => 'danger',
+                'intro' => array_values(array_filter([
+                    'Order #'.$number.' could not be fulfilled and was rejected.',
+                    filled($this->customerFacingReason) ? $this->customerFacingReason : null,
+                ])),
+                'actionText' => 'View Order',
+                'outro' => [
+                    'If you have questions, contact the café using the details below.',
+                ],
+            ],
+            default => [
+                'subject' => $business.' order update — #'.$number,
+                'statusLabel' => $this->order->customerStatusLabel(),
+                'statusTone' => 'neutral',
+                'intro' => ['There is an update for order #'.$number.'.'],
+                'actionText' => 'View Order',
+                'outro' => [],
+            ],
+        };
+    }
+}

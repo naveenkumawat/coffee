@@ -45,7 +45,9 @@ Status: Partial
 - [x] Customer PWA shell finalized
 - [x] Customer PWA scope and theme planning documentation completed
 - [ ] Queue-backed workflows implemented
-- [ ] Notification infrastructure implemented
+- [x] Customer transactional email notification infrastructure implemented (account + order/payment lifecycle; queue-ready; staff/internal alerts still pending)
+- [x] Customer transactional WhatsApp notification channel implemented (Meta Cloud API; feature-flagged; shares E1 dispatcher/logs)
+- [x] Staff operational notifications implemented (separate StaffNotificationDispatcher; in-app bell + selective email)
 - [ ] Audit trail infrastructure implemented
 - [ ] Phase dependency tracker maintained in code-facing documentation
 
@@ -370,7 +372,10 @@ Status: Partial
 
 ### Notifications and Search
 
-- [ ] Internal notification system implemented
+- [x] Customer transactional email notifications implemented (welcome, password reset/changed, order/payment/status lifecycle)
+- [x] Customer transactional WhatsApp notifications implemented (order/payment lifecycle via Meta Cloud API; password flows remain email-only; preparing off by default)
+- [x] Internal/staff operational notifications implemented (Administrator/Barista in-app + high-value email; staff WhatsApp deferred)
+- [x] Inventory/refill operational alerts implemented (stock state transitions + refill workflow via StaffNotificationDispatcher)
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 
@@ -393,7 +398,7 @@ Status: Partial
 Status: Pending
 
 - [ ] Online payment gateway integration implemented
-- [ ] Automated WhatsApp notifications implemented
+- [x] Automated WhatsApp transactional notifications implemented (Cloud API; credentials/templates still required in production)
 - [ ] OTP authentication implemented
 - [ ] QR menu implemented
 - [ ] Table ordering implemented

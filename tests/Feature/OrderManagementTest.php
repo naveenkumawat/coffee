@@ -244,22 +244,36 @@ class OrderManagementTest extends TestCase
             'status' => OrderStatus::Cancelled->value,
         ]);
 
-        $this->actingAs($manager, 'admin')
+        $adminIndex = $this->actingAs($manager, 'admin')
             ->get(route('administrator.orders.index', [
                 'search' => 'Vanilla',
                 'status' => OrderStatus::Accepted->value,
                 'customer_id' => $customer->id,
                 'assigned_barista_id' => $barista->id,
             ]))
-            ->assertOk()
-            ->assertSee(route('administrator.orders.show', $matchingOrder), false)
-            ->assertDontSee(route('administrator.orders.show', $hiddenOrder), false);
+            ->assertOk();
 
-        $this->actingAs($barista, 'admin')
+        $this->assertMatchesRegularExpression(
+            '/<tbody[^>]*>.*'.preg_quote($matchingOrder->order_number, '/').'.*<\/tbody>/s',
+            $adminIndex->getContent(),
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/<tbody[^>]*>.*'.preg_quote($hiddenOrder->order_number, '/').'.*<\/tbody>/s',
+            $adminIndex->getContent(),
+        );
+
+        $baristaIndex = $this->actingAs($barista, 'admin')
             ->get(route('barista.orders.index'))
-            ->assertOk()
-            ->assertSee(route('barista.orders.show', $matchingOrder), false)
-            ->assertDontSee(route('barista.orders.show', $hiddenOrder), false);
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression(
+            '/<tbody[^>]*>.*'.preg_quote($matchingOrder->order_number, '/').'.*<\/tbody>/s',
+            $baristaIndex->getContent(),
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/<tbody[^>]*>.*'.preg_quote($hiddenOrder->order_number, '/').'.*<\/tbody>/s',
+            $baristaIndex->getContent(),
+        );
     }
 
     public function test_customer_and_wrong_role_access_to_internal_order_routes_is_blocked(): void

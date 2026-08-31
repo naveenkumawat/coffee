@@ -4,6 +4,7 @@ namespace App\Services\Inventory;
 
 use App\Enums\IngredientUnit;
 use App\Enums\InventoryTransactionType;
+use App\Events\Inventory\IngredientStockStatusChanged;
 use App\Models\Ingredient;
 use App\Models\InventoryTransaction;
 use App\Repositories\Inventory\InventoryRepositoryInterface;
@@ -62,7 +63,21 @@ class InventoryService implements InventoryServiceInterface
             $this->inventory->updateIngredientStock($ingredient, $stockAfter);
             $this->refillRequests->completeFromInventoryTransaction($transaction);
 
-            return $transaction->fresh(['ingredient.brand', 'ingredient.category', 'createdBy']);
+            $transaction = $transaction->fresh(['ingredient.brand', 'ingredient.category', 'createdBy']);
+
+            $fromStatus = $ingredient->stockStatusFor($stockBefore);
+            $toStatus = $ingredient->stockStatusFor($stockAfter);
+
+            if ($fromStatus !== $toStatus) {
+                IngredientStockStatusChanged::dispatch(
+                    $transaction->ingredient ?? $ingredient->fresh(),
+                    $fromStatus,
+                    $toStatus,
+                    $transaction,
+                );
+            }
+
+            return $transaction;
         });
     }
 

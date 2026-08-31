@@ -104,7 +104,13 @@ Full runbook: **`docs/production-deployment.md`**.
 | `APP_ENV=production` / `APP_DEBUG=false` | Laravel | Never debug in production |
 | `APP_URL` | Laravel | HTTPS backend origin |
 | `VITE_API_BASE_URL` | PWA build | Absolute `https://…/api/v1` baked at build time; use `VITE_ENFORCE_PRODUCTION_API=1` for real releases |
-| `COFFEE_PWA_URL` | Laravel | Public HTTPS PWA origin (reset links, customer URLs) |
+| `CUSTOMER_APP_URL` | Laravel | Public HTTPS PWA origin for email CTAs / password reset (preferred) |
+| `COFFEE_PWA_URL` | Laravel | Fallback PWA origin if `CUSTOMER_APP_URL` unset |
+| `MAIL_MAILER` / `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `MAIL_ENCRYPTION` | Laravel | SMTP (or other Laravel mailer) — never store in Website Settings |
+| `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | Laravel | From identity for transactional mail |
+| `WHATSAPP_NOTIFICATIONS_ENABLED` | Laravel | Default `false`; enable only after Meta setup |
+| `WHATSAPP_PHONE_NUMBER_ID` / `WHATSAPP_ACCESS_TOKEN` / `WHATSAPP_API_VERSION` | Laravel | Meta Cloud API infrastructure — never Website Settings |
+| `WHATSAPP_TEMPLATE_*` / `WHATSAPP_TEMPLATE_LANGUAGE` | Laravel | Approved template name mappings |
 | `SANCTUM_STATEFUL_DOMAINS` | Laravel | PWA host(s), no scheme |
 | `CORS_ALLOWED_ORIGINS` | Laravel | Full PWA origin(s) with scheme — never `*` |
 | `SESSION_DOMAIN` | Laravel | Shared parent cookie domain when applicable; `null` on single-host setups |
@@ -131,6 +137,70 @@ Keep customer Blade routes enabled until the live smoke checklist below passes. 
 - DB: `php artisan migrate --force` only — never `migrate:fresh` on production
 - Backups: MySQL + `storage/` before migrations; restore procedure in runbook
 
+## Transactional email checklist
+
+- [ ] `MAIL_FROM_ADDRESS` configured
+- [ ] `MAIL_FROM_NAME` configured
+- [ ] SMTP credentials configured (`MAIL_MAILER` / host / port / username / password / encryption)
+- [ ] `CUSTOMER_APP_URL` configured (HTTPS PWA origin; no localhost/LAN in production)
+- [ ] Welcome email tested
+- [ ] Password reset tested
+- [ ] Order confirmation tested
+- [ ] Payment received / confirmed tested
+- [ ] Ready email tested (pickup vs delivery wording)
+- [ ] Completed email tested
+- [ ] Mobile email rendering checked
+- [ ] SPF configured (DNS)
+- [ ] DKIM configured (DNS)
+- [ ] DMARC reviewed/configured (DNS)
+
+## Transactional WhatsApp checklist (Meta Cloud API)
+
+**Live Meta connection status (31 Aug 2026): STOPPED — not configured.**  
+Local `.env` has **no** `WHATSAPP_*` values. Cloud API credentials, WABA/phone number IDs, approved template names, and an approved test destination were not provided. Outbound remains `WHATSAPP_NOTIFICATIONS_ENABLED=false`. Unit/feature tests with `Http::fake()` do **not** satisfy these live checks.
+
+- [ ] Meta Business Portfolio / account ready
+- [ ] WhatsApp Business Account (WABA) ready
+- [ ] Sending phone number ready
+- [ ] Phone number ID configured (`WHATSAPP_PHONE_NUMBER_ID`)
+- [ ] WABA ID configured (`WHATSAPP_BUSINESS_ACCOUNT_ID`)
+- [ ] Permanent/system-user access token configured (`WHATSAPP_ACCESS_TOKEN`) — never commit; do not use temporary tokens in production
+- [ ] Required templates approved in Meta (order placed, proof received, payment confirmed, proof rejected, accepted, ready pickup, ready delivery, completed, cancelled/rejected)
+- [ ] Template mappings configured (`WHATSAPP_TEMPLATE_*`) to **approved** names only
+- [ ] Template language configured (`WHATSAPP_TEMPLATE_LANGUAGE`) to match approved language
+- [ ] Controlled provider test sent (Graph auth + template accepted + `provider_message_id` logged)
+- [ ] Order placed WhatsApp received (approved test number only)
+- [ ] Payment proof received WhatsApp received (wording does **not** claim payment confirmed)
+- [ ] Payment confirmed WhatsApp received
+- [ ] Order accepted WhatsApp received
+- [ ] Pickup-ready WhatsApp received (`order_ready_pickup`)
+- [ ] Delivery-ready WhatsApp received (`order_ready_delivery`)
+- [ ] Completed WhatsApp received
+- [ ] Cancellation/rejection WhatsApp received
+- [ ] Idempotency verified (`unique_key` + `channel=whatsapp`; no duplicate after success)
+- [ ] Failure isolation tested (order/email OK; WhatsApp failed/skipped; no secrets in logs)
+- [ ] WhatsApp notifications enabled (`WHATSAPP_NOTIFICATIONS_ENABLED=true`) only after the above
+- [ ] Queue worker running for `SendCustomerWhatsAppMessage`
+- [ ] Confirm Website Settings café WhatsApp (public contact) remains separate from API credentials
+
+**Later (not required for basic Cloud API send):** Meta delivery-status webhooks (`sent` / `delivered` / `read` / `failed`). Application currently records API acceptance as submitted/`sent`, not customer “delivered”.
+
+**When credentials exist**, put them only in server `.env` (never docs/git), keep enabled=false until a controlled provider test against an approved owner/test WhatsApp number succeeds, then enable and clear config cache (`php artisan config:clear` / `config:cache` as appropriate).
+
+Body variable order expected by the app (match Meta template placeholders `{{1}}`…):
+
+| Mapping key | Body params (in order) |
+| --- | --- |
+| `order_placed` | name, order number, total, fulfilment, business |
+| `payment_proof_received` | name, order number, business |
+| `payment_confirmed` | name, order number, business |
+| `payment_proof_rejected` | name, order number, reason, business |
+| `order_accepted` | name, order number, business |
+| `order_ready_pickup` | name, order number, pickup address, business |
+| `order_ready_delivery` | name, order number, delivery address summary, business |
+| `order_completed` | name, order number, order URL, business |
+| `order_cancelled` | name, order number, status label, reason, business |
+
 ## Production smoke-test checklist
 
 1. Build PWA with production `VITE_API_BASE_URL`; deploy `dist/`; confirm `/manifest.webmanifest`, icons, `/sw.js` MIME types.
@@ -138,7 +208,7 @@ Keep customer Blade routes enabled until the live smoke checklist below passes. 
 3. Open PWA fresh → browse catalog → multi-select categories/flavours.
 4. Guest add-to-cart → register/login → guest-cart merge → authenticated cart.
 5. Checkout Takeaway + Delivery; manual payment details; payment proof upload.
-6. Admin: view/confirm proof → accept order; Barista: prepare → Ready → Completed.
+6. Admin: view/confirm proof → accept order; Barista: prepare → Ready → Completed. Confirm staff notification bell for new order / proof review (Administrator) and payment-confirmed (Barista).
 7. Customer order tracking + rating/review; logout/login again; PWA refresh/reopen + update banner.
 8. Verify images, social/footer links, About/Visit/FAQ/Terms/Privacy, dynamic homepage sections.
 9. Force offline: shell messaging; cart/checkout/orders do not succeed from cache.
@@ -150,6 +220,7 @@ Keep customer Blade routes enabled until the live smoke checklist below passes. 
 - **Real café data entry** — track in [`docs/launch-data-todo.md`](launch-data-todo.md) (brand/contact, payment, CMS, catalog, media, homepage).
 - Real product photography (components ready; assets not final).
 - Live production HTTPS cutover + cookie domain validation on the real hosts (environment-specific) — D4 blocked until hosts/access exist.
+- Live Meta WhatsApp Cloud API connection — blocked until WABA credentials, approved templates, mappings, and an approved test destination are provided (`WHATSAPP_NOTIFICATIONS_ENABLED` stays false).
 - Optional later UX (explicitly not in C6): pull-to-refresh, “I’m on my way”, offers, reorder, quick view.
 - Device lab sign-off on physical iOS/Android install flows still recommended before Blade retirement.
 

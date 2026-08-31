@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
+use App\Events\Customer\CustomerRegistered;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\CustomerRegisterRequest;
 use App\Parsers\User\UserParserInterface;
@@ -35,6 +36,8 @@ class CustomerRegisteredUserController extends Controller
             $this->parser->getTransferFromArrayData($data)->toArray()
             + ['email_verified_at' => now(), 'last_login_at' => now()],
         ));
+
+        CustomerRegistered::dispatch($user);
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();

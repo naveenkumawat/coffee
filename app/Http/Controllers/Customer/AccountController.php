@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\Customer\CustomerPasswordChanged;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Customer\CustomerPasswordUpdateRequest;
 use App\Http\Requests\Customer\CustomerProfileUpdateRequest;
@@ -50,6 +51,8 @@ class AccountController extends Controller
                 'password' => (string) $request->validated('password'),
             ]);
         });
+
+        CustomerPasswordChanged::dispatch($customer->fresh());
 
         return redirect()->route('customer.account.show')->with('status', 'Password updated successfully.');
     }
