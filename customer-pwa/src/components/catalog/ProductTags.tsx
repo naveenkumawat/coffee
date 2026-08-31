@@ -1,4 +1,12 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { ProductTag as ProductTagType } from '../../types/catalog';
 
 interface ProductTagsProps {
@@ -19,12 +27,49 @@ const STYLE_CLASS: Record<string, string> = {
   muted: 'is-style-muted',
 };
 
+const POPOVER_EVENT = 'product-tags-popover-open';
+
 function styleClass(style: string | undefined): string {
   if (!style) {
     return 'is-style-muted';
   }
 
   return STYLE_CLASS[style] ?? 'is-style-muted';
+}
+
+interface PopoverPosition {
+  top: number;
+  left: number;
+}
+
+function clampPopoverPosition(
+  anchor: DOMRect,
+  width: number,
+  height: number,
+): PopoverPosition {
+  const margin = 8;
+  const gap = 6;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let top = anchor.top - height - gap;
+  if (top < margin) {
+    top = anchor.bottom + gap;
+  }
+  if (top + height > viewportHeight - margin) {
+    top = Math.max(margin, viewportHeight - height - margin);
+  }
+
+  // Prefer aligning to the badge’s right edge (inward from the right).
+  let left = anchor.right - width;
+  if (left < margin) {
+    left = margin;
+  }
+  if (left + width > viewportWidth - margin) {
+    left = Math.max(margin, viewportWidth - width - margin);
+  }
+
+  return { top, left };
 }
 
 /**
@@ -39,11 +84,16 @@ export function ProductTags({
   showCustomizable = false,
   isCustomizable = false,
 }: ProductTagsProps) {
-  const listId = useId();
+  const popoverId = useId();
+  const instanceId = useId();
   const railRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(false);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
   const [fitCount, setFitCount] = useState(maxVisible);
+  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
+  const [positionReady, setPositionReady] = useState(false);
 
   const marketingTags = useMemo(
     () => (tags ?? []).filter((tag) => Boolean(tag.key) && Boolean(tag.label)),
@@ -66,14 +116,13 @@ export function ProductTags({
   const isCompact = mode === 'compact';
 
   useLayoutEffect(() => {
-    setExpanded(false);
+    setOpen(false);
+    setPositionReady(false);
   }, [tagSignature]);
 
   useLayoutEffect(() => {
-    if (!isCompact || allTags.length === 0 || expanded) {
-      if (!isCompact || allTags.length === 0) {
-        setFitCount(allTags.length);
-      }
+    if (!isCompact || allTags.length === 0) {
+      setFitCount(allTags.length);
       return;
     }
 
@@ -134,22 +183,101 @@ export function ProductTags({
     return () => {
       observer.disconnect();
     };
-  }, [allTags.length, expanded, isCompact, maxVisible, tagSignature]);
+  }, [allTags.length, isCompact, maxVisible, tagSignature]);
+
+  const updatePosition = (): void => {
+    const anchor = moreButtonRef.current;
+    const popover = popoverRef.current;
+    if (!anchor || !popover) {
+      return;
+    }
+
+    setPosition(clampPopoverPosition(anchor.getBoundingClientRect(), popover.offsetWidth, popover.offsetHeight));
+  };
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPositionReady(false);
+      return;
+    }
+
+    updatePosition();
+    setPositionReady(true);
+  }, [open, tagSignature]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(POPOVER_EVENT, {
+        detail: { id: instanceId },
+      }),
+    );
+
+    const handlePeerOpen = (event: Event): void => {
+      const detail = (event as CustomEvent<{ id: string }>).detail;
+      if (detail?.id !== instanceId) {
+        setOpen(false);
+      }
+    };
+
+    const handlePointerDown = (event: PointerEvent): void => {
+      const target = event.target as Node | null;
+      if (!target) {
+        return;
+      }
+
+      if (moreButtonRef.current?.contains(target) || popoverRef.current?.contains(target)) {
+        return;
+      }
+
+      setOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        moreButtonRef.current?.focus();
+      }
+    };
+
+    const handleDismissOnScroll = (): void => {
+      setOpen(false);
+    };
+
+    const handleResize = (): void => {
+      updatePosition();
+    };
+
+    window.addEventListener(POPOVER_EVENT, handlePeerOpen);
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleDismissOnScroll, true);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener(POPOVER_EVENT, handlePeerOpen);
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleDismissOnScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [instanceId, open]);
 
   if (allTags.length === 0) {
     return null;
   }
 
-  const collapsedVisibleCount = Math.min(fitCount, maxVisible, allTags.length);
-  const hiddenCount = Math.max(0, allTags.length - collapsedVisibleCount);
-  const visible = isCompact && !expanded ? allTags.slice(0, collapsedVisibleCount) : allTags;
-  const showToggle = isCompact && hiddenCount > 0;
+  const visibleCount = isCompact ? Math.min(fitCount, maxVisible, allTags.length) : allTags.length;
+  const visible = allTags.slice(0, visibleCount);
+  const hidden = isCompact ? allTags.slice(visibleCount) : [];
+  const showToggle = isCompact && hidden.length > 0;
 
   return (
-    <div
-      className={`product-tags-shell ${expanded ? 'is-expanded' : ''} ${className}`.trim()}
-    >
-      {isCompact && !expanded ? (
+    <div className={`product-tags-shell ${className}`.trim()}>
+      {isCompact ? (
         <div ref={measureRef} className="product-tags product-tags-measure" aria-hidden="true">
           {allTags.map((tag) => (
             <span key={tag.key} data-tag-measure className={`product-tag ${styleClass(tag.style)}`}>
@@ -164,8 +292,7 @@ export function ProductTags({
 
       <div
         ref={railRef}
-        id={listId}
-        className={`product-tags product-tags-${mode} ${expanded ? 'is-expanded' : ''}`.trim()}
+        className={`product-tags product-tags-${mode}`}
         aria-label="Product tags"
       >
         {visible.map((tag) => (
@@ -176,25 +303,48 @@ export function ProductTags({
 
         {showToggle ? (
           <button
+            ref={moreButtonRef}
             type="button"
-            className={`product-tag product-tag-more ${expanded ? 'is-collapse' : ''}`.trim()}
-            aria-expanded={expanded}
-            aria-controls={listId}
-            aria-label={
-              expanded
-                ? `Hide ${hiddenCount} extra tags`
-                : `Show ${hiddenCount} more tag${hiddenCount === 1 ? '' : 's'}`
-            }
+            className={`product-tag product-tag-more ${open ? 'is-open' : ''}`.trim()}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            aria-controls={popoverId}
+            aria-label={`Show ${hidden.length} more tag${hidden.length === 1 ? '' : 's'}`}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              setExpanded((open) => !open);
+              setOpen((current) => !current);
             }}
           >
-            {expanded ? 'Less' : `+${hiddenCount}`}
+            +{hidden.length}
           </button>
         ) : null}
       </div>
+
+      {open && showToggle
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              id={popoverId}
+              className={`product-tags-popover ${positionReady ? 'is-ready' : ''}`.trim()}
+              role="dialog"
+              aria-label={`${hidden.length} more product tag${hidden.length === 1 ? '' : 's'}`}
+              style={{ top: position.top, left: position.left }}
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <ul className="product-tags-popover-list" role="list">
+                {hidden.map((tag) => (
+                  <li key={tag.key} className={`product-tag ${styleClass(tag.style)}`}>
+                    {tag.label}
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

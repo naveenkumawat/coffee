@@ -783,12 +783,6 @@ a.category-pill {
   overflow: hidden;
 }
 
-.product-tags-compact.is-expanded {
-  flex-wrap: wrap;
-  overflow: visible;
-  row-gap: 0.28rem;
-}
-
 .product-tags-measure {
   position: absolute;
   left: 0;
@@ -865,18 +859,50 @@ a.category-pill {
   padding-inline: 0.4rem;
 }
 
-.product-tag-more.is-collapse {
-  background: color-mix(in srgb, var(--brand-primary) 16%, #fff);
-  color: var(--brand-primary-hover);
-  border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
-  text-transform: none;
-  letter-spacing: 0.01em;
-  font-weight: 700;
+.product-tag-more.is-open {
+  background: var(--brand-primary);
+  color: #fff;
 }
 
 .product-tag-more:focus-visible {
   outline: 2px solid var(--brand-primary);
   outline-offset: 2px;
+}
+
+.product-tags-popover {
+  position: fixed;
+  z-index: calc(var(--z-toast) + 1);
+  min-width: 7.5rem;
+  max-width: min(16rem, calc(100vw - 1rem));
+  padding: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 252, 248, 0.98);
+  box-shadow: var(--coffee-shadow-sm);
+  pointer-events: auto;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.product-tags-popover.is-ready {
+  visibility: visible;
+  opacity: 1;
+}
+
+.product-tags-popover-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.28rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-tags-popover-list .product-tag {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .detail-panel .product-tags,
@@ -3101,15 +3127,10 @@ textarea.coffee-input:focus {
 
 .product-card-tags-slot {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   min-height: 1.35rem;
   max-height: 1.35rem;
   overflow: hidden;
-}
-
-.product-card-tags-slot:has(.product-tags-shell.is-expanded) {
-  max-height: none;
-  overflow: visible;
 }
 
 .product-card-tags-slot .product-tags-shell,
@@ -3578,10 +3599,6 @@ textarea.coffee-input:focus {
   max-width: 100%;
   pointer-events: auto;
   overflow: hidden;
-}
-
-.product-card .product-tags-compact.is-expanded {
-  overflow: visible;
 }
 
 .product-card .product-tag {
