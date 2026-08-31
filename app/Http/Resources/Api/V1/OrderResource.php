@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Order;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -73,6 +74,7 @@ class OrderResource extends JsonResource
             'status_timeline' => OrderStatusHistoryResource::collection(
                 $order->statusHistory->each->setRelation('order', $order),
             ),
+            'invoice_available' => app(OrderInvoiceServiceInterface::class)->isAvailable($order),
         ];
     }
 }

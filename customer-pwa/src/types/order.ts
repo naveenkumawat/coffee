@@ -82,6 +82,7 @@ export interface Order {
   rejected_at: string | null;
   items: OrderItem[];
   status_timeline: OrderStatusTimelineItem[];
+  invoice_available?: boolean;
 }
 
 export type OrderStatusValue =

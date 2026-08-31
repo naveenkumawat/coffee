@@ -13,6 +13,9 @@
 @section('toolbar-actions')
     <x-internal.button-group :items="[
         ['label' => 'Back', 'url' => route('administrator.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+        ['label' => 'Print Invoice', 'url' => route('administrator.orders.invoice.print', $order), 'variant' => 'dark', 'icon' => 'ki-printer', 'target' => '_blank'],
+        ['label' => 'Print Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'variant' => 'dark', 'icon' => 'ki-printer', 'target' => '_blank'],
+        ['label' => 'Download PDF', 'url' => route('administrator.orders.invoice.pdf', $order), 'variant' => 'dark', 'icon' => 'ki-file-down'],
     ]" />
 @endsection
 

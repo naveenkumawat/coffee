@@ -77,6 +77,9 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
     Route::post('orders/{order}/payment-proof/reject', [OrderController::class, 'rejectPaymentProof'])->name('orders.payment-proof.reject');
     Route::get('orders/{order}/payment-proof', [OrderController::class, 'paymentProof'])->name('orders.payment-proof.show');
+    Route::get('orders/{order}/invoice/pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice.pdf');
+    Route::get('orders/{order}/invoice/print', [OrderController::class, 'printInvoice'])->name('orders.invoice.print');
+    Route::get('orders/{order}/invoice/receipt', [OrderController::class, 'printReceipt'])->name('orders.invoice.receipt');
 
     Route::post('notifications/read-all', [StaffNotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');

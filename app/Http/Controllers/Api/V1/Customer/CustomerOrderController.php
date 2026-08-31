@@ -9,12 +9,14 @@ use App\Http\Requests\Order\OrderPaymentProofUploadRequest;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Models\Order;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\Rating\ProductRatingServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CustomerOrderController extends Controller
@@ -26,6 +28,7 @@ class CustomerOrderController extends Controller
         protected WebsiteSettingServiceInterface $websiteSettings,
         protected OrderServiceInterface $orderService,
         protected ProductRatingServiceInterface $ratings,
+        protected OrderInvoiceServiceInterface $invoices,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -95,6 +98,13 @@ class CustomerOrderController extends Controller
                 'Content-Disposition' => 'inline; filename="'.basename($path).'"',
             ],
         );
+    }
+
+    public function invoice(Order $order): Response
+    {
+        $this->authorize('downloadInvoice', $order);
+
+        return $this->invoices->downloadPdf($order);
     }
 
     protected function attachRatingContext(Order $order): void

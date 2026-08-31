@@ -25,6 +25,8 @@ use App\Services\Inventory\InventoryRefillRequestService;
 use App\Services\Inventory\InventoryRefillRequestServiceInterface;
 use App\Services\Inventory\InventoryService;
 use App\Services\Inventory\InventoryServiceInterface;
+use App\Services\Invoice\OrderInvoiceService;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Menu\MenuCatalogService;
 use App\Services\Menu\MenuCatalogServiceInterface;
 use App\Services\Menu\MenuCategoryService;
@@ -78,6 +80,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(IngredientServiceInterface::class, IngredientService::class);
         $this->app->bind(InventoryRefillRequestServiceInterface::class, InventoryRefillRequestService::class);
         $this->app->bind(InventoryServiceInterface::class, InventoryService::class);
+        $this->app->bind(OrderInvoiceServiceInterface::class, OrderInvoiceService::class);
         $this->app->bind(RoleServiceInterface::class, RoleService::class);
         $this->app->bind(MenuCatalogServiceInterface::class, MenuCatalogService::class);
         $this->app->bind(MenuCategoryServiceInterface::class, MenuCategoryService::class);

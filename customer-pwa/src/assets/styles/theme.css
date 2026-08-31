@@ -4147,6 +4147,13 @@ textarea.coffee-input:focus {
   font-size: var(--text-meta);
 }
 
+.order-invoice-actions {
+  margin-top: var(--space-3);
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
 .order-next-step {
   margin-bottom: var(--space-3);
   padding: 0.9rem 1rem;

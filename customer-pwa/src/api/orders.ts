@@ -1,4 +1,4 @@
-import { get, postForm } from './client';
+import { downloadFile, get, postForm } from './client';
 import { OrderDetailResponse, OrderListResponse } from '../types/order';
 
 export function fetchOrders(page = 1, perPage = 20): Promise<OrderListResponse> {
@@ -23,4 +23,8 @@ export function uploadPaymentProof(orderId: number | string, file: File): Promis
 
 export function paymentProofUrl(orderId: number | string): string {
   return `/orders/${orderId}/payment-proof`;
+}
+
+export async function downloadOrderInvoice(orderId: number | string, orderNumber: string): Promise<void> {
+  await downloadFile(`/orders/${orderId}/invoice`, `Invoice-${orderNumber}.pdf`);
 }

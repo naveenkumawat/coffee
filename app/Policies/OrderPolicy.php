@@ -4,9 +4,14 @@ namespace App\Policies;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 
 class OrderPolicy
 {
+    public function __construct(
+        protected OrderInvoiceServiceInterface $invoices,
+    ) {}
+
     public function viewAny(User $user): bool
     {
         return $user->canViewOrders() || $user->hasRole('customer');
@@ -46,5 +51,17 @@ class OrderPolicy
             || ($user->hasRole('customer')
                 && (int) $order->customer_id === (int) $user->getKey()
                 && $order->hasPaymentProof());
+    }
+
+    public function downloadInvoice(User $user, Order $order): bool
+    {
+        return $user->hasRole('customer')
+            && (int) $order->customer_id === (int) $user->getKey()
+            && $this->invoices->isAvailable($order);
+    }
+
+    public function printInvoice(User $user, Order $order): bool
+    {
+        return $user->canManageOrders();
     }
 }

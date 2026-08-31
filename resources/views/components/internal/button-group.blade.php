@@ -23,6 +23,10 @@
                     :icon="$item['icon'] ?? null"
                     :disabled="(bool) ($item['disabled'] ?? false)"
                     class="internal-button-group-button"
+                    @if (! empty($item['target']))
+                        target="{{ $item['target'] }}"
+                        rel="noopener"
+                    @endif
                 />
             @endforeach
         </div>

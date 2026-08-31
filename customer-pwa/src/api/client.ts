@@ -227,3 +227,53 @@ export function put<TResponse, TPayload>(path: string, body: TPayload): Promise<
 export function destroy<TResponse>(path: string): Promise<TResponse> {
   return request<TResponse>(path, { method: 'DELETE' });
 }
+
+/**
+ * Authenticated binary download (PDF, etc.). Triggers a browser file save.
+ */
+export async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
+  const headers = new Headers({
+    Accept: 'application/pdf,application/octet-stream',
+    'X-Requested-With': 'XMLHttpRequest',
+  });
+
+  const xsrfToken = readXsrfToken();
+
+  if (xsrfToken) {
+    headers.set('X-XSRF-TOKEN', xsrfToken);
+  } else if (csrfTokenFromHeader) {
+    headers.set('X-CSRF-TOKEN', csrfTokenFromHeader);
+  }
+
+  const response = await fetch(toUrl(path), {
+    method: 'GET',
+    credentials: 'include',
+    headers,
+  });
+
+  if (!response.ok) {
+    const payload = await parsePayload(response);
+    const normalizedPayload = typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+    const message = typeof normalizedPayload.message === 'string' ? normalizedPayload.message : 'Unable to download file.';
+
+    if (response.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
+
+    throw new ApiError(message, response.status, {}, payload);
+  }
+
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const matched = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+  const filename = matched ? decodeURIComponent(matched[1].replace(/"/g, '')) : fallbackFilename;
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}

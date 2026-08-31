@@ -11,10 +11,13 @@ use App\Http\Requests\Order\OrderStatusUpdateRequest;
 use App\Models\Order;
 use App\Parsers\Order\OrderParserInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
@@ -23,6 +26,7 @@ class OrderController extends Controller
         protected OrderParserInterface $parser,
         protected OrderRepositoryInterface $orders,
         protected OrderServiceInterface $service,
+        protected OrderInvoiceServiceInterface $invoices,
     ) {}
 
     public function index(OrderIndexRequest $request): View
@@ -127,6 +131,36 @@ class OrderController extends Controller
                 'Pragma' => 'no-cache',
             ],
         );
+    }
+
+    public function downloadInvoice(Order $order): Response
+    {
+        $this->authorize('printInvoice', $order);
+
+        return $this->invoices->downloadPdf($order);
+    }
+
+    public function printInvoice(Order $order): View
+    {
+        $this->authorize('printInvoice', $order);
+
+        return view('invoices.print-a4', [
+            'invoice' => $this->invoices->build($order),
+            'autoPrint' => true,
+        ]);
+    }
+
+    public function printReceipt(Request $request, Order $order): View
+    {
+        $this->authorize('printInvoice', $order);
+
+        $widthMm = $this->invoices->normalizeThermalWidth($request->query('width'));
+
+        return view('invoices.print-thermal', [
+            'invoice' => $this->invoices->build($order),
+            'widthMm' => $widthMm,
+            'autoPrint' => true,
+        ]);
     }
 
     protected function defaultItems(): array

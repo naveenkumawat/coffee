@@ -90,6 +90,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ->middleware('throttle:payment-proof')
                 ->name('payment-proof.upload');
             Route::get('/{order}/payment-proof', [CustomerOrderController::class, 'paymentProof'])->name('payment-proof.show');
+            Route::get('/{order}/invoice', [CustomerOrderController::class, 'invoice'])->name('invoice.download');
         });
     });
 });
