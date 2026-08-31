@@ -3821,6 +3821,28 @@ textarea.coffee-input:focus {
   backdrop-filter: none;
 }
 
+.menu-product-groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.menu-category-group {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.menu-category-heading {
+  margin: 0;
+  padding: 0.15rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--coffee-accent);
+  line-height: 1.25;
+}
+
 .menu-page .product-grid {
   margin-top: 0.1rem;
   column-gap: var(--product-card-gap-x);
@@ -3831,6 +3853,14 @@ textarea.coffee-input:focus {
   .menu-discovery {
     gap: 0.55rem;
     margin: 0 0 0.75rem;
+  }
+
+  .menu-product-groups {
+    gap: var(--space-5);
+  }
+
+  .menu-category-heading {
+    font-size: 1rem;
   }
 
   .filter-chip-pill,

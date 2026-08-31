@@ -9,8 +9,10 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
+import { groupProductsByCategory } from '../utils/menuGrouping';
 
 const SEARCH_DEBOUNCE_MS = 300;
+const MENU_PAGE_SIZE = 24;
 
 function parseIdList(raw: string | null): number[] {
   if (!raw?.trim()) {
@@ -73,6 +75,11 @@ export function MenuPage() {
   const selectedFlavours = useMemo(
     () => flavours.filter((flavour) => selectedFlavourIds.includes(flavour.id)),
     [flavours, selectedFlavourIds],
+  );
+
+  const productGroups = useMemo(
+    () => groupProductsByCategory(products, categories),
+    [products, categories],
   );
 
   const facetFilterCount = selectedCategoryIds.length + selectedFlavourIds.length;
@@ -156,7 +163,7 @@ export function MenuPage() {
             search: activeSearch,
             categoryIds: selectedCategoryIds,
             flavourIds: selectedFlavourIds,
-            perPage: 24,
+            perPage: MENU_PAGE_SIZE,
           }),
         );
 
@@ -378,10 +385,23 @@ export function MenuPage() {
         />
       ) : null}
 
-      {!isBootstrapping && !isLoadingProducts && !errorMessage && products.length > 0 ? (
-        <div className="product-grid menu-results motion-enter">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+      {!isBootstrapping && !isLoadingProducts && !errorMessage && productGroups.length > 0 ? (
+        <div className="menu-product-groups menu-results motion-enter">
+          {productGroups.map((group) => (
+            <section
+              key={group.categoryId ?? 'uncategorized'}
+              className="menu-category-group"
+              aria-labelledby={`menu-category-${group.categoryId ?? 'other'}`}
+            >
+              <h2 className="menu-category-heading" id={`menu-category-${group.categoryId ?? 'other'}`}>
+                {group.categoryName}
+              </h2>
+              <div className="product-grid">
+                {group.products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       ) : null}
