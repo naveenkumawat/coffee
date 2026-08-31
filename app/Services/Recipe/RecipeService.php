@@ -6,6 +6,7 @@ use App\Enums\IngredientUnit;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Repositories\Recipe\RecipeRepositoryInterface;
+use App\Services\Product\ProductCatalogServiceInterface;
 use App\Transfers\Recipe\RecipeTransferInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,11 +15,12 @@ class RecipeService implements RecipeServiceInterface
 {
     public function __construct(
         protected RecipeRepositoryInterface $recipes,
+        protected ProductCatalogServiceInterface $catalog,
     ) {}
 
     public function store(RecipeTransferInterface $data): Recipe
     {
-        return DB::transaction(function () use ($data): Recipe {
+        $recipe = DB::transaction(function () use ($data): Recipe {
             $variant = $this->validateVariant((int) $data->getProductVariantId());
 
             if ($this->recipes->existsForVariant($variant->getKey())) {
@@ -33,11 +35,15 @@ class RecipeService implements RecipeServiceInterface
 
             return $this->recipes->replaceLines($recipe, $this->prepareLines($data->getLines()));
         });
+
+        $this->catalog->flushPublicCache();
+
+        return $recipe;
     }
 
     public function update(Recipe $recipe, RecipeTransferInterface $data): Recipe
     {
-        return DB::transaction(function () use ($recipe, $data): Recipe {
+        $recipe = DB::transaction(function () use ($recipe, $data): Recipe {
             $variant = $this->validateVariant((int) $data->getProductVariantId());
 
             if ($this->recipes->existsForVariant($variant->getKey(), (int) $recipe->getKey())) {
@@ -52,6 +58,10 @@ class RecipeService implements RecipeServiceInterface
 
             return $this->recipes->replaceLines($recipe, $this->prepareLines($data->getLines()));
         });
+
+        $this->catalog->flushPublicCache();
+
+        return $recipe;
     }
 
     public function delete(Recipe $recipe): void
@@ -60,6 +70,8 @@ class RecipeService implements RecipeServiceInterface
             $recipe->forceFill(['is_active' => false])->save();
             $this->recipes->delete($recipe);
         });
+
+        $this->catalog->flushPublicCache();
     }
 
     protected function validateVariant(int $variantId): ProductVariant

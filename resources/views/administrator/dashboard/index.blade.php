@@ -102,7 +102,7 @@
                     <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-6">
                         <i class="ki-outline ki-brush fs-2tx text-primary me-4"></i>
                         <div class="d-flex flex-column">
-                            <h4 class="text-gray-900 fw-bold mb-1">ZYLM-style internal shell</h4>
+                            <h4 class="text-gray-900 fw-bold mb-1">Shared internal shell</h4>
                             <span class="fs-6 text-gray-700">Shared layout, header, sidebar, cards, tables, alerts, pagination, and modal patterns now live in a common internal layer.</span>
                         </div>
                     </div>

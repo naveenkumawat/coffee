@@ -4,7 +4,7 @@
  * Centralized loader for all JavaScript features
  * Manages dependencies and initialization order
  *
- * @package ZYLM Manufacturing System
+ * @package Coffee Internal Panel
  * @version 2.0
  */
 

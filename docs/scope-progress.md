@@ -10,7 +10,7 @@ Architecture source: [architecture.md](./architecture.md)
   - Laravel 13 application scaffold
   - MySQL-oriented runtime configuration
   - Administrator and Barista authentication entry points
-  - Shared internal ZYLM-based panel shell
+  - Shared internal panel shell
   - Menu category and menu item architecture foundation
   - Public homepage using cached menu catalog data
   - Base policies, role middleware, parser/transfer/service/repository flow

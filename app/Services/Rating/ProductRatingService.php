@@ -7,6 +7,7 @@ use App\Models\ProductRating;
 use App\Models\User;
 use App\Repositories\Product\ProductRepositoryInterface;
 use App\Repositories\Rating\ProductRatingRepositoryInterface;
+use App\Services\Product\ProductCatalogServiceInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,7 @@ class ProductRatingService implements ProductRatingServiceInterface
     public function __construct(
         protected ProductRatingRepositoryInterface $ratings,
         protected ProductRepositoryInterface $products,
+        protected ProductCatalogServiceInterface $catalog,
     ) {}
 
     public function canRate(User $customer, Product $product): bool
@@ -69,13 +71,17 @@ class ProductRatingService implements ProductRatingServiceInterface
 
         $cleanReview = $this->normalizeReview($review);
 
-        return $this->ratings->upsertForCustomer(
+        $ratingModel = $this->ratings->upsertForCustomer(
             $customer,
             $product,
             $rating,
             $cleanReview,
             $qualifyingOrderId,
         );
+
+        $this->catalog->flushPublicCache();
+
+        return $ratingModel;
     }
 
     public function deleteOwn(User $customer, Product $product): void
@@ -93,6 +99,7 @@ class ProductRatingService implements ProductRatingServiceInterface
         }
 
         $this->ratings->deleteForCustomer($existing);
+        $this->catalog->flushPublicCache();
     }
 
     /**
@@ -105,17 +112,24 @@ class ProductRatingService implements ProductRatingServiceInterface
 
     public function hideReview(ProductRating $rating, User $moderator): ProductRating
     {
-        return $this->ratings->setPublicVisibility($rating, false, $moderator);
+        $updated = $this->ratings->setPublicVisibility($rating, false, $moderator);
+        $this->catalog->flushPublicCache();
+
+        return $updated;
     }
 
     public function publishReview(ProductRating $rating, User $moderator): ProductRating
     {
-        return $this->ratings->setPublicVisibility($rating, true, $moderator);
+        $updated = $this->ratings->setPublicVisibility($rating, true, $moderator);
+        $this->catalog->flushPublicCache();
+
+        return $updated;
     }
 
     public function deleteAsAdmin(ProductRating $rating): void
     {
         $this->ratings->forceDeleteRating($rating);
+        $this->catalog->flushPublicCache();
     }
 
     /**

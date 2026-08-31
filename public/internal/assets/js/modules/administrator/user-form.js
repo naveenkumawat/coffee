@@ -5,7 +5,7 @@
  *
  * @module UserForm
  * @version 1.0.0
- * @author ZYLM Administrator Team
+ * @author Coffee Team
  */
 
 class UserForm {

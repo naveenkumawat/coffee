@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\Product\ProductCatalogServiceInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -54,5 +55,7 @@ class DemoSeeder extends Seeder
             HomeSectionSeeder::class,
             DemoStaffNotificationSeeder::class,
         ]);
+
+        app(ProductCatalogServiceInterface::class)->flushPublicCache();
     }
 }

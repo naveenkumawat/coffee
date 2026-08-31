@@ -100,30 +100,35 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->get();
     }
 
+    public function listPublicProducts(): Collection
+    {
+        return $this->publicProductQuery()
+            ->get()
+            ->sort(function (Product $left, Product $right): int {
+                return [
+                    (int) ($left->category?->sort_order ?? PHP_INT_MAX),
+                    mb_strtolower((string) ($left->category?->name ?? '')),
+                    $left->is_featured ? 0 : 1,
+                    $left->is_bestseller ? 0 : 1,
+                    $left->is_new ? 0 : 1,
+                    (int) $left->sort_order,
+                    mb_strtolower((string) $left->name),
+                ] <=> [
+                    (int) ($right->category?->sort_order ?? PHP_INT_MAX),
+                    mb_strtolower((string) ($right->category?->name ?? '')),
+                    $right->is_featured ? 0 : 1,
+                    $right->is_bestseller ? 0 : 1,
+                    $right->is_new ? 0 : 1,
+                    (int) $right->sort_order,
+                    mb_strtolower((string) $right->name),
+                ];
+            })
+            ->values();
+    }
+
     public function paginatePublic(array $filters = [], int $perPage = 12): LengthAwarePaginator
     {
-        return $this->model->newQuery()
-            ->with([
-                'category',
-                'flavours',
-                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
-                'defaultVariant.recipe.lines' => fn ($query) => $query
-                    ->where('show_to_customer', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('id'),
-                'defaultVariant.recipe.lines.ingredient',
-                'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
-                'variants.recipe.lines' => fn ($query) => $query
-                    ->where('show_to_customer', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('id'),
-                'variants.recipe.lines.ingredient',
-            ])
-            ->withAvg('ratings as ratings_avg_rating', 'rating')
-            ->withCount('ratings')
-            ->where('is_active', true)
-            ->where('is_available', true)
-            ->whereHas('category', fn ($query) => $query->where('is_active', true))
+        return $this->publicProductQuery()
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters): void {
                 $search = trim((string) $filters['search']);
 
@@ -164,6 +169,35 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             })
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    /**
+     * Shared base query for customer-visible catalogue products.
+     */
+    protected function publicProductQuery()
+    {
+        return $this->model->newQuery()
+            ->with([
+                'category',
+                'flavours',
+                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
+                'defaultVariant.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'defaultVariant.recipe.lines.ingredient',
+                'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
+                'variants.recipe.lines' => fn ($query) => $query
+                    ->where('show_to_customer', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+                'variants.recipe.lines.ingredient',
+            ])
+            ->withAvg('ratings as ratings_avg_rating', 'rating')
+            ->withCount('ratings')
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->whereHas('category', fn ($query) => $query->where('is_active', true));
     }
 
     public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator

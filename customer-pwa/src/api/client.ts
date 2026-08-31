@@ -203,6 +203,84 @@ export function get<TResponse>(path: string): Promise<TResponse> {
   return request<TResponse>(path, { method: 'GET' });
 }
 
+export interface ConditionalGetResult<TResponse> {
+  status: number;
+  notModified: boolean;
+  etag: string | null;
+  lastModified: string | null;
+  data: TResponse | null;
+}
+
+/**
+ * GET with optional If-None-Match. Returns 304 without parsing a body.
+ * Used for public catalogue revalidation — not for authenticated private data.
+ */
+export async function getConditional<TResponse>(
+  path: string,
+  etag: string | null = null,
+): Promise<ConditionalGetResult<TResponse>> {
+  const headers = new Headers({
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  });
+
+  if (etag) {
+    headers.set('If-None-Match', etag);
+  }
+
+  const xsrfToken = readXsrfToken();
+
+  if (xsrfToken) {
+    headers.set('X-XSRF-TOKEN', xsrfToken);
+  } else if (csrfTokenFromHeader) {
+    headers.set('X-CSRF-TOKEN', csrfTokenFromHeader);
+  }
+
+  const response = await fetch(toUrl(path), {
+    method: 'GET',
+    credentials: 'include',
+    headers,
+  });
+
+  const responseEtag = response.headers.get('etag');
+  const lastModified = response.headers.get('last-modified');
+
+  if (response.status === 304) {
+    return {
+      status: 304,
+      notModified: true,
+      etag: responseEtag ?? etag,
+      lastModified,
+      data: null,
+    };
+  }
+
+  const payload = await parsePayload(response);
+
+  if (!response.ok) {
+    const normalizedPayload = typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+    const message = typeof normalizedPayload.message === 'string' ? normalizedPayload.message : 'Something went wrong.';
+    const errors =
+      typeof normalizedPayload.errors === 'object' && normalizedPayload.errors !== null
+        ? (normalizedPayload.errors as ApiValidationErrors)
+        : {};
+
+    if (response.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
+
+    throw new ApiError(message, response.status, errors, payload);
+  }
+
+  return {
+    status: response.status,
+    notModified: false,
+    etag: responseEtag,
+    lastModified,
+    data: payload as TResponse,
+  };
+}
+
 export function post<TResponse, TPayload>(path: string, body?: TPayload): Promise<TResponse> {
   return request<TResponse>(path, {
     method: 'POST',

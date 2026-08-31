@@ -1,10 +1,10 @@
 /**
- * ZYLM JavaScript Architecture Index
+ * Coffee Internal JavaScript Architecture Index
  *
  * Centralized inclusion file for all JavaScript features and modules
  * Include this file in your blade templates for complete functionality
  *
- * @package ZYLM Manufacturing System
+ * @package Coffee Internal Panel
  * @version 2.0
  */
 
@@ -107,7 +107,7 @@ const loadOrder = [
  * 6. Avoid module-specific JavaScript files
  */
 
-console.log("ZYLM JavaScript Architecture v3.0 - Action-based system loaded");
+console.log("Coffee Internal JavaScript Architecture v3.0 - Action-based system loaded");
 console.log(
     "Available actions: Status Toggle, Entity Actions, UI Interactions"
 );
@@ -116,5 +116,5 @@ console.log(
 );
 
 // Make loadOrder available globally for build tools (if needed)
-window.ZYLM = window.ZYLM || {};
-window.ZYLM.loadOrder = loadOrder;
+window.CoffeeInternal = window.CoffeeInternal || {};
+window.CoffeeInternal.loadOrder = loadOrder;

@@ -37,7 +37,7 @@
                     <div class="d-flex flex-stack flex-grow-1">
                         <div class="fw-semibold">
                             <h4 class="text-gray-900 fw-bold">Storefront intentionally separate</h4>
-                            <div class="fs-6 text-muted">The public customer experience keeps its own Coffee Cafe theme and does not reuse the internal ZYLM-based panel shell.</div>
+                            <div class="fs-6 text-muted">The public customer experience keeps its own Coffee Cafe theme and does not reuse the internal staff panel shell.</div>
                         </div>
                     </div>
                 </div>

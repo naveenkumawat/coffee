@@ -168,4 +168,4 @@ const tenderForm = new TenderForm({
 - v1.0.0: Initial release with complete tender form functionality
 
 ## Support
-For issues or feature requests, please contact the ZYLM development team.
+For issues or feature requests, please contact the Coffee development team.

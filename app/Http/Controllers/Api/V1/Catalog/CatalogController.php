@@ -15,6 +15,8 @@ use App\Services\Product\ProductCatalogServiceInterface;
 use App\Services\Rating\ProductRatingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class CatalogController extends Controller
 {
@@ -45,27 +47,28 @@ class CatalogController extends Controller
         );
     }
 
-    public function products(ProductIndexRequest $request): JsonResponse
+    public function products(ProductIndexRequest $request): JsonResponse|Response
     {
         $filters = $request->catalogFilters();
-        $filters['availability'] = 'available';
-        $perPage = max(1, min(50, (int) $request->integer('per_page', 12)));
+        $payload = $this->catalog->listPublicProductPayload($filters);
 
-        return $this->respondWithPaginator(
-            $this->catalog->paginatePublicProducts($filters, $perPage),
-            ProductResource::class,
+        return $this->respondWithPublicCatalogue(
+            $request,
+            $payload,
             'Products retrieved.',
+            filtersEmpty: $filters === [],
         );
     }
 
-    public function featured(Request $request): JsonResponse
+    public function featured(Request $request): JsonResponse|Response
     {
-        $perPage = max(1, min(50, (int) $request->integer('per_page', 12)));
+        $payload = $this->catalog->listPublicProductPayload(['featured' => 'featured']);
 
-        return $this->respondWithPaginator(
-            $this->catalog->paginatePublicProducts(['featured' => 'featured'], $perPage),
-            ProductResource::class,
+        return $this->respondWithPublicCatalogue(
+            $request,
+            $payload,
             'Featured products retrieved.',
+            filtersEmpty: false,
         );
     }
 
@@ -104,5 +107,58 @@ class CatalogController extends Controller
             ProductVariantResource::class,
             'Product variants retrieved.',
         );
+    }
+
+    /**
+     * @param  array<int, mixed>  $payload
+     */
+    protected function respondWithPublicCatalogue(
+        Request $request,
+        array $payload,
+        string $message,
+        bool $filtersEmpty,
+    ): JsonResponse|Response {
+        $etagSeed = $this->catalog->publicCatalogVersion().'|'.hash('sha256', json_encode($payload) ?: '');
+        $etag = '"'.$etagSeed.'"';
+        $lastModified = $this->catalog->publicCatalogUpdatedAt();
+
+        if ($request->headers->get('If-None-Match') === $etag) {
+            return response()->noContent(SymfonyResponse::HTTP_NOT_MODIFIED)->withHeaders([
+                'ETag' => $etag,
+                'Last-Modified' => $lastModified->toRfc7231String(),
+                'Cache-Control' => $this->publicCatalogueCacheControl($filtersEmpty),
+                'Vary' => 'Accept, Authorization',
+            ]);
+        }
+
+        if ($request->headers->has('If-Modified-Since')) {
+            $since = strtotime((string) $request->headers->get('If-Modified-Since'));
+
+            if ($since !== false && $lastModified->getTimestamp() <= $since) {
+                return response()->noContent(SymfonyResponse::HTTP_NOT_MODIFIED)->withHeaders([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified->toRfc7231String(),
+                    'Cache-Control' => $this->publicCatalogueCacheControl($filtersEmpty),
+                    'Vary' => 'Accept, Authorization',
+                ]);
+            }
+        }
+
+        return $this->respondWithData($payload, $message)->withHeaders([
+            'ETag' => $etag,
+            'Last-Modified' => $lastModified->toRfc7231String(),
+            'Cache-Control' => $this->publicCatalogueCacheControl($filtersEmpty),
+            'Vary' => 'Accept, Authorization',
+        ]);
+    }
+
+    protected function publicCatalogueCacheControl(bool $filtersEmpty): string
+    {
+        // Public menu list is anonymous; short max-age + revalidation keeps admin updates fresh.
+        if ($filtersEmpty) {
+            return 'public, max-age=60, must-revalidate';
+        }
+
+        return 'public, max-age=30, must-revalidate';
     }
 }

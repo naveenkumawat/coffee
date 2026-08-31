@@ -4,7 +4,7 @@
  *
  * @module TenderForm
  * @version 1.0.0
- * @author ZYLM Marketing Team
+ * @author Coffee Team
  */
 
 class TenderForm {

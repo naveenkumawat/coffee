@@ -86,7 +86,7 @@
                     <h2 class="mt-2 text-3xl font-semibold text-white">Organized for scale, simple for guests.</h2>
                 </div>
                 <p class="max-w-xl text-sm leading-7 text-stone-400">
-                    This initial foundation uses categories and items as the first domain slice, mirroring the layered patterns we want for future modules without carrying over ZYLM’s project-specific complexity.
+                    This initial foundation uses categories and items as the first domain slice, mirroring the layered patterns we want for future modules.
                 </p>
             </div>
 

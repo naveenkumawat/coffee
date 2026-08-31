@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { buildProductQuery, fetchCategories, fetchFlavours, fetchProducts } from '../api/catalog';
+import { fetchCategories, fetchFlavours, fetchMenuCatalogue } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { CategoryPills } from '../components/catalog/CategoryPills';
 import { FlavourPills } from '../components/catalog/FlavourPills';
@@ -9,10 +9,10 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
+import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const MENU_PAGE_SIZE = 24;
 
 function parseIdList(raw: string | null): number[] {
   if (!raw?.trim()) {
@@ -36,14 +36,11 @@ function toggleId(ids: number[], id: number): number[] {
 
 export function MenuPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [resultTotal, setResultTotal] = useState<number | null>(null);
+  const [catalogue, setCatalogue] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [flavours, setFlavours] = useState<ProductFlavour[]>([]);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const productRequestId = useRef(0);
 
   const selectedCategoryIds = useMemo(() => {
     const fromList = parseIdList(searchParams.get('categories'));
@@ -77,9 +74,19 @@ export function MenuPage() {
     [flavours, selectedFlavourIds],
   );
 
+  const filteredProducts = useMemo(
+    () =>
+      filterMenuProducts(catalogue, {
+        search: activeSearch,
+        categoryIds: selectedCategoryIds,
+        flavourIds: selectedFlavourIds,
+      }),
+    [catalogue, activeSearch, selectedCategoryIds, selectedFlavourIds],
+  );
+
   const productGroups = useMemo(
-    () => groupProductsByCategory(products, categories),
-    [products, categories],
+    () => groupProductsByCategory(filteredProducts, categories),
+    [filteredProducts, categories],
   );
 
   const facetFilterCount = selectedCategoryIds.length + selectedFlavourIds.length;
@@ -92,12 +99,16 @@ export function MenuPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadFilters(): Promise<void> {
-      setIsBootstrapping(true);
+    async function loadCatalogue(): Promise<void> {
+      setIsLoading(true);
       setErrorMessage(null);
 
       try {
-        const [categoryResponse, flavourResponse] = await Promise.all([fetchCategories(), fetchFlavours()]);
+        const [categoryResponse, flavourResponse, products] = await Promise.all([
+          fetchCategories(),
+          fetchFlavours(),
+          fetchMenuCatalogue(),
+        ]);
 
         if (cancelled) {
           return;
@@ -105,18 +116,20 @@ export function MenuPage() {
 
         setCategories(categoryResponse.data);
         setFlavours(flavourResponse.data);
+        setCatalogue(products);
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load menu filters.');
+          setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load the menu.');
+          setCatalogue([]);
         }
       } finally {
         if (!cancelled) {
-          setIsBootstrapping(false);
+          setIsLoading(false);
         }
       }
     }
 
-    void loadFilters();
+    void loadCatalogue();
 
     return () => {
       cancelled = true;
@@ -144,56 +157,6 @@ export function MenuPage() {
 
     return () => window.clearTimeout(handle);
   }, [activeSearch, searchInput, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    if (isBootstrapping) {
-      return;
-    }
-
-    const requestId = ++productRequestId.current;
-    let cancelled = false;
-
-    async function loadProducts(): Promise<void> {
-      setIsLoadingProducts(true);
-      setErrorMessage(null);
-
-      try {
-        const response = await fetchProducts(
-          buildProductQuery({
-            search: activeSearch,
-            categoryIds: selectedCategoryIds,
-            flavourIds: selectedFlavourIds,
-            perPage: MENU_PAGE_SIZE,
-          }),
-        );
-
-        if (cancelled || requestId !== productRequestId.current) {
-          return;
-        }
-
-        setProducts(response.data);
-        setResultTotal(response.meta?.pagination?.total ?? response.data.length);
-      } catch (error) {
-        if (cancelled || requestId !== productRequestId.current) {
-          return;
-        }
-
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load the menu.');
-        setProducts([]);
-        setResultTotal(0);
-      } finally {
-        if (!cancelled && requestId === productRequestId.current) {
-          setIsLoadingProducts(false);
-        }
-      }
-    }
-
-    void loadProducts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCategoryIds, selectedFlavourIds, activeSearch, isBootstrapping]);
 
   function updateFilterParams(mutator: (params: URLSearchParams) => void): void {
     const nextParams = new URLSearchParams(searchParams);
@@ -264,16 +227,34 @@ export function MenuPage() {
     handleToggleFlavour(flavourId);
   }
 
+  async function handleRetry(): Promise<void> {
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const [categoryResponse, flavourResponse, products] = await Promise.all([
+        fetchCategories(),
+        fetchFlavours(),
+        fetchMenuCatalogue(true),
+      ]);
+
+      setCategories(categoryResponse.data);
+      setFlavours(flavourResponse.data);
+      setCatalogue(products);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load the menu.');
+      setCatalogue([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const emptyDescription = hasActiveFilters
     ? 'No drinks match these filters. Clear them or try another search.'
     : 'No drinks are available on the menu right now.';
 
   const resultsLabel =
-    resultTotal === null
-      ? 'Loading drinks…'
-      : resultTotal === 1
-        ? '1 drink'
-        : `${resultTotal} drinks`;
+    filteredProducts.length === 1 ? '1 drink' : `${filteredProducts.length} drinks`;
 
   return (
     <div className="page-container menu-page">
@@ -359,23 +340,17 @@ export function MenuPage() {
         ) : null}
 
         <div className="menu-results-meta" aria-live="polite">
-          <strong>{isLoadingProducts ? 'Updating…' : resultsLabel}</strong>
+          <strong>{isLoading ? 'Loading drinks…' : resultsLabel}</strong>
         </div>
       </div>
 
-      {isBootstrapping && isLoadingProducts ? <LoadingSkeleton cardCount={3} lines={3} variant="list" /> : null}
+      {isLoading ? <LoadingSkeleton cardCount={3} lines={3} variant="list" /> : null}
 
-      {!isBootstrapping && isLoadingProducts ? (
-        <div className="menu-results is-loading" aria-busy="true">
-          <LoadingSkeleton cardCount={3} lines={3} variant="list" />
-        </div>
+      {!isLoading && errorMessage ? (
+        <ErrorState description={errorMessage} onRetry={() => void handleRetry()} />
       ) : null}
 
-      {!isBootstrapping && !isLoadingProducts && errorMessage ? (
-        <ErrorState description={errorMessage} onRetry={() => window.location.reload()} />
-      ) : null}
-
-      {!isBootstrapping && !isLoadingProducts && !errorMessage && products.length === 0 ? (
+      {!isLoading && !errorMessage && filteredProducts.length === 0 ? (
         <EmptyState
           title="No drinks found"
           description={emptyDescription}
@@ -385,7 +360,7 @@ export function MenuPage() {
         />
       ) : null}
 
-      {!isBootstrapping && !isLoadingProducts && !errorMessage && productGroups.length > 0 ? (
+      {!isLoading && !errorMessage && productGroups.length > 0 ? (
         <div className="menu-product-groups menu-results motion-enter">
           {productGroups.map((group) => (
             <section

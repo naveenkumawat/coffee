@@ -23,6 +23,11 @@ interface ProductRepositoryInterface
 
     public function featured(int $limit = 4): Collection;
 
+    /**
+     * Full customer-visible product catalogue (no pagination).
+     */
+    public function listPublicProducts(): Collection;
+
     public function paginatePublic(array $filters = [], int $perPage = 12): LengthAwarePaginator;
 
     public function paginatePublicVariants(array $filters = [], int $perPage = 20): LengthAwarePaginator;

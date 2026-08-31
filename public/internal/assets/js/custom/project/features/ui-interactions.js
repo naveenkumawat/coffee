@@ -4,7 +4,7 @@
  * Handles modal dialogs, confirmations, tooltips, and other UI interactions
  * Extracted from custom.js and enhanced
  *
- * @package ZYLM Manufacturing System
+ * @package Coffee Internal Panel
  * @version 2.0
  */
 

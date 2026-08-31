@@ -9,9 +9,12 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\WebsiteSetting;
+use App\Services\Product\ProductCatalogService;
+use App\Services\Product\ProductCatalogServiceInterface;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -80,5 +83,33 @@ class DemoSeederSafetyTest extends TestCase
         Mail::assertNothingSent();
         Notification::assertNothingSent();
         Http::assertNothingSent();
+    }
+
+    public function test_demo_seeder_flushes_stale_public_catalogue_cache(): void
+    {
+        Cache::put(
+            ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY,
+            [['id' => 999, 'name' => 'Stale Ghost Drink']],
+            now()->addMinutes(30),
+        );
+
+        $this->assertTrue(Cache::has(ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY));
+
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertFalse(Cache::has(ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY));
+
+        $payload = app(ProductCatalogServiceInterface::class)->listPublicProductPayload();
+
+        $this->assertNotEmpty($payload);
+        $this->assertFalse(
+            collect($payload)->contains(fn (array $product): bool => ($product['name'] ?? null) === 'Stale Ghost Drink'),
+        );
+        $this->assertTrue(
+            collect($payload)->contains(fn (array $product): bool => ($product['is_featured'] ?? false) === true
+                || ($product['is_new'] ?? false) === true
+                || ($product['is_bestseller'] ?? false) === true
+                || filled($product['name'] ?? null)),
+        );
     }
 }

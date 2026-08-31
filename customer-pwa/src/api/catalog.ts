@@ -1,4 +1,4 @@
-import { ApiEnvelope, get } from './client';
+import { ApiEnvelope, get, getConditional } from './client';
 import { Product, ProductCategory, ProductFlavour, ProductListMeta, ProductVariant } from '../types/catalog';
 
 export interface ProductQueryFilters {
@@ -12,6 +12,9 @@ export interface ProductQueryFilters {
   isBestseller?: boolean;
   perPage?: number;
 }
+
+let menuCatalogueCache: Product[] | null = null;
+let menuCatalogueEtag: string | null = null;
 
 export function fetchCategories(): Promise<ApiEnvelope<ProductCategory[]>> {
   return get<ApiEnvelope<ProductCategory[]>>('/catalog/categories');
@@ -81,6 +84,37 @@ export function fetchProducts(query = ''): Promise<ApiEnvelope<Product[]> & Prod
   const normalizedQuery = query ? `?${query}` : '';
 
   return get<ApiEnvelope<Product[]> & ProductListMeta>(`/catalog/products${normalizedQuery}`);
+}
+
+/**
+ * Full public menu catalogue with in-memory + ETag revalidation.
+ * Does not cache authenticated/customer-specific fields.
+ */
+export async function fetchMenuCatalogue(force = false): Promise<Product[]> {
+  if (force) {
+    menuCatalogueCache = null;
+    menuCatalogueEtag = null;
+  }
+
+  const result = await getConditional<ApiEnvelope<Product[]>>(
+    '/catalog/products',
+    menuCatalogueEtag,
+  );
+
+  if (result.notModified && menuCatalogueCache) {
+    return menuCatalogueCache;
+  }
+
+  const products = result.data?.data ?? [];
+  menuCatalogueCache = products;
+  menuCatalogueEtag = result.etag;
+
+  return products;
+}
+
+export function clearMenuCatalogueCache(): void {
+  menuCatalogueCache = null;
+  menuCatalogueEtag = null;
 }
 
 export function fetchProduct(productId: string): Promise<ApiEnvelope<Product>> {

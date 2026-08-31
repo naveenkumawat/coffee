@@ -325,7 +325,7 @@ Strong reference candidates:
 - remove fake social/chat features
 - keep product and order cards compact and touch-friendly
 - ensure bottom navigation fits Coffee destinations only
-- keep customer visual language separate from internal ZYLM admin/barista styling
+- keep customer visual language separate from internal admin/barista styling
 
 ## Recommended First React Implementation Slice
 

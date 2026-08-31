@@ -1,8 +1,8 @@
 # Coffee
 
-Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. It now includes a ZYLM-inspired shared internal management UI for the `administrator` and `barista` panels, while keeping the public customer-facing Coffee frontend separate.
+Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. It includes a shared internal management UI for the `administrator` and `barista` panels, while keeping the public customer-facing Coffee frontend separate.
 
-## What was reused conceptually from ZYLM
+## Architectural foundations
 
 - Route organization by area
 - Interface-driven layering between controllers, services, repositories, and views
@@ -52,7 +52,7 @@ Coffee is a Laravel 13 cafe foundation built for MySQL-backed operations. It now
 - Validated write input should pass through a module parser and transfer before business persistence.
 - Reusable business logic belongs in services, not controllers or large models.
 - Reusable query and persistence logic belongs in repositories behind interfaces.
-- Requests, repositories, services, transfers, and parsers are grouped by module, matching the ZYLM-style folder convention.
+- Requests, repositories, services, transfers, and parsers are grouped by module.
 - Transfers normalize validated input before it reaches business services.
 - Role-specific HTTP code stays separated, while shared business logic lives once.
 
@@ -125,8 +125,7 @@ npm run build
 
 ## Internal role naming convention
 
-- ZYLM uses `Administrator` as the canonical internal management folder and route-file convention.
-- Coffee follows that same convention for role-specific PHP namespaces, controllers, views, and route files.
+- Coffee uses `Administrator` as the canonical internal management folder and route-file convention for role-specific PHP namespaces, controllers, views, and route files.
 - Do not create parallel `Admin` folders such as `app/Http/Controllers/Admin` or `resources/views/admin`.
 - The auth guard key intentionally remains `admin`, because it is a guard identifier rather than a folder or namespace convention.
 

@@ -238,6 +238,7 @@ class ProductManagementTest extends TestCase
 
         Cache::put(ProductCatalogService::PUBLIC_PRODUCT_CACHE_KEY, ['cached'], now()->addMinutes(10));
         Cache::put(ProductCatalogService::FEATURED_PRODUCT_CACHE_KEY, ['cached'], now()->addMinutes(10));
+        Cache::put(ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY, ['cached'], now()->addMinutes(10));
 
         $this->actingAs($manager, 'admin')
             ->delete(route('administrator.products.destroy', $product))
@@ -247,6 +248,7 @@ class ProductManagementTest extends TestCase
         $this->assertSoftDeleted('product_variants', ['id' => $variant->id]);
         $this->assertFalse(Cache::has(ProductCatalogService::PUBLIC_PRODUCT_CACHE_KEY));
         $this->assertFalse(Cache::has(ProductCatalogService::FEATURED_PRODUCT_CACHE_KEY));
+        $this->assertFalse(Cache::has(ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY));
     }
 
     public function test_product_seeder_is_idempotent(): void

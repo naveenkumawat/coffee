@@ -4,7 +4,7 @@
  * Handles status toggle functionality for any entity type (users, products, orders, etc.)
  * Uses data attributes for configuration to be completely entity-agnostic
  *
- * @author ZYLM Development Team
+ * @author Coffee Team
  * @version 2.0.0
  * @since 2025-01-21
  */

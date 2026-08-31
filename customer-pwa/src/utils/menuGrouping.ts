@@ -7,10 +7,9 @@ export interface MenuProductGroup {
 }
 
 /**
- * Group the current product result page by category.
+ * Group catalogue products by category.
  * Category order follows the catalog categories list (backend sort).
- * Product order within each group is preserved from the API response.
- * Does not fetch extra pages — callers should pass only the loaded page.
+ * Product order within each group is preserved from the catalogue response.
  */
 export function groupProductsByCategory(
   products: Product[],

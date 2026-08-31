@@ -4,7 +4,7 @@
  * Handles common entity actions like avatar removal and deletion
  * Generic and reusable across all modules
  *
- * @package ZYLM Manufacturing System
+ * @package Coffee Internal Panel
  * @version 2.0
  */
 

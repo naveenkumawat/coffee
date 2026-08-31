@@ -65,7 +65,7 @@ Theme usage rules:
 - Do not treat the static Bootstrap/jQuery theme as the target runtime architecture.
 - Rebuild the selected patterns as React components over the existing Laravel API.
 
-## ZYLM Patterns Identified
+## Internal architecture patterns
 
 - Module-first folder grouping across repositories, services, transfers, and parsers.
 - Class and interface pairs grouped together inside the same module folder.
@@ -79,13 +79,13 @@ Theme usage rules:
 - Customer transactional notifications: domain Event (`ShouldDispatchAfterCommit`) → Listener → `CustomerNotificationDispatcher` → Email (`ShouldQueue` notification) and/or WhatsApp (`SendCustomerWhatsAppMessage` job via `WhatsAppNotificationProvider` / `MetaWhatsAppCloudProvider`). Idempotent per `customer_notification_logs` unique key **and channel** (`email` / `whatsapp`). WhatsApp uses Meta Cloud API templates only (`config/services.php` + `WHATSAPP_*` env); public café WhatsApp stays in Website Settings. Channel failures must not roll back business operations or block the other channel. CTAs use `CUSTOMER_APP_URL` / `COFFEE_PWA_URL` (`config('coffee.pwa.url')`).
 - Staff operational notifications: domain events (`ShouldDispatchAfterCommit`) → dedicated `StaffNotificationDispatcher` (not coupled to customer dispatcher) → Laravel database notifications + selective staff email. Covers order ops and inventory/refill ops via `StaffNotificationContext`. Idempotent via `staff_notification_logs` (`unique_key` + `user_id` + `channel`). Stock alerts fire only on `InventoryStockStatus` transitions (not every ledger write); episode keys include inventory transaction id so healthy→low can alert again later. Audience by active `owner`/`manager` or `barista` roles. In-app bell in shared internal header with severity metadata; staff WhatsApp channel enum reserved but not enabled. Delivery failure must not roll back order/payment/inventory workflows.
 
-## How Coffee Now Follows Them
+## How Coffee follows them
 
 - Repository interfaces and implementations are grouped by module in `app/Repositories/Menu`.
 - Service interfaces and implementations are grouped by module in `app/Services/Menu` and `app/Services/Auth`.
 - Transfer interfaces and implementations are grouped by module in `app/Transfers/Menu`.
 - Parser interfaces and implementations are grouped by module in `app/Parsers/Menu`.
-- Requests are grouped by module in `app/Http/Requests/MenuCategory` and `app/Http/Requests/MenuItem`, matching ZYLM's request organization more closely than role-grouped request folders.
+- Requests are grouped by module in `app/Http/Requests/MenuCategory` and `app/Http/Requests/MenuItem`, preferring module grouping over role-grouped request folders.
 - Shared abstract foundations now exist in `app/Models/AbstractModel`, `app/Http/Requests/AbstractRequest`, `app/Repositories/AbstractRepository`, `app/Parsers/AbstractParser`, and `app/Transfers/AbstractTransfer`.
 - Separate providers now register repositories, services, parsers, and transfers.
 
@@ -169,7 +169,7 @@ The customer API should follow the same shared business-layer rule rather than c
 
 ## Internal Role Naming Convention
 
-- ZYLM's canonical internal management convention is `Administrator`, not `Admin`.
+- Coffee's canonical internal management convention is `Administrator`, not `Admin`.
 - Coffee must keep role-specific PHP namespaces, controller folders, Blade folders, and route files under the `Administrator` convention.
 - Do not create a parallel `Admin` namespace or Blade tree beside the existing `Administrator` structure.
 - The `admin` auth guard name is intentional and may remain different from the folder name because it is an authentication identifier, not an architectural namespace.
@@ -230,10 +230,10 @@ For current menu writes:
 - Repositories use `<Entity>Repository` and `<Entity>RepositoryInterface`.
 - Services use `<Entity>Service` and `<Entity>ServiceInterface`.
 
-## Remaining Intentional Differences from ZYLM
+## Intentional simplifications
 
-- Coffee does not reproduce ZYLM's global root interface and factory graph because the current Laravel container can resolve the same seams more simply.
-- Coffee has not added empty `Factories`, `Integrations`, `Tools`, `Jobs`, or domain-specific exception trees solely for parity; those should be added when a real shared use case arrives.
+- Coffee does not use a global root interface and factory graph because the current Laravel container can resolve the same seams more simply.
+- Coffee has not added empty `Factories`, `Integrations`, `Tools`, `Jobs`, or domain-specific exception trees solely for structural parity; those should be added when a real shared use case arrives.
 - Coffee keeps Laravel-native model factories and provider registration rather than wrapping all construction in a custom root object.
 
 ## Rules for Future Agents and Developers

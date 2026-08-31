@@ -12,7 +12,7 @@
  *
  * @module UserManagement
  * @version 2.0.0
- * @author ZYLM Development Team
+ * @author Coffee Team
  */
 
 (function () {
