@@ -163,9 +163,11 @@ class OrderInvoiceTest extends TestCase
             ->assertSee('DINE-IN', false)
             ->assertSee('TABLE T7', false)
             ->assertSee('Table Latte', false)
+            ->assertSee('PAID', false)
             ->assertDontSee('Production Cost', false)
             ->assertDontSee('payment_proof', false)
-            ->assertDontSee('ingredient cost', false);
+            ->assertDontSee('ingredient cost', false)
+            ->assertDontSee('status history', false);
 
         $dineInvoice = app(OrderInvoiceServiceInterface::class)->build($dineIn->fresh(['items']));
         $payload = strtolower(json_encode($dineInvoice->toArray()) ?: '');
@@ -183,7 +185,9 @@ class OrderInvoiceTest extends TestCase
             ->assertSee('Door Person', false)
             ->assertSee('Rs 40.00', false)
             ->assertSee('Rs 240.00', false)
-            ->assertSee('58mm', false);
+            ->assertSee('58mm', false)
+            ->assertSee('size: 58mm', false)
+            ->assertDontSee('Production Cost', false);
     }
 
     public function test_item_and_total_calculations_match_stored_order(): void
@@ -231,17 +235,35 @@ class OrderInvoiceTest extends TestCase
 
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.orders.invoice.pdf', $order))
-            ->assertOk();
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition');
+
+        $pdfDisposition = (string) $this->actingAs($manager, 'admin')
+            ->get(route('administrator.orders.invoice.pdf', $order))
+            ->headers->get('content-disposition');
+        $this->assertStringContainsString('.pdf', $pdfDisposition);
+        $this->assertStringContainsString($order->order_number, $pdfDisposition);
 
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.orders.invoice.print', $order))
             ->assertOk()
-            ->assertSee($order->order_number, false);
+            ->assertSee($order->order_number, false)
+            ->assertSee('>Print</button>', false)
+            ->assertDontSee("window.addEventListener('load'", false);
 
         $this->actingAs($manager, 'admin')
             ->get(route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]))
             ->assertOk()
-            ->assertSee('80mm', false);
+            ->assertSee('80mm', false)
+            ->assertSee('size: 80mm', false)
+            ->assertDontSee("window.addEventListener('load'", false);
+
+        $this->actingAs($manager, 'admin')
+            ->get(route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 58]))
+            ->assertOk()
+            ->assertSee('58mm', false)
+            ->assertSee('size: 58mm', false);
 
         $this->actingAs($barista, 'admin')
             ->get(route('administrator.orders.invoice.print', $order))
@@ -268,11 +290,13 @@ class OrderInvoiceTest extends TestCase
                 ->get(route('administrator.orders.show', $order))
                 ->assertOk()
                 ->assertSee('Invoice', false)
-                ->assertSee('Print A4 Invoice', false)
+                ->assertSee('Print A4', false)
                 ->assertSee('Print 80mm Receipt', false)
                 ->assertSee('Print 58mm Receipt', false)
                 ->assertSee('Download PDF', false)
                 ->assertSee(route('administrator.orders.invoice.print', $order), false)
+                ->assertSee(route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]), false)
+                ->assertSee(route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 58]), false)
                 ->assertSee(route('administrator.orders.invoice.pdf', $order), false)
                 ->assertDontSee('<x-internal.button', false);
         }

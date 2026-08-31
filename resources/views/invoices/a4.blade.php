@@ -7,8 +7,18 @@
 <head>
     <meta charset="utf-8">
     <title>Invoice {{ $invoice->invoiceNumber }}</title>
+    <style>
+        @page {
+            margin: 12mm;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+    </style>
 </head>
-<body style="margin:0;padding:24px;background:#fff;">
+<body>
     @include('invoices.partials.a4-body', ['invoice' => $invoice])
 </body>
 </html>

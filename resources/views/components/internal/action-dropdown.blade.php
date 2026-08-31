@@ -53,7 +53,10 @@
                         href="{{ $disabled ? '#' : ($item['url'] ?? '#') }}"
                         class="{{ $linkClass }}"
                         @if ($disabled) aria-disabled="true" tabindex="-1" @endif
-                        @if (! empty($item['target'])) target="{{ $item['target'] }}" @endif
+                        @if (! empty($item['target']))
+                            target="{{ $item['target'] }}"
+                            rel="noopener"
+                        @endif
                     >
                         @if (! empty($item['icon']))
                             <i class="ki-duotone {{ $item['icon'] }} fs-6 me-2">

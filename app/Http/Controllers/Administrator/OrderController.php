@@ -146,7 +146,7 @@ class OrderController extends Controller
 
         return view('invoices.print-a4', [
             'invoice' => $this->invoices->build($order),
-            'autoPrint' => true,
+            'autoPrint' => false,
         ]);
     }
 
@@ -159,7 +159,7 @@ class OrderController extends Controller
         return view('invoices.print-thermal', [
             'invoice' => $this->invoices->build($order),
             'widthMm' => $widthMm,
-            'autoPrint' => true,
+            'autoPrint' => false,
         ]);
     }
 

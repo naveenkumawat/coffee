@@ -5,5 +5,4 @@
 @include('invoices.thermal', [
     'invoice' => $invoice,
     'widthMm' => $widthMm,
-    'autoPrint' => $autoPrint ?? false,
 ])

@@ -11,20 +11,24 @@
 @endsection
 
 @section('toolbar-actions')
-    <x-internal.button-group :items="[
-        ['label' => 'Back', 'url' => route('administrator.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
-    ]" />
-    @can('printInvoice', $order)
-        <x-internal.action-dropdown
-            label="Invoice"
-            :items="[
-                ['label' => 'Print A4 Invoice', 'url' => route('administrator.orders.invoice.print', $order), 'icon' => 'ki-printer', 'target' => '_blank'],
-                ['label' => 'Print 80mm Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'icon' => 'ki-printer', 'target' => '_blank'],
-                ['label' => 'Print 58mm Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 58]), 'icon' => 'ki-printer', 'target' => '_blank'],
-                ['label' => 'Download PDF', 'url' => route('administrator.orders.invoice.pdf', $order), 'icon' => 'ki-file-down'],
-            ]"
-        />
-    @endcan
+    <div class="internal-order-toolbar-actions d-flex flex-wrap align-items-stretch align-items-md-center gap-2 justify-content-start justify-content-lg-end">
+        <x-internal.button-group :items="[
+            ['label' => 'Back', 'url' => route('administrator.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+        ]" />
+        @can('printInvoice', $order)
+            <x-internal.action-dropdown
+                label="Invoice"
+                button-class="btn btn-light-dark btn-active-light-dark btn-sm internal-button internal-action-dropdown-trigger"
+                menu-width-class="w-225px"
+                :items="[
+                    ['label' => 'Print A4', 'url' => route('administrator.orders.invoice.print', $order), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Print 80mm Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Print 58mm Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 58]), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Download PDF', 'url' => route('administrator.orders.invoice.pdf', $order), 'icon' => 'ki-file-down'],
+                ]"
+            />
+        @endcan
+    </div>
 @endsection
 
 @section('content')

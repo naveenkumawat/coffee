@@ -2,14 +2,25 @@
     /** @var \App\Services\Invoice\OrderInvoiceData $invoice */
     $widthMm = in_array((string) ($widthMm ?? '80'), ['58', '80'], true) ? (string) $widthMm : '80';
     $pageWidth = $widthMm === '58' ? '58mm' : '80mm';
-    $fontSize = $widthMm === '58' ? '11px' : '12px';
+    $fontSize = $widthMm === '58' ? '10px' : '12px';
+    $brandSize = $widthMm === '58' ? '12px' : '14px';
     $showDiscount = bccomp($invoice->discountTotal, '0', 2) > 0;
+    $paymentCompact = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0
+        ? 'PAID'
+        : strtoupper($invoice->paymentStatusLabel);
+    $fulfilmentCompact = $invoice->fulfilmentLabel;
+    if ($invoice->tableLabel) {
+        $fulfilmentCompact .= ' · TABLE '.$invoice->tableLabel;
+    } elseif ($invoice->fulfilmentCode === 'takeaway') {
+        $fulfilmentCompact .= ' · PICKUP';
+    }
 @endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Receipt {{ $invoice->orderNumber }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Receipt {{ $invoice->orderNumber }} · {{ $widthMm }}mm</title>
     <style>
         @page {
             size: {{ $pageWidth }} auto;
@@ -17,91 +28,136 @@
         }
         * { box-sizing: border-box; }
         body {
-            margin: 0;
-            padding: 4px;
+            margin: 0 auto;
+            padding: 3mm 2mm;
             width: {{ $pageWidth }};
             max-width: {{ $pageWidth }};
             color: #000;
             background: #fff;
             font-family: "Courier New", Courier, monospace;
             font-size: {{ $fontSize }};
-            line-height: 1.35;
+            line-height: 1.3;
+        }
+        .no-print {
+            margin: 0 0 10px;
+            padding: 8px;
+            border: 1px solid #999;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .no-print a,
+        .no-print button {
+            color: #000;
+            background: #fff;
+            border: 1px solid #333;
+            padding: 6px 10px;
+            margin: 2px 2px 2px 0;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 12px;
         }
         .center { text-align: center; }
         .brand {
+            margin: 0 0 2px;
+            font-size: {{ $brandSize }};
             font-weight: 700;
-            font-size: {{ $widthMm === '58' ? '13px' : '15px' }};
             text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        .slogan {
             margin: 0 0 4px;
+            font-size: 0.92em;
         }
         .rule {
             border: 0;
             border-top: 1px dashed #000;
-            margin: 8px 0;
+            margin: 6px 0;
         }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
+        .meta,
+        .line,
+        .totals {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .muted { font-size: 0.92em; }
-        .item { margin: 0 0 8px; }
-        .item-name { font-weight: 700; }
-        .totals .row { margin: 2px 0; }
-        .total-line {
+        .meta td,
+        .line td,
+        .totals td {
+            padding: 1px 0;
+            vertical-align: top;
+        }
+        .num {
+            text-align: right;
+            white-space: nowrap;
+            padding-left: 6px;
+        }
+        .item-name { font-weight: 700; word-wrap: break-word; }
+        .variant { padding-left: 2px; }
+        .qty-line td { padding-top: 1px; }
+        .total-row td {
+            padding-top: 4px;
             font-weight: 700;
             font-size: 1.08em;
-            margin-top: 4px;
+            border-top: 1px solid #000;
         }
-        .table-banner {
-            font-weight: 700;
-            font-size: 1.15em;
+        .thanks {
             margin-top: 4px;
-        }
-        .screen-hint {
-            margin: 12px 0;
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 13px;
+            text-align: center;
         }
         @media print {
             .no-print { display: none !important; }
-            body { width: {{ $pageWidth }}; }
+            body {
+                width: {{ $pageWidth }};
+                max-width: {{ $pageWidth }};
+                margin: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="no-print screen-hint">
-        Thermal receipt · {{ $widthMm }}mm ·
-        <button type="button" onclick="window.print()">Print</button>
-        ·
-        <a href="?width=80">80mm</a>
-        ·
-        <a href="?width=58">58mm</a>
+    <div class="no-print">
+        <div><strong>Thermal receipt · {{ $widthMm }}mm</strong></div>
+        <div style="margin-top:6px;">
+            <button type="button" onclick="window.print()">Print</button>
+            <a href="{{ request()->url() }}?width=80">80mm</a>
+            <a href="{{ request()->url() }}?width=58">58mm</a>
+        </div>
     </div>
 
     <div class="center">
         <div class="brand">{{ $invoice->cafeName }}</div>
-        @if ($invoice->cafePhone)
-            <div class="muted">{{ $invoice->cafePhone }}</div>
-        @endif
-        @if ($invoice->cafeEmail)
-            <div class="muted">{{ $invoice->cafeEmail }}</div>
+        @if ($invoice->cafeSlogan)
+            <div class="slogan">{{ $invoice->cafeSlogan }}</div>
         @endif
     </div>
 
     <hr class="rule">
 
-    <div>Order # {{ $invoice->orderNumber }}</div>
-    <div>{{ $invoice->placedAtLabel }}</div>
-    <div>{{ $invoice->fulfilmentLabel }}</div>
-    @if ($invoice->tableLabel)
-        <div class="table-banner">TABLE {{ $invoice->tableLabel }}</div>
-    @endif
+    <table class="meta">
+        <tr>
+            <td>Order:</td>
+            <td class="num">{{ $invoice->orderNumber }}</td>
+        </tr>
+        <tr>
+            <td>Date:</td>
+            <td class="num">{{ $invoice->placedAtLabel }}</td>
+        </tr>
+        <tr>
+            <td colspan="2">{{ $fulfilmentCompact }}</td>
+        </tr>
+        <tr>
+            <td>Payment:</td>
+            <td class="num">{{ $paymentCompact }}</td>
+        </tr>
+    </table>
+
     @if ($invoice->deliveryAddress)
-        <div class="muted" style="margin-top:4px; white-space:pre-wrap;">
+        <div style="margin-top:4px; white-space:pre-wrap;">
             @if ($invoice->deliveryContactName){{ $invoice->deliveryContactName }}@endif
             @if ($invoice->deliveryPhone) · {{ $invoice->deliveryPhone }}@endif
-            @if ($invoice->deliveryContactName || $invoice->deliveryPhone)<br>@endif
+            @if ($invoice->deliveryContactName || $invoice->deliveryPhone)
+
+            @endif
             {{ $invoice->deliveryAddress }}
         </div>
     @endif
@@ -109,44 +165,51 @@
     <hr class="rule">
 
     @foreach ($invoice->lines as $line)
-        <div class="item">
-            <div class="item-name">{{ $line['product_name'] }}</div>
+        <table class="line">
+            <tr>
+                <td class="item-name" colspan="2">{{ $line['quantity'] }} x {{ $line['product_name'] }}</td>
+            </tr>
             @if (! empty($line['variant_name']))
-                <div class="muted">{{ $line['variant_name'] }}</div>
+                <tr>
+                    <td class="variant">{{ $line['variant_name'] }}</td>
+                    <td class="num">Rs {{ $line['line_total'] }}</td>
+                </tr>
+            @else
+                <tr class="qty-line">
+                    <td></td>
+                    <td class="num">Rs {{ $line['line_total'] }}</td>
+                </tr>
             @endif
-            <div class="row">
-                <span>{{ $line['quantity'] }} x Rs {{ $line['unit_price'] }}</span>
-                <span>Rs {{ $line['line_total'] }}</span>
-            </div>
-        </div>
+        </table>
     @endforeach
 
     <hr class="rule">
 
-    <div class="totals">
-        <div class="row"><span>Subtotal</span><span>Rs {{ $invoice->subtotal }}</span></div>
+    <table class="totals">
+        <tr>
+            <td>Subtotal</td>
+            <td class="num">Rs {{ $invoice->subtotal }}</td>
+        </tr>
         @if ($showDiscount)
-            <div class="row"><span>Discount</span><span>− Rs {{ $invoice->discountTotal }}</span></div>
+            <tr>
+                <td>Discount</td>
+                <td class="num">− Rs {{ $invoice->discountTotal }}</td>
+            </tr>
         @endif
         @if ($invoice->deliveryFeeAmount)
-            <div class="row"><span>Delivery</span><span>Rs {{ $invoice->deliveryFeeAmount }}</span></div>
+            <tr>
+                <td>Delivery</td>
+                <td class="num">Rs {{ $invoice->deliveryFeeAmount }}</td>
+            </tr>
         @endif
-        <div class="row total-line"><span>TOTAL</span><span>Rs {{ $invoice->totalAmount }}</span></div>
-        <div class="muted" style="margin-top:6px;">
-            {{ $invoice->paymentStatusLabel }} · {{ $invoice->paymentMethodLabel }}
-        </div>
-    </div>
+        <tr class="total-row">
+            <td>TOTAL</td>
+            <td class="num">Rs {{ $invoice->totalAmount }}</td>
+        </tr>
+    </table>
 
     <hr class="rule">
 
-    <div class="center muted">{{ $invoice->footerMessage }}</div>
-
-    @if (! empty($autoPrint))
-        <script>
-            window.addEventListener('load', function () {
-                setTimeout(function () { window.print(); }, 250);
-            });
-        </script>
-    @endif
+    <div class="thanks">{{ $invoice->footerMessage }}</div>
 </body>
 </html>

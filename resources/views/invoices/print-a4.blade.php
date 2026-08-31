@@ -10,7 +10,7 @@
     <style>
         body {
             margin: 0;
-            background: #f3f3f3;
+            background: #ececec;
             font-family: Helvetica, Arial, sans-serif;
         }
         .toolbar {
@@ -25,25 +25,27 @@
             background: #111;
             color: #fff;
         }
-        .toolbar a, .toolbar button {
+        .toolbar a,
+        .toolbar button {
             color: #fff;
             background: transparent;
             border: 1px solid #fff;
-            padding: 6px 12px;
+            padding: 8px 14px;
             cursor: pointer;
             text-decoration: none;
             font-size: 13px;
+            border-radius: 4px;
         }
         .sheet {
             max-width: 210mm;
-            margin: 16px auto;
-            padding: 16mm 14mm;
+            margin: 18px auto;
+            padding: 14mm 14mm;
             background: #fff;
-            box-shadow: 0 1px 8px rgba(0,0,0,.12);
+            box-shadow: 0 1px 10px rgba(0, 0, 0, 0.1);
         }
         @media print {
             body { background: #fff; }
-            .toolbar { display: none !important; }
+            .no-print { display: none !important; }
             .sheet {
                 max-width: none;
                 margin: 0;
@@ -68,12 +70,5 @@
     <div class="sheet">
         @include('invoices.partials.a4-body', ['invoice' => $invoice])
     </div>
-    @if (! empty($autoPrint))
-        <script>
-            window.addEventListener('load', function () {
-                setTimeout(function () { window.print(); }, 250);
-            });
-        </script>
-    @endif
 </body>
 </html>
