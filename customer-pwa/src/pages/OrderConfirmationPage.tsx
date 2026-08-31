@@ -141,7 +141,12 @@ export function OrderConfirmationPage() {
         <p className="confirmation-total">Cafe total {formatCurrency(order.total_amount)}</p>
         <div className="confirmation-meta-row">
           <span className="auth-badge">
-            {order.fulfilment_method_label ?? (order.fulfilment_method === 'delivery' ? 'Delivery' : 'Takeaway')}
+            {order.fulfilment_method_label ??
+              (order.fulfilment_method === 'delivery'
+                ? 'Delivery'
+                : order.fulfilment_method === 'dine_in'
+                  ? 'Dine-in'
+                  : 'Takeaway')}
           </span>
           <OrderStatusBadge status={order.status} label={statusLabel} />
         </div>
@@ -152,7 +157,13 @@ export function OrderConfirmationPage() {
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Fulfilment</span>
-            <h2>{order.fulfilment_method === 'delivery' ? 'Delivery details' : 'Pickup details'}</h2>
+            <h2>
+              {order.fulfilment_method === 'delivery'
+                ? 'Delivery details'
+                : order.fulfilment_method === 'dine_in'
+                  ? 'Table details'
+                  : 'Pickup details'}
+            </h2>
           </div>
         </div>
         {order.fulfilment_method === 'delivery' ? (
@@ -176,6 +187,17 @@ export function OrderConfirmationPage() {
                 {order.delivery_disclaimer}
               </p>
             ) : null}
+          </div>
+        ) : order.fulfilment_method === 'dine_in' ? (
+          <div className="summary-card checkout-summary-grid">
+            <div>
+              <span>Table</span>
+              <strong>{order.table_name ?? '—'}</strong>
+            </div>
+            <div>
+              <span>Status</span>
+              <strong>{statusLabel}</strong>
+            </div>
           </div>
         ) : (
           <div className="summary-card checkout-summary-grid">

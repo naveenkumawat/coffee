@@ -68,6 +68,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
             'payment' => $payment,
             'fulfilment' => [
                 'delivery_disclaimer' => $this->deliveryDisclaimer(),
+                'dine_in_enabled' => $this->dineInEnabled(),
             ],
             'pages' => [
                 'about' => $this->filledOrNull($values[WebsiteSettingKey::PagesAbout->value] ?? null),
@@ -122,10 +123,22 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         );
     }
 
+    public function dineInEnabled(): bool
+    {
+        $values = $this->settings->keyedValues();
+        $raw = $values->get(WebsiteSettingKey::FulfilmentDineInEnabled->value);
+
+        return in_array(strtolower(trim((string) ($raw ?? ''))), ['1', 'true', 'yes', 'on'], true);
+    }
+
     protected function normalizeStoredValue(mixed $value): ?string
     {
         if ($value === null) {
             return null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? '1' : '0';
         }
 
         $normalized = $this->sanitizePlainText(is_string($value) ? $value : (string) $value);

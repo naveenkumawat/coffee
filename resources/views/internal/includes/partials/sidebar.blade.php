@@ -61,6 +61,9 @@
                     $user?->canManageWebsiteSettings()
                         ? ['label' => 'Social Links', 'route' => 'administrator.social-links.index', 'pattern' => 'administrator.social-links.*', 'icon' => 'ki-share']
                         : null,
+                    $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Café Tables', 'route' => 'administrator.cafe-tables.index', 'pattern' => 'administrator.cafe-tables.*', 'icon' => 'ki-tablet']
+                        : null,
                 ])),
             ],
         ],

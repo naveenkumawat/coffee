@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\HomeSectionController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
@@ -144,6 +145,16 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('social-links/{social_link}/toggle', [SocialLinkController::class, 'toggle'])->name('social-links.toggle');
     Route::patch('social-links/{social_link}/move-up', [SocialLinkController::class, 'moveUp'])->name('social-links.move-up');
     Route::patch('social-links/{social_link}/move-down', [SocialLinkController::class, 'moveDown'])->name('social-links.move-down');
+
+    Route::get('cafe-tables', [CafeTableController::class, 'index'])->name('cafe-tables.index');
+    Route::get('cafe-tables/create', [CafeTableController::class, 'create'])->name('cafe-tables.create');
+    Route::post('cafe-tables', [CafeTableController::class, 'store'])->name('cafe-tables.store');
+    Route::get('cafe-tables/{cafe_table}/edit', [CafeTableController::class, 'edit'])->name('cafe-tables.edit');
+    Route::put('cafe-tables/{cafe_table}', [CafeTableController::class, 'update'])->name('cafe-tables.update');
+    Route::delete('cafe-tables/{cafe_table}', [CafeTableController::class, 'destroy'])->name('cafe-tables.destroy');
+    Route::patch('cafe-tables/{cafe_table}/toggle', [CafeTableController::class, 'toggle'])->name('cafe-tables.toggle');
+    Route::patch('cafe-tables/{cafe_table}/move-up', [CafeTableController::class, 'moveUp'])->name('cafe-tables.move-up');
+    Route::patch('cafe-tables/{cafe_table}/move-down', [CafeTableController::class, 'moveDown'])->name('cafe-tables.move-down');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->defaults('panel', 'administrator')

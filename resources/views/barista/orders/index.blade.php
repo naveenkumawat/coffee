@@ -80,6 +80,11 @@
                                     <div class="d-flex flex-column">
                                         <span class="text-gray-900 fw-bold">{{ $order->order_number }}</span>
                                         <span class="text-muted">{{ $order->customer?->name ?: 'Walk-in / internal order' }}</span>
+                                        @if ($order->isDineIn())
+                                            <span class="badge badge-light-primary mt-1 align-self-start">DINE-IN · TABLE {{ $order->tableDisplayLabel() ?: '—' }}</span>
+                                        @elseif ($order->isDelivery())
+                                            <span class="badge badge-light-info mt-1 align-self-start">Delivery</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>{{ $order->items->pluck('product_name')->join(', ') }}</td>

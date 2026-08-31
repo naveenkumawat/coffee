@@ -4,6 +4,7 @@ import { formatCurrency, formatDateTime } from '../../utils/format';
 import {
   isActiveOrder,
   isDeliveryOrder,
+  isDineInOrder,
   isPendingPayment,
   isReadyForPickup,
   orderListActionLabel,
@@ -21,6 +22,7 @@ export function OrderListCard({ order }: OrderListCardProps) {
   const active = isActiveOrder(order.status);
   const actionLabel = orderListActionLabel(order);
   const delivery = isDeliveryOrder(order);
+  const dineIn = isDineInOrder(order);
 
   return (
     <Link
@@ -42,6 +44,7 @@ export function OrderListCard({ order }: OrderListCardProps) {
           <p className="order-list-date">
             {formatDateTime(order.placed_at)}
             {order.fulfilment_method_label ? ` · ${order.fulfilment_method_label}` : ''}
+            {dineIn && order.table_name ? ` · ${order.table_name}` : ''}
           </p>
         </div>
         <strong className="order-list-total">{formatCurrency(order.total_amount)}</strong>
@@ -62,7 +65,9 @@ export function OrderListCard({ order }: OrderListCardProps) {
         <p className="order-list-callout is-ready-callout">
           {delivery
             ? 'Ready for delivery handover — third-party charges are separate'
-            : 'Ready at the cafe — come pick it up'}
+            : dineIn
+              ? `Ready to serve${order.table_name ? ` · ${order.table_name}` : ''}`
+              : 'Ready at the cafe — come pick it up'}
         </p>
       ) : null}
     </Link>

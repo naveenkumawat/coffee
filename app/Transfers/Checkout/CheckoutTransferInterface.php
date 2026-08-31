@@ -56,5 +56,9 @@ interface CheckoutTransferInterface
 
     public function setDeliveryNotes(?string $deliveryNotes): void;
 
+    public function getCafeTableId(): ?int;
+
+    public function setCafeTableId(?int $cafeTableId): void;
+
     public function toArray(): array;
 }

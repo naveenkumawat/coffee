@@ -28,12 +28,24 @@ export function isDeliveryOrder(order: Pick<Order, 'fulfilment_method'> | null |
   return order?.fulfilment_method === 'delivery';
 }
 
+export function isDineInOrder(order: Pick<Order, 'fulfilment_method'> | null | undefined): boolean {
+  return order?.fulfilment_method === 'dine_in';
+}
+
 export function preparationStepsForOrder(
   order: Pick<Order, 'fulfilment_method'>,
 ): Array<{ status: OrderStatusValue; label: string }> {
   return ORDER_PREPARATION_STEPS.map((step) => {
-    if (step.status === 'ready_for_pickup' && isDeliveryOrder(order)) {
-      return { ...step, label: 'Ready for delivery' };
+    if (step.status !== 'ready_for_pickup') {
+      return step;
+    }
+
+    if (isDeliveryOrder(order)) {
+      return { ...step, label: 'Ready for Delivery' };
+    }
+
+    if (isDineInOrder(order)) {
+      return { ...step, label: 'Ready to Serve' };
     }
 
     return step;
@@ -159,7 +171,15 @@ export function orderListActionLabel(order: Pick<Order, 'status' | 'fulfilment_m
   }
 
   if (isReadyForPickup(order.status)) {
-    return isDeliveryOrder(order) ? 'Ready' : 'Pickup';
+    if (isDeliveryOrder(order)) {
+      return 'Ready';
+    }
+
+    if (isDineInOrder(order)) {
+      return 'Serve';
+    }
+
+    return 'Pickup';
   }
 
   if (isActiveOrder(order.status)) {

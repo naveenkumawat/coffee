@@ -14,7 +14,9 @@ use App\Events\Order\OrderStatusChanged;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
 use Illuminate\Http\UploadedFile;
@@ -27,6 +29,8 @@ class OrderService implements OrderServiceInterface
 {
     public function __construct(
         protected OrderRepositoryInterface $orders,
+        protected CafeTableRepositoryInterface $cafeTables,
+        protected WebsiteSettingServiceInterface $websiteSettings,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -60,6 +64,29 @@ class OrderService implements OrderServiceInterface
             $fulfilmentMethod = OrderFulfilmentMethod::tryFrom((string) ($data->getFulfilmentMethod() ?: OrderFulfilmentMethod::Takeaway->value))
                 ?? OrderFulfilmentMethod::Takeaway;
 
+            $cafeTableId = null;
+            $tableNameSnapshot = null;
+
+            if ($fulfilmentMethod === OrderFulfilmentMethod::DineIn) {
+                if (! $this->websiteSettings->dineInEnabled()) {
+                    throw ValidationException::withMessages([
+                        'fulfilment_method' => 'Dine-in ordering is not available.',
+                    ]);
+                }
+
+                $tableId = $data->getCafeTableId();
+                $table = $tableId !== null ? $this->cafeTables->findActiveById($tableId) : null;
+
+                if ($table === null) {
+                    throw ValidationException::withMessages([
+                        'cafe_table_id' => 'Select a valid active table for dine-in.',
+                    ]);
+                }
+
+                $cafeTableId = (int) $table->getKey();
+                $tableNameSnapshot = $table->snapshotLabel();
+            }
+
             $order = $this->orders->create([
                 'order_number' => $this->formatOrderNumber(Carbon::instance($placedAt), $dailySequence),
                 'order_date' => $placedAt->toDateString(),
@@ -83,6 +110,8 @@ class OrderService implements OrderServiceInterface
                 'customer_notes' => $data->getCustomerNotes(),
                 'pickup_notes' => $fulfilmentMethod === OrderFulfilmentMethod::Takeaway ? $data->getPickupNotes() : null,
                 'fulfilment_method' => $fulfilmentMethod->value,
+                'cafe_table_id' => $cafeTableId,
+                'table_name_snapshot' => $tableNameSnapshot,
                 'delivery_address' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryAddress() : null,
                 'delivery_phone' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryPhone() : null,
                 'delivery_contact_name' => $fulfilmentMethod === OrderFulfilmentMethod::Delivery ? $data->getDeliveryContactName() : null,

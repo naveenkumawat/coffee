@@ -25,6 +25,7 @@ export interface WebsitePaymentContent {
 
 export interface WebsiteFulfilmentContent {
   delivery_disclaimer: string | null;
+  dine_in_enabled?: boolean;
 }
 
 export interface WebsitePagesContent {

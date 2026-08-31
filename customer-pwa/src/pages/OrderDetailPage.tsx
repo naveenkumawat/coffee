@@ -227,8 +227,20 @@ export function OrderDetailPage() {
       <section className="account-section order-pickup-section">
         <div className="account-section-heading">
           <div>
-            <span className="auth-badge">{order.fulfilment_method === 'delivery' ? 'Delivery' : 'Takeaway'}</span>
-            <h2>{order.fulfilment_method === 'delivery' ? 'Delivery details' : 'Pickup details'}</h2>
+            <span className="auth-badge">
+              {order.fulfilment_method === 'delivery'
+                ? 'Delivery'
+                : order.fulfilment_method === 'dine_in'
+                  ? 'Dine-in'
+                  : 'Takeaway'}
+            </span>
+            <h2>
+              {order.fulfilment_method === 'delivery'
+                ? 'Delivery details'
+                : order.fulfilment_method === 'dine_in'
+                  ? 'Table details'
+                  : 'Pickup details'}
+            </h2>
           </div>
         </div>
         <div className="order-meta-grid">
@@ -259,6 +271,11 @@ export function OrderDetailPage() {
                 </div>
               ) : null}
             </>
+          ) : order.fulfilment_method === 'dine_in' ? (
+            <div>
+              <span>Table</span>
+              <strong>{order.table_name ?? '—'}</strong>
+            </div>
           ) : (
             <>
               <div>

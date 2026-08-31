@@ -85,6 +85,7 @@ class CheckoutService implements CheckoutServiceInterface
             $orderTransfer->setDeliveryPhone($data->getDeliveryPhone());
             $orderTransfer->setDeliveryContactName($data->getDeliveryContactName());
             $orderTransfer->setDeliveryNotes($data->getDeliveryNotes());
+            $orderTransfer->setCafeTableId($data->getCafeTableId());
             $orderTransfer->setItems(
                 $cart->items
                     ->map(fn (CartItem $item): array => [

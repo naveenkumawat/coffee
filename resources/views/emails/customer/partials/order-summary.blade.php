@@ -49,6 +49,10 @@
                 @if (filled($brandSnapshot['delivery_disclaimer']))
                     <p style="margin:8px 0 0;font-size:12px;color:#6b5646;">{{ $brandSnapshot['delivery_disclaimer'] }}</p>
                 @endif
+            @elseif ($order->fulfilment_method === OrderFulfilmentMethod::DineIn)
+                @if (filled($order->table_name_snapshot))
+                    <p style="margin:12px 0 0;"><strong>Table:</strong> {{ $order->table_name_snapshot }}</p>
+                @endif
             @endif
         </td>
     </tr>

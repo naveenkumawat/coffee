@@ -26,6 +26,8 @@ class OrderResource extends JsonResource
             'status_label' => $order->customerStatusLabel(),
             'fulfilment_method' => $order->fulfilment_method?->value,
             'fulfilment_method_label' => $order->fulfilment_method?->label(),
+            'cafe_table_id' => $order->cafe_table_id,
+            'table_name' => $order->tableDisplayLabel(),
             'customer_name' => $order->customer_name,
             'customer_email' => $order->customer_email,
             'customer_phone' => $order->customer_phone,

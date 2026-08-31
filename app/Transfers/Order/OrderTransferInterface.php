@@ -60,6 +60,10 @@ interface OrderTransferInterface
 
     public function setDeliveryNotes(?string $deliveryNotes): void;
 
+    public function getCafeTableId(): ?int;
+
+    public function setCafeTableId(?int $cafeTableId): void;
+
     public function getItems(): array;
 
     public function setItems(array $items): void;

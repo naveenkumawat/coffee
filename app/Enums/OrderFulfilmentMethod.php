@@ -6,12 +6,23 @@ enum OrderFulfilmentMethod: string
 {
     case Takeaway = 'takeaway';
     case Delivery = 'delivery';
+    case DineIn = 'dine_in';
 
     public function label(): string
     {
         return match ($this) {
             self::Takeaway => 'Takeaway',
             self::Delivery => 'Delivery',
+            self::DineIn => 'Dine-in',
+        };
+    }
+
+    public function readyLabel(): string
+    {
+        return match ($this) {
+            self::Takeaway => 'Ready for Pickup',
+            self::Delivery => 'Ready for Delivery',
+            self::DineIn => 'Ready to Serve',
         };
     }
 

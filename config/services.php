@@ -69,6 +69,7 @@ return [
             'order_preparing' => env('WHATSAPP_TEMPLATE_ORDER_PREPARING'),
             'order_ready_pickup' => env('WHATSAPP_TEMPLATE_ORDER_READY_PICKUP'),
             'order_ready_delivery' => env('WHATSAPP_TEMPLATE_ORDER_READY_DELIVERY'),
+            'order_ready_dine_in' => env('WHATSAPP_TEMPLATE_ORDER_READY_DINE_IN'),
             'order_completed' => env('WHATSAPP_TEMPLATE_ORDER_COMPLETED'),
             'order_cancelled' => env('WHATSAPP_TEMPLATE_ORDER_CANCELLED'),
         ],

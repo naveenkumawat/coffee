@@ -61,8 +61,11 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
     protected function content(array $brand): array
     {
         $number = (string) $this->order->order_number;
-        $isDelivery = $this->order->fulfilment_method === OrderFulfilmentMethod::Delivery;
-        $readyLabel = $isDelivery ? 'Ready for Delivery' : 'Ready for Pickup';
+        $method = $this->order->fulfilment_method instanceof OrderFulfilmentMethod
+            ? $this->order->fulfilment_method
+            : OrderFulfilmentMethod::Takeaway;
+        $readyLabel = $method->readyLabel();
+        $tableLabel = $this->order->tableDisplayLabel();
         $business = (string) $brand['business_name'];
 
         return match ($this->type) {
@@ -70,10 +73,13 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'subject' => 'Order received — #'.$number,
                 'statusLabel' => 'Pending Payment',
                 'statusTone' => 'warning',
-                'intro' => [
+                'intro' => array_values(array_filter([
                     'We received your order at '.$business.'.',
+                    $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
+                        ? 'Table: '.$tableLabel
+                        : null,
                     'Please complete payment and upload your payment screenshot from the order page.',
-                ],
+                ])),
                 'actionText' => 'View Order & Pay',
                 'outro' => [
                     'Your order stays in Pending Payment until the café confirms your transfer.',
@@ -96,10 +102,13 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'subject' => 'Payment confirmed — #'.$number,
                 'statusLabel' => 'Payment Confirmed',
                 'statusTone' => 'success',
-                'intro' => [
+                'intro' => array_values(array_filter([
                     'Payment for order #'.$number.' has been confirmed.',
+                    $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
+                        ? 'Table: '.$tableLabel
+                        : null,
                     'The café will accept and prepare your order next.',
-                ],
+                ])),
                 'actionText' => 'Track Order',
                 'outro' => [],
             ],
@@ -137,20 +146,27 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'outro' => [],
             ],
             CustomerNotificationType::OrderReady => [
-                'subject' => $isDelivery
-                    ? 'Your order is ready for delivery — #'.$number
-                    : 'Your order is ready for pickup — #'.$number,
+                'subject' => match ($method) {
+                    OrderFulfilmentMethod::Delivery => 'Your order is ready for delivery — #'.$number,
+                    OrderFulfilmentMethod::DineIn => 'Your order is ready to serve — #'.$number,
+                    default => 'Your order is ready for pickup — #'.$number,
+                },
                 'statusLabel' => $readyLabel,
                 'statusTone' => 'success',
-                'intro' => $isDelivery
-                    ? array_values(array_filter([
+                'intro' => match ($method) {
+                    OrderFulfilmentMethod::Delivery => array_values(array_filter([
                         'Order #'.$number.' is ready for delivery.',
                         filled($brand['delivery_disclaimer']) ? (string) $brand['delivery_disclaimer'] : null,
-                    ]))
-                    : array_values(array_filter([
+                    ])),
+                    OrderFulfilmentMethod::DineIn => array_values(array_filter([
+                        'Your order is ready to serve.',
+                        filled($tableLabel) ? 'Table: '.$tableLabel : null,
+                    ])),
+                    default => array_values(array_filter([
                         'Order #'.$number.' is ready for pickup.',
                         filled($brand['address']) ? 'Pickup address: '.$brand['address'] : null,
                     ])),
+                },
                 'actionText' => 'View Order',
                 'outro' => array_values(array_filter([
                     filled($brand['whatsapp']) ? 'WhatsApp: '.$brand['whatsapp'] : null,

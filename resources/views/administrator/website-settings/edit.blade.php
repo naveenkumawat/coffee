@@ -110,6 +110,28 @@
                                             Empty falls back to config/env.
                                         @endif
                                     </div>
+                                @elseif ($key->valueType() === 'boolean')
+                                    @php
+                                        $checked = filter_var(old($key->value, $values[$key->value] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+                                    @endphp
+                                    <input type="hidden" name="{{ $key->value }}" value="0">
+                                    <div class="form-check form-switch form-check-custom form-check-solid">
+                                        <input
+                                            id="{{ $key->value }}"
+                                            name="{{ $key->value }}"
+                                            type="checkbox"
+                                            value="1"
+                                            class="form-check-input @error($key->value) is-invalid @enderror"
+                                            @checked($checked)
+                                        />
+                                        <label class="form-check-label" for="{{ $key->value }}">
+                                            Allow customers to place dine-in / table orders from the PWA
+                                        </label>
+                                        @error($key->value)
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="form-text">Default off. Manage café tables separately under Café Tables.</div>
                                 @elseif ($key->valueType() === 'text')
                                     <textarea
                                         id="{{ $key->value }}"

@@ -38,6 +38,7 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::PaymentQrImagePath->value => null,
             WebsiteSettingKey::PaymentWhatsappNumber->value => '+919876543210',
             WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
+            WebsiteSettingKey::FulfilmentDineInEnabled->value => '0',
             WebsiteSettingKey::PagesAbout->value => "The88Coffees is a neighborhood cafe built for order-ahead takeaway and third-party delivery.\n\nWe keep the menu focused, the espresso consistent, and the wait short so you can order ahead and collect when ready.",
             WebsiteSettingKey::PagesContact->value => "Need help with an order or timing?\n\nCall, email, or WhatsApp us and include your order number when you can.",
             WebsiteSettingKey::PagesFaq->value => "How do I order?\nBrowse the menu, add items to your cart, and checkout while signed in.\n\nWhen do I pay?\nOrders start as Pending Payment. Pay by UPI and upload the screenshot in the app (or WhatsApp).\n\nDo you deliver?\nYes — choose Delivery at checkout. A third-party service arranges delivery and charges you separately.\n\nCan I customise drinks?\nYes where a product is marked customizable. Flavours and sizes appear on the product page.",

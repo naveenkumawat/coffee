@@ -77,6 +77,10 @@ class WebsiteSettingController extends Controller
             PublicMedia::deleteManaged(is_string($previous) ? $previous : null);
         }
 
+        $payload[WebsiteSettingKey::FulfilmentDineInEnabled->value] = $request->boolean(
+            WebsiteSettingKey::FulfilmentDineInEnabled->value,
+        ) ? '1' : '0';
+
         $this->websiteSettings->update($payload);
 
         return redirect()

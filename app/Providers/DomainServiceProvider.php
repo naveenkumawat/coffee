@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Contracts\WhatsApp\WhatsAppNotificationProviderInterface;
 use App\Services\Auth\RoleService;
 use App\Services\Auth\RoleServiceInterface;
+use App\Services\CafeTable\CafeTableService;
+use App\Services\CafeTable\CafeTableServiceInterface;
 use App\Services\Cart\CartService;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Checkout\CheckoutService;
@@ -95,5 +97,6 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(UserServiceInterface::class, UserService::class);
         $this->app->bind(WebsiteSettingServiceInterface::class, WebsiteSettingService::class);
         $this->app->bind(SocialLinkServiceInterface::class, SocialLinkService::class);
+        $this->app->bind(CafeTableServiceInterface::class, CafeTableService::class);
     }
 }

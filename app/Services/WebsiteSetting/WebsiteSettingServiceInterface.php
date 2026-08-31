@@ -36,7 +36,7 @@ interface WebsiteSettingServiceInterface
      *         qr_image_path: ?string,
      *         whatsapp_number: ?string
      *     },
-     *     fulfilment: array{delivery_disclaimer: ?string},
+     *     fulfilment: array{delivery_disclaimer: ?string, dine_in_enabled: bool},
      *     pages: array{
      *         about: ?string,
      *         contact: ?string,
@@ -64,4 +64,6 @@ interface WebsiteSettingServiceInterface
     public function paymentInstructions(): array;
 
     public function deliveryDisclaimer(): ?string;
+
+    public function dineInEnabled(): bool;
 }

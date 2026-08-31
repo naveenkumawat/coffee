@@ -26,6 +26,11 @@ class CheckoutParser implements CheckoutParserInterface
         $transfer->setDeliveryPhone(filled($checkoutData['delivery_phone'] ?? null) ? trim((string) $checkoutData['delivery_phone']) : null);
         $transfer->setDeliveryContactName(filled($checkoutData['delivery_contact_name'] ?? null) ? trim((string) $checkoutData['delivery_contact_name']) : null);
         $transfer->setDeliveryNotes(filled($checkoutData['delivery_notes'] ?? null) ? trim((string) $checkoutData['delivery_notes']) : null);
+        $transfer->setCafeTableId(
+            filled($checkoutData['cafe_table_id'] ?? null)
+                ? (int) $checkoutData['cafe_table_id']
+                : null,
+        );
 
         return $transfer;
     }

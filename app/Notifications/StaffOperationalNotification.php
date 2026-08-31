@@ -2,7 +2,6 @@
 
 namespace App\Notifications;
 
-use App\Enums\OrderFulfilmentMethod;
 use App\Enums\StaffNotificationChannel;
 use App\Enums\StaffNotificationType;
 use App\Models\User;
@@ -144,7 +143,7 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
 
         return match ($this->type) {
             StaffNotificationType::OrderPlaced => [
-                'title' => 'New order #'.$number.' received',
+                'title' => $this->newOrderTitle($number),
                 'message' => 'A new order needs payment follow-up.',
                 'actionText' => 'Open order',
             ],
@@ -159,7 +158,7 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
                 'actionText' => 'Open order',
             ],
             StaffNotificationType::PaymentConfirmed => [
-                'title' => 'Order #'.$number.' is ready to prepare',
+                'title' => $this->paymentConfirmedTitle($number),
                 'message' => 'Payment is confirmed. Accept the order when ready to start.',
                 'actionText' => 'Open order',
             ],
@@ -272,8 +271,32 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
 
     protected function fulfilmentLabel(): string
     {
-        return $this->context->order?->fulfilment_method === OrderFulfilmentMethod::Delivery
-            ? 'Delivery'
-            : 'Takeaway';
+        return $this->context->order?->fulfilment_method?->label() ?? 'Takeaway';
+    }
+
+    protected function newOrderTitle(string $number): string
+    {
+        $order = $this->context->order;
+
+        if ($order?->isDineIn()) {
+            $table = $order->tableDisplayLabel() ?: 'Table';
+
+            return 'New dine-in order #'.$number.' — Table '.$table;
+        }
+
+        return 'New order #'.$number.' received';
+    }
+
+    protected function paymentConfirmedTitle(string $number): string
+    {
+        $order = $this->context->order;
+
+        if ($order?->isDineIn()) {
+            $table = $order->tableDisplayLabel() ?: 'Table';
+
+            return 'Order #'.$number.' is ready to prepare — Table '.$table;
+        }
+
+        return 'Order #'.$number.' is ready to prepare';
     }
 }

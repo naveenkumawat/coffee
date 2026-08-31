@@ -4,6 +4,7 @@ import { Order } from '../../types/order';
 import { formatDateTime } from '../../utils/format';
 import {
   isDeliveryOrder,
+  isDineInOrder,
   isPendingPayment,
   isReadyForPickup,
   isTerminalFailure,
@@ -23,6 +24,7 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
   const pendingPayment = isPendingPayment(order.status);
   const ready = isReadyForPickup(order.status);
   const delivery = isDeliveryOrder(order);
+  const dineIn = isDineInOrder(order);
   const steps = preparationStepsForOrder(order);
   const history = sortedTimeline(order.status_timeline);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -68,7 +70,9 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
               : ready
                 ? delivery
                   ? 'Your order is ready for the delivery partner.'
-                  : 'Your drinks are ready — head to the cafe when you can.'
+                  : dineIn
+                    ? 'Your order is ready to serve at your table.'
+                    : 'Your drinks are ready — head to the cafe when you can.'
                 : 'Live updates from the cafe team. Refresh anytime.'}
           </p>
         </div>
@@ -83,11 +87,15 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
 
       {ready ? (
         <div className="order-next-step is-ready motion-enter">
-          <strong>{delivery ? 'Ready for delivery' : 'Ready for pickup'}</strong>
+          <strong>
+            {delivery ? 'Ready for Delivery' : dineIn ? 'Ready to Serve' : 'Ready for Pickup'}
+          </strong>
           <p>
             {delivery
               ? 'The cafe will hand this order to a third-party delivery service. Delivery charges are paid separately.'
-              : 'Show your order number at the counter. Enjoy!'}
+              : dineIn
+                ? `We’ll bring this to ${order.table_name ? `table ${order.table_name}` : 'your table'}.`
+                : 'Show your order number at the counter. Enjoy!'}
           </p>
         </div>
       ) : null}

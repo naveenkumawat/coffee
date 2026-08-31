@@ -46,6 +46,8 @@ export interface Order {
   status_label: string | null;
   fulfilment_method: CheckoutFulfilmentMethod | null;
   fulfilment_method_label: string | null;
+  cafe_table_id: number | null;
+  table_name: string | null;
   customer_name: string;
   customer_email: string;
   customer_phone: string;

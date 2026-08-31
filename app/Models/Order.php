@@ -36,6 +36,8 @@ class Order extends AbstractModel
         'customer_notes',
         'pickup_notes',
         'fulfilment_method',
+        'cafe_table_id',
+        'table_name_snapshot',
         'delivery_address',
         'delivery_phone',
         'delivery_contact_name',
@@ -99,6 +101,11 @@ class Order extends AbstractModel
         return $this->belongsTo(User::class, 'assigned_barista_id')->withTrashed();
     }
 
+    public function cafeTable(): BelongsTo
+    {
+        return $this->belongsTo(CafeTable::class)->withTrashed();
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->orderBy('id');
@@ -119,10 +126,20 @@ class Order extends AbstractModel
         return $this->fulfilment_method === OrderFulfilmentMethod::Takeaway;
     }
 
+    public function isDineIn(): bool
+    {
+        return $this->fulfilment_method === OrderFulfilmentMethod::DineIn;
+    }
+
+    public function tableDisplayLabel(): ?string
+    {
+        return filled($this->table_name_snapshot) ? (string) $this->table_name_snapshot : null;
+    }
+
     public function customerLabelForStatus(?OrderStatus $status): string
     {
-        if ($status === OrderStatus::ReadyForPickup && $this->isDelivery()) {
-            return 'Ready for delivery';
+        if ($status === OrderStatus::ReadyForPickup && $this->fulfilment_method instanceof OrderFulfilmentMethod) {
+            return $this->fulfilment_method->readyLabel();
         }
 
         return $status?->label() ?? '';

@@ -161,7 +161,7 @@ class OrderFulfilmentCheckoutTest extends TestCase
         $this->getJson(route('api.v1.orders.show', $order))
             ->assertOk()
             ->assertJsonPath('data.status', 'ready_for_pickup')
-            ->assertJsonPath('data.status_label', 'Ready for delivery')
+            ->assertJsonPath('data.status_label', 'Ready for Delivery')
             ->assertJsonPath('data.fulfilment_method', 'delivery');
     }
 

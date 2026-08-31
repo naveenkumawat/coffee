@@ -32,6 +32,8 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
 
     protected ?string $deliveryNotes = null;
 
+    protected ?int $cafeTableId = null;
+
     public function getCheckoutToken(): ?string
     {
         return $this->checkoutToken;
@@ -162,6 +164,16 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
         $this->deliveryNotes = $deliveryNotes;
     }
 
+    public function getCafeTableId(): ?int
+    {
+        return $this->cafeTableId;
+    }
+
+    public function setCafeTableId(?int $cafeTableId): void
+    {
+        $this->cafeTableId = $cafeTableId;
+    }
+
     public function toArray(): array
     {
         return [
@@ -178,6 +190,7 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
             'delivery_phone' => $this->deliveryPhone,
             'delivery_contact_name' => $this->deliveryContactName,
             'delivery_notes' => $this->deliveryNotes,
+            'cafe_table_id' => $this->cafeTableId,
         ];
     }
 }

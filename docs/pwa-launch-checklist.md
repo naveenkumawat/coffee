@@ -20,7 +20,7 @@ Legend: **CONFIGURED** = Admin/system ready · **NEEDS REAL VALUE** = café must
 | Business phone / WhatsApp / email / address / hours | NEEDS REAL VALUE | Local empty. Demo seeder phones/email/address are **DEMO-ONLY**. |
 | Social Links admin + footer | CONFIGURED | Dynamic CRUD. Local shells: Facebook/WhatsApp/Instagram (inactive, blank URLs — not public). URLs still **NEEDS REAL VALUE**. |
 | Payment UPI / phone / QR / instructions | NEEDS REAL VALUE | Admin supports all. Demo UPI is **DEMO-ONLY**. |
-| Fulfilment Takeaway + Delivery model | CONFIGURED | Third-party delivery; no invented fee. Disclaimer text: review (**NEEDS REAL VALUE** or keep default if approved). |
+| Fulfilment Takeaway + Delivery + optional Dine-in | CONFIGURED | Takeaway/Delivery always. Dine-in via Website Settings `fulfilment_dine_in_enabled` (default **off**). Café Tables admin CRUD required before enabling. Future table QR = convenience deep-link only. |
 | CMS About / Visit / FAQ / Terms / Privacy | NEEDS REAL VALUE | Local empty. Do not invent legal Terms/Privacy. |
 | ProductTags taxonomy | CONFIGURED | New, Top Seller, Featured, Seasonal, Popular, Limited, Recommended present. Assignments **OPTIONAL** / business decision. |
 | Categories / flavours / products / prices | NEEDS REAL VALUE | Local: **0** products. Demo menu (18 items) is **DEMO-ONLY** — do not assume for production. |
@@ -198,6 +198,7 @@ Body variable order expected by the app (match Meta template placeholders `{{1}}
 | `order_accepted` | name, order number, business |
 | `order_ready_pickup` | name, order number, pickup address, business |
 | `order_ready_delivery` | name, order number, delivery address summary, business |
+| `order_ready_dine_in` | name, order number, table label, business (leave env empty until Meta approval) |
 | `order_completed` | name, order number, order URL, business |
 | `order_cancelled` | name, order number, status label, reason, business |
 
@@ -207,8 +208,8 @@ Body variable order expected by the app (match Meta template placeholders `{{1}}
 2. CSRF cookie + login + authenticated `/api/v1` from the PWA origin (`credentials` + `X-XSRF-TOKEN`).
 3. Open PWA fresh → browse catalog → multi-select categories/flavours.
 4. Guest add-to-cart → register/login → guest-cart merge → authenticated cart.
-5. Checkout Takeaway + Delivery; manual payment details; payment proof upload.
-6. Admin: view/confirm proof → accept order; Barista: prepare → Ready → Completed. Confirm staff notification bell for new order / proof review (Administrator) and payment-confirmed (Barista).
+5. Checkout Takeaway + Delivery (+ Dine-in only if enabled with active tables); manual payment details; payment proof upload.
+6. Admin: view/confirm proof → accept order; Barista: prepare → Ready → Completed. Confirm staff notification bell for new order / proof review (Administrator) and payment-confirmed (Barista). Dine-in orders must show table prominently for staff.
 7. Customer order tracking + rating/review; logout/login again; PWA refresh/reopen + update banner.
 8. Verify images, social/footer links, About/Visit/FAQ/Terms/Privacy, dynamic homepage sections.
 9. Force offline: shell messaging; cart/checkout/orders do not succeed from cache.

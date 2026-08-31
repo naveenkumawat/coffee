@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\CafeTable\CafeTableRepository;
+use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Cart\CartRepositoryInterface;
 use App\Repositories\Favourite\FavouriteRepository;
@@ -68,5 +70,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(WebsiteSettingRepositoryInterface::class, WebsiteSettingRepository::class);
         $this->app->bind(SocialLinkRepositoryInterface::class, SocialLinkRepository::class);
+        $this->app->bind(CafeTableRepositoryInterface::class, CafeTableRepository::class);
     }
 }

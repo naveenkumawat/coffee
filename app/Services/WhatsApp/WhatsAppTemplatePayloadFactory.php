@@ -59,9 +59,11 @@ class WhatsAppTemplatePayloadFactory
             CustomerNotificationType::OrderPreparing => (bool) config('services.whatsapp.send_preparing', false)
                 ? 'order_preparing'
                 : null,
-            CustomerNotificationType::OrderReady => $order->fulfilment_method === OrderFulfilmentMethod::Delivery
-                ? 'order_ready_delivery'
-                : 'order_ready_pickup',
+            CustomerNotificationType::OrderReady => match ($order->fulfilment_method) {
+                OrderFulfilmentMethod::Delivery => 'order_ready_delivery',
+                OrderFulfilmentMethod::DineIn => 'order_ready_dine_in',
+                default => 'order_ready_pickup',
+            },
             CustomerNotificationType::OrderCompleted => 'order_completed',
             CustomerNotificationType::OrderCancelled,
             CustomerNotificationType::OrderRejected => 'order_cancelled',
@@ -103,10 +105,15 @@ class WhatsAppTemplatePayloadFactory
         $number = (string) $order->order_number;
         $total = number_format((float) $order->total_amount, 2, '.', '');
         $business = (string) $brand['business_name'];
-        $fulfilment = $order->fulfilment_method === OrderFulfilmentMethod::Delivery
-            ? 'Delivery'
-            : 'Takeaway';
+        $fulfilment = match ($order->fulfilment_method) {
+            OrderFulfilmentMethod::Delivery => 'Delivery',
+            OrderFulfilmentMethod::DineIn => 'Dine-in'.(
+                filled($order->table_name_snapshot) ? ' · '.$order->table_name_snapshot : ''
+            ),
+            default => 'Takeaway',
+        };
         $reason = $this->safeReason($customerFacingReason);
+        $table = filled($order->table_name_snapshot) ? (string) $order->table_name_snapshot : 'your table';
 
         return match ($templateKey) {
             'order_placed' => [$name, $number, $total, $fulfilment, $business],
@@ -125,6 +132,12 @@ class WhatsAppTemplatePayloadFactory
                 $name,
                 $number,
                 $this->deliveryAddressSummary($order) ?: 'your delivery address',
+                $business,
+            ],
+            'order_ready_dine_in' => [
+                $name,
+                $number,
+                $table,
                 $business,
             ],
             'order_completed' => [$name, $number, CustomerAppUrl::order($order->getKey()), $business],

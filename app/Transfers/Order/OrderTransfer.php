@@ -34,6 +34,8 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
 
     protected ?string $deliveryNotes = null;
 
+    protected ?int $cafeTableId = null;
+
     protected array $items = [];
 
     public function getCustomerId(): ?int
@@ -176,6 +178,16 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
         $this->deliveryNotes = $deliveryNotes;
     }
 
+    public function getCafeTableId(): ?int
+    {
+        return $this->cafeTableId;
+    }
+
+    public function setCafeTableId(?int $cafeTableId): void
+    {
+        $this->cafeTableId = $cafeTableId;
+    }
+
     public function getItems(): array
     {
         return $this->items;
@@ -203,6 +215,7 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
             'delivery_phone' => $this->deliveryPhone,
             'delivery_contact_name' => $this->deliveryContactName,
             'delivery_notes' => $this->deliveryNotes,
+            'cafe_table_id' => $this->cafeTableId,
             'items' => $this->items,
         ];
     }

@@ -1491,9 +1491,8 @@ After café operations stabilize, the following can be introduced:
 * Razorpay/UPI online payment
 * Automated WhatsApp notifications
 * OTP authentication
-* QR-based menu
-* Table ordering
-* Dine-in orders
+* ~~QR-based menu~~ (deferred: architecture ready for later `/menu?table=T4` convenience deep-link; not security)
+* ~~Table ordering / Dine-in orders~~ (implemented: admin-toggleable `fulfilment_dine_in_enabled`, café tables CRUD, PWA checkout + table snapshot; default off)
 * Takeaway orders
 * Delivery orders
 * Coupon system

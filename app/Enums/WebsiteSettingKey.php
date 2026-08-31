@@ -21,6 +21,7 @@ enum WebsiteSettingKey: string
     case PaymentQrImagePath = 'payment_qr_image_path';
     case PaymentWhatsappNumber = 'payment_whatsapp_number';
     case FulfilmentDeliveryDisclaimer = 'fulfilment_delivery_disclaimer';
+    case FulfilmentDineInEnabled = 'fulfilment_dine_in_enabled';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -33,7 +34,7 @@ enum WebsiteSettingKey: string
             self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
             self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours => 'business',
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
-            self::FulfilmentDeliveryDisclaimer => 'fulfilment',
+            self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -46,12 +47,8 @@ enum WebsiteSettingKey: string
             self::BusinessAddress,
             self::BusinessOpeningHours,
             self::PaymentInstructions,
-            self::FulfilmentDeliveryDisclaimer,
-            self::PagesAbout,
-            self::PagesContact,
-            self::PagesFaq,
-            self::PagesTerms,
-            self::PagesPrivacy => 'text',
+            self::FulfilmentDeliveryDisclaimer => 'text',
+            self::FulfilmentDineInEnabled => 'boolean',
             default => 'string',
         };
     }
@@ -76,6 +73,7 @@ enum WebsiteSettingKey: string
             self::PaymentQrImagePath => 'Payment QR image',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
             self::FulfilmentDeliveryDisclaimer => 'Delivery disclaimer',
+            self::FulfilmentDineInEnabled => 'Enable dine-in / table ordering',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
@@ -91,6 +89,7 @@ enum WebsiteSettingKey: string
             self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 255,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
+            self::FulfilmentDineInEnabled => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -100,6 +99,7 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
+            self::FulfilmentDineInEnabled => 'checkbox',
             default => 'text',
         };
     }

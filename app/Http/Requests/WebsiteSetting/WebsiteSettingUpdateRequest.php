@@ -27,6 +27,12 @@ class WebsiteSettingUpdateRequest extends FormRequest
         ];
 
         foreach (WebsiteSettingKey::ordered() as $key) {
+            if ($key->valueType() === 'boolean') {
+                $rules[$key->value] = ['nullable', 'boolean'];
+
+                continue;
+            }
+
             $fieldRules = ['nullable', 'string', 'max:'.$key->maxLength()];
 
             if ($key === WebsiteSettingKey::BusinessEmail) {
@@ -37,6 +43,19 @@ class WebsiteSettingUpdateRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        foreach (WebsiteSettingKey::ordered() as $key) {
+            if ($key->valueType() !== 'boolean') {
+                continue;
+            }
+
+            $this->merge([
+                $key->value => $this->boolean($key->value),
+            ]);
+        }
     }
 
     /**

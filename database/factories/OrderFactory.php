@@ -6,6 +6,7 @@ use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Models\CafeTable;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -81,7 +82,29 @@ class OrderFactory extends Factory
             'delivery_notes' => fake()->optional()->sentence(),
             'delivery_fee_amount' => null,
             'delivery_status' => null,
+            'cafe_table_id' => null,
+            'table_name_snapshot' => null,
         ]);
+    }
+
+    public function dineIn(?CafeTable $table = null): static
+    {
+        return $this->state(function () use ($table): array {
+            $resolved = $table ?? CafeTable::factory()->create();
+
+            return [
+                'fulfilment_method' => OrderFulfilmentMethod::DineIn,
+                'pickup_name' => null,
+                'pickup_phone' => null,
+                'pickup_notes' => null,
+                'delivery_address' => null,
+                'delivery_phone' => null,
+                'delivery_contact_name' => null,
+                'delivery_notes' => null,
+                'cafe_table_id' => $resolved->getKey(),
+                'table_name_snapshot' => $resolved->snapshotLabel(),
+            ];
+        });
     }
 
     public function withPaymentProof(): static

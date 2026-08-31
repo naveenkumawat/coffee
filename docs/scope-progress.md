@@ -328,6 +328,7 @@ Status: Partial
 - [x] Pending Payment initial state implemented
 - [x] Manual payment confirmation workflow implemented
 - [x] Takeaway and delivery fulfilment methods implemented
+- [x] Optional dine-in / table ordering implemented (Website Settings toggle default off; admin café tables; active tables API; checkout `cafe_table_id` + `table_name_snapshot`; Ready to Serve wording; staff/customer notifications extended)
 - [x] Delivery address snapshot and third-party delivery disclaimer implemented
 - [x] Customer payment proof upload (image) implemented
 - [x] Administrator payment proof review / replacement request implemented

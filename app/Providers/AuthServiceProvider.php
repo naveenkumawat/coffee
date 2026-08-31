@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\CafeTable;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\HomeSection;
@@ -23,6 +24,7 @@ use App\Models\Recipe;
 use App\Models\SocialLink;
 use App\Models\User;
 use App\Models\WebsiteSetting;
+use App\Policies\CafeTablePolicy;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
 use App\Policies\HomeSectionPolicy;
@@ -52,6 +54,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Cart::class => CartPolicy::class,
         CartItem::class => CartItemPolicy::class,
+        CafeTable::class => CafeTablePolicy::class,
         HomeSection::class => HomeSectionPolicy::class,
         Ingredient::class => IngredientPolicy::class,
         IngredientBrand::class => IngredientBrandPolicy::class,

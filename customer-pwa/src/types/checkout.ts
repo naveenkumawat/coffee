@@ -17,12 +17,13 @@ export interface CheckoutPaymentInstructions {
   whatsapp_number: string | null;
 }
 
-export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery';
+export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery' | 'dine_in';
 
 export interface CheckoutFulfilmentMeta {
   methods: Array<{ value: CheckoutFulfilmentMethod; label: string }>;
   pickup_address: string | null;
   delivery_disclaimer: string;
+  dine_in_enabled?: boolean;
 }
 
 export interface CheckoutSummaryMeta extends Record<string, unknown> {
@@ -51,6 +52,7 @@ export interface CheckoutSubmitPayload {
   delivery_phone?: string | null;
   delivery_contact_name?: string | null;
   delivery_notes?: string | null;
+  cafe_table_id?: number | null;
 }
 
 export interface CheckoutSubmitResponse extends ApiEnvelope<Order> {
