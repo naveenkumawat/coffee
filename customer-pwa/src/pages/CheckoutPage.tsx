@@ -4,10 +4,11 @@ import { fetchCafeTables, CafeTableOption } from '../api/cafeTables';
 import { fetchCheckoutSummary, submitCheckout } from '../api/checkout';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
+import { FulfilmentMethodSelector } from '../components/checkout/FulfilmentMethodSelector';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
+import { FlowIntro } from '../components/common/FlowIntro';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { StickyActionBar } from '../components/common/StickyActionBar';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
@@ -246,8 +247,8 @@ export function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
+      <div className="page-container checkout-page">
+        <FlowIntro title="Checkout" subtitle="Loading your order…" />
         <LoadingSkeleton cardCount={3} lines={4} />
       </div>
     );
@@ -255,8 +256,8 @@ export function CheckoutPage() {
 
   if (displayState === 'error') {
     return (
-      <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
+      <div className="page-container checkout-page">
+        <FlowIntro title="Checkout" />
         <ErrorState description={message ?? 'Unable to load checkout right now.'} onRetry={() => void loadSummary()} />
       </div>
     );
@@ -264,8 +265,8 @@ export function CheckoutPage() {
 
   if (displayState === 'empty') {
     return (
-      <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
+      <div className="page-container checkout-page">
+        <FlowIntro title="Checkout" />
         <EmptyState
           title="Your cart is empty"
           description={message ?? 'Add a few menu items before continuing to checkout.'}
@@ -278,8 +279,8 @@ export function CheckoutPage() {
 
   if (displayState === 'review-cart' || !cart || !summaryMeta) {
     return (
-      <div className="page-container">
-        <PageHeader title="Checkout" description="Confirm fulfilment details." showBack />
+      <div className="page-container checkout-page">
+        <FlowIntro title="Checkout" />
         <EmptyState
           title="Review your cart first"
           description={message ?? 'One or more items changed. Please review your cart before trying again.'}
@@ -292,98 +293,47 @@ export function CheckoutPage() {
 
   const pickupAddress = summaryMeta.fulfilment?.pickup_address;
   const deliveryDisclaimer = summaryMeta.fulfilment?.delivery_disclaimer?.trim() || null;
+  const fulfilmentMethods = summaryMeta.fulfilment?.methods ?? [
+    { value: 'takeaway' as const, label: 'Takeaway' },
+    { value: 'delivery' as const, label: 'Delivery' },
+  ];
+  const placeOrderLabel = isSubmitting
+    ? 'Placing order…'
+    : `Place Order · ${formatCurrency(summaryMeta.summary.total)}`;
 
   return (
     <div className="page-container checkout-page has-sticky-cta">
-      <PageHeader title="Checkout" description="Confirm details, then pay after placing the order." showBack />
-
-      <FormFeedback message={message} variant="error" />
-
-      <section className="account-section checkout-summary-section">
-        <div className="account-section-heading">
-          <div>
-            <span className="auth-badge">Order summary</span>
-            <h2>Your order</h2>
-            <p>{summaryMeta.summary.item_count} item(s) · cafe total only — no delivery fee added</p>
-          </div>
+      <FlowIntro
+        title="Checkout"
+        subtitle={`${summaryMeta.summary.item_count} item${summaryMeta.summary.item_count === 1 ? '' : 's'} · cafe total only`}
+        trailing={
           <Link to="/cart" className="link-button">
             Edit cart
           </Link>
-        </div>
+        }
+      />
 
-        <div className="checkout-list">
-          {cart.items.map((item) => (
-            <CheckoutItemCard
-              key={item.id}
-              name={item.product?.name ?? 'Coffee item'}
-              subtitle={joinLabels([
-                item.variant?.name,
-                item.variant ? `${item.variant.serving_size_value} ${item.variant.serving_size_unit ?? ''}`.trim() : null,
-              ])}
-              detail={item.product?.customer_ingredient_summary}
-              imageName={item.product?.name}
-              imagePath={item.product?.image_path}
-              quantity={item.quantity}
-              amount={item.line_total}
-            />
-          ))}
-        </div>
-
-        <OrderTaxBreakdown
-          subtotal={summaryMeta.summary.subtotal}
-          total={summaryMeta.summary.total}
-          tax={summaryMeta.summary.tax}
-          totalLabel="Cafe total"
-        />
-      </section>
+      <FormFeedback message={message} variant="error" />
 
       <form className="checkout-form" onSubmit={(event) => void handleSubmit(event)}>
-        <section className="account-section">
-          <div className="account-section-heading">
-            <div>
-              <span className="auth-badge">Fulfilment</span>
-              <h2>How will you get it?</h2>
-              <p>Takeaway, dine-in at your table, or third-party delivery.</p>
-            </div>
+        <section className="checkout-section" aria-labelledby="checkout-fulfilment-heading">
+          <div className="checkout-section-heading">
+            <h2 id="checkout-fulfilment-heading">Fulfilment</h2>
+            <p>How will you get your order?</p>
           </div>
 
-          <div className="checkout-fulfilment-toggle" role="radiogroup" aria-label="Fulfilment method">
-            {(summaryMeta.fulfilment?.methods ?? [
-              { value: 'takeaway' as const, label: 'Takeaway' },
-              { value: 'delivery' as const, label: 'Delivery' },
-            ]).map((method) => (
-              <label
-                key={method.value}
-                className={[
-                  'choice-row checkout-choice',
-                  fulfilmentMethod === method.value ? 'is-selected' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <input
-                  type="radio"
-                  name="fulfilment_method"
-                  value={method.value}
-                  checked={fulfilmentMethod === method.value}
-                  onChange={() => setFulfilmentMethod(method.value)}
-                />
-                <span>{method.label}</span>
-              </label>
-            ))}
-          </div>
-          {getFieldError(errors, 'fulfilment_method') ? (
-            <p className="form-error-text">{getFieldError(errors, 'fulfilment_method')}</p>
-          ) : null}
+          <FulfilmentMethodSelector
+            methods={fulfilmentMethods}
+            value={fulfilmentMethod}
+            onChange={setFulfilmentMethod}
+            error={getFieldError(errors, 'fulfilment_method')}
+          />
         </section>
 
-        <section className="account-section">
-          <div className="account-section-heading">
-            <div>
-              <span className="auth-badge">Contact</span>
-              <h2>Your details</h2>
-              <p>We’ll use these for order updates.</p>
-            </div>
+        <section className="checkout-section" aria-labelledby="checkout-contact-heading">
+          <div className="checkout-section-heading">
+            <h2 id="checkout-contact-heading">Contact</h2>
+            <p>For order updates</p>
           </div>
 
           <div className="checkout-field-group">
@@ -422,19 +372,16 @@ export function CheckoutPage() {
         </section>
 
         {fulfilmentMethod === 'takeaway' ? (
-          <section className="account-section">
-            <div className="account-section-heading">
-              <div>
-                <span className="auth-badge">Takeaway</span>
-                <h2>Pickup details</h2>
-                <p>Collect from the cafe when ready.</p>
-              </div>
+          <section className="checkout-section" aria-labelledby="checkout-pickup-heading">
+            <div className="checkout-section-heading">
+              <h2 id="checkout-pickup-heading">Pickup</h2>
+              <p>Collect from the cafe when ready.</p>
             </div>
 
             {pickupAddress ? (
-              <div className="checkout-pickup-address">
+              <div className="checkout-inline-note">
                 <span>Cafe address</span>
-                <strong style={{ whiteSpace: 'pre-wrap' }}>{pickupAddress}</strong>
+                <strong className="checkout-prewrap">{pickupAddress}</strong>
               </div>
             ) : null}
 
@@ -493,27 +440,25 @@ export function CheckoutPage() {
               />
             </div>
           </section>
-        ) : fulfilmentMethod === 'dine_in' ? (
-          <section className="account-section">
-            <div className="account-section-heading">
-              <div>
-                <span className="auth-badge">Dine-in</span>
-                <h2>Your table</h2>
-                <p>Select the table you are seated at.</p>
-              </div>
+        ) : null}
+
+        {fulfilmentMethod === 'dine_in' ? (
+          <section className="checkout-section" aria-labelledby="checkout-table-heading">
+            <div className="checkout-section-heading">
+              <h2 id="checkout-table-heading">Your table</h2>
+              <p>Select the table you are seated at.</p>
             </div>
 
-            <div className="checkout-fulfilment-toggle" role="radiogroup" aria-label="Café table">
+            <div className="checkout-table-grid" role="radiogroup" aria-label="Café table">
               {cafeTables.length === 0 ? (
-                <p className="form-error-text">No active tables are available right now.</p>
+                <p className="form-error-text" role="alert">
+                  No active tables are available right now.
+                </p>
               ) : (
                 cafeTables.map((table) => (
                   <label
                     key={table.id}
-                    className={[
-                      'choice-row checkout-choice',
-                      cafeTableId === table.id ? 'is-selected' : '',
-                    ]
+                    className={['checkout-table-option', cafeTableId === table.id ? 'is-selected' : '']
                       .filter(Boolean)
                       .join(' ')}
                   >
@@ -530,11 +475,13 @@ export function CheckoutPage() {
               )}
             </div>
             {getFieldError(errors, 'cafe_table_id') ? (
-              <p className="form-error-text">{getFieldError(errors, 'cafe_table_id')}</p>
+              <p className="form-error-text" role="alert">
+                {getFieldError(errors, 'cafe_table_id')}
+              </p>
             ) : null}
 
             {cafeTableId ? (
-              <div className="checkout-pickup-address">
+              <div className="checkout-inline-note is-emphasis">
                 <span>Selected table</span>
                 <strong>
                   {cafeTables.find((table) => table.id === cafeTableId)?.label ?? `Table #${cafeTableId}`}
@@ -554,18 +501,17 @@ export function CheckoutPage() {
               />
             </div>
           </section>
-        ) : (
-          <section className="account-section">
-            <div className="account-section-heading">
-              <div>
-                <span className="auth-badge">Delivery</span>
-                <h2>Delivery details</h2>
-                <p>Third-party delivery — charges paid separately.</p>
-              </div>
+        ) : null}
+
+        {fulfilmentMethod === 'delivery' ? (
+          <section className="checkout-section" aria-labelledby="checkout-delivery-heading">
+            <div className="checkout-section-heading">
+              <h2 id="checkout-delivery-heading">Delivery</h2>
+              <p>Third-party delivery — charges paid separately.</p>
             </div>
 
             {deliveryDisclaimer ? (
-              <div className="checkout-delivery-disclaimer" role="note">
+              <div className="checkout-inline-note" role="note">
                 {deliveryDisclaimer}
               </div>
             ) : null}
@@ -633,17 +579,60 @@ export function CheckoutPage() {
               />
             </div>
           </section>
-        )}
+        ) : null}
 
-        <p className="checkout-payment-note">
-          After you place the order, you’ll get UPI payment instructions. The cafe confirms payment before preparing.
-        </p>
+        <section className="checkout-section" aria-labelledby="checkout-summary-heading">
+          <div className="checkout-section-heading checkout-section-heading-row">
+            <div>
+              <h2 id="checkout-summary-heading">Order summary</h2>
+              <p>{summaryMeta.summary.item_count} item(s)</p>
+            </div>
+          </div>
+
+          <div className="checkout-list">
+            {cart.items.map((item) => (
+              <CheckoutItemCard
+                key={item.id}
+                name={item.product?.name ?? 'Coffee item'}
+                subtitle={joinLabels([
+                  item.variant?.name,
+                  item.variant
+                    ? `${item.variant.serving_size_value} ${item.variant.serving_size_unit ?? ''}`.trim()
+                    : null,
+                ])}
+                quantity={item.quantity}
+                unitPrice={item.unit_price ?? item.variant?.price}
+                amount={item.line_total}
+                compact
+              />
+            ))}
+          </div>
+
+          <OrderTaxBreakdown
+            subtotal={summaryMeta.summary.subtotal}
+            total={summaryMeta.summary.total}
+            tax={summaryMeta.summary.tax}
+            totalLabel="Cafe total"
+          />
+        </section>
+
+        <section className="checkout-section checkout-payment-section" aria-labelledby="checkout-payment-heading">
+          <div className="checkout-section-heading">
+            <h2 id="checkout-payment-heading">Payment</h2>
+            <p>Pay after placing your order</p>
+          </div>
+          <ul className="checkout-payment-steps">
+            <li>Place your order now</li>
+            <li>Pay via UPI / QR / phone on the next screen</li>
+            <li>Upload your payment screenshot so we can start preparing</li>
+          </ul>
+        </section>
 
         <StickyActionBar
-          eyebrow="Total due to cafe"
-          title={isSubmitting ? 'Placing order…' : 'Place order'}
+          eyebrow="Cafe total"
+          title={isSubmitting ? 'Placing order…' : 'Ready to place'}
           value={formatCurrency(summaryMeta.summary.total)}
-          note="You’ll pay next — Pending Payment until confirmed"
+          note="Payment comes next — Pending Payment until confirmed"
         >
           <button
             type="submit"
@@ -651,7 +640,7 @@ export function CheckoutPage() {
             disabled={isSubmitting}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? 'Placing order…' : 'Confirm & place order'}
+            {placeOrderLabel}
           </button>
         </StickyActionBar>
       </form>

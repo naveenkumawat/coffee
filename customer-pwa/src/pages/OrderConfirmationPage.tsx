@@ -7,14 +7,18 @@ import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructi
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
-import { fulfilmentChipLabel, isDineInOrder } from '../utils/orders';
+import {
+  fulfilmentChipLabel,
+  isDeliveryOrder,
+  isDineInOrder,
+  isPendingPayment,
+} from '../utils/orders';
 
 interface ConfirmationLocationState {
   order?: Order;
@@ -44,11 +48,43 @@ function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions):
 }
 
 function confirmationNextStep(order: Order): string {
-  if (isDineInOrder(order) && order.table_name?.trim()) {
-    return `Pay now, then share your screenshot so the cafe can start preparing your order for Table ${order.table_name.trim()}.`;
+  if (order.payment_status === 'awaiting_review') {
+    return 'Payment proof submitted. Waiting for cafe confirmation.';
   }
 
-  return 'Pay now, then share your screenshot so the cafe can start preparing.';
+  if (order.payment_status === 'confirmed' || !isPendingPayment(order.status)) {
+    return 'Payment confirmed. Track your order for preparation updates.';
+  }
+
+  if (order.payment_status === 'rejected') {
+    return 'Please upload a clearer payment screenshot so we can start preparing.';
+  }
+
+  if (isDineInOrder(order) && order.table_name?.trim()) {
+    return `Pay now and share your payment screenshot so we can start preparing for Table ${order.table_name.trim()}.`;
+  }
+
+  if (isDeliveryOrder(order)) {
+    return 'Pay now and share your payment screenshot so we can start preparing for delivery.';
+  }
+
+  return 'Pay now and share your payment screenshot so we can start preparing your order.';
+}
+
+function fulfilmentContextLabel(order: Order): string | null {
+  if (isDineInOrder(order) && order.table_name?.trim()) {
+    return `Table ${order.table_name.trim()}`;
+  }
+
+  if (isDeliveryOrder(order) && order.delivery_address?.trim()) {
+    return order.delivery_address.trim();
+  }
+
+  if (!isDeliveryOrder(order) && !isDineInOrder(order)) {
+    return 'Pickup';
+  }
+
+  return null;
 }
 
 export function OrderConfirmationPage() {
@@ -106,11 +142,22 @@ export function OrderConfirmationPage() {
 
   const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
   const fulfilmentLabel = useMemo(() => fulfilmentChipLabel(order), [order]);
+  const needsPaymentUi = useMemo(() => {
+    if (!order) {
+      return false;
+    }
+
+    return (
+      isPendingPayment(order.status) ||
+      order.payment_status === 'awaiting_review' ||
+      order.payment_status === 'rejected' ||
+      order.payment_status === 'pending'
+    );
+  }, [order]);
 
   if (isLoading) {
     return (
-      <div className="page-container">
-        <PageHeader title="Order placed" description="Loading your confirmation…" showBack />
+      <div className="page-container confirmation-page">
         <LoadingSkeleton cardCount={2} lines={4} />
       </div>
     );
@@ -118,8 +165,7 @@ export function OrderConfirmationPage() {
 
   if (errorMessage) {
     return (
-      <div className="page-container">
-        <PageHeader title="Order placed" description="We couldn’t load this confirmation." showBack />
+      <div className="page-container confirmation-page">
         <ErrorState description={errorMessage} onRetry={() => window.location.reload()} />
       </div>
     );
@@ -127,8 +173,7 @@ export function OrderConfirmationPage() {
 
   if (!order) {
     return (
-      <div className="page-container">
-        <PageHeader title="Order placed" showBack />
+      <div className="page-container confirmation-page">
         <EmptyState
           title="Confirmation not available"
           description="Open My Orders to find your latest order."
@@ -139,11 +184,13 @@ export function OrderConfirmationPage() {
     );
   }
 
-  return (
-    <div className="page-container checkout-page">
-      <PageHeader title="Confirmation" description="Next step: complete payment." showBack={false} />
+  const contextLabel = fulfilmentContextLabel(order);
+  const paymentConfirmed =
+    order.payment_status === 'confirmed' || (!isPendingPayment(order.status) && order.payment_status !== 'rejected');
 
-      <section className="confirmation-success motion-enter" aria-live="polite">
+  return (
+    <div className="page-container confirmation-page">
+      <section className="confirmation-hero motion-enter" aria-live="polite">
         <span className="confirmation-success-icon" aria-hidden="true">
           <i className="bi bi-check-lg"></i>
         </span>
@@ -157,28 +204,40 @@ export function OrderConfirmationPage() {
           <span className="status-badge is-neutral fulfilment-badge">{fulfilmentLabel}</span>
           <OrderStatusBadge status={order.status} label={statusLabel} className="confirmation-status-badge" />
         </div>
-        {isDineInOrder(order) && order.table_name?.trim() ? (
-          <p className="confirmation-table">Table {order.table_name.trim()}</p>
+        {contextLabel ? (
+          <p className={isDineInOrder(order) ? 'confirmation-table' : 'confirmation-context'}>
+            {isDineInOrder(order) ? contextLabel : isDeliveryOrder(order) ? (
+              <span className="checkout-prewrap">{contextLabel}</span>
+            ) : (
+              contextLabel
+            )}
+          </p>
         ) : null}
         <p className="confirmation-next-step">{confirmationNextStep(order)}</p>
-        <DownloadInvoiceButton order={order} />
       </section>
 
-      <section className="account-section">
-        <div className="account-section-heading">
-          <div>
-            <span className="auth-badge">Fulfilment</span>
-            <h2>
-              {order.fulfilment_method === 'delivery'
-                ? 'Delivery details'
-                : order.fulfilment_method === 'dine_in'
-                  ? 'Table details'
-                  : 'Pickup details'}
-            </h2>
-          </div>
+      {needsPaymentUi || paymentConfirmed ? (
+        <PaymentInstructionsCard
+          order={order}
+          payment={payment}
+          secondaryHref={`/orders/${order.id}`}
+          secondaryLabel="Track order"
+          onOrderUpdated={setOrder}
+        />
+      ) : (
+        <div className="confirmation-actions">
+          <Link to={`/orders/${order.id}`} className="btn btn-primary btn-lg rounded-pill w-100">
+            Track order
+          </Link>
         </div>
-        {order.fulfilment_method === 'delivery' ? (
-          <div className="summary-card checkout-summary-grid">
+      )}
+
+      {isDeliveryOrder(order) ? (
+        <section className="checkout-section" aria-labelledby="confirmation-delivery-heading">
+          <div className="checkout-section-heading">
+            <h2 id="confirmation-delivery-heading">Delivery</h2>
+          </div>
+          <div className="confirmation-detail-list">
             {order.delivery_contact_name ? (
               <div>
                 <span>Contact</span>
@@ -191,27 +250,19 @@ export function OrderConfirmationPage() {
             </div>
             <div>
               <span>Address</span>
-              <strong style={{ whiteSpace: 'pre-wrap' }}>{order.delivery_address}</strong>
+              <strong className="checkout-prewrap">{order.delivery_address}</strong>
             </div>
-            {order.delivery_disclaimer ? (
-              <p className="summary-warning" style={{ gridColumn: '1 / -1' }}>
-                {order.delivery_disclaimer}
-              </p>
-            ) : null}
+            {order.delivery_disclaimer ? <p className="summary-warning">{order.delivery_disclaimer}</p> : null}
           </div>
-        ) : order.fulfilment_method === 'dine_in' ? (
-          <div className="summary-card checkout-summary-grid">
-            <div>
-              <span>Table</span>
-              <strong>{order.table_name ?? '—'}</strong>
-            </div>
-            <div>
-              <span>Status</span>
-              <strong>{statusLabel}</strong>
-            </div>
+        </section>
+      ) : null}
+
+      {!isDeliveryOrder(order) && !isDineInOrder(order) ? (
+        <section className="checkout-section" aria-labelledby="confirmation-pickup-heading">
+          <div className="checkout-section-heading">
+            <h2 id="confirmation-pickup-heading">Pickup</h2>
           </div>
-        ) : (
-          <div className="summary-card checkout-summary-grid">
+          <div className="confirmation-detail-list">
             <div>
               <span>Name</span>
               <strong>{order.pickup_name ?? order.customer_name}</strong>
@@ -227,23 +278,12 @@ export function OrderConfirmationPage() {
               </div>
             ) : null}
           </div>
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      <PaymentInstructionsCard
-        order={order}
-        payment={payment}
-        secondaryHref={`/orders/${order.id}`}
-        secondaryLabel="Track order"
-        onOrderUpdated={setOrder}
-      />
-
-      <section className="account-section">
-        <div className="account-section-heading">
-          <div>
-            <span className="auth-badge">Summary</span>
-            <h2>What you ordered</h2>
-          </div>
+      <section className="checkout-section" aria-labelledby="confirmation-items-heading">
+        <div className="checkout-section-heading">
+          <h2 id="confirmation-items-heading">Your items</h2>
         </div>
 
         <div className="checkout-list">
@@ -251,9 +291,11 @@ export function OrderConfirmationPage() {
             <CheckoutItemCard
               key={item.id}
               name={item.product_name}
-              subtitle={joinLabels([item.variant_name, item.customer_ingredient_summary])}
+              subtitle={joinLabels([item.variant_name])}
               quantity={item.quantity}
+              unitPrice={item.unit_price}
               amount={item.line_subtotal}
+              compact
             />
           ))}
         </div>
@@ -262,12 +304,13 @@ export function OrderConfirmationPage() {
           subtotal={order.subtotal}
           total={order.total_amount}
           tax={order.tax}
-          totalLabel="Total due"
+          totalLabel="Cafe total"
         />
       </section>
 
       <div className="confirmation-footer-actions">
-        <Link to="/menu" className="btn btn-outline-dark btn-lg rounded-pill w-100">
+        <DownloadInvoiceButton order={order} className="confirmation-invoice-action" />
+        <Link to="/menu" className="link-button confirmation-continue">
           Continue shopping
         </Link>
       </div>

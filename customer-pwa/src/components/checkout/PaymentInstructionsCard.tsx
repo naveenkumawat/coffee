@@ -7,6 +7,7 @@ import { Order, OrderPaymentInstructions } from '../../types/order';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { formatCurrency } from '../../utils/format';
 import { resolveCatalogMediaUrl } from '../../utils/images';
+import { isPendingPayment } from '../../utils/orders';
 import { useToastStore } from '../../stores/toastStore';
 import { OrderStatusBadge } from '../orders/OrderStatusBadge';
 
@@ -63,9 +64,16 @@ export function PaymentInstructionsCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const proof = order.payment_proof;
-  const awaitingReview = order.payment_status === 'awaiting_review' && proof?.uploaded;
+  const awaitingReview = order.payment_status === 'awaiting_review' && Boolean(proof?.uploaded);
   const rejected = order.payment_status === 'rejected';
-  const canUpload = proof?.can_upload ?? order.status === 'pending_payment';
+  const paymentConfirmed =
+    order.payment_status === 'confirmed' ||
+    (order.status !== null &&
+      !isPendingPayment(order.status) &&
+      order.payment_status !== 'awaiting_review' &&
+      order.payment_status !== 'rejected' &&
+      order.payment_status !== 'pending');
+  const canUpload = Boolean(proof?.can_upload ?? isPendingPayment(order.status)) && !paymentConfirmed;
 
   async function handleCopy(field: CopyField, value: string): Promise<void> {
     if (!value.trim()) {
@@ -110,6 +118,25 @@ export function PaymentInstructionsCard({
     }
   }
 
+  if (paymentConfirmed) {
+    return (
+      <section className="payment-card payment-card-confirmed motion-enter" aria-live="polite">
+        <div className="payment-card-header">
+          <OrderStatusBadge status="payment_confirmed" label="Payment confirmed" />
+          <h2>Payment confirmed</h2>
+          <p>The cafe has confirmed your payment. Track your order for preparation updates.</p>
+        </div>
+        {showSecondaryAction ? (
+          <div className="payment-actions">
+            <Link to={secondaryHref} className="btn btn-primary btn-lg rounded-pill">
+              {secondaryLabel}
+            </Link>
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
   return (
     <section className="payment-card motion-enter">
       <div className="payment-card-header">
@@ -120,10 +147,10 @@ export function PaymentInstructionsCard({
         <h2>Payment details</h2>
         <p>
           {awaitingReview
-            ? 'Screenshot received — the cafe will confirm payment shortly.'
+            ? 'Payment proof submitted. Waiting for cafe confirmation.'
             : rejected
               ? 'Please upload a clearer payment screenshot.'
-              : 'Pay via UPI or the payment number, then upload your screenshot.'}
+              : 'Pay after placing your order — then upload your screenshot.'}
         </p>
       </div>
 
@@ -157,7 +184,7 @@ export function PaymentInstructionsCard({
       {upiId ? (
         <div className="payment-detail-block payment-copy-row">
           <div className="payment-copy-value">
-            <span>UPI ID</span>
+            <span>UPI</span>
             <strong className="user-select-text">{upiId}</strong>
           </div>
           <button
@@ -195,16 +222,20 @@ export function PaymentInstructionsCard({
         </div>
       ) : null}
 
-      <div className="payment-detail-block">
-        <span>Payment instructions</span>
-        <p>
-          {instructions ||
-            'Complete the UPI payment for the amount due, then upload your screenshot with the order number.'}
-        </p>
-      </div>
+      {instructions ? (
+        <div className="payment-detail-block">
+          <span>Instructions</span>
+          <p>{instructions}</p>
+        </div>
+      ) : (
+        <div className="payment-detail-block">
+          <span>Instructions</span>
+          <p>Pay the amount due via UPI or phone, then upload your screenshot with the order number.</p>
+        </div>
+      )}
 
       {rejected && proof?.rejection_notes ? (
-        <div className="payment-reminder">
+        <div className="payment-reminder" role="status">
           <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
           <div>
             <strong>Replacement requested</strong>
@@ -214,77 +245,85 @@ export function PaymentInstructionsCard({
       ) : null}
 
       {awaitingReview ? (
-        <div className="payment-reminder">
+        <div className="payment-reminder" role="status">
           <i className="bi bi-hourglass-split" aria-hidden="true"></i>
           <div>
-            <strong>Uploaded — awaiting cafe review</strong>
+            <strong>Payment proof submitted</strong>
             <p>
-              Screenshot received
-              {proof?.uploaded_at ? ` at ${new Date(proof.uploaded_at).toLocaleString()}` : ''}. You can replace it
-              until payment is confirmed.
+              Waiting for cafe confirmation
+              {proof?.uploaded_at ? ` · uploaded ${new Date(proof.uploaded_at).toLocaleString()}` : ''}.
             </p>
           </div>
         </div>
       ) : null}
 
-      {canUpload ? (
-        <div className="payment-upload-block">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="visually-hidden"
-            onChange={(event) => void handleFileChange(event)}
-          />
-          <button
-            type="button"
-            className="btn btn-primary btn-lg rounded-pill"
-            disabled={isUploading}
-            aria-busy={isUploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading
-              ? 'Uploading…'
-              : proof?.uploaded
-                ? 'Replace payment screenshot'
-                : 'Upload payment screenshot'}
-          </button>
-          {uploadError ? <p className="form-error-text">{uploadError}</p> : null}
-        </div>
-      ) : null}
-
-      {whatsappNumber ? (
-        <div className="payment-reminder">
-          <i className="bi bi-whatsapp" aria-hidden="true"></i>
-          <div>
-            <strong>WhatsApp fallback</strong>
-            <p>You can still send the screenshot on WhatsApp if upload is unavailable.</p>
-          </div>
-        </div>
-      ) : null}
-
       <div className="payment-actions">
-        {whatsappNumber ? (
+        {awaitingReview && showSecondaryAction ? (
+          <Link to={secondaryHref} className="btn btn-primary btn-lg rounded-pill">
+            {secondaryLabel}
+          </Link>
+        ) : null}
+
+        {canUpload ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="visually-hidden"
+              onChange={(event) => void handleFileChange(event)}
+            />
+            <button
+              type="button"
+              className={
+                awaitingReview
+                  ? 'btn btn-outline-dark btn-lg rounded-pill'
+                  : 'btn btn-primary btn-lg rounded-pill'
+              }
+              disabled={isUploading}
+              aria-busy={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {isUploading
+                ? 'Uploading…'
+                : rejected || awaitingReview || proof?.uploaded
+                  ? 'Replace payment screenshot'
+                  : 'Upload payment screenshot'}
+            </button>
+            {uploadError ? (
+              <p className="form-error-text" role="alert">
+                {uploadError}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {!awaitingReview && showSecondaryAction ? (
+          <Link
+            to={secondaryHref}
+            className={canUpload ? 'btn btn-outline-dark btn-lg rounded-pill' : 'btn btn-primary btn-lg rounded-pill'}
+          >
+            {secondaryLabel}
+          </Link>
+        ) : null}
+
+        {whatsappNumber && canUpload && !awaitingReview ? (
           <a
             href={toWhatsappHref(whatsappNumber, order.order_number)}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-outline-dark btn-lg rounded-pill"
+            className="btn btn-outline-dark rounded-pill payment-action-secondary"
           >
             Send on WhatsApp
           </a>
         ) : null}
-        {showSecondaryAction ? (
-          <Link to={secondaryHref} className="btn btn-outline-dark btn-lg rounded-pill">
-            {secondaryLabel}
-          </Link>
-        ) : null}
+
         {proof?.uploaded ? (
           <a
             href={`${getApiBaseUrl()}/orders/${order.id}/payment-proof`}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-outline-dark btn-lg rounded-pill"
+            className="link-button payment-view-proof"
           >
             View uploaded screenshot
           </a>
