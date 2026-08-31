@@ -32,6 +32,25 @@ export function isDineInOrder(order: Pick<Order, 'fulfilment_method'> | null | u
   return order?.fulfilment_method === 'dine_in';
 }
 
+/** Short chip label for confirmation / order surfaces (CSS uppercases). */
+export function fulfilmentChipLabel(
+  order: Pick<Order, 'fulfilment_method' | 'fulfilment_method_label'> | null | undefined,
+): string {
+  if (order?.fulfilment_method === 'delivery') {
+    return 'Delivery';
+  }
+
+  if (order?.fulfilment_method === 'dine_in') {
+    return 'Dine-in';
+  }
+
+  if (order?.fulfilment_method === 'takeaway') {
+    return 'Takeaway';
+  }
+
+  return order?.fulfilment_method_label?.trim() || 'Takeaway';
+}
+
 export function preparationStepsForOrder(
   order: Pick<Order, 'fulfilment_method'>,
 ): Array<{ status: OrderStatusValue; label: string }> {

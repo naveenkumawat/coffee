@@ -15,11 +15,9 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed strategy:
      *
-     * - Always: safe structural taxonomy (ingredient categories, social platform shells) + optional ADMIN_* owner bootstrap.
-     * - local/testing only: demo catalog, CMS sample content, customers, carts, orders, ratings, homepage sections.
-     *
-     * Production (`APP_ENV=production`) must not receive demo customers/orders/ratings/carts/favourites.
-     * Configure real Website Settings, catalog, media, social URLs, and homepage sections in Administrator after migrate.
+     * - Always: structural taxonomy (ingredient categories, social platform shells) + optional ADMIN_* owner.
+     * - local/testing only: DemoSeeder (full demo catalog, CMS, customers, orders, tables, staff bell data).
+     * - production: NEVER DemoSeeder — configure Website Settings / catalog in Administrator after migrate.
      */
     public function run(): void
     {
@@ -29,23 +27,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         if (app()->environment('local', 'testing')) {
-            $this->call([
-                DemoUserSeeder::class,
-                IngredientBrandSeeder::class,
-                IngredientSeeder::class,
-                InventoryTransactionSeeder::class,
-                ProductCategorySeeder::class,
-                ProductFlavourSeeder::class,
-                ProductTagSeeder::class,
-                ProductSeeder::class,
-                RecipeSeeder::class,
-                InventoryRefillRequestSeeder::class,
-                WebsiteSettingSeeder::class,
-                DemoCustomerActivitySeeder::class,
-                DemoOrderSeeder::class,
-                ProductRatingSeeder::class,
-                HomeSectionSeeder::class,
-            ]);
+            $this->call(DemoSeeder::class);
         }
 
         if (filled(env('ADMIN_EMAIL')) && filled(env('ADMIN_PASSWORD'))) {

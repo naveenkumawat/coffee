@@ -123,6 +123,8 @@ class OrderController extends Controller
             [
                 'Content-Type' => $order->payment_proof_mime ?: 'application/octet-stream',
                 'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+                'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+                'Pragma' => 'no-cache',
             ],
         );
     }

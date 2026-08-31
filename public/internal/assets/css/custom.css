@@ -267,3 +267,27 @@
         width: 100%;
     }
 }
+
+.payment-proof-thumb-link {
+    max-width: 100%;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    border: 1px solid var(--bs-gray-300, #e1e3ea);
+    background: var(--bs-gray-100, #f5f8fa);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.payment-proof-thumb-link:hover,
+.payment-proof-thumb-link:focus-visible {
+    border-color: var(--bs-primary, #009ef7);
+    outline: 0;
+}
+
+.payment-proof-thumb {
+    display: block;
+    width: min(100%, 18rem);
+    max-height: 14rem;
+    height: auto;
+    object-fit: contain;
+    background: #fff;
+}

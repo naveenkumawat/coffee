@@ -12,6 +12,7 @@ import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
+import { fulfilmentChipLabel, isDineInOrder } from '../utils/orders';
 
 interface ConfirmationLocationState {
   order?: Order;
@@ -38,6 +39,14 @@ function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions):
   } catch {
     // Best-effort cache for confirmation payment metadata only.
   }
+}
+
+function confirmationNextStep(order: Order): string {
+  if (isDineInOrder(order) && order.table_name?.trim()) {
+    return `Pay now, then share your screenshot so the cafe can start preparing your order for Table ${order.table_name.trim()}.`;
+  }
+
+  return 'Pay now, then share your screenshot so the cafe can start preparing.';
 }
 
 export function OrderConfirmationPage() {
@@ -94,6 +103,7 @@ export function OrderConfirmationPage() {
   }, [order, orderId, payment]);
 
   const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
+  const fulfilmentLabel = useMemo(() => fulfilmentChipLabel(order), [order]);
 
   if (isLoading) {
     return (
@@ -129,28 +139,26 @@ export function OrderConfirmationPage() {
 
   return (
     <div className="page-container checkout-page">
-      <PageHeader title="Order placed" description="Next step: complete payment." showBack={false} />
+      <PageHeader title="Confirmation" description="Next step: complete payment." showBack={false} />
 
       <section className="confirmation-success motion-enter" aria-live="polite">
         <span className="confirmation-success-icon" aria-hidden="true">
           <i className="bi bi-check-lg"></i>
         </span>
-        <p className="eyebrow">Thank you</p>
         <h1>Order placed</h1>
         <p className="confirmation-order-number">{order.order_number}</p>
-        <p className="confirmation-total">Cafe total {formatCurrency(order.total_amount)}</p>
-        <div className="confirmation-meta-row">
-          <span className="auth-badge">
-            {order.fulfilment_method_label ??
-              (order.fulfilment_method === 'delivery'
-                ? 'Delivery'
-                : order.fulfilment_method === 'dine_in'
-                  ? 'Dine-in'
-                  : 'Takeaway')}
-          </span>
-          <OrderStatusBadge status={order.status} label={statusLabel} />
+        <div className="confirmation-amount-block">
+          <p className="confirmation-amount">{formatCurrency(order.total_amount)}</p>
+          <p className="confirmation-amount-label">Cafe total</p>
         </div>
-        <p className="confirmation-next-step">Pay now, then share your screenshot so the cafe can start preparing.</p>
+        <div className="confirmation-meta-row" aria-label="Order fulfilment and status">
+          <span className="status-badge is-neutral fulfilment-badge">{fulfilmentLabel}</span>
+          <OrderStatusBadge status={order.status} label={statusLabel} className="confirmation-status-badge" />
+        </div>
+        {isDineInOrder(order) && order.table_name?.trim() ? (
+          <p className="confirmation-table">Table {order.table_name.trim()}</p>
+        ) : null}
+        <p className="confirmation-next-step">{confirmationNextStep(order)}</p>
       </section>
 
       <section className="account-section">

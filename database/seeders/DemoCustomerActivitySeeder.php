@@ -19,6 +19,9 @@ class DemoCustomerActivitySeeder extends Seeder
 
         $customer = User::query()->where('email', 'customer@coffee.local')->first();
         $priya = User::query()->where('email', 'priya@coffee.local')->first();
+        $neha = User::query()->where('email', 'neha@coffee.local')->first();
+        $rohan = User::query()->where('email', 'rohan@coffee.local')->first();
+        $meera = User::query()->where('email', 'meera@coffee.local')->first();
 
         if ($customer) {
             $this->seedFavourites($customer, [
@@ -26,9 +29,13 @@ class DemoCustomerActivitySeeder extends Seeder
                 'Iced Vanilla Latte',
                 'Mocha Frappe',
                 'Matcha Latte',
+                'Virgin Mojito',
+                'Cold Brew',
+                'Hazelnut Latte',
             ]);
             $this->seedCart($customer, [
                 ['product' => 'Cafe Latte', 'variant' => 'Large', 'quantity' => 1],
+                ['product' => 'Cafe Latte', 'variant' => 'Regular', 'quantity' => 1],
                 ['product' => 'Butter Croissant', 'variant' => 'Single', 'quantity' => 2],
             ]);
         }
@@ -41,6 +48,29 @@ class DemoCustomerActivitySeeder extends Seeder
             $this->seedCart($priya, [
                 ['product' => 'Iced Vanilla Latte', 'variant' => 'Regular', 'quantity' => 1],
                 ['product' => 'Vanilla Bean Frappe', 'variant' => 'Regular', 'quantity' => 1],
+            ]);
+        }
+
+        if ($neha) {
+            $this->seedFavourites($neha, ['Espresso']);
+            $this->seedCart($neha, [
+                ['product' => 'Espresso', 'variant' => 'Double', 'quantity' => 1],
+            ]);
+        }
+
+        if ($rohan) {
+            $this->seedFavourites($rohan, [
+                'Strawberry Mojito',
+                'Blueberry Mojito',
+                'Mix Berry Lemonade',
+                'Honey Lime Cold Brew',
+            ]);
+        }
+
+        if ($meera) {
+            $this->seedCart($meera, [
+                ['product' => 'Classic Cold Brew', 'variant' => '500 ml', 'quantity' => 2],
+                ['product' => 'Chocolate Muffin', 'variant' => 'Single', 'quantity' => 1],
             ]);
         }
     }

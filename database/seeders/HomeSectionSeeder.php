@@ -16,33 +16,20 @@ class HomeSectionSeeder extends Seeder
 
         $sections = [
             [
-                'name' => 'Pickup-ready picks',
-                'title' => 'Pickup-ready picks',
-                'slug' => 'pickup-ready-picks',
+                'name' => 'Featured Drinks',
+                'title' => 'Featured Drinks',
+                'slug' => 'featured-drinks',
                 'subtitle' => 'Featured',
                 'sort_order' => 10,
                 'max_items' => 8,
+                'is_active' => true,
                 'product_names' => [
                     'Cafe Latte',
                     'Cappuccino',
-                    'Flat White',
-                    'Americano',
+                    'Hazelnut Latte',
                     'Iced Vanilla Latte',
-                    'Cold Brew',
-                ],
-            ],
-            [
-                'name' => 'New on the menu',
-                'title' => 'New on the menu',
-                'slug' => 'new-on-the-menu',
-                'subtitle' => 'Just landed',
-                'sort_order' => 20,
-                'max_items' => 8,
-                'product_names' => [
-                    'Matcha Latte',
-                    'Mocha Frappe',
-                    'Caramel Crunch Frappe',
-                    'Hazelnut Mocha',
+                    'Classic Cold Brew',
+                    'Virgin Mojito',
                 ],
             ],
             [
@@ -50,14 +37,78 @@ class HomeSectionSeeder extends Seeder
                 'title' => 'Bestsellers',
                 'slug' => 'bestsellers',
                 'subtitle' => 'Customer favourites',
-                'sort_order' => 30,
+                'sort_order' => 20,
                 'max_items' => 8,
+                'is_active' => true,
                 'product_names' => [
                     'Cold Brew',
                     'Cafe Latte',
                     'Classic Masala Chai',
+                    'Classic Cold Coffee',
                     'Butter Croissant',
                     'Iced Americano',
+                ],
+            ],
+            [
+                'name' => 'New This Week',
+                'title' => 'New This Week',
+                'slug' => 'new-this-week',
+                'subtitle' => 'Just landed',
+                'sort_order' => 30,
+                'max_items' => 8,
+                'is_active' => true,
+                'product_names' => [
+                    'Honey Lime Cold Brew',
+                    'Strawberry Frappe',
+                    'Mix Berry Lemonade',
+                    'Matcha Latte',
+                    'Flat White',
+                ],
+            ],
+            [
+                'name' => 'Cold Favourites',
+                'title' => 'Cold Favourites',
+                'slug' => 'cold-favourites',
+                'subtitle' => 'Chilled picks',
+                'sort_order' => 40,
+                'max_items' => 8,
+                'is_active' => true,
+                'product_names' => [
+                    'Iced Vanilla Latte',
+                    'Cold Brew',
+                    'Classic Cold Brew',
+                    'Iced Matcha Latte',
+                    'Caramel Iced Latte',
+                    'Mocha Frappe',
+                ],
+            ],
+            [
+                'name' => 'Refreshers',
+                'title' => 'Refreshers',
+                'slug' => 'refreshers',
+                'subtitle' => 'Coolers',
+                'sort_order' => 50,
+                'max_items' => 6,
+                'is_active' => true,
+                'product_names' => [
+                    'Virgin Mojito',
+                    'Strawberry Mojito',
+                    'Blueberry Mojito',
+                    'Mix Berry Lemonade',
+                    'Cold Brew Tonic',
+                ],
+            ],
+            [
+                'name' => 'Archived Promo Rail',
+                'title' => 'Archived Promo Rail',
+                'slug' => 'archived-promo-rail',
+                'subtitle' => 'Inactive section for admin testing',
+                'sort_order' => 99,
+                'max_items' => 4,
+                'is_active' => false,
+                'product_names' => [
+                    'Seasonal Spice Latte',
+                    'Irish Latte',
                 ],
             ],
         ];
@@ -70,7 +121,7 @@ class HomeSectionSeeder extends Seeder
                     'title' => $definition['title'],
                     'subtitle' => $definition['subtitle'],
                     'sort_order' => $definition['sort_order'],
-                    'is_active' => true,
+                    'is_active' => $definition['is_active'],
                     'max_items' => $definition['max_items'],
                 ],
             );
@@ -91,5 +142,10 @@ class HomeSectionSeeder extends Seeder
 
             $section->products()->sync($sync);
         }
+
+        HomeSection::query()->whereIn('slug', [
+            'pickup-ready-picks',
+            'new-on-the-menu',
+        ])->update(['is_active' => false]);
     }
 }

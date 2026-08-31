@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640" role="img" aria-label="Demo product placeholder">
+  <rect width="640" height="640" fill="#E8DFD4"/>
+  <circle cx="320" cy="280" r="110" fill="#C4A484"/>
+  <rect x="210" y="380" width="220" height="140" rx="20" fill="#8B5E3C"/>
+  <text x="320" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="28" fill="#5C4033">DEMO</text>
+</svg>

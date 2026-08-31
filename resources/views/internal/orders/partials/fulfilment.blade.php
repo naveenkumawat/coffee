@@ -1,5 +1,7 @@
 <div>
-    <div class="text-muted fs-7 mb-1">Fulfilment</div>
+    @if ($showHeading ?? true)
+        <div class="text-muted fs-7 mb-1">Fulfilment</div>
+    @endif
     @if ($order->isDineIn())
         <div class="fw-bold text-uppercase text-primary">Dine-in</div>
         <div class="fw-bold fs-3 text-gray-900 mt-1">
@@ -17,6 +19,12 @@
             <div class="text-gray-700 mt-1" style="white-space: pre-wrap;">{{ $order->delivery_address }}</div>
             @if ($order->delivery_notes)
                 <div class="text-gray-600 mt-1">{{ $order->delivery_notes }}</div>
+            @endif
+            @if ($order->delivery_provider)
+                <div class="text-gray-600 mt-1">Provider: {{ $order->delivery_provider }}</div>
+            @endif
+            @if ($order->delivery_tracking_reference)
+                <div class="text-gray-600 mt-1">Tracking: {{ $order->delivery_tracking_reference }}</div>
             @endif
             <div class="text-warning fs-8 mt-2">{{ app(\App\Services\WebsiteSetting\WebsiteSettingServiceInterface::class)->deliveryDisclaimer() }}</div>
             <div class="text-muted fs-8 mt-1">Cafe total does not include third-party delivery charges.</div>

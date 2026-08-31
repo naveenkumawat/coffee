@@ -26,6 +26,13 @@ class ProductRatingSeeder extends Seeder
                 'customer@coffee.local',
                 'priya@coffee.local',
                 'arjun@coffee.local',
+                'neha@coffee.local',
+                'rohan@coffee.local',
+                'meera@coffee.local',
+                'kabir@coffee.local',
+                'ananya@coffee.local',
+                'vikram@coffee.local',
+                'sara@coffee.local',
             ])
             ->get()
             ->keyBy('email');
@@ -34,70 +41,7 @@ class ProductRatingSeeder extends Seeder
             return;
         }
 
-        $definitions = [
-            [
-                'email' => 'customer@coffee.local',
-                'product' => 'Americano',
-                'rating' => 5,
-                'review' => 'Smooth and strong — my weekday staple.',
-            ],
-            [
-                'email' => 'customer@coffee.local',
-                'product' => 'Classic Masala Chai',
-                'rating' => 4,
-                'review' => 'Warm spices, just sweet enough.',
-            ],
-            [
-                'email' => 'customer@coffee.local',
-                'product' => 'Cafe Latte',
-                'rating' => 5,
-                'review' => null,
-            ],
-            [
-                'email' => 'priya@coffee.local',
-                'product' => 'Cold Brew',
-                'rating' => 5,
-                'review' => 'Clean finish, never bitter.',
-            ],
-            [
-                'email' => 'priya@coffee.local',
-                'product' => 'Iced Vanilla Latte',
-                'rating' => 4,
-                'review' => 'Vanilla comes through nicely on ice.',
-            ],
-            [
-                'email' => 'priya@coffee.local',
-                'product' => 'Matcha Latte',
-                'rating' => 3,
-                'review' => 'Good, a touch grassy for me.',
-            ],
-            [
-                'email' => 'arjun@coffee.local',
-                'product' => 'Mocha Frappe',
-                'rating' => 5,
-                'review' => 'Dessert in a cup. Will reorder.',
-            ],
-            [
-                'email' => 'arjun@coffee.local',
-                'product' => 'Butter Croissant',
-                'rating' => 4,
-                'review' => null,
-            ],
-            [
-                'email' => 'arjun@coffee.local',
-                'product' => 'Cafe Latte',
-                'rating' => 4,
-                'review' => 'Consistent milk texture every time.',
-            ],
-            [
-                'email' => 'customer@coffee.local',
-                'product' => 'Cold Brew',
-                'rating' => 5,
-                'review' => 'Perfect over ice after lunch.',
-            ],
-        ];
-
-        foreach ($definitions as $definition) {
+        foreach ($this->definitions() as $definition) {
             /** @var User|null $customer */
             $customer = $customers->get($definition['email']);
             $product = Product::query()->where('name', $definition['product'])->first();
@@ -125,6 +69,50 @@ class ProductRatingSeeder extends Seeder
         }
     }
 
+    /**
+     * @return list<array{email: string, product: string, rating: int, review: ?string}>
+     */
+    protected function definitions(): array
+    {
+        return [
+            ['email' => 'customer@coffee.local', 'product' => 'Americano', 'rating' => 5, 'review' => 'Smooth and strong — my weekday staple.'],
+            ['email' => 'customer@coffee.local', 'product' => 'Classic Masala Chai', 'rating' => 4, 'review' => 'Warm spices, just sweet enough.'],
+            ['email' => 'customer@coffee.local', 'product' => 'Cafe Latte', 'rating' => 5, 'review' => null],
+            ['email' => 'customer@coffee.local', 'product' => 'Cold Brew', 'rating' => 5, 'review' => 'Perfect over ice after lunch.'],
+            ['email' => 'customer@coffee.local', 'product' => 'Espresso', 'rating' => 4, 'review' => 'Clean crema.'],
+            ['email' => 'customer@coffee.local', 'product' => 'Cappuccino', 'rating' => 5, 'review' => 'Foam was textbook.'],
+            ['email' => 'priya@coffee.local', 'product' => 'Cold Brew', 'rating' => 5, 'review' => 'Clean finish, never bitter.'],
+            ['email' => 'priya@coffee.local', 'product' => 'Iced Vanilla Latte', 'rating' => 4, 'review' => 'Vanilla comes through nicely on ice.'],
+            ['email' => 'priya@coffee.local', 'product' => 'Matcha Latte', 'rating' => 3, 'review' => 'Good, a touch grassy for me.'],
+            ['email' => 'priya@coffee.local', 'product' => 'Virgin Mojito', 'rating' => 5, 'review' => 'Refreshing after a walk.'],
+            ['email' => 'arjun@coffee.local', 'product' => 'Mocha Frappe', 'rating' => 5, 'review' => 'Dessert in a cup. Will reorder.'],
+            ['email' => 'arjun@coffee.local', 'product' => 'Butter Croissant', 'rating' => 4, 'review' => null],
+            ['email' => 'arjun@coffee.local', 'product' => 'Cafe Latte', 'rating' => 4, 'review' => 'Consistent milk texture every time.'],
+            ['email' => 'arjun@coffee.local', 'product' => 'Hazelnut Latte', 'rating' => 5, 'review' => 'Hazelnut without being syrupy.'],
+            ['email' => 'neha@coffee.local', 'product' => 'Caramel Latte', 'rating' => 5, 'review' => 'Sweet but balanced.'],
+            ['email' => 'neha@coffee.local', 'product' => 'Iced Latte', 'rating' => 4, 'review' => null],
+            ['email' => 'neha@coffee.local', 'product' => 'Chocolate Muffin', 'rating' => 5, 'review' => 'Warm chocolate pockets.'],
+            ['email' => 'rohan@coffee.local', 'product' => 'Flat White', 'rating' => 4, 'review' => 'Nice microfoam.'],
+            ['email' => 'rohan@coffee.local', 'product' => 'Classic Cold Brew', 'rating' => 5, 'review' => null],
+            ['email' => 'rohan@coffee.local', 'product' => 'Irish Latte', 'rating' => 3, 'review' => 'Interesting but rich.'],
+            ['email' => 'meera@coffee.local', 'product' => 'Iced Matcha Latte', 'rating' => 5, 'review' => 'My summer go-to.'],
+            ['email' => 'meera@coffee.local', 'product' => 'Strawberry Mojito', 'rating' => 4, 'review' => 'Bright and citrusy.'],
+            ['email' => 'meera@coffee.local', 'product' => 'Vanilla Bean Frappe', 'rating' => 5, 'review' => null],
+            ['email' => 'kabir@coffee.local', 'product' => 'Dark Cold Coffee', 'rating' => 4, 'review' => 'Bold enough for evenings.'],
+            ['email' => 'kabir@coffee.local', 'product' => 'Mocha', 'rating' => 5, 'review' => 'Chocolate + coffee done right.'],
+            ['email' => 'kabir@coffee.local', 'product' => 'Cold Brew Tonic', 'rating' => 4, 'review' => 'Unexpected and good.'],
+            ['email' => 'ananya@coffee.local', 'product' => 'Hazelnut Frappe', 'rating' => 5, 'review' => null],
+            ['email' => 'ananya@coffee.local', 'product' => 'Honey Lime Cold Brew', 'rating' => 4, 'review' => 'Honey softens the brew.'],
+            ['email' => 'ananya@coffee.local', 'product' => 'Cafe Latte', 'rating' => 5, 'review' => 'Silky every visit.'],
+            ['email' => 'vikram@coffee.local', 'product' => 'Caramel Crunch Frappe', 'rating' => 3, 'review' => 'A bit sweet for me.'],
+            ['email' => 'vikram@coffee.local', 'product' => 'Americano', 'rating' => 4, 'review' => null],
+            ['email' => 'vikram@coffee.local', 'product' => 'Mix Berry Lemonade', 'rating' => 5, 'review' => 'Great with lunch.'],
+            ['email' => 'sara@coffee.local', 'product' => 'Cafe Latte', 'rating' => 5, 'review' => 'My comfort order.'],
+            ['email' => 'sara@coffee.local', 'product' => 'Blueberry Mojito', 'rating' => 4, 'review' => null],
+            ['email' => 'sara@coffee.local', 'product' => 'Iced Americano', 'rating' => 5, 'review' => 'Crisp and light.'],
+        ];
+    }
+
     protected function ensureCompletedPurchase(User $customer, Product $product): Order
     {
         $existingOrderId = Order::query()
@@ -141,13 +129,15 @@ class ProductRatingSeeder extends Seeder
         $variant = $product->defaultVariant
             ?? ProductVariant::query()->where('product_id', $product->id)->orderBy('sort_order')->first();
 
-        $placedAt = CarbonImmutable::now()->subDays(random_int(2, 14))->setTime(11, 30);
+        $dayOffset = 2 + (($customer->id + $product->id) % 20);
+        $placedAt = CarbonImmutable::now()->subDays($dayOffset)->setTime(11, 30);
         $unitPrice = $variant?->price ?? '8.00';
+        $dailySequence = 2000 + ((int) $customer->id * 40) + (int) $product->id;
 
         $order = Order::query()->create([
             'order_number' => 'CC-RATE-'.$customer->id.'-'.$product->id,
             'order_date' => $placedAt->toDateString(),
-            'daily_sequence' => random_int(50, 900),
+            'daily_sequence' => $dailySequence,
             'customer_id' => $customer->id,
             'customer_name' => $customer->name,
             'customer_email' => $customer->email,

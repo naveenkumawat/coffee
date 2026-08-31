@@ -4,6 +4,7 @@ import { getApiBaseUrl } from '../../api/client';
 import { uploadPaymentProof } from '../../api/orders';
 import { ApiError } from '../../api/client';
 import { Order, OrderPaymentInstructions } from '../../types/order';
+import { copyTextToClipboard } from '../../utils/clipboard';
 import { formatCurrency } from '../../utils/format';
 import { resolveCatalogMediaUrl } from '../../utils/images';
 import { useToastStore } from '../../stores/toastStore';
@@ -18,6 +19,8 @@ interface PaymentInstructionsCardProps {
   onOrderUpdated?: (order: Order) => void;
 }
 
+type CopyField = 'order' | 'upi' | 'phone';
+
 function toWhatsappHref(number: string, orderNumber: string): string {
   const normalized = number.replace(/[^\d+]/g, '');
   const message = encodeURIComponent(
@@ -27,13 +30,14 @@ function toWhatsappHref(number: string, orderNumber: string): string {
   return `https://wa.me/${normalized.replace(/^\+/, '')}?text=${message}`;
 }
 
-async function copyText(value: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(value);
-
-    return true;
-  } catch {
-    return false;
+function successToastForField(field: CopyField): string {
+  switch (field) {
+    case 'upi':
+      return 'UPI ID copied';
+    case 'phone':
+      return 'Phone number copied';
+    default:
+      return 'Order number copied';
   }
 }
 
@@ -50,9 +54,10 @@ export function PaymentInstructionsCard({
   const paymentPhone = payment?.phone?.trim() ?? '';
   const qrPath = payment?.qr_image_path?.trim() ?? '';
   const qrSrc = qrPath ? resolveCatalogMediaUrl(qrPath, '') : '';
+  const instructions = payment?.instructions?.trim() ?? '';
   const toastSuccess = useToastStore((state) => state.success);
   const toastError = useToastStore((state) => state.error);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<CopyField | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,15 +67,19 @@ export function PaymentInstructionsCard({
   const rejected = order.payment_status === 'rejected';
   const canUpload = proof?.can_upload ?? order.status === 'pending_payment';
 
-  async function handleCopy(label: string, value: string): Promise<void> {
-    const ok = await copyText(value);
+  async function handleCopy(field: CopyField, value: string): Promise<void> {
+    if (!value.trim()) {
+      return;
+    }
+
+    const ok = await copyTextToClipboard(value);
 
     if (ok) {
-      setCopiedField(label);
-      toastSuccess(`${label} copied`);
+      setCopiedField(field);
+      toastSuccess(successToastForField(field));
       window.setTimeout(() => setCopiedField(null), 1600);
     } else {
-      toastError(`Unable to copy ${label.toLowerCase()}`);
+      toastError('Could not copy. Please copy manually.');
     }
   }
 
@@ -108,7 +117,7 @@ export function PaymentInstructionsCard({
           status="pending_payment"
           label={awaitingReview ? 'Awaiting review' : rejected ? 'Replacement needed' : 'Pending Payment'}
         />
-        <h2>Pay to confirm your order</h2>
+        <h2>Payment details</h2>
         <p>
           {awaitingReview
             ? 'Screenshot received — the cafe will confirm payment shortly.'
@@ -122,54 +131,59 @@ export function PaymentInstructionsCard({
         <div className="payment-meta-row">
           <div>
             <span>Order number</span>
-            <strong className="payment-order-number">{order.order_number}</strong>
+            <strong className="payment-order-number user-select-text">{order.order_number}</strong>
           </div>
           <button
             type="button"
-            className="btn btn-outline-dark btn-sm rounded-pill"
-            onClick={() => void handleCopy('Order number', order.order_number)}
+            className="btn btn-outline-dark btn-sm rounded-pill payment-copy-btn"
+            aria-label="Copy order number"
+            onClick={() => void handleCopy('order', order.order_number)}
           >
-            {copiedField === 'Order number' ? 'Copied' : 'Copy'}
+            {copiedField === 'order' ? 'Copied' : 'Copy'}
           </button>
         </div>
         <div>
           <span>Amount due</span>
           <strong className="payment-amount">{formatCurrency(order.total_amount)}</strong>
         </div>
-        <div>
-          <span>Pay to</span>
-          <strong>{payment?.display_name ?? 'Cafe'}</strong>
-        </div>
-      </div>
-
-      <div className="payment-detail-block payment-upi-block">
-        <div>
-          <span>UPI ID</span>
-          <strong>{upiId || 'Will be shared by the cafe team.'}</strong>
-        </div>
-        {upiId ? (
-          <button
-            type="button"
-            className="btn btn-outline-dark btn-sm rounded-pill"
-            onClick={() => void handleCopy('UPI ID', upiId)}
-          >
-            {copiedField === 'UPI ID' ? 'Copied' : 'Copy UPI'}
-          </button>
+        {payment?.display_name ? (
+          <div>
+            <span>Pay to</span>
+            <strong>{payment.display_name}</strong>
+          </div>
         ) : null}
       </div>
 
-      {paymentPhone ? (
-        <div className="payment-detail-block payment-upi-block">
-          <div>
-            <span>Payment phone</span>
-            <strong>{paymentPhone}</strong>
+      {upiId ? (
+        <div className="payment-detail-block payment-copy-row">
+          <div className="payment-copy-value">
+            <span>UPI ID</span>
+            <strong className="user-select-text">{upiId}</strong>
           </div>
           <button
             type="button"
-            className="btn btn-outline-dark btn-sm rounded-pill"
-            onClick={() => void handleCopy('Payment phone', paymentPhone)}
+            className="btn btn-outline-dark btn-sm rounded-pill payment-copy-btn"
+            aria-label="Copy UPI ID"
+            onClick={() => void handleCopy('upi', upiId)}
           >
-            {copiedField === 'Payment phone' ? 'Copied' : 'Copy'}
+            {copiedField === 'upi' ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      ) : null}
+
+      {paymentPhone ? (
+        <div className="payment-detail-block payment-copy-row">
+          <div className="payment-copy-value">
+            <span>Phone</span>
+            <strong className="user-select-text">{paymentPhone}</strong>
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline-dark btn-sm rounded-pill payment-copy-btn"
+            aria-label="Copy payment phone number"
+            onClick={() => void handleCopy('phone', paymentPhone)}
+          >
+            {copiedField === 'phone' ? 'Copied' : 'Copy'}
           </button>
         </div>
       ) : null}
@@ -182,9 +196,9 @@ export function PaymentInstructionsCard({
       ) : null}
 
       <div className="payment-detail-block">
-        <span>How to pay</span>
+        <span>Payment instructions</span>
         <p>
-          {payment?.instructions ||
+          {instructions ||
             'Complete the UPI payment for the amount due, then upload your screenshot with the order number.'}
         </p>
       </div>
@@ -239,13 +253,15 @@ export function PaymentInstructionsCard({
         </div>
       ) : null}
 
-      <div className="payment-reminder">
-        <i className="bi bi-whatsapp" aria-hidden="true"></i>
-        <div>
-          <strong>WhatsApp fallback</strong>
-          <p>You can still send the screenshot on WhatsApp if upload is unavailable.</p>
+      {whatsappNumber ? (
+        <div className="payment-reminder">
+          <i className="bi bi-whatsapp" aria-hidden="true"></i>
+          <div>
+            <strong>WhatsApp fallback</strong>
+            <p>You can still send the screenshot on WhatsApp if upload is unavailable.</p>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="payment-actions">
         {whatsappNumber ? (

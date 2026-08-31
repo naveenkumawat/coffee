@@ -258,8 +258,8 @@ class ProductManagementTest extends TestCase
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ProductFlavourSeeder']);
         Artisan::call('db:seed', ['--class' => 'Database\\Seeders\\ProductSeeder']);
 
-        $this->assertSame(5, ProductCategory::query()->count());
-        $this->assertSame(5, ProductFlavour::query()->count());
-        $this->assertSame(18, Product::query()->count());
+        $this->assertSame(7, ProductCategory::query()->count());
+        $this->assertSame(10, ProductFlavour::query()->count());
+        $this->assertSame(38, Product::query()->count());
     }
 }

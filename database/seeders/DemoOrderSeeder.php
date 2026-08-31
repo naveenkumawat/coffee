@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\OrderStatus;
+use App\Models\CafeTable;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
@@ -66,6 +67,8 @@ class DemoOrderSeeder extends Seeder
                 'customer_notes' => $definition['customer_notes'],
                 'pickup_notes' => $definition['pickup_notes'] ?? null,
                 'fulfilment_method' => $definition['fulfilment_method'] ?? 'takeaway',
+                'cafe_table_id' => $definition['cafe_table_id'] ?? null,
+                'table_name_snapshot' => $definition['table_name_snapshot'] ?? null,
                 'delivery_address' => $definition['delivery_address'] ?? null,
                 'delivery_phone' => $definition['delivery_phone'] ?? null,
                 'delivery_contact_name' => $definition['delivery_contact_name'] ?? null,
@@ -96,6 +99,8 @@ class DemoOrderSeeder extends Seeder
         $order->items()->delete();
         $order->statusHistory()->delete();
 
+        $subtotal = '0.00';
+
         foreach ($definition['items'] as $item) {
             $product = Product::query()->where('name', $item['product'])->firstOrFail();
             $variant = ProductVariant::query()
@@ -104,6 +109,7 @@ class DemoOrderSeeder extends Seeder
                 ->firstOrFail();
             $recipe = Recipe::query()->where('product_variant_id', $variant->id)->first();
             $lineSubtotal = bcmul((string) $variant->price, (string) $item['quantity'], 2);
+            $subtotal = bcadd($subtotal, $lineSubtotal, 2);
 
             OrderItem::query()->create([
                 'order_id' => $order->id,
@@ -118,6 +124,11 @@ class DemoOrderSeeder extends Seeder
                 'line_subtotal' => $lineSubtotal,
             ]);
         }
+
+        $order->forceFill([
+            'subtotal' => $subtotal,
+            'total_amount' => $subtotal,
+        ])->save();
 
         foreach ($definition['history'] as $index => $history) {
             OrderStatusHistory::query()->create([
@@ -581,6 +592,431 @@ class DemoOrderSeeder extends Seeder
                         'to' => OrderStatus::Rejected,
                         'changed_by' => $admin->id,
                         'notes' => 'Seasonal item unavailable; refund arranged offline.',
+                    ],
+                ],
+            ],
+            ...$this->dineInOrders($customer, $priya, $arjun, $barista, $admin, $today, $yesterday),
+            [
+                'order_number' => 'CC-SEED-0010',
+                'daily_sequence' => 10,
+                'customer' => $customer,
+                'status' => OrderStatus::PendingPayment,
+                'fulfilment_method' => 'takeaway',
+                'payment_status' => 'rejected',
+                'payment_proof_path' => 'payment-proofs/demo/seed-0010.jpg',
+                'payment_proof_disk' => 'local',
+                'payment_proof_mime' => 'image/jpeg',
+                'payment_proof_size' => 1500,
+                'payment_proof_uploaded_at' => $today->setTime(8, 40),
+                'payment_proof_rejection_notes' => 'Screenshot is cropped — please re-upload the full UPI confirmation.',
+                'assigned_barista_id' => null,
+                'checkout_token' => hash('sha256', 'demo-checkout-proof-rejected'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'pickup_notes' => null,
+                'placed_at' => $today->setTime(8, 30),
+                'payment_confirmed_at' => null,
+                'accepted_at' => null,
+                'preparing_at' => null,
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [
+                    ['product' => 'Flat White', 'variant' => 'Regular', 'quantity' => 1],
+                ],
+                'history' => [
+                    [
+                        'from' => null,
+                        'to' => OrderStatus::PendingPayment,
+                        'changed_by' => $customer->id,
+                        'notes' => 'Order placed; payment proof rejected — awaiting replacement.',
+                    ],
+                ],
+            ],
+            [
+                'order_number' => 'CC-SEED-0011',
+                'daily_sequence' => 81,
+                'customer' => $arjun,
+                'status' => OrderStatus::Completed,
+                'fulfilment_method' => 'takeaway',
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-checkout-week-ago'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'pickup_notes' => null,
+                'placed_at' => $today->subDays(6)->setTime(15, 10),
+                'payment_confirmed_at' => $today->subDays(6)->setTime(15, 15),
+                'accepted_at' => $today->subDays(6)->setTime(15, 18),
+                'preparing_at' => $today->subDays(6)->setTime(15, 20),
+                'ready_for_pickup_at' => $today->subDays(6)->setTime(15, 30),
+                'completed_at' => $today->subDays(6)->setTime(15, 40),
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [
+                    ['product' => 'Cafe Latte', 'variant' => 'Large', 'quantity' => 2],
+                ],
+                'history' => [
+                    [
+                        'from' => null,
+                        'to' => OrderStatus::PendingPayment,
+                        'changed_by' => $arjun->id,
+                        'notes' => 'Order placed.',
+                    ],
+                    [
+                        'from' => OrderStatus::PendingPayment,
+                        'to' => OrderStatus::PaymentConfirmed,
+                        'changed_by' => $admin->id,
+                        'notes' => 'Payment confirmed.',
+                    ],
+                    [
+                        'from' => OrderStatus::PaymentConfirmed,
+                        'to' => OrderStatus::Accepted,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Accepted.',
+                    ],
+                    [
+                        'from' => OrderStatus::Accepted,
+                        'to' => OrderStatus::Preparing,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Preparing.',
+                    ],
+                    [
+                        'from' => OrderStatus::Preparing,
+                        'to' => OrderStatus::ReadyForPickup,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Ready.',
+                    ],
+                    [
+                        'from' => OrderStatus::ReadyForPickup,
+                        'to' => OrderStatus::Completed,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Collected.',
+                    ],
+                ],
+            ],
+            [
+                'order_number' => 'CC-SEED-0012',
+                'daily_sequence' => 91,
+                'customer' => $priya,
+                'status' => OrderStatus::Completed,
+                'fulfilment_method' => 'delivery',
+                'delivery_address' => "22 Koramangala 5th Block\nBengaluru 560095",
+                'delivery_phone' => $priya->phone,
+                'delivery_contact_name' => $priya->name,
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-checkout-month-ago'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'pickup_notes' => null,
+                'placed_at' => $today->subDays(20)->setTime(12, 0),
+                'payment_confirmed_at' => $today->subDays(20)->setTime(12, 10),
+                'accepted_at' => $today->subDays(20)->setTime(12, 12),
+                'preparing_at' => $today->subDays(20)->setTime(12, 15),
+                'ready_for_pickup_at' => $today->subDays(20)->setTime(12, 28),
+                'completed_at' => $today->subDays(20)->setTime(13, 5),
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [
+                    ['product' => 'Mocha Frappe', 'variant' => 'Large', 'quantity' => 1],
+                    ['product' => 'Chocolate Muffin', 'variant' => 'Single', 'quantity' => 2],
+                ],
+                'history' => [
+                    [
+                        'from' => null,
+                        'to' => OrderStatus::PendingPayment,
+                        'changed_by' => $priya->id,
+                        'notes' => 'Delivery order placed.',
+                    ],
+                    [
+                        'from' => OrderStatus::PendingPayment,
+                        'to' => OrderStatus::PaymentConfirmed,
+                        'changed_by' => $admin->id,
+                        'notes' => 'Payment confirmed.',
+                    ],
+                    [
+                        'from' => OrderStatus::PaymentConfirmed,
+                        'to' => OrderStatus::Accepted,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Accepted.',
+                    ],
+                    [
+                        'from' => OrderStatus::Accepted,
+                        'to' => OrderStatus::Preparing,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Preparing.',
+                    ],
+                    [
+                        'from' => OrderStatus::Preparing,
+                        'to' => OrderStatus::ReadyForPickup,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Ready for handover.',
+                    ],
+                    [
+                        'from' => OrderStatus::ReadyForPickup,
+                        'to' => OrderStatus::Completed,
+                        'changed_by' => $barista->id,
+                        'notes' => 'Handed to delivery partner.',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function dineInOrders(
+        User $customer,
+        User $priya,
+        User $arjun,
+        User $barista,
+        User $admin,
+        CarbonImmutable $today,
+        CarbonImmutable $yesterday,
+    ): array {
+        $tables = CafeTable::query()->whereIn('code', ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'])->get()->keyBy('code');
+
+        if ($tables->count() < 7) {
+            return [];
+        }
+
+        $historyThrough = function (User $actor, User $adminUser, User $baristaUser, OrderStatus $final) {
+            $steps = [
+                [null, OrderStatus::PendingPayment, $actor->id, 'Dine-in order placed.'],
+            ];
+
+            if ($final === OrderStatus::PendingPayment) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            $steps[] = [OrderStatus::PendingPayment, OrderStatus::PaymentConfirmed, $adminUser->id, 'Payment confirmed.'];
+
+            if ($final === OrderStatus::PaymentConfirmed) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            $steps[] = [OrderStatus::PaymentConfirmed, OrderStatus::Accepted, $baristaUser->id, 'Accepted.'];
+
+            if ($final === OrderStatus::Accepted) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            $steps[] = [OrderStatus::Accepted, OrderStatus::Preparing, $baristaUser->id, 'Preparing for table.'];
+
+            if ($final === OrderStatus::Preparing) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            $steps[] = [OrderStatus::Preparing, OrderStatus::ReadyForPickup, $baristaUser->id, 'Ready to serve.'];
+
+            if ($final === OrderStatus::ReadyForPickup) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            $steps[] = [OrderStatus::ReadyForPickup, OrderStatus::Completed, $baristaUser->id, 'Served and completed.'];
+
+            if ($final === OrderStatus::Completed) {
+                return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+            }
+
+            return array_map(fn ($s) => ['from' => $s[0], 'to' => $s[1], 'changed_by' => $s[2], 'notes' => $s[3]], $steps);
+        };
+
+        return [
+            [
+                'order_number' => 'CC-DINE-0001',
+                'daily_sequence' => 21,
+                'customer' => $customer,
+                'status' => OrderStatus::PendingPayment,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T1']->id,
+                'table_name_snapshot' => $tables['T1']->snapshotLabel(),
+                'payment_status' => 'pending',
+                'assigned_barista_id' => null,
+                'checkout_token' => hash('sha256', 'demo-dine-pending-t1'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => 'Seated at T1',
+                'placed_at' => $today->setTime(9, 40),
+                'payment_confirmed_at' => null,
+                'accepted_at' => null,
+                'preparing_at' => null,
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [['product' => 'Espresso', 'variant' => 'Double', 'quantity' => 1]],
+                'history' => $historyThrough($customer, $admin, $barista, OrderStatus::PendingPayment),
+            ],
+            [
+                'order_number' => 'CC-DINE-0002',
+                'daily_sequence' => 22,
+                'customer' => $priya,
+                'status' => OrderStatus::PaymentConfirmed,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T2']->id,
+                'table_name_snapshot' => $tables['T2']->snapshotLabel(),
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => null,
+                'checkout_token' => hash('sha256', 'demo-dine-paid-t2'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'placed_at' => $today->setTime(10, 35),
+                'payment_confirmed_at' => $today->setTime(10, 42),
+                'accepted_at' => null,
+                'preparing_at' => null,
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [['product' => 'Cafe Latte', 'variant' => 'Regular', 'quantity' => 2]],
+                'history' => $historyThrough($priya, $admin, $barista, OrderStatus::PaymentConfirmed),
+            ],
+            [
+                'order_number' => 'CC-DINE-0003',
+                'daily_sequence' => 23,
+                'customer' => $arjun,
+                'status' => OrderStatus::Accepted,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T3']->id,
+                'table_name_snapshot' => $tables['T3']->snapshotLabel(),
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-dine-accepted-t3'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'placed_at' => $today->setTime(11, 20),
+                'payment_confirmed_at' => $today->setTime(11, 25),
+                'accepted_at' => $today->setTime(11, 28),
+                'preparing_at' => null,
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [['product' => 'Cappuccino', 'variant' => 'Regular', 'quantity' => 1]],
+                'history' => $historyThrough($arjun, $admin, $barista, OrderStatus::Accepted),
+            ],
+            [
+                'order_number' => 'CC-DINE-0004',
+                'daily_sequence' => 24,
+                'customer' => $customer,
+                'status' => OrderStatus::Preparing,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T4']->id,
+                'table_name_snapshot' => $tables['T4']->snapshotLabel(),
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-dine-preparing-t4'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'placed_at' => $today->setTime(12, 5),
+                'payment_confirmed_at' => $today->setTime(12, 10),
+                'accepted_at' => $today->setTime(12, 12),
+                'preparing_at' => $today->setTime(12, 15),
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [
+                    ['product' => 'Hazelnut Latte', 'variant' => 'Regular', 'quantity' => 1],
+                    ['product' => 'Butter Croissant', 'variant' => 'Single', 'quantity' => 1],
+                ],
+                'history' => $historyThrough($customer, $admin, $barista, OrderStatus::Preparing),
+            ],
+            [
+                'order_number' => 'CC-DINE-0005',
+                'daily_sequence' => 25,
+                'customer' => $priya,
+                'status' => OrderStatus::ReadyForPickup,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T5']->id,
+                'table_name_snapshot' => $tables['T5']->snapshotLabel(),
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-dine-ready-t5'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'placed_at' => $today->setTime(13, 0),
+                'payment_confirmed_at' => $today->setTime(13, 5),
+                'accepted_at' => $today->setTime(13, 6),
+                'preparing_at' => $today->setTime(13, 8),
+                'ready_for_pickup_at' => $today->setTime(13, 18),
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [['product' => 'Virgin Mojito', 'variant' => '300 ml', 'quantity' => 2]],
+                'history' => $historyThrough($priya, $admin, $barista, OrderStatus::ReadyForPickup),
+            ],
+            [
+                'order_number' => 'CC-DINE-0006',
+                'daily_sequence' => 61,
+                'customer' => $arjun,
+                'status' => OrderStatus::Completed,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T6']->id,
+                'table_name_snapshot' => $tables['T6']->snapshotLabel(),
+                'payment_status' => 'confirmed',
+                'assigned_barista_id' => $barista->id,
+                'checkout_token' => hash('sha256', 'demo-dine-completed-t6'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => null,
+                'placed_at' => $yesterday->setTime(17, 0),
+                'payment_confirmed_at' => $yesterday->setTime(17, 5),
+                'accepted_at' => $yesterday->setTime(17, 7),
+                'preparing_at' => $yesterday->setTime(17, 10),
+                'ready_for_pickup_at' => $yesterday->setTime(17, 20),
+                'completed_at' => $yesterday->setTime(17, 35),
+                'cancelled_at' => null,
+                'rejected_at' => null,
+                'items' => [['product' => 'Matcha Latte', 'variant' => 'Regular', 'quantity' => 1]],
+                'history' => $historyThrough($arjun, $admin, $barista, OrderStatus::Completed),
+            ],
+            [
+                'order_number' => 'CC-DINE-0007',
+                'daily_sequence' => 71,
+                'customer' => $customer,
+                'status' => OrderStatus::Cancelled,
+                'fulfilment_method' => 'dine_in',
+                'cafe_table_id' => $tables['T7']->id,
+                'table_name_snapshot' => $tables['T7']->snapshotLabel(),
+                'payment_status' => 'pending',
+                'assigned_barista_id' => null,
+                'checkout_token' => hash('sha256', 'demo-dine-cancelled-t7'),
+                'subtotal' => '0.00',
+                'total_amount' => '0.00',
+                'customer_notes' => 'Left the table early.',
+                'placed_at' => $yesterday->setTime(11, 10),
+                'payment_confirmed_at' => null,
+                'accepted_at' => null,
+                'preparing_at' => null,
+                'ready_for_pickup_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => $yesterday->setTime(11, 25),
+                'rejected_at' => null,
+                'items' => [['product' => 'Iced Americano', 'variant' => 'Regular', 'quantity' => 1]],
+                'history' => [
+                    [
+                        'from' => null,
+                        'to' => OrderStatus::PendingPayment,
+                        'changed_by' => $customer->id,
+                        'notes' => 'Dine-in order placed.',
+                    ],
+                    [
+                        'from' => OrderStatus::PendingPayment,
+                        'to' => OrderStatus::Cancelled,
+                        'changed_by' => $customer->id,
+                        'notes' => 'Customer cancelled before payment.',
                     ],
                 ],
             ],

@@ -2685,7 +2685,7 @@ textarea.coffee-input:focus {
 .confirmation-success {
   display: grid;
   justify-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   text-align: center;
   padding: var(--space-5) var(--space-4);
   border-radius: var(--radius-lg);
@@ -2706,11 +2706,26 @@ textarea.coffee-input:focus {
 }
 
 .confirmation-meta-row {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: var(--space-2);
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.confirmation-meta-row .status-badge,
+.confirmation-meta-row .fulfilment-badge,
+.confirmation-meta-row .confirmation-status-badge {
+  margin: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+.fulfilment-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 @keyframes coffee-success-pop {
@@ -2733,26 +2748,50 @@ textarea.coffee-input:focus {
 }
 
 .confirmation-order-number {
-  margin: 0.15rem 0 0;
-  font-size: 1.35rem;
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   overflow-wrap: anywhere;
+  user-select: text;
 }
 
-.confirmation-total {
+.confirmation-amount-block {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+}
+
+.confirmation-amount {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: clamp(1.45rem, 5vw, 1.75rem);
   font-weight: 700;
   color: var(--coffee-primary);
+  line-height: 1.15;
+}
+
+.confirmation-amount-label {
+  margin: 0;
+  color: var(--coffee-muted);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.confirmation-table {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--coffee-accent);
 }
 
 .confirmation-next-step {
-  margin: 0.35rem 0 0;
+  margin: 0;
   max-width: 22rem;
   color: var(--coffee-muted);
   font-size: var(--text-meta);
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .confirmation-footer-actions {
@@ -2837,6 +2876,34 @@ textarea.coffee-input:focus {
 
 .payment-upi-block strong {
   overflow-wrap: anywhere;
+}
+
+.payment-copy-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.payment-copy-value {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.payment-copy-value strong {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  user-select: text;
+}
+
+.payment-copy-btn {
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+}
+
+.user-select-text {
+  user-select: text;
 }
 
 .payment-reminder {

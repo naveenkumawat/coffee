@@ -91,11 +91,19 @@ ADMIN_EMAIL="owner@example.com"
 ADMIN_PASSWORD="change-me"
 ```
 
-5. Run migrations and seed:
+5. Reset and seed the local database (canonical demo reset):
 
 ```bash
-php artisan migrate
-php artisan db:seed
+php artisan migrate:fresh --seed
+```
+
+This loads structural taxonomy always, then `DemoSeeder` for **local/testing only** (catalog, CMS, customers, orders, café tables, staff bell data). Production (`APP_ENV=production`) never loads `DemoSeeder`.
+
+Optional one-shot owner bootstrap (any environment, including production):
+
+```bash
+ADMIN_EMAIL="owner@example.com"
+ADMIN_PASSWORD="change-me"
 ```
 
 6. Start the app:
@@ -122,15 +130,23 @@ npm run build
 - Do not create parallel `Admin` folders such as `app/Http/Controllers/Admin` or `resources/views/admin`.
 - The auth guard key intentionally remains `admin`, because it is a guard identifier rather than a folder or namespace convention.
 
-## Development Credentials
+## Development Credentials (DEVELOPMENT ONLY)
 
-These seeded accounts are for local and development use only. Do not use them in production.
+Seeded by `DemoSeeder` for **local/testing** only. Shared password: `password`.
 
-- Administrator / Owner: `admin@coffee.local` / `password`
-- Manager: `manager@coffee.local` / `password`
-- Barista: `barista@coffee.local` / `password`
-- Customer (full demo activity): `customer@coffee.local` / `password`
-- Additional customers: `priya@coffee.local`, `arjun@coffee.local`, `empty@coffee.local` / `password`
+**Never use these accounts or password in production.**
+
+| Role | Email |
+|------|-------|
+| Owner / Administrator | `admin@coffee.local` |
+| Manager | `manager@coffee.local` |
+| Barista 1 | `barista@coffee.local` |
+| Barista 2 | `barista2@coffee.local` |
+| Inactive staff (login blocked) | `inactive.staff@coffee.local` |
+| Customer (full activity) | `customer@coffee.local` |
+| Additional customers | `priya@coffee.local`, `arjun@coffee.local`, `empty@coffee.local`, `neha@coffee.local`, `rohan@coffee.local`, `meera@coffee.local`, `kabir@coffee.local`, `ananya@coffee.local`, `vikram@coffee.local`, `sara@coffee.local` |
+
+After seeding, run `php artisan coffee:catalog-readiness` to inspect intentional incomplete/paused/stock-concern demo products.
 
 ## Testing
 

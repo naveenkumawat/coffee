@@ -5,18 +5,18 @@
 ])
 
 @if ($availableTransitions !== [])
-    <div class="card card-flush internal-card mb-7">
-        <div class="card-header pt-7">
+    <div class="card card-flush internal-card mb-5">
+        <div class="card-header pt-6 pb-0">
             <div class="card-title">
                 <h3 class="fw-bold text-gray-900">Allowed Status Actions</h3>
             </div>
         </div>
-        <div class="card-body pt-0">
-            <div class="d-flex flex-column gap-4">
-                <div class="text-muted fs-7">
-                    Current status: <span class="fw-bold text-gray-900">{{ $order->status->label() }}</span>
+        <div class="card-body pt-4">
+            <div class="d-flex flex-column gap-3">
+                <div class="text-muted fs-8">
+                    Current: <span class="fw-bold text-gray-900">{{ $order->status->label() }}</span>
                 </div>
-                <div class="d-flex flex-wrap gap-3">
+                <div class="d-flex flex-wrap gap-2">
                     @foreach ($availableTransitions as $statusValue => $statusLabel)
                         <form method="POST" action="{{ route($routeName, $order) }}" class="d-inline-flex">
                             @csrf

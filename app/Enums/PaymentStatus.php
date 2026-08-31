@@ -18,4 +18,14 @@ enum PaymentStatus: string
             self::Rejected => 'Replacement requested',
         };
     }
+
+    public function badgeClass(): string
+    {
+        return match ($this) {
+            self::Pending => 'badge-light-warning',
+            self::AwaitingReview => 'badge-light-info',
+            self::Confirmed => 'badge-light-success',
+            self::Rejected => 'badge-light-danger',
+        };
+    }
 }

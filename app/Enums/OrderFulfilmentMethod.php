@@ -17,6 +17,15 @@ enum OrderFulfilmentMethod: string
         };
     }
 
+    public function badgeClass(): string
+    {
+        return match ($this) {
+            self::Takeaway => 'badge-light-dark',
+            self::Delivery => 'badge-light-primary',
+            self::DineIn => 'badge-light-info',
+        };
+    }
+
     public function readyLabel(): string
     {
         return match ($this) {

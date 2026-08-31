@@ -196,4 +196,97 @@ class OrderPaymentProofTest extends TestCase
         $this->get(route('api.v1.orders.payment-proof.show', $order))
             ->assertOk();
     }
+
+    public function test_administrator_order_detail_shows_authorized_proof_thumbnail(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->manager()->create();
+        $order = Order::factory()->withPaymentProof()->create([
+            'status' => OrderStatus::PendingPayment,
+            'payment_status' => PaymentStatus::AwaitingReview,
+        ]);
+
+        Storage::disk('local')->put($order->payment_proof_path, 'fake-jpeg-bytes');
+
+        $proofUrl = route('administrator.orders.payment-proof.show', $order);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('administrator.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Payment proof', false)
+            ->assertSee($proofUrl, false)
+            ->assertSee('payment-proof-thumb', false)
+            ->assertDontSee('View screenshot', false)
+            ->assertSee('Awaiting review', false);
+
+        $this->actingAs($admin, 'admin')
+            ->get($proofUrl)
+            ->assertOk()
+            ->assertHeader('content-disposition');
+    }
+
+    public function test_administrator_order_detail_shows_empty_proof_state_without_broken_image(): void
+    {
+        $admin = User::factory()->manager()->create();
+        $order = Order::factory()->create([
+            'status' => OrderStatus::PendingPayment,
+            'payment_status' => PaymentStatus::Pending,
+            'payment_proof_path' => null,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('administrator.orders.show', $order))
+            ->assertOk()
+            ->assertSee('No payment proof submitted.', false)
+            ->assertDontSee('payment-proof-thumb', false)
+            ->assertDontSee(route('administrator.orders.payment-proof.show', $order), false);
+    }
+
+    public function test_unauthenticated_and_barista_cannot_stream_payment_proof(): void
+    {
+        Storage::fake('local');
+
+        $order = Order::factory()->withPaymentProof()->create([
+            'status' => OrderStatus::PendingPayment,
+        ]);
+        Storage::disk('local')->put($order->payment_proof_path, 'secret-proof');
+
+        $this->get(route('administrator.orders.payment-proof.show', $order))
+            ->assertRedirect();
+
+        $barista = User::factory()->barista()->create();
+
+        $this->actingAs($barista, 'admin')
+            ->get(route('administrator.orders.payment-proof.show', $order))
+            ->assertForbidden();
+    }
+
+    public function test_administrator_order_detail_renders_dine_in_and_takeaway_summaries(): void
+    {
+        $admin = User::factory()->owner()->create();
+
+        $dineIn = Order::factory()->dineIn()->create([
+            'table_name_snapshot' => 'T4',
+            'status' => OrderStatus::PendingPayment,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('administrator.orders.show', $dineIn))
+            ->assertOk()
+            ->assertSee('Dine-in', false)
+            ->assertSee('T4', false)
+            ->assertSee($dineIn->order_number, false);
+
+        $takeaway = Order::factory()->create([
+            'pickup_name' => 'Pickup Guest',
+            'status' => OrderStatus::PendingPayment,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('administrator.orders.show', $takeaway))
+            ->assertOk()
+            ->assertSee('Takeaway', false)
+            ->assertSee('Pickup Guest', false);
+    }
 }

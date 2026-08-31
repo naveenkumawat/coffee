@@ -32,7 +32,7 @@
                 'items' => $user?->canManageIngredients() ? [
                     ['label' => 'Categories', 'route' => 'administrator.ingredients.categories.index', 'pattern' => 'administrator.ingredients.categories.*', 'icon' => 'ki-book-open'],
                     ['label' => 'Brands', 'route' => 'administrator.ingredients.brands.index', 'pattern' => 'administrator.ingredients.brands.*', 'icon' => 'ki-tag'],
-                    ['label' => 'Ingredients', 'route' => 'administrator.ingredients.index', 'pattern' => 'administrator.ingredients.*', 'icon' => 'ki-chef'],
+                    ['label' => 'Ingredients', 'route' => 'administrator.ingredients.index', 'pattern' => 'administrator.ingredients.*', 'icon' => 'ki-flask'],
                 ] : [],
             ],
             [

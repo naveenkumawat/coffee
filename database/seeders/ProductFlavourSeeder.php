@@ -12,11 +12,16 @@ class ProductFlavourSeeder extends Seeder
     public function run(): void
     {
         $flavours = [
-            ['name' => 'Vanilla', 'description' => 'Classic sweet vanilla pairing.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes', 'Tea & Matcha']],
-            ['name' => 'Hazelnut', 'description' => 'Nutty syrup profile for espresso and iced drinks.', 'categories' => ['Hot Coffee', 'Cold Coffee']],
+            ['name' => 'Vanilla', 'description' => 'Classic sweet vanilla pairing.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Cold Brew', 'Frappes', 'Tea & Matcha']],
+            ['name' => 'Hazelnut', 'description' => 'Nutty syrup profile for espresso and iced drinks.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
             ['name' => 'Caramel', 'description' => 'Rich caramel finish for signature beverages.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
             ['name' => 'Mocha', 'description' => 'Chocolate-driven profile for dessert coffee drinks.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Frappes']],
-            ['name' => 'Honey', 'description' => 'Light honey sweetness for tea and matcha drinks.', 'categories' => ['Tea & Matcha']],
+            ['name' => 'Irish', 'description' => 'Warm Irish-style syrup profile (non-alcoholic).', 'categories' => ['Hot Coffee', 'Cold Coffee']],
+            ['name' => 'Strawberry', 'description' => 'Bright berry syrup for frappes and refreshers.', 'categories' => ['Frappes', 'Mojitos / Refreshers']],
+            ['name' => 'Blueberry', 'description' => 'Berry profile for coolers and frappes.', 'categories' => ['Frappes', 'Mojitos / Refreshers']],
+            ['name' => 'Rose', 'description' => 'Floral syrup finish for specialty drinks.', 'categories' => ['Tea & Matcha', 'Frappes']],
+            ['name' => 'Honey', 'description' => 'Light honey sweetness for tea, matcha, and cold brew.', 'categories' => ['Tea & Matcha', 'Cold Brew']],
+            ['name' => 'Classic', 'description' => 'House classic profile with no extra syrup.', 'categories' => ['Hot Coffee', 'Cold Coffee', 'Cold Brew', 'Mojitos / Refreshers']],
         ];
 
         foreach ($flavours as $flavourData) {

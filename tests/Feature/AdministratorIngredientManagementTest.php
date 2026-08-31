@@ -479,7 +479,7 @@ class AdministratorIngredientManagementTest extends TestCase
 
         $this->assertSame(15, IngredientCategory::query()->count());
         $this->assertSame(5, IngredientBrand::query()->count());
-        $this->assertSame(15, Ingredient::query()->count());
+        $this->assertSame(27, Ingredient::query()->count());
         $this->assertGreaterThan(0, Ingredient::query()->whereNotNull('ingredient_brand_id')->count());
         $this->assertGreaterThan(0, Ingredient::query()->whereNull('ingredient_brand_id')->count());
 
@@ -488,5 +488,16 @@ class AdministratorIngredientManagementTest extends TestCase
 
         $oatMilk = Ingredient::query()->where('name', 'Oat Milk')->firstOrFail();
         $this->assertNull($oatMilk->ingredient_brand_id);
+    }
+
+    public function test_ingredients_sidebar_uses_available_keenicon(): void
+    {
+        $manager = User::factory()->manager()->create();
+
+        $this->actingAs($manager, 'admin')
+            ->get(route('administrator.ingredients.index'))
+            ->assertOk()
+            ->assertSee('ki-flask', false)
+            ->assertDontSee('ki-chef', false);
     }
 }
