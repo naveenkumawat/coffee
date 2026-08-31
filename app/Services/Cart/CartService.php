@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Cart\CartRepositoryInterface;
+use App\Services\Tax\TaxCalculatorInterface;
 use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
 use Illuminate\Support\Facades\Cache;
@@ -17,6 +18,7 @@ class CartService implements CartServiceInterface
 {
     public function __construct(
         protected CartRepositoryInterface $carts,
+        protected TaxCalculatorInterface $taxCalculator,
     ) {}
 
     public function getForCustomer(User $customer): Cart
@@ -164,10 +166,13 @@ class CartService implements CartServiceInterface
             );
         }
 
+        $tax = $this->taxCalculator->calculateForTaxableAmount($subtotal);
+
         return [
             'item_count' => $itemCount,
             'subtotal' => $subtotal,
-            'total' => $subtotal,
+            'total' => $tax->cafeTotal,
+            'tax' => $tax->toCustomerArray(),
             'has_unavailable_items' => $hasUnavailableItems,
         ];
     }

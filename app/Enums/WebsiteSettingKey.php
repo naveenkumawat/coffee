@@ -22,6 +22,12 @@ enum WebsiteSettingKey: string
     case PaymentWhatsappNumber = 'payment_whatsapp_number';
     case FulfilmentDeliveryDisclaimer = 'fulfilment_delivery_disclaimer';
     case FulfilmentDineInEnabled = 'fulfilment_dine_in_enabled';
+    case TaxEnabled = 'tax_enabled';
+    case TaxLabel = 'tax_label';
+    case TaxPercent = 'tax_percent';
+    case TaxInclusive = 'tax_inclusive';
+    case TaxGstin = 'tax_gstin';
+    case TaxLegalBusinessName = 'tax_legal_business_name';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -35,6 +41,7 @@ enum WebsiteSettingKey: string
             self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours => 'business',
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
             self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
+            self::TaxEnabled, self::TaxLabel, self::TaxPercent, self::TaxInclusive, self::TaxGstin, self::TaxLegalBusinessName => 'tax',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -48,7 +55,7 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled => 'boolean',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 'boolean',
             default => 'string',
         };
     }
@@ -74,6 +81,12 @@ enum WebsiteSettingKey: string
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
             self::FulfilmentDeliveryDisclaimer => 'Delivery disclaimer',
             self::FulfilmentDineInEnabled => 'Enable dine-in / table ordering',
+            self::TaxEnabled => 'Enable GST',
+            self::TaxLabel => 'Tax label',
+            self::TaxPercent => 'GST %',
+            self::TaxInclusive => 'Prices already include GST',
+            self::TaxGstin => 'GSTIN (optional)',
+            self::TaxLegalBusinessName => 'Legal business name (optional)',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
@@ -85,11 +98,13 @@ enum WebsiteSettingKey: string
     public function maxLength(): int
     {
         return match ($this) {
-            self::HeroTitle, self::BusinessName, self::PaymentDisplayName => 120,
-            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 255,
+            self::HeroTitle, self::BusinessName, self::PaymentDisplayName, self::TaxLegalBusinessName => 120,
+            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin => 255,
+            self::TaxLabel => 40,
+            self::TaxPercent => 8,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled => 1,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -99,8 +114,23 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled => 'checkbox',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 'checkbox',
+            self::TaxPercent => 'number',
             default => 'text',
+        };
+    }
+
+    public function helpText(): ?string
+    {
+        return match ($this) {
+            self::TaxEnabled => 'When enabled, GST is calculated on the café subtotal (not third-party delivery fees) and stored on each order.',
+            self::TaxLabel => 'Shown on checkout, orders, and invoices (default GST).',
+            self::TaxPercent => 'Percentage from 0 to 100, e.g. 5.00.',
+            self::TaxInclusive => 'Off = exclusive (GST added to subtotal). On = inclusive (menu prices already include GST).',
+            self::TaxGstin => 'Printed on invoices only when set. Leave blank if not applicable.',
+            self::TaxLegalBusinessName => 'Optional legal name for invoices when different from the café display brand.',
+            self::FulfilmentDineInEnabled => 'Allow customers to place dine-in / table orders from the PWA. Manage café tables under Café Tables.',
+            default => null,
         };
     }
 

@@ -67,6 +67,14 @@ export interface Order {
   subtotal: string;
   discount_total: string;
   total_amount: string;
+  tax: {
+    enabled: boolean;
+    label: string;
+    percent: string;
+    inclusive: boolean;
+    taxable_amount: string;
+    amount: string;
+  } | null;
   payment_method: string | null;
   payment_status: string | null;
   payment_status_label: string | null;

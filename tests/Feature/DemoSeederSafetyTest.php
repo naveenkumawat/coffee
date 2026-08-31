@@ -76,6 +76,9 @@ class DemoSeederSafetyTest extends TestCase
         $this->assertFalse(
             WebsiteSetting::query()->where('key', 'hero_title')->whereNotNull('value')->where('value', '!=', '')->exists(),
         );
+        $this->assertFalse(
+            WebsiteSetting::query()->where('key', 'tax_enabled')->where('value', '1')->exists(),
+        );
         $this->assertFalse(User::query()->where('email', 'like', '%@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'customer@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'admin@coffee.local')->exists());
@@ -102,6 +105,12 @@ class DemoSeederSafetyTest extends TestCase
         $this->assertTrue(Order::query()->where('fulfilment_method', 'dine_in')->exists());
         $this->assertTrue(
             WebsiteSetting::query()->where('key', 'fulfilment_dine_in_enabled')->where('value', '1')->exists(),
+        );
+        $this->assertTrue(
+            WebsiteSetting::query()->where('key', 'tax_enabled')->where('value', '1')->exists(),
+        );
+        $this->assertTrue(
+            Order::query()->where('tax_enabled_snapshot', true)->exists(),
         );
         $this->assertGreaterThanOrEqual(5, HomeSection::query()->count());
         $this->assertTrue(HomeSection::query()->where('is_active', false)->exists());

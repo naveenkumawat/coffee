@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductRating;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\Tax\TaxCalculatorInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
@@ -133,6 +134,7 @@ class ProductRatingSeeder extends Seeder
         $placedAt = CarbonImmutable::now()->subDays($dayOffset)->setTime(11, 30);
         $unitPrice = $variant?->price ?? '8.00';
         $dailySequence = 2000 + ((int) $customer->id * 40) + (int) $product->id;
+        $tax = app(TaxCalculatorInterface::class)->calculateForTaxableAmount((string) $unitPrice);
 
         $order = Order::query()->create([
             'order_number' => 'CC-RATE-'.$customer->id.'-'.$product->id,
@@ -150,7 +152,13 @@ class ProductRatingSeeder extends Seeder
             'payment_status' => PaymentStatus::Confirmed,
             'subtotal' => $unitPrice,
             'discount_total' => '0.00',
-            'total_amount' => $unitPrice,
+            'tax_enabled_snapshot' => $tax->enabled,
+            'tax_label_snapshot' => $tax->enabled ? $tax->label : null,
+            'tax_percent_snapshot' => $tax->enabled ? $tax->percent : null,
+            'tax_inclusive_snapshot' => $tax->enabled ? $tax->inclusive : false,
+            'taxable_amount' => $tax->taxableAmount,
+            'tax_amount' => $tax->taxAmount,
+            'total_amount' => $tax->cafeTotal,
             'placed_at' => $placedAt,
             'payment_confirmed_at' => $placedAt->addMinutes(5),
             'accepted_at' => $placedAt->addMinutes(8),

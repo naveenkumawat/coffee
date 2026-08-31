@@ -33,6 +33,19 @@ class WebsiteSettingUpdateRequest extends FormRequest
                 continue;
             }
 
+            if ($key === WebsiteSettingKey::TaxPercent) {
+                $rules[$key->value] = [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                    'max:100',
+                    'regex:/^\d{1,3}(\.\d{1,2})?$/',
+                    'required_if:tax_enabled,1,true',
+                ];
+
+                continue;
+            }
+
             $fieldRules = ['nullable', 'string', 'max:'.$key->maxLength()];
 
             if ($key === WebsiteSettingKey::BusinessEmail) {

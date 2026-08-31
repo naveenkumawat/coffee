@@ -190,6 +190,12 @@
                     <div class="brand-slogan">{{ $invoice->cafeSlogan }}</div>
                 @endif
                 <div class="brand-contact">
+                    @if ($invoice->legalBusinessName)
+                        {{ $invoice->legalBusinessName }}<br>
+                    @endif
+                    @if ($invoice->gstin)
+                        GSTIN: {{ $invoice->gstin }}<br>
+                    @endif
                     @foreach (array_filter([$invoice->cafePhone, $invoice->cafeEmail, $invoice->cafeAddress]) as $line)
                         {{ $line }}@if (! $loop->last)<br>@endif
                     @endforeach
@@ -308,6 +314,18 @@
                         <tr>
                             <td>Discount</td>
                             <td class="num">− Rs {{ $invoice->discountTotal }}</td>
+                        </tr>
+                    @endif
+                    @if ($invoice->taxEnabled)
+                        <tr>
+                            <td>
+                                @if ($invoice->taxInclusive)
+                                    {{ $invoice->taxLabel }} included @ {{ rtrim(rtrim($invoice->taxPercent, '0'), '.') }}%
+                                @else
+                                    {{ $invoice->taxLabel }} @ {{ rtrim(rtrim($invoice->taxPercent, '0'), '.') }}%
+                                @endif
+                            </td>
+                            <td class="num">Rs {{ $invoice->taxAmount }}</td>
                         </tr>
                     @endif
                     @if ($invoice->deliveryFeeAmount)

@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\Tax\TaxCalculatorInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -128,6 +129,25 @@ class DemoOrderSeeder extends Seeder
         $order->forceFill([
             'subtotal' => $subtotal,
             'total_amount' => $subtotal,
+        ])->save();
+
+        $tax = app(TaxCalculatorInterface::class)->calculateForTaxableAmount($subtotal);
+        $deliveryFee = $definition['delivery_fee_amount'] ?? null;
+        $totalAmount = app(TaxCalculatorInterface::class)->payableTotal(
+            $tax,
+            is_string($deliveryFee) ? $deliveryFee : null,
+        );
+
+        $order->forceFill([
+            'subtotal' => $subtotal,
+            'discount_total' => '0.00',
+            'tax_enabled_snapshot' => $tax->enabled,
+            'tax_label_snapshot' => $tax->enabled ? $tax->label : null,
+            'tax_percent_snapshot' => $tax->enabled ? $tax->percent : null,
+            'tax_inclusive_snapshot' => $tax->enabled ? $tax->inclusive : false,
+            'taxable_amount' => $tax->taxableAmount,
+            'tax_amount' => $tax->taxAmount,
+            'total_amount' => $totalAmount,
         ])->save();
 
         foreach ($definition['history'] as $index => $history) {

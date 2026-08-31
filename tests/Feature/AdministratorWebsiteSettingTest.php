@@ -23,6 +23,7 @@ class AdministratorWebsiteSettingTest extends TestCase
             ->assertSee('Hero title')
             ->assertSee('Payment display')
             ->assertSee('Fulfilment')
+            ->assertSee('Tax / GST')
             ->assertSee('Delivery disclaimer');
 
         $this->actingAs($manager, 'admin')

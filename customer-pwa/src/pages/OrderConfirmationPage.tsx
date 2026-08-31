@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
+import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
@@ -257,16 +258,12 @@ export function OrderConfirmationPage() {
           ))}
         </div>
 
-        <div className="summary-card checkout-summary-grid">
-          <div>
-            <span>Subtotal</span>
-            <strong>{formatCurrency(order.subtotal)}</strong>
-          </div>
-          <div className="cart-summary-total">
-            <span>Total due</span>
-            <strong>{formatCurrency(order.total_amount)}</strong>
-          </div>
-        </div>
+        <OrderTaxBreakdown
+          subtotal={order.subtotal}
+          total={order.total_amount}
+          tax={order.tax}
+          totalLabel="Total due"
+        />
       </section>
 
       <div className="confirmation-footer-actions">

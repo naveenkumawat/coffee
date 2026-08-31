@@ -7,6 +7,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { FormFeedback } from '../components/forms/FormFeedback';
+import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { useToastStore } from '../stores/toastStore';
@@ -145,15 +146,18 @@ export function CartPage() {
             ))}
           </div>
 
-          <section className="summary-card cart-summary-card">
-            <div>
-              <span>Subtotal</span>
-              <strong>{formatCurrency(summary?.subtotal ?? 0)}</strong>
-            </div>
-            <div className="cart-summary-total">
-              <span>Total</span>
-              <strong>{formatCurrency(summary?.total ?? 0)}</strong>
-            </div>
+          <section className="cart-summary-card">
+            <OrderTaxBreakdown
+              subtotal={summary?.subtotal ?? 0}
+              total={summary?.total ?? 0}
+              tax={summary?.tax}
+              totalLabel="Total"
+              estimateNote={
+                summary?.tax
+                  ? null
+                  : 'Estimated item total — tax is confirmed at checkout.'
+              }
+            />
             {summary?.has_unavailable_items ? (
               <p className="summary-warning">Remove unavailable items before checkout.</p>
             ) : null}

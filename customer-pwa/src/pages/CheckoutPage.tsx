@@ -12,6 +12,7 @@ import { StickyActionBar } from '../components/common/StickyActionBar';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { FormTextarea } from '../components/forms/FormTextarea';
+import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useCartStore } from '../stores/cartStore';
 import { Cart } from '../types/cart';
 import {
@@ -328,16 +329,12 @@ export function CheckoutPage() {
           ))}
         </div>
 
-        <div className="summary-card checkout-summary-grid">
-          <div>
-            <span>Subtotal</span>
-            <strong>{formatCurrency(summaryMeta.summary.subtotal)}</strong>
-          </div>
-          <div className="cart-summary-total">
-            <span>Total due to cafe</span>
-            <strong>{formatCurrency(summaryMeta.summary.total)}</strong>
-          </div>
-        </div>
+        <OrderTaxBreakdown
+          subtotal={summaryMeta.summary.subtotal}
+          total={summaryMeta.summary.total}
+          tax={summaryMeta.summary.tax}
+          totalLabel="Cafe total"
+        />
       </section>
 
       <form className="checkout-form" onSubmit={(event) => void handleSubmit(event)}>

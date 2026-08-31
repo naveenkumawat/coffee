@@ -12,6 +12,7 @@ import { PageHeader } from '../components/common/PageHeader';
 import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
+import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
@@ -214,16 +215,12 @@ export function OrderDetailPage() {
           })}
         </div>
 
-        <div className="summary-card checkout-summary-grid">
-          <div>
-            <span>Subtotal</span>
-            <strong>{formatCurrency(order.subtotal)}</strong>
-          </div>
-          <div className="cart-summary-total">
-            <span>Total</span>
-            <strong>{formatCurrency(order.total_amount)}</strong>
-          </div>
-        </div>
+        <OrderTaxBreakdown
+          subtotal={order.subtotal}
+          total={order.total_amount}
+          tax={order.tax}
+          totalLabel="Total"
+        />
       </section>
 
       <section className="account-section order-pickup-section">

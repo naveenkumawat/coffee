@@ -80,6 +80,12 @@ class WebsiteSettingController extends Controller
         $payload[WebsiteSettingKey::FulfilmentDineInEnabled->value] = $request->boolean(
             WebsiteSettingKey::FulfilmentDineInEnabled->value,
         ) ? '1' : '0';
+        $payload[WebsiteSettingKey::TaxEnabled->value] = $request->boolean(
+            WebsiteSettingKey::TaxEnabled->value,
+        ) ? '1' : '0';
+        $payload[WebsiteSettingKey::TaxInclusive->value] = $request->boolean(
+            WebsiteSettingKey::TaxInclusive->value,
+        ) ? '1' : '0';
 
         $this->websiteSettings->update($payload);
 

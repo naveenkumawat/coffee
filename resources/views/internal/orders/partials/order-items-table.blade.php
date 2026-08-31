@@ -53,6 +53,18 @@
                         <td class="text-end">Rs {{ number_format((float) $order->discount_total, 2) }}</td>
                     </tr>
                 @endif
+                @if ($order->tax_enabled_snapshot)
+                    <tr>
+                        <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">
+                            {{ $order->tax_label_snapshot ?: 'GST' }}
+                            ({{ number_format((float) $order->tax_percent_snapshot, 2) }}%)
+                            @if ($order->tax_inclusive_snapshot)
+                                included
+                            @endif
+                        </td>
+                        <td class="text-end">Rs {{ number_format((float) $order->tax_amount, 2) }}</td>
+                    </tr>
+                @endif
                 <tr>
                     <td colspan="{{ $colspan - 1 }}" class="text-end fw-bold text-gray-900">Total</td>
                     <td class="text-end fw-bold text-gray-900">Rs {{ number_format((float) $order->total_amount, 2) }}</td>

@@ -126,6 +126,12 @@
 
     <div class="center">
         <div class="brand">{{ $invoice->cafeName }}</div>
+        @if ($invoice->legalBusinessName)
+            <div class="slogan">{{ $invoice->legalBusinessName }}</div>
+        @endif
+        @if ($invoice->gstin)
+            <div class="slogan">GSTIN {{ $invoice->gstin }}</div>
+        @endif
         @if ($invoice->cafeSlogan)
             <div class="slogan">{{ $invoice->cafeSlogan }}</div>
         @endif
@@ -194,6 +200,18 @@
             <tr>
                 <td>Discount</td>
                 <td class="num">− Rs {{ $invoice->discountTotal }}</td>
+            </tr>
+        @endif
+        @if ($invoice->taxEnabled)
+            <tr>
+                <td>
+                    @if ($invoice->taxInclusive)
+                        {{ $invoice->taxLabel }} {{ rtrim(rtrim($invoice->taxPercent, '0'), '.') }}% incl.
+                    @else
+                        {{ $invoice->taxLabel }} {{ rtrim(rtrim($invoice->taxPercent, '0'), '.') }}%
+                    @endif
+                </td>
+                <td class="num">Rs {{ $invoice->taxAmount }}</td>
             </tr>
         @endif
         @if ($invoice->deliveryFeeAmount)

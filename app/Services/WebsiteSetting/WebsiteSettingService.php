@@ -131,6 +131,33 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         return in_array(strtolower(trim((string) ($raw ?? ''))), ['1', 'true', 'yes', 'on'], true);
     }
 
+    public function taxConfig(): array
+    {
+        $values = $this->settings->keyedValues();
+        $enabled = in_array(
+            strtolower(trim((string) ($values->get(WebsiteSettingKey::TaxEnabled->value) ?? ''))),
+            ['1', 'true', 'yes', 'on'],
+            true,
+        );
+        $inclusive = in_array(
+            strtolower(trim((string) ($values->get(WebsiteSettingKey::TaxInclusive->value) ?? ''))),
+            ['1', 'true', 'yes', 'on'],
+            true,
+        );
+        $label = $this->filledOrNull($values->get(WebsiteSettingKey::TaxLabel->value)) ?: 'GST';
+        $percentRaw = $this->filledOrNull($values->get(WebsiteSettingKey::TaxPercent->value)) ?: '0.00';
+        $percent = is_numeric($percentRaw) ? number_format((float) $percentRaw, 2, '.', '') : '0.00';
+
+        return [
+            'enabled' => $enabled,
+            'label' => $label,
+            'percent' => $percent,
+            'inclusive' => $inclusive,
+            'gstin' => $this->filledOrNull($values->get(WebsiteSettingKey::TaxGstin->value)),
+            'legal_business_name' => $this->filledOrNull($values->get(WebsiteSettingKey::TaxLegalBusinessName->value)),
+        ];
+    }
+
     protected function normalizeStoredValue(mixed $value): ?string
     {
         if ($value === null) {

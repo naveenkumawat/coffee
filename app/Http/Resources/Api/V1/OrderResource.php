@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Models\Order;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
+use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -50,6 +51,9 @@ class OrderResource extends JsonResource
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
             'total_amount' => $order->total_amount,
+            'tax' => app(TaxCalculatorInterface::class)
+                ->fromOrderSnapshot($order)
+                ->toCustomerArray(),
             'payment_method' => $order->payment_method?->value ?? 'manual',
             'payment_status' => $order->payment_status?->value,
             'payment_status_label' => $order->payment_status?->label(),

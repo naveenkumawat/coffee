@@ -16,6 +16,7 @@
             'business' => 'Business information',
             'payment' => 'Payment display',
             'fulfilment' => 'Fulfilment',
+            'tax' => 'Tax / GST',
             'pages' => 'Static pages',
         ];
         $mediaKeys = [
@@ -110,6 +111,43 @@
                                             Empty falls back to config/env.
                                         @endif
                                     </div>
+                                @elseif ($key === \App\Enums\WebsiteSettingKey::TaxInclusive)
+                                    @php
+                                        $inclusive = filter_var(old($key->value, $values[$key->value] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+                                    @endphp
+                                    <div class="mb-2 fw-semibold text-gray-800">Pricing</div>
+                                    <div class="form-check mb-2">
+                                        <input
+                                            id="{{ $key->value }}_exclusive"
+                                            name="{{ $key->value }}"
+                                            type="radio"
+                                            value="0"
+                                            class="form-check-input @error($key->value) is-invalid @enderror"
+                                            @checked(! $inclusive)
+                                        />
+                                        <label class="form-check-label" for="{{ $key->value }}_exclusive">
+                                            Exclusive — GST added to subtotal
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input
+                                            id="{{ $key->value }}_inclusive"
+                                            name="{{ $key->value }}"
+                                            type="radio"
+                                            value="1"
+                                            class="form-check-input @error($key->value) is-invalid @enderror"
+                                            @checked($inclusive)
+                                        />
+                                        <label class="form-check-label" for="{{ $key->value }}_inclusive">
+                                            Inclusive — displayed prices already include GST
+                                        </label>
+                                    </div>
+                                    @error($key->value)
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @if ($key->helpText())
+                                        <div class="form-text">{{ $key->helpText() }}</div>
+                                    @endif
                                 @elseif ($key->valueType() === 'boolean')
                                     @php
                                         $checked = filter_var(old($key->value, $values[$key->value] ?? '0'), FILTER_VALIDATE_BOOLEAN);
@@ -125,13 +163,15 @@
                                             @checked($checked)
                                         />
                                         <label class="form-check-label" for="{{ $key->value }}">
-                                            Allow customers to place dine-in / table orders from the PWA
+                                            {{ $key->label() }}
                                         </label>
                                         @error($key->value)
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    <div class="form-text">Default off. Manage café tables separately under Café Tables.</div>
+                                    @if ($key->helpText())
+                                        <div class="form-text">{{ $key->helpText() }}</div>
+                                    @endif
                                 @elseif ($key->valueType() === 'text')
                                     <textarea
                                         id="{{ $key->value }}"
@@ -142,6 +182,9 @@
                                     @error($key->value)
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    @if ($key->helpText())
+                                        <div class="form-text">{{ $key->helpText() }}</div>
+                                    @endif
                                     @if (str_starts_with($key->value, 'pages_'))
                                         <div class="form-text">Plain text only. HTML and scripts are stripped on save.</div>
                                     @endif
@@ -163,10 +206,19 @@
                                         type="{{ $key->formInputType() }}"
                                         value="{{ old($key->value, $values[$key->value] ?? '') }}"
                                         class="form-control @error($key->value) is-invalid @enderror"
+                                        @if ($key === \App\Enums\WebsiteSettingKey::TaxPercent)
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            inputmode="decimal"
+                                        @endif
                                     />
                                     @error($key->value)
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    @if ($key->helpText())
+                                        <div class="form-text">{{ $key->helpText() }}</div>
+                                    @endif
                                     @if ($sectionKey === 'payment')
                                         @php
                                             $configKey = str_replace('payment_', '', $key->value);

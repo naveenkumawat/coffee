@@ -59,6 +59,8 @@ use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
 use App\Services\Social\SocialLinkService;
 use App\Services\Social\SocialLinkServiceInterface;
+use App\Services\Tax\TaxCalculator;
+use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\User\UserService;
 use App\Services\User\UserServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingService;
@@ -81,6 +83,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(InventoryRefillRequestServiceInterface::class, InventoryRefillRequestService::class);
         $this->app->bind(InventoryServiceInterface::class, InventoryService::class);
         $this->app->bind(OrderInvoiceServiceInterface::class, OrderInvoiceService::class);
+        $this->app->bind(TaxCalculatorInterface::class, TaxCalculator::class);
         $this->app->bind(RoleServiceInterface::class, RoleService::class);
         $this->app->bind(MenuCatalogServiceInterface::class, MenuCatalogService::class);
         $this->app->bind(MenuCategoryServiceInterface::class, MenuCategoryService::class);

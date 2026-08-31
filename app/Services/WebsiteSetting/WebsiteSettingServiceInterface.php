@@ -66,4 +66,18 @@ interface WebsiteSettingServiceInterface
     public function deliveryDisclaimer(): ?string;
 
     public function dineInEnabled(): bool;
+
+    /**
+     * Live tax/GST configuration from Website Settings.
+     *
+     * @return array{
+     *     enabled: bool,
+     *     label: string,
+     *     percent: string,
+     *     inclusive: bool,
+     *     gstin: ?string,
+     *     legal_business_name: ?string
+     * }
+     */
+    public function taxConfig(): array;
 }

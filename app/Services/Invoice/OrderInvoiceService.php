@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
 {
     public function __construct(
         protected WebsiteSettingServiceInterface $websiteSettings,
+        protected TaxCalculatorInterface $taxCalculator,
     ) {}
 
     public function isAvailable(Order $order): bool
@@ -43,6 +45,8 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
         $content = $this->websiteSettings->customerContent();
         $business = $content['business'] ?? [];
         $hero = $content['hero'] ?? [];
+        $taxLive = $this->websiteSettings->taxConfig();
+        $tax = $this->taxCalculator->fromOrderSnapshot($order);
 
         $cafeName = filled($business['name'] ?? null)
             ? (string) $business['name']
@@ -79,6 +83,8 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             cafePhone: filled($business['phone'] ?? null) ? (string) $business['phone'] : null,
             cafeEmail: filled($business['email'] ?? null) ? (string) $business['email'] : null,
             cafeAddress: filled($business['address'] ?? null) ? (string) $business['address'] : null,
+            legalBusinessName: $taxLive['legal_business_name'],
+            gstin: $taxLive['gstin'],
             placedAtLabel: $order->placed_at?->format('d M Y, h:i A')
                 ?? $order->created_at?->format('d M Y, h:i A')
                 ?? '—',
@@ -101,6 +107,12 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             lines: $lines,
             subtotal: number_format((float) $order->subtotal, 2, '.', ''),
             discountTotal: number_format((float) $order->discount_total, 2, '.', ''),
+            taxEnabled: $tax->enabled,
+            taxLabel: $tax->label,
+            taxPercent: $tax->percent,
+            taxInclusive: $tax->inclusive,
+            taxableAmount: $tax->taxableAmount,
+            taxAmount: $tax->taxAmount,
             deliveryFeeAmount: $deliveryFee,
             totalAmount: number_format((float) $order->total_amount, 2, '.', ''),
             paymentMethodLabel: (string) ($order->payment_method?->label() ?? 'Manual'),

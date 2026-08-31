@@ -16,6 +16,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
@@ -31,6 +32,7 @@ class OrderService implements OrderServiceInterface
         protected OrderRepositoryInterface $orders,
         protected CafeTableRepositoryInterface $cafeTables,
         protected WebsiteSettingServiceInterface $websiteSettings,
+        protected TaxCalculatorInterface $taxCalculator,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -58,6 +60,11 @@ class OrderService implements OrderServiceInterface
             }
 
             $subtotal = $this->sumLineSubtotals($preparedItems);
+            $discountTotal = '0.00';
+            $taxableAmount = bcsub($subtotal, $discountTotal, 2);
+            $tax = $this->taxCalculator->calculateForTaxableAmount($taxableAmount);
+            $deliveryFeeAmount = null;
+            $totalAmount = $this->taxCalculator->payableTotal($tax, $deliveryFeeAmount);
             $placedAt = now();
             $dailySequence = $this->orders->nextDailySequenceForDate(Carbon::instance($placedAt));
 
@@ -105,8 +112,14 @@ class OrderService implements OrderServiceInterface
                 'checkout_token' => $data->getCheckoutToken(),
                 'status' => OrderStatus::PendingPayment->value,
                 'subtotal' => $subtotal,
-                'discount_total' => '0.00',
-                'total_amount' => $subtotal,
+                'discount_total' => $discountTotal,
+                'tax_enabled_snapshot' => $tax->enabled,
+                'tax_label_snapshot' => $tax->enabled ? $tax->label : null,
+                'tax_percent_snapshot' => $tax->enabled ? $tax->percent : null,
+                'tax_inclusive_snapshot' => $tax->enabled ? $tax->inclusive : false,
+                'taxable_amount' => $tax->taxableAmount,
+                'tax_amount' => $tax->taxAmount,
+                'total_amount' => $totalAmount,
                 'customer_notes' => $data->getCustomerNotes(),
                 'pickup_notes' => $fulfilmentMethod === OrderFulfilmentMethod::Takeaway ? $data->getPickupNotes() : null,
                 'fulfilment_method' => $fulfilmentMethod->value,

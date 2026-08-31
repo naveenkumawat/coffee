@@ -30,6 +30,14 @@ export interface CartSummary {
   subtotal: string;
   total: string;
   has_unavailable_items: boolean;
+  tax?: {
+    enabled: boolean;
+    label: string;
+    percent: string;
+    inclusive: boolean;
+    taxable_amount: string;
+    amount: string;
+  };
 }
 
 export interface Cart {
