@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\HomeSection;
 use App\Models\Ingredient;
 use App\Models\IngredientBrand;
 use App\Models\IngredientCategory;
@@ -23,6 +24,7 @@ use App\Models\User;
 use App\Models\WebsiteSetting;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
+use App\Policies\HomeSectionPolicy;
 use App\Policies\IngredientBrandPolicy;
 use App\Policies\IngredientCategoryPolicy;
 use App\Policies\IngredientPolicy;
@@ -48,6 +50,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Cart::class => CartPolicy::class,
         CartItem::class => CartItemPolicy::class,
+        HomeSection::class => HomeSectionPolicy::class,
         Ingredient::class => IngredientPolicy::class,
         IngredientBrand::class => IngredientBrandPolicy::class,
         IngredientCategory::class => IngredientCategoryPolicy::class,

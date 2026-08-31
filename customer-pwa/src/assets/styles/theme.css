@@ -4972,12 +4972,11 @@ body.product-overlay-open .bottom-navigation {
   font-weight: 700;
 }
 
-.product-rating-summary.is-new {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--coffee-muted);
+.product-rating-summary.is-empty {
+  display: block;
+  width: 100%;
+  min-height: 1.1rem;
+  visibility: hidden;
 }
 
 .product-rating-summary.is-detail {

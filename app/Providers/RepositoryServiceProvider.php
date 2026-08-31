@@ -6,6 +6,8 @@ use App\Repositories\Cart\CartRepository;
 use App\Repositories\Cart\CartRepositoryInterface;
 use App\Repositories\Favourite\FavouriteRepository;
 use App\Repositories\Favourite\FavouriteRepositoryInterface;
+use App\Repositories\Home\HomeSectionRepository;
+use App\Repositories\Home\HomeSectionRepositoryInterface;
 use App\Repositories\Ingredient\IngredientBrandRepository;
 use App\Repositories\Ingredient\IngredientBrandRepositoryInterface;
 use App\Repositories\Ingredient\IngredientCategoryRepository;
@@ -46,6 +48,7 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavouriteRepositoryInterface::class, FavouriteRepository::class);
+        $this->app->bind(HomeSectionRepositoryInterface::class, HomeSectionRepository::class);
         $this->app->bind(ProductRatingRepositoryInterface::class, ProductRatingRepository::class);
         $this->app->bind(IngredientCategoryRepositoryInterface::class, IngredientCategoryRepository::class);
         $this->app->bind(IngredientBrandRepositoryInterface::class, IngredientBrandRepository::class);

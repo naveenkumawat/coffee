@@ -1,24 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  fetchBestsellerProducts,
-  fetchCategories,
-  fetchFeaturedProducts,
-  fetchNewProducts,
-} from '../api/catalog';
+import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../api/client';
-import { ProductCard } from '../components/catalog/ProductCard';
-import { ProductRail } from '../components/catalog/ProductRail';
+import { fetchHome } from '../api/home';
+import { HomeProductSection } from '../components/catalog/HomeProductSection';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Header } from '../components/common/Header';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { Product, ProductCategory } from '../types/catalog';
+import { ProductCategory } from '../types/catalog';
+import { HomeSection } from '../types/home';
 
 export function HomePage() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [newProducts, setNewProducts] = useState<Product[]>([]);
-  const [bestsellerProducts, setBestsellerProducts] = useState<Product[]>([]);
+  const [sections, setSections] = useState<HomeSection[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,17 +23,10 @@ export function HomePage() {
       setErrorMessage(null);
 
       try {
-        const [featuredResponse, categoryResponse, newResponse, bestsellerResponse] = await Promise.all([
-          fetchFeaturedProducts(),
-          fetchCategories(),
-          fetchNewProducts(),
-          fetchBestsellerProducts(),
-        ]);
+        const [homeResponse, categoryResponse] = await Promise.all([fetchHome(), fetchCategories()]);
 
-        setFeaturedProducts(featuredResponse.data);
+        setSections(homeResponse.data.sections ?? []);
         setCategories(categoryResponse.data);
-        setNewProducts(newResponse.data);
-        setBestsellerProducts(bestsellerResponse.data);
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Unable to load the cafe menu right now.';
         setErrorMessage(message);
@@ -82,59 +69,23 @@ export function HomePage() {
       {errorMessage ? <ErrorState description={errorMessage} onRetry={() => window.location.reload()} /> : null}
 
       {!isLoading && !errorMessage ? (
-        <>
-          <section className="section-shell">
-            <div className="section-header">
-              <div>
-                <p className="eyebrow">Featured</p>
-                <h2>Pickup-ready picks</h2>
-              </div>
-              <Link to="/menu" className="text-link">
-                See all
-              </Link>
-            </div>
-
-            {featuredProducts.length === 0 ? (
-              <EmptyState
-                title="No featured drinks yet"
-                description="Browse the full menu to find something to order for pickup."
-                actionLabel="Open menu"
-                actionHref="/menu"
-              />
-            ) : (
-              <div className="product-grid">
-                {featuredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {newProducts.length > 0 ? (
-            <ProductRail eyebrow="Just landed" title="New on the menu" seeAllHref="/menu" seeAllLabel="See all">
-              {newProducts.map((product) => (
-                <div key={product.id} className="product-rail-item" role="listitem">
-                  <ProductCard product={product} layout="rail" />
-                </div>
-              ))}
-            </ProductRail>
-          ) : null}
-
-          {bestsellerProducts.length > 0 ? (
-            <ProductRail
-              eyebrow="Customer favourites"
-              title="Bestsellers"
-              seeAllHref="/menu"
-              seeAllLabel="See all"
-            >
-              {bestsellerProducts.map((product) => (
-                <div key={product.id} className="product-rail-item" role="listitem">
-                  <ProductCard product={product} layout="rail" />
-                </div>
-              ))}
-            </ProductRail>
-          ) : null}
-        </>
+        sections.length > 0 ? (
+          sections.map((section) => (
+            <HomeProductSection
+              key={section.id}
+              title={section.title}
+              subtitle={section.subtitle}
+              products={section.products}
+            />
+          ))
+        ) : (
+          <EmptyState
+            title="Menu coming soon"
+            description="Browse the full menu to find something to order for pickup."
+            actionLabel="Open menu"
+            actionHref="/menu"
+          />
+        )
       ) : null}
     </div>
   );

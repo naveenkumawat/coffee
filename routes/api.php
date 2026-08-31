@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
+use App\Http\Controllers\Api\V1\Home\HomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -30,6 +31,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     });
 
     Route::get('/content', [WebsiteContentController::class, 'show'])->name('content.show');
+    Route::get('/home', [HomeController::class, 'show'])->name('home.show');
 
     Route::middleware(['auth:sanctum', 'role:customer'])->group(function (): void {
         Route::prefix('auth')->name('auth.')->group(function (): void {

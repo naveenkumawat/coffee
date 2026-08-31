@@ -20,7 +20,7 @@ export function ProductRatingSummary({
       return <p className={`product-rating-empty ${className}`.trim()}>No ratings yet</p>;
     }
 
-    return <span className={`product-rating-summary is-new ${className}`.trim()}>New</span>;
+    return <span className={`product-rating-summary is-empty ${className}`.trim()} aria-hidden="true" />;
   }
 
   const averageLabel = average.toFixed(1);

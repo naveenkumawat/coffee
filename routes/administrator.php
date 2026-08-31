@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administrator\DashboardController;
+use App\Http\Controllers\Administrator\HomeSectionController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
 use App\Http\Controllers\Administrator\IngredientController;
@@ -42,6 +43,21 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('home-sections', [HomeSectionController::class, 'index'])->name('home-sections.index');
+    Route::get('home-sections/create', [HomeSectionController::class, 'create'])->name('home-sections.create');
+    Route::post('home-sections', [HomeSectionController::class, 'store'])->name('home-sections.store');
+    Route::get('home-sections/{homeSection}/edit', [HomeSectionController::class, 'edit'])->name('home-sections.edit');
+    Route::put('home-sections/{homeSection}', [HomeSectionController::class, 'update'])->name('home-sections.update');
+    Route::delete('home-sections/{homeSection}', [HomeSectionController::class, 'destroy'])->name('home-sections.destroy');
+    Route::patch('home-sections/{homeSection}/toggle', [HomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+    Route::patch('home-sections/{homeSection}/move-up', [HomeSectionController::class, 'moveUp'])->name('home-sections.move-up');
+    Route::patch('home-sections/{homeSection}/move-down', [HomeSectionController::class, 'moveDown'])->name('home-sections.move-down');
+    Route::get('home-sections/{homeSection}/products', [HomeSectionController::class, 'products'])->name('home-sections.products');
+    Route::post('home-sections/{homeSection}/products', [HomeSectionController::class, 'attachProduct'])->name('home-sections.products.attach');
+    Route::delete('home-sections/{homeSection}/products/{product}', [HomeSectionController::class, 'detachProduct'])->name('home-sections.products.detach');
+    Route::patch('home-sections/{homeSection}/products/{product}/move-up', [HomeSectionController::class, 'moveProductUp'])->name('home-sections.products.move-up');
+    Route::patch('home-sections/{homeSection}/products/{product}/move-down', [HomeSectionController::class, 'moveProductDown'])->name('home-sections.products.move-down');
 
     Route::resource('menu/categories', MenuCategoryController::class)
         ->parameters(['categories' => 'menu_category'])

@@ -907,9 +907,8 @@ The homepage can include:
 
 * Café branding
 * Hero banner
-* Featured drinks
-* Bestseller products
-* New products
+* Featured drinks (now administrator-managed homepage sections with manual product assignment)
+* Bestseller / New rails (seeded as normal dynamic homepage sections; not hardcoded)
 * Product categories
 * Current offers
 * Why choose us

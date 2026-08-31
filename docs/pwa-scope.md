@@ -85,7 +85,7 @@ Rules:
 
 The PWA foundation must support these flows over time:
 
-- Home / storefront
+- Home / storefront with administrator-managed merchandising sections (manual product assignment + ordering)
 - Product browsing
 - Categories and flavours
 - Product detail and variant selection
@@ -109,6 +109,7 @@ PWA features depend on:
 
 - auth/account endpoints
 - catalog endpoints for categories, flavours, products, featured products, product detail, variants, product ratings
+- homepage sections endpoint (`GET /api/v1/home`) for dynamic merchandising rails
 - cart endpoints for show, add, update quantity, remove, clear, count/totals
 - checkout endpoints for summary and submit
 - orders endpoints for own list and own detail

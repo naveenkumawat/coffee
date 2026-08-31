@@ -11,6 +11,12 @@
                 ],
             ],
             [
+                'heading' => 'Storefront',
+                'items' => $user?->canManageProducts() ? [
+                    ['label' => 'Homepage Sections', 'route' => 'administrator.home-sections.index', 'pattern' => 'administrator.home-sections.*', 'icon' => 'ki-abstract-26'],
+                ] : [],
+            ],
+            [
                 'heading' => 'Products',
                 'items' => $user?->canManageProducts() ? [
                     ['label' => 'Categories', 'route' => 'administrator.products.categories.index', 'pattern' => 'administrator.products.categories.*', 'icon' => 'ki-category'],

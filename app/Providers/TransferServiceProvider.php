@@ -6,6 +6,10 @@ use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
 use App\Transfers\Checkout\CheckoutTransfer;
 use App\Transfers\Checkout\CheckoutTransferInterface;
+use App\Transfers\Home\HomeSectionFilterTransfer;
+use App\Transfers\Home\HomeSectionFilterTransferInterface;
+use App\Transfers\Home\HomeSectionTransfer;
+use App\Transfers\Home\HomeSectionTransferInterface;
 use App\Transfers\Ingredient\IngredientBrandFilterTransfer;
 use App\Transfers\Ingredient\IngredientBrandFilterTransferInterface;
 use App\Transfers\Ingredient\IngredientBrandTransfer;
@@ -64,6 +68,8 @@ class TransferServiceProvider extends ServiceProvider
     {
         $this->app->bind(CartItemTransferInterface::class, CartItemTransfer::class);
         $this->app->bind(CheckoutTransferInterface::class, CheckoutTransfer::class);
+        $this->app->bind(HomeSectionTransferInterface::class, HomeSectionTransfer::class);
+        $this->app->bind(HomeSectionFilterTransferInterface::class, HomeSectionFilterTransfer::class);
         $this->app->bind(IngredientCategoryTransferInterface::class, IngredientCategoryTransfer::class);
         $this->app->bind(IngredientBrandTransferInterface::class, IngredientBrandTransfer::class);
         $this->app->bind(IngredientBrandFilterTransferInterface::class, IngredientBrandFilterTransfer::class);

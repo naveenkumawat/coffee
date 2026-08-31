@@ -272,11 +272,12 @@ Implementation note:
 
 - [x] Public homepage data foundation exists
 - [x] Customer PWA home shell and featured catalog slice implemented
+- [x] Administrator-managed homepage sections with manual product assignment implemented
 - [ ] Final mobile-first PWA homepage implemented
 - [x] Cafe branding content management implemented
 - [x] Hero banner management implemented
-- [x] Bestseller section implemented
-- [x] New products section implemented
+- [x] Bestseller section implemented (as a seeded dynamic homepage section)
+- [x] New products section implemented (as a seeded dynamic homepage section)
 - [ ] Offers/promotions section implemented
 - [x] Business information section completed
 - [x] WhatsApp contact button implemented

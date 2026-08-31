@@ -10,6 +10,8 @@ use App\Services\Checkout\CheckoutService;
 use App\Services\Checkout\CheckoutServiceInterface;
 use App\Services\Favourite\FavouriteService;
 use App\Services\Favourite\FavouriteServiceInterface;
+use App\Services\Home\HomeSectionService;
+use App\Services\Home\HomeSectionServiceInterface;
 use App\Services\Ingredient\IngredientBrandService;
 use App\Services\Ingredient\IngredientBrandServiceInterface;
 use App\Services\Ingredient\IngredientCategoryService;
@@ -57,6 +59,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
+        $this->app->bind(HomeSectionServiceInterface::class, HomeSectionService::class);
         $this->app->bind(ProductRatingServiceInterface::class, ProductRatingService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);
