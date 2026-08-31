@@ -285,8 +285,8 @@ export function AccountPage() {
           </Link>
           <Link to="/contact" className="account-link-row">
             <span>
-              <i className="bi bi-chat-dots" aria-hidden="true"></i>
-              Contact
+              <i className="bi bi-geo-alt" aria-hidden="true"></i>
+              Visit
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>

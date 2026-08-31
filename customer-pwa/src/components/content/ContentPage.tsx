@@ -15,8 +15,8 @@ const pageMeta: Record<ContentPageKey, { title: string; description: string }> =
     description: 'Our story and what we brew for.',
   },
   contact: {
-    title: 'Contact',
-    description: 'Reach the cafe for orders and pickup questions.',
+    title: 'Visit',
+    description: 'Address, hours, and how to reach the cafe.',
   },
   faq: {
     title: 'FAQ',

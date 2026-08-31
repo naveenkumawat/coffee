@@ -107,6 +107,7 @@ export function ProductDetailSheet({
               imagePath={product.image_path}
               alt={product.name}
               className="product-detail-sheet-image"
+              fit="cover"
               eager
             />
             <ProductTags

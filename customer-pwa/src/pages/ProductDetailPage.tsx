@@ -90,6 +90,7 @@ export function ProductDetailPage() {
             imagePath={product.image_path}
             alt={product.name}
             className="detail-image"
+            fit="cover"
             eager
           />
         </div>

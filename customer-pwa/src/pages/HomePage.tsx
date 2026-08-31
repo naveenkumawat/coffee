@@ -6,25 +6,20 @@ import {
   fetchFeaturedProducts,
   fetchNewProducts,
 } from '../api/catalog';
-import { fetchWebsiteContent } from '../api/content';
 import { ApiError } from '../api/client';
-import { FeaturedHero } from '../components/catalog/FeaturedHero';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { ProductRail } from '../components/catalog/ProductRail';
-import { HomeContentSections } from '../components/content/HomeContentSections';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Header } from '../components/common/Header';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory } from '../types/catalog';
-import { WebsiteContent } from '../types/content';
 
 export function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newProducts, setNewProducts] = useState<Product[]>([]);
   const [bestsellerProducts, setBestsellerProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [websiteContent, setWebsiteContent] = useState<WebsiteContent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -45,13 +40,6 @@ export function HomePage() {
         setCategories(categoryResponse.data);
         setNewProducts(newResponse.data);
         setBestsellerProducts(bestsellerResponse.data);
-
-        try {
-          const contentResponse = await fetchWebsiteContent();
-          setWebsiteContent(contentResponse.data);
-        } catch {
-          setWebsiteContent(null);
-        }
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Unable to load the cafe menu right now.';
         setErrorMessage(message);
@@ -66,12 +54,10 @@ export function HomePage() {
   return (
     <div className="page-container home-page">
       <Header />
-      <FeaturedHero hero={websiteContent?.hero} businessName={websiteContent?.business.name} />
 
       <section className="section-shell home-categories">
         <div className="section-header">
           <div>
-            <p className="eyebrow">Categories</p>
             <h2>Browse the menu</h2>
           </div>
           <Link to="/menu" className="text-link">
@@ -148,8 +134,6 @@ export function HomePage() {
               ))}
             </ProductRail>
           ) : null}
-
-          {websiteContent ? <HomeContentSections business={websiteContent.business} /> : null}
         </>
       ) : null}
     </div>

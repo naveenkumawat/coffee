@@ -5,7 +5,6 @@ import { AuthCard } from '../components/auth/AuthCard';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
-import { PageHeader } from '../components/common/PageHeader';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { withRedirectQuery } from '../utils/contentPages';
@@ -49,7 +48,10 @@ export function LoginPage() {
 
   return (
     <div className="page-container auth-page">
-      <PageHeader title="Sign in" description="Continue ordering and track pickups." showBack />
+      <button type="button" className="auth-back-link" onClick={() => navigate(-1)}>
+        <i className="bi bi-arrow-left" aria-hidden="true"></i>
+        Back
+      </button>
       <AuthCard
         badge="Customer account"
         title="Welcome back"

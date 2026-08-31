@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpdateBanner';
@@ -58,6 +59,7 @@ export function AppLayout() {
         <Suspense fallback={<LoadingSkeleton cardCount={2} lines={4} />}>
           <Outlet />
         </Suspense>
+        {!hasStickyCta ? <SiteFooter /> : null}
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
       <BottomNavigation />

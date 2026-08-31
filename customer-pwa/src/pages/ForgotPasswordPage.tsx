@@ -1,15 +1,15 @@
 import { FormEvent, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { forgotCustomerPassword } from '../api/auth';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { AuthCard } from '../components/auth/AuthCard';
-import { PageHeader } from '../components/common/PageHeader';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { useToastStore } from '../stores/toastStore';
 import { getFieldError } from '../utils/forms';
 
 export function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const toastSuccess = useToastStore((state) => state.success);
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<ApiValidationErrors>({});
@@ -44,7 +44,10 @@ export function ForgotPasswordPage() {
 
   return (
     <div className="page-container auth-page">
-      <PageHeader title="Forgot password" description="We’ll email you a reset link." showBack />
+      <button type="button" className="auth-back-link" onClick={() => navigate(-1)}>
+        <i className="bi bi-arrow-left" aria-hidden="true"></i>
+        Back
+      </button>
       <AuthCard
         badge="Password help"
         title="Reset your password"

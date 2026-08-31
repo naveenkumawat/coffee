@@ -2,7 +2,6 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchFavourites } from '../api/favourites';
 import { ApiError } from '../api/client';
-import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -88,10 +87,7 @@ export function FavouritesPage() {
         <>
           <div className="product-grid">
             {visibleProducts.map((product) => (
-              <div key={product.id} className="favourite-product-wrap">
-                <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" />
-                <ProductCard product={product} showFavouriteToggle={false} />
-              </div>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
           {page < lastPage ? (
