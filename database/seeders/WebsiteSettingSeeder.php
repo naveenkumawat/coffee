@@ -6,6 +6,12 @@ use App\Enums\WebsiteSettingKey;
 use App\Models\WebsiteSetting;
 use Illuminate\Database\Seeder;
 
+/**
+ * Local/testing demo CMS values only.
+ *
+ * Production must configure Website Settings in Administrator after migrate.
+ * Never treat these phones/UPI/address values as live café configuration.
+ */
 class WebsiteSettingSeeder extends Seeder
 {
     public function run(): void
@@ -16,7 +22,7 @@ class WebsiteSettingSeeder extends Seeder
 
         $values = [
             WebsiteSettingKey::HeroTitle->value => 'Brew your next order before you arrive.',
-            WebsiteSettingKey::HeroSubtitle->value => 'Browse the live menu, customise your cup, and pick up when it is ready.',
+            WebsiteSettingKey::HeroSubtitle->value => 'Sip. Relax. Enjoy.',
             WebsiteSettingKey::HeroImagePath->value => null,
             WebsiteSettingKey::BusinessName->value => 'The88Coffees',
             WebsiteSettingKey::BusinessAboutShort->value => 'Neighborhood espresso bar focused on carefully crafted drinks, takeaway, and third-party delivery.',
@@ -31,6 +37,7 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::PaymentPhone->value => '+91 98765 43210',
             WebsiteSettingKey::PaymentQrImagePath->value => null,
             WebsiteSettingKey::PaymentWhatsappNumber->value => '+919876543210',
+            WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
             WebsiteSettingKey::PagesAbout->value => "The88Coffees is a neighborhood cafe built for order-ahead takeaway and third-party delivery.\n\nWe keep the menu focused, the espresso consistent, and the wait short so you can order ahead and collect when ready.",
             WebsiteSettingKey::PagesContact->value => "Need help with an order or timing?\n\nCall, email, or WhatsApp us and include your order number when you can.",
             WebsiteSettingKey::PagesFaq->value => "How do I order?\nBrowse the menu, add items to your cart, and checkout while signed in.\n\nWhen do I pay?\nOrders start as Pending Payment. Pay by UPI and upload the screenshot in the app (or WhatsApp).\n\nDo you deliver?\nYes — choose Delivery at checkout. A third-party service arranges delivery and charges you separately.\n\nCan I customise drinks?\nYes where a product is marked customizable. Flavours and sizes appear on the product page.",

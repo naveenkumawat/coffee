@@ -57,6 +57,16 @@
                         <option value="unavailable" @selected(request('availability') === 'unavailable')>Paused</option>
                     </select>
                 </div>
+                <div class="col-xl-2 col-md-3">
+                    <label for="readiness" class="form-label">Launch readiness</label>
+                    <select id="readiness" name="readiness" class="form-select">
+                        <option value="">All</option>
+                        <option value="ready" @selected(request('readiness') === 'ready')>Ready</option>
+                        <option value="incomplete" @selected(request('readiness') === 'incomplete')>Incomplete</option>
+                        <option value="stock_paused" @selected(request('readiness') === 'stock_paused')>Configured, paused</option>
+                        <option value="stock_concern" @selected(request('readiness') === 'stock_concern')>Stock concern</option>
+                    </select>
+                </div>
                 <div class="col-xl-2 col-md-4">
                     <x-internal.button-group :items="[
                         ['label' => 'Search', 'type' => 'submit', 'variant' => 'success', 'icon' => 'ki-magnifier'],
@@ -78,11 +88,16 @@
                             <th>Variant Pricing</th>
                             <th>Flavours</th>
                             <th>Status</th>
+                            <th>Launch</th>
                             <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="fw-semibold text-gray-600">
                         @forelse ($products as $product)
+                            @php
+                                /** @var \App\Services\Product\ProductReadinessReport|null $report */
+                                $report = $readinessReports[(int) $product->id] ?? null;
+                            @endphp
                             <tr>
                                 <td>
                                     <div class="d-flex flex-column">
@@ -109,6 +124,25 @@
                                         </span>
                                     </div>
                                 </td>
+                                <td>
+                                    @if ($report)
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge {{ $report->isReady() ? 'badge-light-success' : 'badge-light-danger' }}">
+                                                {{ $report->statusLabel() }}
+                                            </span>
+                                            @if ($report->availabilityLabel((bool) $product->is_available))
+                                                <span class="badge badge-light-warning">{{ $report->availabilityLabel((bool) $product->is_available) }}</span>
+                                            @endif
+                                            @if (! $report->isReady())
+                                                <span class="text-muted fs-8">Missing: {{ implode('; ', $report->missing) }}</span>
+                                            @elseif ($report->hasInventoryConcern())
+                                                <span class="text-muted fs-8">{{ implode('; ', $report->inventoryNotes) }}</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td class="text-end internal-action-cell">
                                     <x-internal.action-dropdown :items="[
                                         ['label' => 'View', 'url' => route('administrator.products.show', $product), 'icon' => 'ki-eye'],
@@ -129,7 +163,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-10">No products matched the current filters.</td>
+                                <td colspan="7" class="text-center text-muted py-10">No products matched the current filters.</td>
                             </tr>
                         @endforelse
                     </tbody>

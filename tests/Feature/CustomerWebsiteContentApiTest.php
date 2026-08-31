@@ -45,8 +45,32 @@ class CustomerWebsiteContentApiTest extends TestCase
             ->assertJsonPath('data.payment.display_name', 'Config Pay')
             ->assertJsonPath('data.payment.upi_id', 'config@upi')
             ->assertJsonPath('data.pages.about', 'About our cafe')
+            ->assertJsonPath(
+                'data.fulfilment.delivery_disclaimer',
+                'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
+            )
             ->assertJsonMissingPath('data.internal')
             ->assertJsonMissing(['data' => ['pages' => ['about' => '<script>alert(1)</script>About our cafe']]]);
+    }
+
+    public function test_delivery_disclaimer_setting_overrides_config(): void
+    {
+        config()->set(
+            'coffee.fulfilment.delivery_disclaimer',
+            'Config delivery disclaimer only.',
+        );
+
+        WebsiteSetting::query()->where('key', WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value)->update([
+            'value' => 'Settings delivery disclaimer for customers.',
+        ]);
+        WebsiteSetting::query()->where('key', WebsiteSettingKey::HeroSubtitle->value)->update([
+            'value' => 'Sip. Relax. Enjoy.',
+        ]);
+
+        $this->getJson(route('api.v1.content.show'))
+            ->assertOk()
+            ->assertJsonPath('data.hero.subtitle', 'Sip. Relax. Enjoy.')
+            ->assertJsonPath('data.fulfilment.delivery_disclaimer', 'Settings delivery disclaimer for customers.');
     }
 
     public function test_payment_settings_override_config_when_filled(): void

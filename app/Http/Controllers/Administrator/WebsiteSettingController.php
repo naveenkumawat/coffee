@@ -32,6 +32,9 @@ class WebsiteSettingController extends Controller
                 'qr_image_path' => config('coffee.payments.qr_image_path'),
                 'whatsapp_number' => config('coffee.payments.whatsapp_number'),
             ],
+            'fulfilmentConfig' => [
+                'delivery_disclaimer' => config('coffee.fulfilment.delivery_disclaimer'),
+            ],
         ]);
     }
 

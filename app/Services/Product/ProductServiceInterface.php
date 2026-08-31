@@ -15,4 +15,6 @@ interface ProductServiceInterface
     public function delete(Product $product): void;
 
     public function syncImage(Product $product, ?UploadedFile $image, bool $remove): Product;
+
+    public function assertActiveProductIsLaunchReady(Product $product): void;
 }

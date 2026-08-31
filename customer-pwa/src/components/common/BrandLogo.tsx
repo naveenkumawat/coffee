@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import brandMark from '../../assets/images/app-logo/brand-mark.svg';
+import { DEFAULT_BRAND_NAME } from '../../types/content';
+import { selectBrandName, useContentStore } from '../../stores/contentStore';
 
 interface BrandLogoProps {
   /** When true, wraps the mark + name in a home link. */
@@ -8,31 +10,38 @@ interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
   /** Show wordmark next to the cup mark. */
   showWordmark?: boolean;
+  /** Optional override; defaults to Website Settings business name. */
+  name?: string;
   className?: string;
 }
 
-export const BRAND_DISPLAY_NAME = 'The88Coffees';
+/** Fallback brand for non-React callers before content loads. */
+export const BRAND_DISPLAY_NAME = DEFAULT_BRAND_NAME;
 
 /**
- * Shared customer brand lockup using the cup mark + The88Coffees wordmark.
+ * Shared customer brand lockup using the cup mark + configured business name.
  */
 export function BrandLogo({
   linked = false,
   size = 'md',
   showWordmark = true,
+  name,
   className = '',
 }: BrandLogoProps) {
+  const configuredName = useContentStore((state) => selectBrandName(state.content));
+  const displayName = name?.trim() || configuredName;
+
   const content = (
     <span className={`brand-lockup is-${size} ${className}`.trim()}>
       <img
         src={brandMark}
-        alt={showWordmark ? '' : BRAND_DISPLAY_NAME}
+        alt={showWordmark ? '' : displayName}
         className="brand-mark-icon"
         width={40}
         height={40}
         decoding="async"
       />
-      {showWordmark ? <span className="brand-wordmark">{BRAND_DISPLAY_NAME}</span> : null}
+      {showWordmark ? <span className="brand-wordmark">{displayName}</span> : null}
     </span>
   );
 
@@ -41,7 +50,7 @@ export function BrandLogo({
   }
 
   return (
-    <Link to="/" className="brand-lockup-link" aria-label={`${BRAND_DISPLAY_NAME} home`}>
+    <Link to="/" className="brand-lockup-link" aria-label={`${displayName} home`}>
       {content}
     </Link>
   );

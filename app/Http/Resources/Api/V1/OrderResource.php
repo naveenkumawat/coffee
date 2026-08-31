@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Order;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,7 +42,7 @@ class OrderResource extends JsonResource
             'delivery_tracking_reference' => $order->delivery_tracking_reference,
             'delivery_status' => $order->delivery_status,
             'delivery_disclaimer' => $order->isDelivery()
-                ? (string) config('coffee.fulfilment.delivery_disclaimer')
+                ? app(WebsiteSettingServiceInterface::class)->deliveryDisclaimer()
                 : null,
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,

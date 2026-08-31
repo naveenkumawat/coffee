@@ -3789,14 +3789,60 @@ textarea.coffee-input:focus {
   font-size: 1.05rem;
 }
 
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 0;
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.site-footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.site-footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 999px;
+  color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.site-footer-social-link i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.site-footer-social-link:hover {
+  color: #fff;
+  background: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+.site-footer-social-link:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
 .site-footer-links {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 0.35rem 0.15rem;
-  margin: var(--space-6) 0 0;
-  padding: var(--space-2) 0 var(--space-3);
+  margin: 0;
+  padding: 0;
   text-align: center;
 }
 

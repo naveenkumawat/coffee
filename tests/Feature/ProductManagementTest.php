@@ -100,7 +100,7 @@ class ProductManagementTest extends TestCase
             'sort_order' => 1,
             'product_flavour_ids' => [$flavour->id],
             'product_tag_ids' => $tagIds,
-            'is_active' => 1,
+            'is_active' => 0,
             'is_available' => 1,
             'is_vegetarian' => 1,
             'is_customizable' => 1,
@@ -131,6 +131,7 @@ class ProductManagementTest extends TestCase
         $product = Product::query()->where('slug', 'citrus-espresso-tonic')->firstOrFail();
 
         $this->assertSame('TONIC-001', $product->sku);
+        $this->assertFalse($product->is_active);
         $this->assertTrue($product->is_new);
         $this->assertTrue($product->is_bestseller);
         $this->assertTrue($product->is_featured);

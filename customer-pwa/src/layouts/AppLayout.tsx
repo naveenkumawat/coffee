@@ -8,11 +8,13 @@ import { ToastHost } from '../components/common/ToastHost';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
+import { selectBrandName, useContentStore } from '../stores/contentStore';
 import { clearChunkRecoveryFlag } from '../utils/chunkRecovery';
 
 export function AppLayout() {
   const networkStatus = useNetworkStatus();
   const { needRefresh, applyUpdate, dismiss } = useServiceWorkerUpdate();
+  const brandName = useContentStore((state) => selectBrandName(state.content));
   const location = useLocation();
   const [hasStickyCta, setHasStickyCta] = useState(false);
 
@@ -44,7 +46,12 @@ export function AppLayout() {
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <ServiceWorkerUpdateBanner visible={needRefresh} onRefresh={applyUpdate} onDismiss={dismiss} />
+      <ServiceWorkerUpdateBanner
+        visible={needRefresh}
+        onRefresh={applyUpdate}
+        onDismiss={dismiss}
+        brandName={brandName}
+      />
       {networkStatus === 'offline' ? (
         <div className="offline-banner is-offline" role="status" aria-live="polite">
           You’re offline. Browse cached pages, but cart, checkout, account, and orders need a connection.

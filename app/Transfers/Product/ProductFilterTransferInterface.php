@@ -30,5 +30,9 @@ interface ProductFilterTransferInterface
 
     public function setFeatured(?string $featured): void;
 
+    public function getReadiness(): ?string;
+
+    public function setReadiness(?string $readiness): void;
+
     public function toArray(): array;
 }

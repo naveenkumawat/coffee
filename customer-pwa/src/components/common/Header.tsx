@@ -1,15 +1,16 @@
+import { selectHomeSlogan, useContentStore } from '../../stores/contentStore';
 import { BrandLogo } from './BrandLogo';
 
-const HOME_SLOGAN = 'Sip. Relax. Enjoy.';
-
 /**
- * Homepage brand header: centered logo + slogan only.
+ * Homepage brand header: centered logo + Website Settings slogan.
  */
 export function Header() {
+  const slogan = useContentStore((state) => selectHomeSlogan(state.content));
+
   return (
     <header className="home-brand-header">
       <BrandLogo linked size="lg" showWordmark />
-      <p className="home-brand-slogan">{HOME_SLOGAN}</p>
+      {slogan ? <p className="home-brand-slogan">{slogan}</p> : null}
     </header>
   );
 }

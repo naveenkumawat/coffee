@@ -20,6 +20,7 @@ enum WebsiteSettingKey: string
     case PaymentPhone = 'payment_phone';
     case PaymentQrImagePath = 'payment_qr_image_path';
     case PaymentWhatsappNumber = 'payment_whatsapp_number';
+    case FulfilmentDeliveryDisclaimer = 'fulfilment_delivery_disclaimer';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -32,6 +33,7 @@ enum WebsiteSettingKey: string
             self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
             self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours => 'business',
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
+            self::FulfilmentDeliveryDisclaimer => 'fulfilment',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -44,6 +46,7 @@ enum WebsiteSettingKey: string
             self::BusinessAddress,
             self::BusinessOpeningHours,
             self::PaymentInstructions,
+            self::FulfilmentDeliveryDisclaimer,
             self::PagesAbout,
             self::PagesContact,
             self::PagesFaq,
@@ -57,7 +60,7 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle => 'Hero title',
-            self::HeroSubtitle => 'Hero subtitle',
+            self::HeroSubtitle => 'Home slogan / hero subtitle',
             self::HeroImagePath => 'Hero image',
             self::BusinessName => 'Business name',
             self::BusinessAboutShort => 'Short about text',
@@ -72,8 +75,9 @@ enum WebsiteSettingKey: string
             self::PaymentPhone => 'Payment phone / number',
             self::PaymentQrImagePath => 'Payment QR image',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
+            self::FulfilmentDeliveryDisclaimer => 'Delivery disclaimer',
             self::PagesAbout => 'About page',
-            self::PagesContact => 'Contact page',
+            self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
             self::PagesTerms => 'Terms page',
             self::PagesPrivacy => 'Privacy page',
@@ -86,7 +90,7 @@ enum WebsiteSettingKey: string
             self::HeroTitle, self::BusinessName, self::PaymentDisplayName => 120,
             self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 255,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
-            self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions => 2000,
+            self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }

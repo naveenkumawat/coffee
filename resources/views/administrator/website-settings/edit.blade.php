@@ -12,9 +12,10 @@
 @section('content')
     @php
         $sections = [
-            'hero' => 'Hero',
+            'hero' => 'Hero / home branding',
             'business' => 'Business information',
             'payment' => 'Payment display',
+            'fulfilment' => 'Fulfilment',
             'pages' => 'Static pages',
         ];
         $mediaKeys = [
@@ -28,7 +29,9 @@
         @method('PUT')
 
         <div class="alert alert-primary mb-8">
-            Payment fields use website settings when filled. Empty payment fields fall back to <code>config/coffee.php</code> / env values so values are not duplicated without precedence.
+            Customer-facing café content belongs here. Payment and delivery fields use website settings when filled;
+            empty fields fall back to <code>config/coffee.php</code> / env so infrastructure defaults stay separate from operational CMS values.
+            Demo seed data is local/testing only and must not be used as production content.
         </div>
 
         @foreach ($sections as $sectionKey => $sectionLabel)
@@ -119,6 +122,17 @@
                                     @enderror
                                     @if (str_starts_with($key->value, 'pages_'))
                                         <div class="form-text">Plain text only. HTML and scripts are stripped on save.</div>
+                                    @endif
+                                    @if ($sectionKey === 'fulfilment')
+                                        @php
+                                            $configKey = str_replace('fulfilment_', '', $key->value);
+                                            $fallback = $fulfilmentConfig[$configKey] ?? null;
+                                        @endphp
+                                        @if (filled($fallback))
+                                            <div class="form-text">Config fallback: {{ $fallback }}</div>
+                                        @else
+                                            <div class="form-text">No config fallback set for this field.</div>
+                                        @endif
                                     @endif
                                 @else
                                     <input

@@ -57,6 +57,11 @@ function isLocalOrPrivateHostname(hostname: string): boolean {
  */
 export function getApiBaseUrl(): string {
   const value = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (import.meta.env.PROD && (!value || value.length === 0)) {
+    throw new Error('VITE_API_BASE_URL is required for production builds.');
+  }
+
   const configured = value && value.length > 0 ? value.replace(/\/$/, '') : '/api/v1';
 
   let url: URL;

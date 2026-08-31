@@ -14,10 +14,18 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
-        Route::post('/register', [CustomerAuthController::class, 'register'])->name('register');
-        Route::post('/login', [CustomerAuthController::class, 'login'])->name('login');
-        Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])->name('password.forgot');
-        Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])->name('password.reset');
+        Route::post('/register', [CustomerAuthController::class, 'register'])
+            ->middleware('throttle:customer-auth')
+            ->name('register');
+        Route::post('/login', [CustomerAuthController::class, 'login'])
+            ->middleware('throttle:customer-auth')
+            ->name('login');
+        Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
+            ->middleware('throttle:customer-password')
+            ->name('password.forgot');
+        Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])
+            ->middleware('throttle:customer-password')
+            ->name('password.reset');
     });
 
     Route::prefix('catalog')->name('catalog.')->group(function (): void {
@@ -67,7 +75,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('/{product}', [CustomerFavouriteController::class, 'destroy'])->name('destroy');
         });
 
-        Route::prefix('products/{product}/rating')->name('products.rating.')->group(function (): void {
+        Route::prefix('products/{product}/rating')->name('products.rating.')->middleware('throttle:product-rating')->group(function (): void {
             Route::post('/', [CustomerProductRatingController::class, 'store'])->name('store');
             Route::put('/', [CustomerProductRatingController::class, 'update'])->name('update');
             Route::delete('/', [CustomerProductRatingController::class, 'destroy'])->name('destroy');
@@ -76,7 +84,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('orders')->name('orders.')->group(function (): void {
             Route::get('/', [CustomerOrderController::class, 'index'])->name('index');
             Route::get('/{order}', [CustomerOrderController::class, 'show'])->name('show');
-            Route::post('/{order}/payment-proof', [CustomerOrderController::class, 'uploadPaymentProof'])->name('payment-proof.upload');
+            Route::post('/{order}/payment-proof', [CustomerOrderController::class, 'uploadPaymentProof'])
+                ->middleware('throttle:payment-proof')
+                ->name('payment-proof.upload');
             Route::get('/{order}/payment-proof', [CustomerOrderController::class, 'paymentProof'])->name('payment-proof.show');
         });
     });

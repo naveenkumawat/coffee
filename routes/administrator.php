@@ -16,6 +16,7 @@ use App\Http\Controllers\Administrator\ProductFlavourController;
 use App\Http\Controllers\Administrator\ProductRatingController;
 use App\Http\Controllers\Administrator\ProductTagController;
 use App\Http\Controllers\Administrator\RecipeController;
+use App\Http\Controllers\Administrator\SocialLinkController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Administrator\WebsiteSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -127,6 +128,16 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
 
     Route::get('website-settings', [WebsiteSettingController::class, 'edit'])->name('website-settings.edit');
     Route::put('website-settings', [WebsiteSettingController::class, 'update'])->name('website-settings.update');
+
+    Route::get('social-links', [SocialLinkController::class, 'index'])->name('social-links.index');
+    Route::get('social-links/create', [SocialLinkController::class, 'create'])->name('social-links.create');
+    Route::post('social-links', [SocialLinkController::class, 'store'])->name('social-links.store');
+    Route::get('social-links/{social_link}/edit', [SocialLinkController::class, 'edit'])->name('social-links.edit');
+    Route::put('social-links/{social_link}', [SocialLinkController::class, 'update'])->name('social-links.update');
+    Route::delete('social-links/{social_link}', [SocialLinkController::class, 'destroy'])->name('social-links.destroy');
+    Route::patch('social-links/{social_link}/toggle', [SocialLinkController::class, 'toggle'])->name('social-links.toggle');
+    Route::patch('social-links/{social_link}/move-up', [SocialLinkController::class, 'moveUp'])->name('social-links.move-up');
+    Route::patch('social-links/{social_link}/move-down', [SocialLinkController::class, 'moveDown'])->name('social-links.move-down');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->defaults('panel', 'administrator')

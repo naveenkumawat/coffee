@@ -20,6 +20,7 @@ use App\Models\ProductFlavour;
 use App\Models\ProductRating;
 use App\Models\ProductTag;
 use App\Models\Recipe;
+use App\Models\SocialLink;
 use App\Models\User;
 use App\Models\WebsiteSetting;
 use App\Policies\CartItemPolicy;
@@ -40,6 +41,7 @@ use App\Policies\ProductPolicy;
 use App\Policies\ProductRatingPolicy;
 use App\Policies\ProductTagPolicy;
 use App\Policies\RecipePolicy;
+use App\Policies\SocialLinkPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WebsiteSettingPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -66,6 +68,7 @@ class AuthServiceProvider extends ServiceProvider
         ProductRating::class => ProductRatingPolicy::class,
         ProductTag::class => ProductTagPolicy::class,
         Recipe::class => RecipePolicy::class,
+        SocialLink::class => SocialLinkPolicy::class,
         User::class => UserPolicy::class,
         WebsiteSetting::class => WebsiteSettingPolicy::class,
     ];

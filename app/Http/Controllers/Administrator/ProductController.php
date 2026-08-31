@@ -13,6 +13,7 @@ use App\Repositories\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Repositories\Product\ProductRepositoryInterface;
 use App\Repositories\Product\ProductTagRepositoryInterface;
+use App\Services\Product\ProductReadinessServiceInterface;
 use App\Services\Product\ProductServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -26,14 +27,19 @@ class ProductController extends Controller
         protected ProductFlavourRepositoryInterface $flavours,
         protected ProductTagRepositoryInterface $tags,
         protected ProductServiceInterface $service,
+        protected ProductReadinessServiceInterface $readiness,
     ) {}
 
     public function index(ProductIndexRequest $request): View
     {
         $this->authorize('viewAny', Product::class);
 
+        $products = $this->products->paginateForAdmin($this->parser->getFilterTransferFromArrayData($request->validated()));
+        $reports = $this->readiness->evaluateMany($products->getCollection());
+
         return view('administrator.products.index', [
-            'products' => $this->products->paginateForAdmin($this->parser->getFilterTransferFromArrayData($request->validated())),
+            'products' => $products,
+            'readinessReports' => $reports,
             'categoryOptions' => $this->categories->allOptions(),
             'flavourOptions' => $this->flavours->allOptions(),
         ]);
@@ -45,7 +51,7 @@ class ProductController extends Controller
 
         return view('administrator.products.create', [
             'product' => new Product([
-                'is_active' => true,
+                'is_active' => false,
                 'is_available' => true,
                 'is_vegetarian' => false,
                 'is_customizable' => false,
@@ -68,6 +74,7 @@ class ProductController extends Controller
             $request->file('image'),
             $request->boolean('remove_image'),
         );
+        $this->service->assertActiveProductIsLaunchReady($product->fresh());
 
         return redirect()
             ->route('administrator.products.edit', $product)
@@ -78,8 +85,11 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
+        $product->load(['category', 'flavours', 'tags', 'variants.recipe.lines.ingredient']);
+
         return view('administrator.products.show', [
-            'product' => $product->load(['category', 'flavours', 'tags', 'variants.recipe']),
+            'product' => $product,
+            'readiness' => $this->readiness->evaluate($product),
         ]);
     }
 
@@ -108,6 +118,7 @@ class ProductController extends Controller
             $request->file('image'),
             $request->boolean('remove_image'),
         );
+        $this->service->assertActiveProductIsLaunchReady($product->fresh());
 
         return redirect()
             ->route('administrator.products.edit', $product)

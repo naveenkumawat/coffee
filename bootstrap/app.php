@@ -3,6 +3,7 @@
 use App\Http\Middleware\AddRequestContext;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ExposeSanctumCsrfToken;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,8 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(AddRequestContext::class);
+        $middleware->append(SecurityHeaders::class);
         $middleware->appendToGroup('web', ExposeSanctumCsrfToken::class);
         $middleware->statefulApi();
+
+        $trustedProxies = env('TRUSTED_PROXIES');
+
+        if (is_string($trustedProxies) && trim($trustedProxies) !== '') {
+            $at = trim($trustedProxies) === '*'
+                ? '*'
+                : array_values(array_filter(array_map('trim', explode(',', $trustedProxies))));
+
+            $middleware->trustProxies(at: $at);
+        }
+
         $middleware->redirectGuestsTo(function (Request $request): string {
             $routeName = (string) ($request->route()?->getName() ?? '');
 

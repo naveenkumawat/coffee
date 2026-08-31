@@ -4,12 +4,14 @@ namespace App\Services\WebsiteSetting;
 
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\Social\SocialLinkServiceInterface;
 use App\Support\PublicMedia;
 
 class WebsiteSettingService implements WebsiteSettingServiceInterface
 {
     public function __construct(
         protected WebsiteSettingRepositoryInterface $settings,
+        protected SocialLinkServiceInterface $socialLinks,
     ) {}
 
     public function valuesForAdmin(): array
@@ -64,6 +66,9 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 'opening_hours' => $this->filledOrNull($values[WebsiteSettingKey::BusinessOpeningHours->value] ?? null),
             ],
             'payment' => $payment,
+            'fulfilment' => [
+                'delivery_disclaimer' => $this->deliveryDisclaimer(),
+            ],
             'pages' => [
                 'about' => $this->filledOrNull($values[WebsiteSettingKey::PagesAbout->value] ?? null),
                 'contact' => $this->filledOrNull($values[WebsiteSettingKey::PagesContact->value] ?? null),
@@ -71,6 +76,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 'terms' => $this->filledOrNull($values[WebsiteSettingKey::PagesTerms->value] ?? null),
                 'privacy' => $this->filledOrNull($values[WebsiteSettingKey::PagesPrivacy->value] ?? null),
             ],
+            'social_links' => $this->socialLinks->customerFacingLinks($businessWhatsapp),
         ];
     }
 
@@ -104,6 +110,16 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 config('coffee.payments.whatsapp_number'),
             ),
         ];
+    }
+
+    public function deliveryDisclaimer(): ?string
+    {
+        $values = $this->settings->keyedValues();
+
+        return $this->resolveWithConfigFallback(
+            $values->get(WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value),
+            config('coffee.fulfilment.delivery_disclaimer'),
+        );
     }
 
     protected function normalizeStoredValue(mixed $value): ?string

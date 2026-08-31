@@ -51,7 +51,7 @@ class CustomerCheckoutController extends Controller
                         ['value' => 'delivery', 'label' => 'Delivery'],
                     ],
                     'pickup_address' => $this->websiteSettings->customerContent()['business']['address'] ?? null,
-                    'delivery_disclaimer' => (string) config('coffee.fulfilment.delivery_disclaimer'),
+                    'delivery_disclaimer' => $this->websiteSettings->deliveryDisclaimer(),
                 ],
                 'payment' => $this->paymentInstructions(),
             ],

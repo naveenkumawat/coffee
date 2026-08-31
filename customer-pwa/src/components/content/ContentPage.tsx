@@ -4,7 +4,7 @@ import { ApiError } from '../../api/client';
 import { ErrorState } from '../common/ErrorState';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { PageHeader } from '../common/PageHeader';
-import { ContentPageKey, WebsiteContent } from '../../types/content';
+import { ContentPageKey, DEFAULT_BRAND_NAME, WebsiteContent } from '../../types/content';
 import { parseFaqItems } from '../../utils/contentPages';
 import { ContactActions } from './ContactActions';
 import { FaqAccordion } from './FaqAccordion';
@@ -76,8 +76,8 @@ export function ContentPage({ page }: ContentPageProps) {
         <div className="content-shell motion-enter">
           {page === 'about' ? (
             <section className="content-about-hero">
-              <p className="eyebrow">{business?.name ?? 'The88Coffees'}</p>
-              <h2>Made for your next cup</h2>
+              <p className="eyebrow">{business?.name ?? DEFAULT_BRAND_NAME}</p>
+              {content?.hero?.title ? <h2>{content.hero.title}</h2> : null}
               {business?.about_short ? <p>{business.about_short}</p> : null}
             </section>
           ) : null}

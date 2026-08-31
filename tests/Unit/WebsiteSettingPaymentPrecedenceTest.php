@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingService;
 use Illuminate\Support\Collection;
 use Mockery;
@@ -37,7 +38,8 @@ class WebsiteSettingPaymentPrecedenceTest extends TestCase
             WebsiteSettingKey::PaymentWhatsappNumber->value => '<b>+919999999999</b>',
         ]));
 
-        $service = new WebsiteSettingService($repository);
+        $socialLinks = Mockery::mock(SocialLinkServiceInterface::class);
+        $service = new WebsiteSettingService($repository, $socialLinks);
         $payment = $service->paymentInstructions();
 
         $this->assertSame('Settings Name', $payment['display_name']);
@@ -46,5 +48,29 @@ class WebsiteSettingPaymentPrecedenceTest extends TestCase
         $this->assertSame('+910000000002', $payment['phone']);
         $this->assertSame('https://cdn.example.com/settings-qr.png', $payment['qr_image_path']);
         $this->assertSame('+919999999999', $payment['whatsapp_number']);
+    }
+
+    public function test_delivery_disclaimer_uses_settings_then_config(): void
+    {
+        config()->set('coffee.fulfilment.delivery_disclaimer', 'Config disclaimer');
+
+        $repository = Mockery::mock(WebsiteSettingRepositoryInterface::class);
+        $repository->shouldReceive('keyedValues')->once()->andReturn(Collection::make([
+            WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => 'Settings disclaimer',
+        ]));
+
+        $socialLinks = Mockery::mock(SocialLinkServiceInterface::class);
+        $service = new WebsiteSettingService($repository, $socialLinks);
+
+        $this->assertSame('Settings disclaimer', $service->deliveryDisclaimer());
+
+        $repositoryEmpty = Mockery::mock(WebsiteSettingRepositoryInterface::class);
+        $repositoryEmpty->shouldReceive('keyedValues')->once()->andReturn(Collection::make([
+            WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => null,
+        ]));
+
+        $serviceEmpty = new WebsiteSettingService($repositoryEmpty, $socialLinks);
+
+        $this->assertSame('Config disclaimer', $serviceEmpty->deliveryDisclaimer());
     }
 }

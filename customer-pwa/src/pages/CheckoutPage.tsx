@@ -244,9 +244,7 @@ export function CheckoutPage() {
   }
 
   const pickupAddress = summaryMeta.fulfilment?.pickup_address;
-  const deliveryDisclaimer =
-    summaryMeta.fulfilment?.delivery_disclaimer ||
-    'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.';
+  const deliveryDisclaimer = summaryMeta.fulfilment?.delivery_disclaimer?.trim() || null;
 
   return (
     <div className="page-container checkout-page has-sticky-cta">
@@ -462,9 +460,11 @@ export function CheckoutPage() {
               </div>
             </div>
 
-            <div className="checkout-delivery-disclaimer" role="note">
-              {deliveryDisclaimer}
-            </div>
+            {deliveryDisclaimer ? (
+              <div className="checkout-delivery-disclaimer" role="note">
+                {deliveryDisclaimer}
+              </div>
+            ) : null}
 
             <label className="choice-row checkout-choice">
               <input

@@ -12,7 +12,7 @@
         @if ($order->delivery_notes)
             <div class="text-gray-600 mt-1">{{ $order->delivery_notes }}</div>
         @endif
-        <div class="text-warning fs-8 mt-2">{{ config('coffee.fulfilment.delivery_disclaimer') }}</div>
+        <div class="text-warning fs-8 mt-2">{{ app(\App\Services\WebsiteSetting\WebsiteSettingServiceInterface::class)->deliveryDisclaimer() }}</div>
         <div class="text-muted fs-8 mt-1">Cafe total does not include third-party delivery charges.</div>
     @endif
 </div>

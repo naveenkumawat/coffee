@@ -36,6 +36,8 @@ use App\Services\Product\ProductCategoryService;
 use App\Services\Product\ProductCategoryServiceInterface;
 use App\Services\Product\ProductFlavourService;
 use App\Services\Product\ProductFlavourServiceInterface;
+use App\Services\Product\ProductReadinessService;
+use App\Services\Product\ProductReadinessServiceInterface;
 use App\Services\Product\ProductService;
 use App\Services\Product\ProductServiceInterface;
 use App\Services\Product\ProductTagService;
@@ -46,6 +48,8 @@ use App\Services\Recipe\RecipeCostingService;
 use App\Services\Recipe\RecipeCostingServiceInterface;
 use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
+use App\Services\Social\SocialLinkService;
+use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\User\UserService;
 use App\Services\User\UserServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingService;
@@ -76,9 +80,11 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(ProductFlavourServiceInterface::class, ProductFlavourService::class);
         $this->app->bind(ProductTagServiceInterface::class, ProductTagService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
+        $this->app->bind(ProductReadinessServiceInterface::class, ProductReadinessService::class);
         $this->app->bind(RecipeCostingServiceInterface::class, RecipeCostingService::class);
         $this->app->bind(RecipeServiceInterface::class, RecipeService::class);
         $this->app->bind(UserServiceInterface::class, UserService::class);
         $this->app->bind(WebsiteSettingServiceInterface::class, WebsiteSettingService::class);
+        $this->app->bind(SocialLinkServiceInterface::class, SocialLinkService::class);
     }
 }

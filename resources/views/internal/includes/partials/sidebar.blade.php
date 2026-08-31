@@ -58,6 +58,9 @@
                     $user?->canManageWebsiteSettings()
                         ? ['label' => 'Website Settings', 'route' => 'administrator.website-settings.edit', 'pattern' => 'administrator.website-settings.*', 'icon' => 'ki-setting-2']
                         : null,
+                    $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Social Links', 'route' => 'administrator.social-links.index', 'pattern' => 'administrator.social-links.*', 'icon' => 'ki-share']
+                        : null,
                 ])),
             ],
         ],

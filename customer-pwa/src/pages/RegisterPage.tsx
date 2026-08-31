@@ -6,6 +6,7 @@ import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
 import { useAuthStore } from '../stores/authStore';
+import { selectBrandName, useContentStore } from '../stores/contentStore';
 import { useToastStore } from '../stores/toastStore';
 import { withRedirectQuery } from '../utils/contentPages';
 import { getFieldError } from '../utils/forms';
@@ -13,6 +14,7 @@ import { normalizeRedirectPath } from '../utils/navigation';
 
 export function RegisterPage() {
   const register = useAuthStore((state) => state.register);
+  const brandName = useContentStore((state) => selectBrandName(state.content));
   const toastSuccess = useToastStore((state) => state.success);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -64,7 +66,7 @@ export function RegisterPage() {
         Back
       </button>
       <AuthCard
-        badge="Join The88Coffees"
+        badge={`Join ${brandName}`}
         title="Create your account"
         description="Just the essentials so you can get into the menu quickly."
         footer={

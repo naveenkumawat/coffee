@@ -387,6 +387,7 @@ Status: Partial
 - [ ] Inventory and order audit trail implemented
 - [ ] Full responsive coverage across all scoped screens implemented
 - [x] Final customer PWA installability, manifest, service worker, and offline shell implemented
+- [x] Production deployment prep (D3): env/Sanctum/CORS/Apache runbook, rate limits, security headers, `docs/production-deployment.md` (deploy not executed; customer Blade retained)
 
 ## Phase 12 - Phase 2 Enhancements
 Status: Pending

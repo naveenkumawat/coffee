@@ -21,6 +21,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
     public function paginateForAdmin(ProductFilterTransferInterface $filters, int $perPage = 12): LengthAwarePaginator
     {
         return $this->filteredQuery($filters)
+            ->with(['category', 'flavours', 'defaultVariant', 'variants.recipe.lines.ingredient'])
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -348,7 +349,54 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->when($filters->getAvailability() === 'available', fn ($query) => $query->where('is_available', true))
             ->when($filters->getAvailability() === 'unavailable', fn ($query) => $query->where('is_available', false))
             ->when($filters->getFeatured() === 'featured', fn ($query) => $query->where('is_featured', true))
-            ->when($filters->getFeatured() === 'standard', fn ($query) => $query->where('is_featured', false));
+            ->when($filters->getFeatured() === 'standard', fn ($query) => $query->where('is_featured', false))
+            ->when($filters->getReadiness() === 'ready', function ($query): void {
+                $query
+                    ->whereNotNull('image_path')
+                    ->where('image_path', '!=', '')
+                    ->whereHas('variants', fn ($variantQuery) => $variantQuery
+                        ->where('is_active', true)
+                        ->where('price', '>', 0)
+                        ->whereHas('recipe', fn ($recipeQuery) => $recipeQuery
+                            ->where('is_active', true)
+                            ->whereHas('lines')))
+                    ->whereDoesntHave('variants', fn ($variantQuery) => $variantQuery
+                        ->where('is_active', true)
+                        ->where(function ($incompleteVariant) {
+                            $incompleteVariant
+                                ->where('price', '<=', 0)
+                                ->orWhereDoesntHave('recipe', fn ($recipeQuery) => $recipeQuery
+                                    ->where('is_active', true)
+                                    ->whereHas('lines'));
+                        }));
+            })
+            ->when($filters->getReadiness() === 'incomplete', function ($query): void {
+                $query->where(function ($incomplete): void {
+                    $incomplete
+                        ->whereNull('image_path')
+                        ->orWhere('image_path', '')
+                        ->orWhereDoesntHave('variants', fn ($variantQuery) => $variantQuery->where('is_active', true))
+                        ->orWhereHas('variants', fn ($variantQuery) => $variantQuery
+                            ->where('is_active', true)
+                            ->where(function ($badVariant): void {
+                                $badVariant
+                                    ->where('price', '<=', 0)
+                                    ->orWhereDoesntHave('recipe', fn ($recipeQuery) => $recipeQuery
+                                        ->where('is_active', true)
+                                        ->whereHas('lines'));
+                            }));
+                });
+            })
+            ->when($filters->getReadiness() === 'stock_paused', fn ($query) => $query
+                ->where('is_available', false)
+                ->whereNotNull('image_path')
+                ->where('image_path', '!=', '')
+                ->whereHas('variants', fn ($variantQuery) => $variantQuery
+                    ->where('is_active', true)
+                    ->where('price', '>', 0)
+                    ->whereHas('recipe', fn ($recipeQuery) => $recipeQuery->where('is_active', true)->whereHas('lines'))))
+            ->when($filters->getReadiness() === 'stock_concern', fn ($query) => $query
+                ->whereHas('variants.recipe.lines.ingredient', fn ($ingredientQuery) => $ingredientQuery->where('current_stock', '<=', 0)));
     }
 
     /**

@@ -16,6 +16,8 @@ class ProductFilterTransfer implements ProductFilterTransferInterface
 
     protected ?string $featured = null;
 
+    protected ?string $readiness = null;
+
     public function getSearch(): ?string
     {
         return $this->search;
@@ -81,6 +83,16 @@ class ProductFilterTransfer implements ProductFilterTransferInterface
         $this->featured = $featured;
     }
 
+    public function getReadiness(): ?string
+    {
+        return $this->readiness;
+    }
+
+    public function setReadiness(?string $readiness): void
+    {
+        $this->readiness = $readiness;
+    }
+
     public function toArray(): array
     {
         return array_filter([
@@ -90,6 +102,7 @@ class ProductFilterTransfer implements ProductFilterTransferInterface
             'status' => $this->status,
             'availability' => $this->availability,
             'featured' => $this->featured,
+            'readiness' => $this->readiness,
         ], fn ($value): bool => $value !== null && $value !== '');
     }
 }

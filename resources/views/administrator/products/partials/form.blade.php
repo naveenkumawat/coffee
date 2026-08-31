@@ -251,7 +251,10 @@
                     <div class="form-check form-switch form-check-custom form-check-solid">
                         <input type="hidden" name="is_active" value="0">
                         <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $product->is_active))>
-                        <label class="form-check-label" for="is_active">Product is active</label>
+                        <label class="form-check-label" for="is_active">Product is active (requires launch-ready configuration)</label>
+                        @error('is_active')
+                            <div class="text-danger fs-7 mt-2">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
                 <div class="col-md-4">

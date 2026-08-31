@@ -97,6 +97,7 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setStatus(filled($filterData['status'] ?? null) ? (string) $filterData['status'] : null);
         $transfer->setAvailability(filled($filterData['availability'] ?? null) ? (string) $filterData['availability'] : null);
         $transfer->setFeatured(filled($filterData['featured'] ?? null) ? (string) $filterData['featured'] : null);
+        $transfer->setReadiness(filled($filterData['readiness'] ?? null) ? (string) $filterData['readiness'] : null);
 
         return $transfer;
     }

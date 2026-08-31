@@ -36,6 +36,8 @@ use App\Repositories\Rating\ProductRatingRepository;
 use App\Repositories\Rating\ProductRatingRepositoryInterface;
 use App\Repositories\Recipe\RecipeRepository;
 use App\Repositories\Recipe\RecipeRepositoryInterface;
+use App\Repositories\Social\SocialLinkRepository;
+use App\Repositories\Social\SocialLinkRepositoryInterface;
 use App\Repositories\User\UserRepository;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepository;
@@ -65,5 +67,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(RecipeRepositoryInterface::class, RecipeRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(WebsiteSettingRepositoryInterface::class, WebsiteSettingRepository::class);
+        $this->app->bind(SocialLinkRepositoryInterface::class, SocialLinkRepository::class);
     }
 }

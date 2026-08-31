@@ -21,6 +21,7 @@ class ProductService implements ProductServiceInterface
         protected ProductFlavourRepositoryInterface $flavours,
         protected ProductTagRepositoryInterface $tags,
         protected ProductCatalogServiceInterface $catalog,
+        protected ProductReadinessServiceInterface $readiness,
     ) {}
 
     public function store(ProductTransferInterface $data): Product
@@ -61,6 +62,32 @@ class ProductService implements ProductServiceInterface
         $this->catalog->flushPublicCache();
 
         return $product;
+    }
+
+    public function assertActiveProductIsLaunchReady(Product $product): void
+    {
+        $product = $product->load(['category', 'variants.recipe.lines.ingredient']);
+
+        if (! $product->is_active) {
+            return;
+        }
+
+        $report = $this->readiness->evaluate($product);
+
+        if ($report->isConfigurationComplete()) {
+            return;
+        }
+
+        $product->forceFill(['is_active' => false])->save();
+        $this->catalog->flushPublicCache();
+
+        $lines = collect($report->missing)
+            ->map(fn (string $item): string => "- {$item}")
+            ->implode("\n");
+
+        throw ValidationException::withMessages([
+            'is_active' => "Cannot activate product:\n{$lines}",
+        ]);
     }
 
     public function delete(Product $product): void

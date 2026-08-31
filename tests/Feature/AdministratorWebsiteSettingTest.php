@@ -21,14 +21,18 @@ class AdministratorWebsiteSettingTest extends TestCase
             ->assertOk()
             ->assertSee('Website Settings')
             ->assertSee('Hero title')
-            ->assertSee('Payment display');
+            ->assertSee('Payment display')
+            ->assertSee('Fulfilment')
+            ->assertSee('Delivery disclaimer');
 
         $this->actingAs($manager, 'admin')
             ->put(route('administrator.website-settings.update'), [
                 WebsiteSettingKey::HeroTitle->value => 'Morning roast',
-                WebsiteSettingKey::BusinessName->value => 'OMBE Cafe',
+                WebsiteSettingKey::HeroSubtitle->value => 'Sip. Relax. Enjoy.',
+                WebsiteSettingKey::BusinessName->value => 'The88Coffees',
                 WebsiteSettingKey::PagesAbout->value => '<b>Welcome</b> to our cafe',
-                WebsiteSettingKey::PaymentUpiId->value => 'ombe@upi',
+                WebsiteSettingKey::PaymentUpiId->value => 'cafe@upi',
+                WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => 'Third-party delivery; fees paid separately.',
             ])
             ->assertRedirect(route('administrator.website-settings.edit'));
 
@@ -37,8 +41,12 @@ class AdministratorWebsiteSettingTest extends TestCase
             'value' => 'Morning roast',
         ]);
         $this->assertDatabaseHas('website_settings', [
+            'key' => WebsiteSettingKey::HeroSubtitle->value,
+            'value' => 'Sip. Relax. Enjoy.',
+        ]);
+        $this->assertDatabaseHas('website_settings', [
             'key' => WebsiteSettingKey::BusinessName->value,
-            'value' => 'OMBE Cafe',
+            'value' => 'The88Coffees',
         ]);
         $this->assertDatabaseHas('website_settings', [
             'key' => WebsiteSettingKey::PagesAbout->value,
@@ -46,7 +54,11 @@ class AdministratorWebsiteSettingTest extends TestCase
         ]);
         $this->assertDatabaseHas('website_settings', [
             'key' => WebsiteSettingKey::PaymentUpiId->value,
-            'value' => 'ombe@upi',
+            'value' => 'cafe@upi',
+        ]);
+        $this->assertDatabaseHas('website_settings', [
+            'key' => WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value,
+            'value' => 'Third-party delivery; fees paid separately.',
         ]);
     }
 

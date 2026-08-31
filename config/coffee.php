@@ -33,6 +33,9 @@ return [
         'proof_max_kilobytes' => (int) env('COFFEE_PAYMENT_PROOF_MAX_KB', 5120),
     ],
     'fulfilment' => [
-        'delivery_disclaimer' => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
+        'delivery_disclaimer' => env(
+            'COFFEE_DELIVERY_DISCLAIMER',
+            'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
+        ),
     ],
 ];

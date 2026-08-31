@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\ProductServingUnit;
+use App\Enums\WebsiteSettingKey;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Models\WebsiteSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -20,7 +22,14 @@ class OrderFulfilmentCheckoutTest extends TestCase
 
     public function test_takeaway_checkout_persists_pickup_details_without_delivery_fee(): void
     {
-        config()->set('coffee.fulfilment.delivery_disclaimer', 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.');
+        config()->set('coffee.fulfilment.delivery_disclaimer', 'Config-only delivery disclaimer.');
+
+        WebsiteSetting::query()->where(
+            'key',
+            WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value,
+        )->update([
+            'value' => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
+        ]);
 
         $customer = User::factory()->customer()->create([
             'name' => 'Takeaway Customer',

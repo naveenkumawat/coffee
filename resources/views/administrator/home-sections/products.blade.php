@@ -53,17 +53,41 @@
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Product</th>
                             <th>Category</th>
+                            <th>Launch</th>
                             <th>Sort</th>
                             <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="fw-semibold text-gray-600">
                         @forelse ($section->sectionProducts as $assignment)
+                            @php
+                                $assignedProduct = $assignment->product;
+                                $report = $assignedProduct
+                                    ? ($readinessReports[(int) $assignedProduct->id] ?? null)
+                                    : null;
+                            @endphp
                             <tr>
                                 <td>
-                                    <span class="text-gray-900 fw-bold">{{ $assignment->product?->name ?: 'Deleted product' }}</span>
+                                    <div class="d-flex flex-column">
+                                        <span class="text-gray-900 fw-bold">{{ $assignedProduct?->name ?: 'Deleted product' }}</span>
+                                        @if ($assignedProduct && (! $assignedProduct->is_active || ! $assignedProduct->is_available))
+                                            <span class="text-muted fs-8">Not customer-visible (inactive or paused). Assignment kept.</span>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td>{{ $assignment->product?->category?->name ?: '—' }}</td>
+                                <td>{{ $assignedProduct?->category?->name ?: '—' }}</td>
+                                <td>
+                                    @if ($report)
+                                        <span class="badge {{ $report->isReady() ? 'badge-light-success' : 'badge-light-danger' }}">
+                                            {{ $report->statusLabel() }}
+                                        </span>
+                                        @if (! $report->isReady())
+                                            <div class="text-muted fs-8 mt-1">{{ implode('; ', $report->missing) }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 <td>{{ $assignment->sort_order }}</td>
                                 <td class="text-end internal-action-cell">
                                     @if ($assignment->product)
@@ -95,7 +119,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted py-10">No products assigned yet.</td>
+                                <td colspan="5" class="text-center text-muted py-10">No products assigned yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

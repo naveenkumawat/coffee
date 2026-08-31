@@ -32,15 +32,19 @@ interface WebsiteSettingServiceInterface
      *         display_name: ?string,
      *         instructions: ?string,
      *         upi_id: ?string,
+     *         phone: ?string,
+     *         qr_image_path: ?string,
      *         whatsapp_number: ?string
      *     },
+     *     fulfilment: array{delivery_disclaimer: ?string},
      *     pages: array{
      *         about: ?string,
      *         contact: ?string,
      *         faq: ?string,
      *         terms: ?string,
      *         privacy: ?string
-     *     }
+     *     },
+     *     social_links: list<array{label: string, icon_key: string, url: string, sort_order: int}>
      * }
      */
     public function customerContent(): array;
@@ -48,7 +52,16 @@ interface WebsiteSettingServiceInterface
     /**
      * Resolved payment display info. Non-empty DB settings override config/env.
      *
-     * @return array{display_name: ?string, instructions: ?string, upi_id: ?string, whatsapp_number: ?string}
+     * @return array{
+     *     display_name: ?string,
+     *     instructions: ?string,
+     *     upi_id: ?string,
+     *     phone: ?string,
+     *     qr_image_path: ?string,
+     *     whatsapp_number: ?string
+     * }
      */
     public function paymentInstructions(): array;
+
+    public function deliveryDisclaimer(): ?string;
 }

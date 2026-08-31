@@ -138,7 +138,7 @@ export function PaymentInstructionsCard({
         </div>
         <div>
           <span>Pay to</span>
-          <strong>{payment?.display_name ?? 'The88Coffees'}</strong>
+          <strong>{payment?.display_name ?? 'Cafe'}</strong>
         </div>
       </div>
 

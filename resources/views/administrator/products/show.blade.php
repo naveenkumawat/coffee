@@ -49,6 +49,36 @@
                             <div class="text-gray-700">{{ $product->description ?: 'No detailed description provided.' }}</div>
                         </div>
                         <div>
+                            <div class="text-muted fs-7 mb-1">Launch readiness</div>
+                            <div class="d-flex flex-column gap-2">
+                                <span class="badge {{ $readiness->isReady() ? 'badge-light-success' : 'badge-light-danger' }}">
+                                    {{ $readiness->statusLabel() }}
+                                </span>
+                                @if ($readiness->availabilityLabel((bool) $product->is_available))
+                                    <span class="badge badge-light-warning">{{ $readiness->availabilityLabel((bool) $product->is_available) }}</span>
+                                @endif
+                                @if (! $readiness->isReady())
+                                    <div class="text-gray-700 fs-7">
+                                        <div class="fw-semibold mb-1">Missing:</div>
+                                        <ul class="mb-0 ps-4">
+                                            @foreach ($readiness->missing as $item)
+                                                <li>{{ $item }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @elseif ($readiness->hasInventoryConcern())
+                                    <div class="text-gray-700 fs-7">
+                                        <div class="fw-semibold mb-1">Inventory notes:</div>
+                                        <ul class="mb-0 ps-4">
+                                            @foreach ($readiness->inventoryNotes as $item)
+                                                <li>{{ $item }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div>
                             <div class="text-muted fs-7 mb-1">Flags</div>
                             <div class="d-flex flex-wrap gap-2">
                                 <span class="badge {{ $product->is_active ? 'badge-light-success' : 'badge-light-warning' }}">{{ $product->is_active ? 'Active' : 'Inactive' }}</span>

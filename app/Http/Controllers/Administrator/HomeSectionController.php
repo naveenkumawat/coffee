@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Parsers\Home\HomeSectionParserInterface;
 use App\Repositories\Home\HomeSectionRepositoryInterface;
 use App\Services\Home\HomeSectionServiceInterface;
+use App\Services\Product\ProductReadinessServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -21,6 +22,7 @@ class HomeSectionController extends Controller
         protected HomeSectionParserInterface $parser,
         protected HomeSectionRepositoryInterface $sections,
         protected HomeSectionServiceInterface $service,
+        protected ProductReadinessServiceInterface $readiness,
     ) {}
 
     public function index(HomeSectionIndexRequest $request): View
@@ -123,6 +125,7 @@ class HomeSectionController extends Controller
 
         $homeSection->load([
             'sectionProducts.product.category',
+            'sectionProducts.product.variants.recipe.lines.ingredient',
             'sectionProducts' => fn ($query) => $query->orderBy('sort_order')->orderBy('id'),
         ]);
 
@@ -135,9 +138,15 @@ class HomeSectionController extends Controller
             ->orderBy('name')
             ->pluck('name', 'id');
 
+        $assignedProducts = $homeSection->sectionProducts
+            ->pluck('product')
+            ->filter()
+            ->values();
+
         return view('administrator.home-sections.products', [
             'section' => $homeSection,
             'productOptions' => $productOptions,
+            'readinessReports' => $this->readiness->evaluateMany($assignedProducts),
         ]);
     }
 
