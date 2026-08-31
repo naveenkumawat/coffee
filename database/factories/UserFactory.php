@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'phone' => fake()->phoneNumber(),
             'role' => UserRole::Customer,
             'is_active' => true,
+            'cash_takeaway_allowed' => false,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -65,6 +66,11 @@ class UserFactory extends Factory
     public function customer(): static
     {
         return $this->state(fn () => ['role' => UserRole::Customer]);
+    }
+
+    public function cashTakeawayAllowed(): static
+    {
+        return $this->state(fn () => ['cash_takeaway_allowed' => true]);
     }
 
     public function inactive(): static

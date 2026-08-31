@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
+use App\Events\Order\OrderCashReceived;
 use App\Events\Order\OrderPaymentProofReceived;
 use App\Events\Order\OrderPaymentProofRejected;
 use App\Events\Order\OrderPlaced;
@@ -16,6 +17,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\Payment\PaymentEligibilityServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
@@ -33,6 +35,7 @@ class OrderService implements OrderServiceInterface
         protected CafeTableRepositoryInterface $cafeTables,
         protected WebsiteSettingServiceInterface $websiteSettings,
         protected TaxCalculatorInterface $taxCalculator,
+        protected PaymentEligibilityServiceInterface $paymentEligibility,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -70,6 +73,15 @@ class OrderService implements OrderServiceInterface
 
             $fulfilmentMethod = OrderFulfilmentMethod::tryFrom((string) ($data->getFulfilmentMethod() ?: OrderFulfilmentMethod::Takeaway->value))
                 ?? OrderFulfilmentMethod::Takeaway;
+
+            $paymentMethod = PaymentMethod::Manual;
+            if ($customer instanceof User) {
+                $paymentMethod = $this->paymentEligibility->assertAllowed(
+                    $customer,
+                    $fulfilmentMethod,
+                    $data->getPaymentMethod() ?: PaymentMethod::Manual->apiKey(),
+                );
+            }
 
             $cafeTableId = null;
             $tableNameSnapshot = null;
@@ -134,7 +146,7 @@ class OrderService implements OrderServiceInterface
                 'delivery_provider' => null,
                 'delivery_fee_amount' => null,
                 'delivery_tracking_reference' => null,
-                'payment_method' => PaymentMethod::Manual->value,
+                'payment_method' => $paymentMethod->value,
                 'payment_status' => PaymentStatus::Pending->value,
                 'placed_at' => $placedAt,
             ]);
@@ -202,6 +214,11 @@ class OrderService implements OrderServiceInterface
             if ($nextStatus === OrderStatus::PaymentConfirmed) {
                 $attributes['payment_status'] = PaymentStatus::Confirmed->value;
                 $attributes['payment_proof_rejection_notes'] = null;
+                $attributes['payment_confirmed_at'] = $order->payment_confirmed_at ?: now();
+
+                if ($order->isCashPayment() && $order->payment_received_by_id === null) {
+                    $attributes['payment_received_by_id'] = $actor->getKey();
+                }
             }
 
             if (
@@ -243,6 +260,12 @@ class OrderService implements OrderServiceInterface
         if ((int) $order->customer_id !== (int) $customer->getKey()) {
             throw ValidationException::withMessages([
                 'payment_proof' => 'You can only upload payment proof for your own orders.',
+            ]);
+        }
+
+        if ($order->isCashPayment()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Cash orders do not use payment screenshots.',
             ]);
         }
 
@@ -338,6 +361,78 @@ class OrderService implements OrderServiceInterface
         });
     }
 
+    public function markCashReceived(Order $order, User $actor): Order
+    {
+        if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+            throw ValidationException::withMessages([
+                'payment' => 'You are not allowed to mark cash as received.',
+            ]);
+        }
+
+        if (! $order->isCashPayment()) {
+            throw ValidationException::withMessages([
+                'payment' => 'Only cash orders can be marked as cash received.',
+            ]);
+        }
+
+        if ($order->payment_status === PaymentStatus::Confirmed) {
+            throw ValidationException::withMessages([
+                'payment' => 'Cash has already been marked as received for this order.',
+            ]);
+        }
+
+        if (in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+            throw ValidationException::withMessages([
+                'payment' => 'Cash cannot be marked received on a cancelled or rejected order.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($order, $actor): Order {
+            $currentStatus = $order->status;
+            $attributes = [
+                'payment_status' => PaymentStatus::Confirmed->value,
+                'payment_confirmed_at' => $order->payment_confirmed_at ?: now(),
+                'payment_received_by_id' => $actor->getKey(),
+            ];
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                $attributes['status'] = OrderStatus::PaymentConfirmed->value;
+            }
+
+            $order = $this->orders->update($order, $attributes);
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                $this->orders->createStatusHistory($order, [
+                    'from_status' => OrderStatus::PendingPayment->value,
+                    'to_status' => OrderStatus::PaymentConfirmed->value,
+                    'changed_by' => $actor->getKey(),
+                    'notes' => 'Cash received.',
+                ]);
+            }
+
+            $order = $order->fresh([
+                'customer',
+                'assignedBarista',
+                'paymentReceivedBy',
+                'items.recipe.lines.ingredient.brand',
+                'statusHistory.changedBy',
+            ]);
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                OrderStatusChanged::dispatch(
+                    $order,
+                    OrderStatus::PendingPayment,
+                    OrderStatus::PaymentConfirmed,
+                    'Cash received.',
+                );
+            } else {
+                OrderCashReceived::dispatch($order, $actor);
+            }
+
+            return $order;
+        });
+    }
+
     public function availableTransitions(Order $order, User $actor): array
     {
         $currentStatus = $order->status;
@@ -346,8 +441,12 @@ class OrderService implements OrderServiceInterface
             return [];
         }
 
+        $isCash = $order->isCashPayment();
+
         $workflow = match ($currentStatus) {
-            OrderStatus::PendingPayment => [OrderStatus::PaymentConfirmed, OrderStatus::Cancelled, OrderStatus::Rejected],
+            OrderStatus::PendingPayment => $isCash
+                ? [OrderStatus::PaymentConfirmed, OrderStatus::Accepted, OrderStatus::Cancelled, OrderStatus::Rejected]
+                : [OrderStatus::PaymentConfirmed, OrderStatus::Cancelled, OrderStatus::Rejected],
             OrderStatus::PaymentConfirmed => [OrderStatus::Accepted, OrderStatus::Cancelled, OrderStatus::Rejected],
             OrderStatus::Accepted => [OrderStatus::Preparing, OrderStatus::Cancelled],
             OrderStatus::Preparing => [OrderStatus::ReadyForPickup, OrderStatus::Cancelled],

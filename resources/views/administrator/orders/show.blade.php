@@ -84,6 +84,8 @@
             @include('internal.orders.partials.payment-proof', [
                 'order' => $order,
                 'showAdminActions' => true,
+                'showFinancialSummary' => true,
+                'markCashRoute' => route('administrator.orders.cash.receive', $order),
             ])
 
             @include('internal.orders.partials.status-actions', [

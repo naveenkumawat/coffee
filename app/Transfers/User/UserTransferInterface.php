@@ -32,5 +32,9 @@ interface UserTransferInterface
 
     public function setPassword(?string $password): void;
 
+    public function isCashTakeawayAllowed(): bool;
+
+    public function setCashTakeawayAllowed(bool $cashTakeawayAllowed): void;
+
     public function toArray(): array;
 }

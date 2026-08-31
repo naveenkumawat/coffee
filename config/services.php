@@ -62,8 +62,10 @@ return [
         'send_preparing' => (bool) env('WHATSAPP_SEND_PREPARING', false),
         'templates' => [
             'order_placed' => env('WHATSAPP_TEMPLATE_ORDER_PLACED'),
+            'order_placed_cash' => env('WHATSAPP_TEMPLATE_ORDER_PLACED_CASH'),
             'payment_proof_received' => env('WHATSAPP_TEMPLATE_PAYMENT_PROOF_RECEIVED'),
             'payment_confirmed' => env('WHATSAPP_TEMPLATE_PAYMENT_CONFIRMED'),
+            'cash_received' => env('WHATSAPP_TEMPLATE_CASH_RECEIVED'),
             'payment_proof_rejected' => env('WHATSAPP_TEMPLATE_PAYMENT_PROOF_REJECTED'),
             'order_accepted' => env('WHATSAPP_TEMPLATE_ORDER_ACCEPTED'),
             'order_preparing' => env('WHATSAPP_TEMPLATE_ORDER_PREPARING'),

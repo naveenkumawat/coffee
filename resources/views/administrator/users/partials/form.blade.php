@@ -83,6 +83,29 @@
                         <div class="form-text">Your own administrator account cannot be deactivated from this screen.</div>
                     @endif
                 </div>
+
+                <div class="col-12" id="cash-takeaway-trust" @style([
+                    'display: none' => old('role', $selectedRole) !== 'customer',
+                ])>
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="cash_takeaway_allowed" value="0">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="cash_takeaway_allowed"
+                            name="cash_takeaway_allowed"
+                            value="1"
+                            @checked(old('cash_takeaway_allowed', $managedUser->cash_takeaway_allowed ?? false))
+                        >
+                        <label class="form-check-label" for="cash_takeaway_allowed">
+                            Allow cash payment for Takeaway
+                        </label>
+                    </div>
+                    @error('cash_takeaway_allowed')
+                        <div class="text-danger fs-7 mt-2">{{ $message }}</div>
+                    @enderror
+                    <div class="form-text">Trusted customers can place Takeaway orders and pay cash at pickup.</div>
+                </div>
             </div>
 
             <div class="d-flex justify-content-end internal-form-actions">
@@ -94,3 +117,18 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    (() => {
+        const role = document.getElementById('role');
+        const trust = document.getElementById('cash-takeaway-trust');
+        if (!role || !trust) return;
+        const sync = () => {
+            trust.style.display = role.value === 'customer' ? '' : 'none';
+        };
+        role.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+@endpush

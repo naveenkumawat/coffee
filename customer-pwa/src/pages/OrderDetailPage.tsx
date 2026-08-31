@@ -16,7 +16,7 @@ import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
-import { isPendingPayment, statusTone } from '../utils/orders';
+import { isCashPayment, isPendingPayment, statusTone } from '../utils/orders';
 
 interface RatingTarget {
   productId: number;
@@ -137,6 +137,22 @@ export function OrderDetailPage() {
 
   const tone = statusTone(order.status);
   const pendingPayment = isPendingPayment(order.status);
+  const showPaymentCard = isCashPayment(order) || pendingPayment;
+  const paymentDetailLabel = (() => {
+    if (!isCashPayment(order)) {
+      return order.payment_method_label ?? 'UPI / QR';
+    }
+
+    if (order.payment_status === 'confirmed' || order.cash_received_at) {
+      return 'Cash — Paid';
+    }
+
+    if (order.fulfilment_method === 'dine_in') {
+      return 'Cash — Pay at Cafe';
+    }
+
+    return 'Cash — Pay at Pickup';
+  })();
 
   return (
     <div className="page-container order-detail-page">
@@ -160,10 +176,11 @@ export function OrderDetailPage() {
         <h1 className="order-status-number">{order.order_number}</h1>
         <p className="order-status-total">Total {formatCurrency(order.total_amount)}</p>
         <p className="order-status-meta">Placed {formatDateTime(order.placed_at)}</p>
+        <p className="order-status-meta">Payment · {paymentDetailLabel}</p>
         <DownloadInvoiceButton order={order} />
       </section>
 
-      {pendingPayment ? (
+      {showPaymentCard ? (
         <PaymentInstructionsCard
           order={order}
           payment={payment}

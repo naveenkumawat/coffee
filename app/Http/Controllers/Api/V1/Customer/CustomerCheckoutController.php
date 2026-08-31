@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\OrderResource;
 use App\Parsers\Checkout\CheckoutParserInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\Checkout\CheckoutServiceInterface;
+use App\Services\Payment\PaymentEligibilityServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class CustomerCheckoutController extends Controller
         protected CheckoutServiceInterface $checkoutService,
         protected OrderRepositoryInterface $orders,
         protected WebsiteSettingServiceInterface $websiteSettings,
+        protected PaymentEligibilityServiceInterface $paymentEligibility,
     ) {}
 
     public function summary(Request $request): JsonResponse
@@ -57,6 +59,7 @@ class CustomerCheckoutController extends Controller
                     'delivery_disclaimer' => $this->websiteSettings->deliveryDisclaimer(),
                     'dine_in_enabled' => $this->websiteSettings->dineInEnabled(),
                 ],
+                'payment_methods' => $this->paymentEligibility->methodsByFulfilment($request->user()),
                 'payment' => $this->paymentInstructions(),
             ],
         );
@@ -96,10 +99,12 @@ class CustomerCheckoutController extends Controller
 
         return $this->respondWithResource(
             new OrderResource($order->loadMissing(['items', 'statusHistory'])),
-            'Order placed successfully and is awaiting payment confirmation.',
+            $order->isCashPayment()
+                ? 'Order placed successfully.'
+                : 'Order placed successfully and is awaiting payment confirmation.',
             201,
             [
-                'payment' => $this->paymentInstructions(),
+                'payment' => $order->isCashPayment() ? null : $this->paymentInstructions(),
             ],
         );
     }

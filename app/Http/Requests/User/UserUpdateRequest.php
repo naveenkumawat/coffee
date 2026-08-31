@@ -30,7 +30,16 @@ class UserUpdateRequest extends AbstractRequest
                 UserRole::Customer->value,
             ])],
             'is_active' => ['nullable', 'boolean'],
+            'cash_takeaway_allowed' => ['nullable', 'boolean'],
             'password' => ['nullable', 'confirmed', Password::min(8)],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_active' => $this->boolean('is_active'),
+            'cash_takeaway_allowed' => $this->boolean('cash_takeaway_allowed'),
+        ]);
     }
 }

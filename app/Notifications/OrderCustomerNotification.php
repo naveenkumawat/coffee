@@ -69,22 +69,41 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
         $business = (string) $brand['business_name'];
 
         return match ($this->type) {
-            CustomerNotificationType::OrderPlaced => [
-                'subject' => 'Order received — #'.$number,
-                'statusLabel' => 'Pending Payment',
-                'statusTone' => 'warning',
-                'intro' => array_values(array_filter([
-                    'We received your order at '.$business.'.',
-                    $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
-                        ? 'Table: '.$tableLabel
-                        : null,
-                    'Please complete payment and upload your payment screenshot from the order page.',
-                ])),
-                'actionText' => 'View Order & Pay',
-                'outro' => [
-                    'Your order stays in Pending Payment until the café confirms your transfer.',
+            CustomerNotificationType::OrderPlaced => $this->order->isCashPayment()
+                ? [
+                    'subject' => 'Order received — #'.$number,
+                    'statusLabel' => $method === OrderFulfilmentMethod::Takeaway ? 'Cash at Pickup' : 'Cash',
+                    'statusTone' => 'warning',
+                    'intro' => array_values(array_filter([
+                        'We received your order at '.$business.'.',
+                        $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
+                            ? 'Table: '.$tableLabel
+                            : null,
+                        $method === OrderFulfilmentMethod::Takeaway
+                            ? 'Pay ₹'.number_format((float) $this->order->total_amount, 2).' in cash when you collect your order.'
+                            : 'Pay ₹'.number_format((float) $this->order->total_amount, 2).' in cash at the cafe.',
+                    ])),
+                    'actionText' => 'Track Order',
+                    'outro' => [
+                        'No payment screenshot is needed for cash orders.',
+                    ],
+                ]
+                : [
+                    'subject' => 'Order received — #'.$number,
+                    'statusLabel' => 'Pending Payment',
+                    'statusTone' => 'warning',
+                    'intro' => array_values(array_filter([
+                        'We received your order at '.$business.'.',
+                        $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
+                            ? 'Table: '.$tableLabel
+                            : null,
+                        'Please complete payment and upload your payment screenshot from the order page.',
+                    ])),
+                    'actionText' => 'View Order & Pay',
+                    'outro' => [
+                        'Your order stays in Pending Payment until the café confirms your transfer.',
+                    ],
                 ],
-            ],
             CustomerNotificationType::PaymentProofReceived => [
                 'subject' => 'Payment confirmation received — #'.$number,
                 'statusLabel' => 'Pending Payment',
@@ -99,15 +118,21 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 ],
             ],
             CustomerNotificationType::PaymentConfirmed => [
-                'subject' => 'Payment confirmed — #'.$number,
-                'statusLabel' => 'Payment Confirmed',
+                'subject' => $this->order->isCashPayment()
+                    ? 'Cash received — #'.$number
+                    : 'Payment confirmed — #'.$number,
+                'statusLabel' => $this->order->isCashPayment() ? 'Cash Received' : 'Payment Confirmed',
                 'statusTone' => 'success',
                 'intro' => array_values(array_filter([
-                    'Payment for order #'.$number.' has been confirmed.',
+                    $this->order->isCashPayment()
+                        ? 'Cash payment for order #'.$number.' has been received.'
+                        : 'Payment for order #'.$number.' has been confirmed.',
                     $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
                         ? 'Table: '.$tableLabel
                         : null,
-                    'The café will accept and prepare your order next.',
+                    $this->order->isCashPayment()
+                        ? null
+                        : 'The café will accept and prepare your order next.',
                 ])),
                 'actionText' => 'Track Order',
                 'outro' => [],

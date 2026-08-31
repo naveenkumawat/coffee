@@ -9,6 +9,7 @@ use App\Events\Inventory\InventoryRefillRequestCreated;
 use App\Events\Inventory\InventoryRefillRequestStatusChanged;
 use App\Events\Menu\MenuCategorySaved;
 use App\Events\Menu\MenuItemSaved;
+use App\Events\Order\OrderCashReceived;
 use App\Events\Order\OrderPaymentProofReceived;
 use App\Events\Order\OrderPaymentProofRejected;
 use App\Events\Order\OrderPlaced;
@@ -16,6 +17,7 @@ use App\Events\Order\OrderStatusChanged;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
+use App\Listeners\Order\SendOrderCashReceivedNotification;
 use App\Listeners\Order\SendOrderPaymentProofReceivedNotification;
 use App\Listeners\Order\SendOrderPaymentProofRejectedNotification;
 use App\Listeners\Order\SendOrderPlacedNotification;
@@ -56,6 +58,9 @@ class EventServiceProvider extends ServiceProvider
         OrderStatusChanged::class => [
             SendOrderStatusChangedNotification::class,
             NotifyStaffOrderStatusChanged::class,
+        ],
+        OrderCashReceived::class => [
+            SendOrderCashReceivedNotification::class,
         ],
         IngredientStockStatusChanged::class => [
             NotifyStaffIngredientStockStatusChanged::class,

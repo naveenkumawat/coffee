@@ -24,6 +24,10 @@ const ACTIVE_STATUSES: OrderStatusValue[] = [
 
 export type OrderStatusTone = 'payment' | 'ready' | 'active' | 'done' | 'danger' | 'neutral';
 
+export function isCashPayment(order: Pick<Order, 'payment_method'> | null | undefined): boolean {
+  return order?.payment_method === 'cash';
+}
+
 export function isDeliveryOrder(order: Pick<Order, 'fulfilment_method'> | null | undefined): boolean {
   return order?.fulfilment_method === 'delivery';
 }
@@ -184,9 +188,11 @@ export function sortOrdersForDisplay(orders: Order[]): Order[] {
   });
 }
 
-export function orderListActionLabel(order: Pick<Order, 'status' | 'fulfilment_method'>): string {
+export function orderListActionLabel(
+  order: Pick<Order, 'status' | 'fulfilment_method' | 'payment_method'>,
+): string {
   if (isPendingPayment(order.status)) {
-    return 'Pay now';
+    return isCashPayment(order) ? 'Track' : 'Pay now';
   }
 
   if (isReadyForPickup(order.status)) {

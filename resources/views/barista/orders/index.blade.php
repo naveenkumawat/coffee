@@ -86,6 +86,17 @@
                                         @elseif ($order->isDelivery())
                                             <span class="badge badge-light-info mt-1 align-self-start">Delivery</span>
                                         @endif
+                                        @if ($order->isCashPayment())
+                                            <span class="badge badge-light-success mt-1 align-self-start">
+                                                @if ($order->payment_status === \App\Enums\PaymentStatus::Confirmed)
+                                                    CASH RECEIVED
+                                                @elseif ($order->isTakeaway())
+                                                    CASH AT PICKUP
+                                                @else
+                                                    CASH
+                                                @endif
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>

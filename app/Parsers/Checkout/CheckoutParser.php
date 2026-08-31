@@ -31,6 +31,11 @@ class CheckoutParser implements CheckoutParserInterface
                 ? (int) $checkoutData['cafe_table_id']
                 : null,
         );
+        $transfer->setPaymentMethod(
+            filled($checkoutData['payment_method'] ?? null)
+                ? trim((string) $checkoutData['payment_method'])
+                : null,
+        );
 
         return $transfer;
     }

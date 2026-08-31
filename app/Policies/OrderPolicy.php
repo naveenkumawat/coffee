@@ -45,6 +45,12 @@ class OrderPolicy
         return $user->canManageOrders();
     }
 
+    public function markCashReceived(User $user, Order $order): bool
+    {
+        return ($user->canManageOrders() || $user->canOperateOrders())
+            && $order->isCashPayment();
+    }
+
     public function viewPaymentProof(User $user, Order $order): bool
     {
         return ($user->canManageOrders() && $order->hasPaymentProof())

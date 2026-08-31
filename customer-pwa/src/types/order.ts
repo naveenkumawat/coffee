@@ -76,12 +76,14 @@ export interface Order {
     amount: string;
   } | null;
   payment_method: string | null;
+  payment_method_label: string | null;
   payment_status: string | null;
   payment_status_label: string | null;
   payment_reference: string | null;
   payment_proof: OrderPaymentProof | null;
   placed_at: string | null;
   payment_confirmed_at: string | null;
+  cash_received_at: string | null;
   accepted_at: string | null;
   preparing_at: string | null;
   ready_for_pickup_at: string | null;

@@ -57,7 +57,12 @@ class CheckoutController extends Controller
 
         return redirect()
             ->route('customer.checkout.confirmation', $order)
-            ->with('status', 'Your order has been placed and is awaiting payment confirmation.');
+            ->with(
+                'status',
+                $order->isCashPayment()
+                    ? 'Your order has been placed. Pay in cash when collecting or at the cafe.'
+                    : 'Your order has been placed and is awaiting payment confirmation.',
+            );
     }
 
     public function confirmation(Order $order): View

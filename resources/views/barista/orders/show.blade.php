@@ -68,6 +68,13 @@
         <div class="col-xl-4">
             @include('internal.orders.partials.customer-card', ['order' => $order])
 
+            @include('internal.orders.partials.payment-proof', [
+                'order' => $order,
+                'showAdminActions' => false,
+                'showFinancialSummary' => false,
+                'markCashRoute' => route('barista.orders.cash.receive', $order),
+            ])
+
             @include('internal.orders.partials.status-actions', [
                 'order' => $order,
                 'availableTransitions' => $availableTransitions,

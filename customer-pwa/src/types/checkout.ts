@@ -2,6 +2,12 @@ import { ApiEnvelope } from '../api/client';
 import { Cart, CartSummary } from './cart';
 import { Order } from './order';
 
+export interface CheckoutPaymentMethodOption {
+  key: 'manual_upi' | 'cash' | string;
+  label: string;
+  subtitle?: string;
+}
+
 export interface CheckoutCustomerDefaults {
   name: string;
   email: string;
@@ -18,6 +24,7 @@ export interface CheckoutPaymentInstructions {
 }
 
 export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery' | 'dine_in';
+export type CheckoutPaymentMethod = 'manual_upi' | 'cash';
 
 export interface CheckoutFulfilmentMeta {
   methods: Array<{ value: CheckoutFulfilmentMethod; label: string }>;
@@ -31,6 +38,7 @@ export interface CheckoutSummaryMeta extends Record<string, unknown> {
   checkout_token: string;
   customer: CheckoutCustomerDefaults;
   fulfilment?: CheckoutFulfilmentMeta;
+  payment_methods?: Partial<Record<CheckoutFulfilmentMethod, CheckoutPaymentMethodOption[]>>;
   payment?: CheckoutPaymentInstructions;
 }
 
@@ -41,6 +49,7 @@ export interface CheckoutSummaryResponse extends ApiEnvelope<Cart> {
 export interface CheckoutSubmitPayload {
   checkout_token: string;
   fulfilment_method: CheckoutFulfilmentMethod;
+  payment_method: CheckoutPaymentMethod;
   customer_name: string;
   customer_email: string;
   customer_phone: string;
@@ -57,6 +66,6 @@ export interface CheckoutSubmitPayload {
 
 export interface CheckoutSubmitResponse extends ApiEnvelope<Order> {
   meta: {
-    payment: CheckoutPaymentInstructions;
+    payment: CheckoutPaymentInstructions | null;
   };
 }

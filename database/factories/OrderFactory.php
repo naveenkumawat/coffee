@@ -133,4 +133,18 @@ class OrderFactory extends Factory
             'payment_confirmed_at' => now()->subMinutes(5),
         ]);
     }
+
+    public function cash(): static
+    {
+        return $this->state(fn (): array => [
+            'payment_method' => PaymentMethod::Cash,
+            'payment_status' => PaymentStatus::Pending,
+            'payment_proof_path' => null,
+            'payment_proof_disk' => null,
+            'payment_proof_mime' => null,
+            'payment_proof_size' => null,
+            'payment_proof_uploaded_at' => null,
+            'payment_proof_rejection_notes' => null,
+        ]);
+    }
 }

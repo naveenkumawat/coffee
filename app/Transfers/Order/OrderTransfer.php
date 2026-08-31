@@ -36,6 +36,8 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
 
     protected ?int $cafeTableId = null;
 
+    protected ?string $paymentMethod = null;
+
     protected array $items = [];
 
     public function getCustomerId(): ?int
@@ -188,6 +190,16 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
         $this->cafeTableId = $cafeTableId;
     }
 
+    public function getPaymentMethod(): ?string
+    {
+        return $this->paymentMethod;
+    }
+
+    public function setPaymentMethod(?string $paymentMethod): void
+    {
+        $this->paymentMethod = $paymentMethod;
+    }
+
     public function getItems(): array
     {
         return $this->items;
@@ -216,6 +228,7 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
             'delivery_contact_name' => $this->deliveryContactName,
             'delivery_notes' => $this->deliveryNotes,
             'cafe_table_id' => $this->cafeTableId,
+            'payment_method' => $this->paymentMethod,
             'items' => $this->items,
         ];
     }

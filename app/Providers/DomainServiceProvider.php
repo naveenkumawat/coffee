@@ -39,6 +39,8 @@ use App\Services\Notification\StaffNotificationDispatcher;
 use App\Services\Notification\StaffNotificationDispatcherInterface;
 use App\Services\Order\OrderService;
 use App\Services\Order\OrderServiceInterface;
+use App\Services\Payment\PaymentEligibilityService;
+use App\Services\Payment\PaymentEligibilityServiceInterface;
 use App\Services\Product\ProductCatalogService;
 use App\Services\Product\ProductCatalogServiceInterface;
 use App\Services\Product\ProductCategoryService;
@@ -84,6 +86,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(InventoryServiceInterface::class, InventoryService::class);
         $this->app->bind(OrderInvoiceServiceInterface::class, OrderInvoiceService::class);
         $this->app->bind(TaxCalculatorInterface::class, TaxCalculator::class);
+        $this->app->bind(PaymentEligibilityServiceInterface::class, PaymentEligibilityService::class);
         $this->app->bind(RoleServiceInterface::class, RoleService::class);
         $this->app->bind(MenuCatalogServiceInterface::class, MenuCatalogService::class);
         $this->app->bind(MenuCategoryServiceInterface::class, MenuCategoryService::class);

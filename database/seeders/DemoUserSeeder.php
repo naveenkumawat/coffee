@@ -140,6 +140,8 @@ class DemoUserSeeder extends Seeder
                     'phone' => $user['phone'],
                     'role' => $user['role'],
                     'is_active' => $user['is_active'],
+                    'cash_takeaway_allowed' => $user['role'] === UserRole::Customer
+                        && in_array($user['email'], ['priya@coffee.local', 'arjun@coffee.local'], true),
                     'password' => Hash::make(self::DEMO_PASSWORD),
                     'email_verified_at' => now(),
                 ],

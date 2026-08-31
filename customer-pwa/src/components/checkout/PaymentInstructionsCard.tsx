@@ -7,7 +7,7 @@ import { Order, OrderPaymentInstructions } from '../../types/order';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { formatCurrency } from '../../utils/format';
 import { resolveCatalogMediaUrl } from '../../utils/images';
-import { isPendingPayment } from '../../utils/orders';
+import { isCashPayment, isDineInOrder, isPendingPayment } from '../../utils/orders';
 import { useToastStore } from '../../stores/toastStore';
 import { OrderStatusBadge } from '../orders/OrderStatusBadge';
 
@@ -42,6 +42,32 @@ function successToastForField(field: CopyField): string {
   }
 }
 
+function cashStatusCopy(order: Order): { badge: string; title: string; body: string } {
+  const cashReceived = order.payment_status === 'confirmed' || Boolean(order.cash_received_at);
+
+  if (cashReceived) {
+    return {
+      badge: 'Paid · Cash',
+      title: 'Cash received',
+      body: 'The cafe has marked your cash payment as received.',
+    };
+  }
+
+  if (isDineInOrder(order)) {
+    return {
+      badge: 'Cash',
+      title: 'Pay at the cafe',
+      body: `Pay ${formatCurrency(order.total_amount)} in cash at your table / the cafe. No payment screenshot is needed.`,
+    };
+  }
+
+  return {
+    badge: 'Cash at Pickup',
+    title: 'Pay when collecting',
+    body: `Your order has been placed. Pay ${formatCurrency(order.total_amount)} in cash when you collect it.`,
+  };
+}
+
 export function PaymentInstructionsCard({
   order,
   payment,
@@ -73,7 +99,10 @@ export function PaymentInstructionsCard({
       order.payment_status !== 'awaiting_review' &&
       order.payment_status !== 'rejected' &&
       order.payment_status !== 'pending');
-  const canUpload = Boolean(proof?.can_upload ?? isPendingPayment(order.status)) && !paymentConfirmed;
+  const canUpload =
+    !isCashPayment(order) &&
+    Boolean(proof?.can_upload ?? isPendingPayment(order.status)) &&
+    !paymentConfirmed;
 
   async function handleCopy(field: CopyField, value: string): Promise<void> {
     if (!value.trim()) {
@@ -116,6 +145,55 @@ export function PaymentInstructionsCard({
     } finally {
       setIsUploading(false);
     }
+  }
+
+  if (isCashPayment(order)) {
+    const cashCopy = cashStatusCopy(order);
+
+    return (
+      <section
+        className={[
+          'payment-card motion-enter',
+          order.payment_status === 'confirmed' ? 'payment-card-confirmed' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-live="polite"
+      >
+        <div className="payment-card-header">
+          <OrderStatusBadge
+            status={order.payment_status === 'confirmed' ? 'payment_confirmed' : 'pending_payment'}
+            label={cashCopy.badge}
+          />
+          <h2>{cashCopy.title}</h2>
+          <p>{cashCopy.body}</p>
+        </div>
+        <div className="payment-meta-grid">
+          <div>
+            <span>Order number</span>
+            <strong className="payment-order-number user-select-text">{order.order_number}</strong>
+          </div>
+          <div>
+            <span>Amount due</span>
+            <strong className="payment-amount">{formatCurrency(order.total_amount)}</strong>
+          </div>
+          <div>
+            <span>Payment</span>
+            <strong>
+              {order.payment_method_label ??
+                (isDineInOrder(order) ? 'Cash — Pay at Cafe' : 'Cash — Pay at Pickup')}
+            </strong>
+          </div>
+        </div>
+        {showSecondaryAction ? (
+          <div className="payment-actions">
+            <Link to={secondaryHref} className="btn btn-primary btn-lg rounded-pill">
+              {secondaryLabel}
+            </Link>
+          </div>
+        ) : null}
+      </section>
+    );
   }
 
   if (paymentConfirmed) {

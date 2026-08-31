@@ -5,6 +5,7 @@ import { fetchCheckoutSummary, submitCheckout } from '../api/checkout';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { FulfilmentMethodSelector } from '../components/checkout/FulfilmentMethodSelector';
+import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { FlowIntro } from '../components/common/FlowIntro';
@@ -19,6 +20,7 @@ import { Cart } from '../types/cart';
 import {
   CheckoutFulfilmentMethod,
   CheckoutPaymentInstructions,
+  CheckoutPaymentMethod,
   CheckoutSummaryMeta,
 } from '../types/checkout';
 import { Order } from '../types/order';
@@ -27,7 +29,7 @@ import { getFieldError } from '../utils/forms';
 
 interface CheckoutNavigationState {
   order?: Order;
-  payment?: CheckoutPaymentInstructions;
+  payment?: CheckoutPaymentInstructions | null;
 }
 
 export function CheckoutPage() {
@@ -37,6 +39,7 @@ export function CheckoutPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [summaryMeta, setSummaryMeta] = useState<CheckoutSummaryMeta | null>(null);
   const [fulfilmentMethod, setFulfilmentMethod] = useState<CheckoutFulfilmentMethod>('takeaway');
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>('manual_upi');
   const [cafeTables, setCafeTables] = useState<CafeTableOption[]>([]);
   const [cafeTableId, setCafeTableId] = useState<number | null>(null);
   const [form, setForm] = useState({
@@ -145,6 +148,21 @@ export function CheckoutPage() {
     }
   }, [summaryMeta?.fulfilment?.methods, fulfilmentMethod]);
 
+  useEffect(() => {
+    const eligible = summaryMeta?.payment_methods?.[fulfilmentMethod] ?? [];
+    const keys = eligible.map((method) => (method.key === 'manual' ? 'manual_upi' : method.key));
+
+    if (keys.length === 0) {
+      setPaymentMethod('manual_upi');
+
+      return;
+    }
+
+    if (!keys.includes(paymentMethod)) {
+      setPaymentMethod((keys[0] as CheckoutPaymentMethod) ?? 'manual_upi');
+    }
+  }, [summaryMeta?.payment_methods, fulfilmentMethod, paymentMethod]);
+
   function updateField(field: keyof typeof form, value: string): void {
     setForm((currentValue) => {
       const nextValue = { ...currentValue, [field]: value };
@@ -199,6 +217,7 @@ export function CheckoutPage() {
       const response = await submitCheckout({
         checkout_token: summaryMeta.checkout_token,
         fulfilment_method: fulfilmentMethod,
+        payment_method: paymentMethod,
         customer_name: form.customer_name,
         customer_email: form.customer_email,
         customer_phone: form.customer_phone,
@@ -297,10 +316,25 @@ export function CheckoutPage() {
     { value: 'takeaway' as const, label: 'Takeaway' },
     { value: 'delivery' as const, label: 'Delivery' },
   ];
+  const paymentMethods = summaryMeta.payment_methods?.[fulfilmentMethod] ?? [
+    { key: 'manual_upi', label: 'UPI / QR', subtitle: 'Pay now and submit payment proof.' },
+  ];
+  const isCashSelected = paymentMethod === 'cash';
   const placeOrderLabel = isSubmitting
     ? 'Placing order…'
     : `Place Order · ${formatCurrency(summaryMeta.summary.total)}`;
-
+  const stickyNote = isCashSelected
+    ? fulfilmentMethod === 'takeaway'
+      ? 'Cash at pickup — no payment screenshot needed'
+      : 'Pay cash at the cafe — no payment screenshot needed'
+    : 'Payment comes next — Pending Payment until confirmed';
+  const paymentSectionSubtitle = isCashSelected
+    ? fulfilmentMethod === 'takeaway'
+      ? 'Pay cash when collecting'
+      : 'Pay at the cafe'
+    : paymentMethods.some((method) => method.key === 'cash')
+      ? 'Choose how you will pay'
+      : 'Pay after placing your order';
   return (
     <div className="page-container checkout-page has-sticky-cta">
       <FlowIntro
@@ -618,21 +652,23 @@ export function CheckoutPage() {
 
         <section className="checkout-section checkout-payment-section" aria-labelledby="checkout-payment-heading">
           <div className="checkout-section-heading">
-            <h2 id="checkout-payment-heading">Payment</h2>
-            <p>Pay after placing your order</p>
+            <h2 id="checkout-payment-heading">Payment method</h2>
+            <p>{paymentSectionSubtitle}</p>
           </div>
-          <ul className="checkout-payment-steps">
-            <li>Place your order now</li>
-            <li>Pay via UPI / QR / phone on the next screen</li>
-            <li>Upload your payment screenshot so we can start preparing</li>
-          </ul>
+
+          <PaymentMethodSelector
+            methods={paymentMethods}
+            value={paymentMethod}
+            onChange={setPaymentMethod}
+            error={getFieldError(errors, 'payment_method')}
+          />
         </section>
 
         <StickyActionBar
           eyebrow="Cafe total"
           title={isSubmitting ? 'Placing order…' : 'Ready to place'}
           value={formatCurrency(summaryMeta.summary.total)}
-          note="Payment comes next — Pending Payment until confirmed"
+          note={stickyNote}
         >
           <button
             type="submit"

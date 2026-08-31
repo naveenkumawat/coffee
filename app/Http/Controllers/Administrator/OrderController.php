@@ -75,7 +75,7 @@ class OrderController extends Controller
         $this->authorize('view', $order);
 
         return view('administrator.orders.show', [
-            'order' => $order->load(['customer', 'assignedBarista', 'items.recipe.lines.ingredient.brand', 'statusHistory.changedBy']),
+            'order' => $order->load(['customer', 'assignedBarista', 'paymentReceivedBy', 'items.recipe.lines.ingredient.brand', 'statusHistory.changedBy']),
             'availableTransitions' => $this->service->availableTransitions($order, request()->user('admin')),
         ]);
     }
@@ -93,6 +93,17 @@ class OrderController extends Controller
         return redirect()
             ->route('administrator.orders.show', $order)
             ->with('status', 'Order status updated successfully.');
+    }
+
+    public function markCashReceived(Order $order): RedirectResponse
+    {
+        $this->authorize('markCashReceived', $order);
+
+        $this->service->markCashReceived($order, request()->user('admin'));
+
+        return redirect()
+            ->route('administrator.orders.show', $order)
+            ->with('status', 'Cash marked as received.');
     }
 
     public function rejectPaymentProof(OrderPaymentProofRejectRequest $request, Order $order): RedirectResponse

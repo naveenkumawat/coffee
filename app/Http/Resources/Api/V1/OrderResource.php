@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Enums\OrderFulfilmentMethod;
 use App\Models\Order;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
@@ -54,20 +55,37 @@ class OrderResource extends JsonResource
             'tax' => app(TaxCalculatorInterface::class)
                 ->fromOrderSnapshot($order)
                 ->toCustomerArray(),
-            'payment_method' => $order->payment_method?->value ?? 'manual',
+            'payment_method' => $order->payment_method?->apiKey() ?? 'manual_upi',
+            'payment_method_label' => $order->payment_method?->customerLabel(
+                $order->fulfilment_method instanceof OrderFulfilmentMethod
+                    ? $order->fulfilment_method
+                    : null,
+            ),
             'payment_status' => $order->payment_status?->value,
             'payment_status_label' => $order->payment_status?->label(),
             'payment_reference' => $order->payment_reference,
-            'payment_proof' => [
-                'uploaded' => $order->hasPaymentProof(),
-                'uploaded_at' => $order->payment_proof_uploaded_at?->toIso8601String(),
-                'mime' => $order->payment_proof_mime,
-                'size' => $order->payment_proof_size,
-                'can_upload' => $order->canUploadPaymentProof(),
-                'rejection_notes' => $order->payment_proof_rejection_notes,
-            ],
-            'placed_at' => $order->placed_at?->toIso8601String(),
+            'payment_proof' => $order->isCashPayment()
+                ? [
+                    'uploaded' => false,
+                    'uploaded_at' => null,
+                    'mime' => null,
+                    'size' => null,
+                    'can_upload' => false,
+                    'rejection_notes' => null,
+                ]
+                : [
+                    'uploaded' => $order->hasPaymentProof(),
+                    'uploaded_at' => $order->payment_proof_uploaded_at?->toIso8601String(),
+                    'mime' => $order->payment_proof_mime,
+                    'size' => $order->payment_proof_size,
+                    'can_upload' => $order->canUploadPaymentProof(),
+                    'rejection_notes' => $order->payment_proof_rejection_notes,
+                ],
             'payment_confirmed_at' => $order->payment_confirmed_at?->toIso8601String(),
+            'cash_received_at' => $order->isCashPayment()
+                ? $order->payment_confirmed_at?->toIso8601String()
+                : null,
+            'placed_at' => $order->placed_at?->toIso8601String(),
             'accepted_at' => $order->accepted_at?->toIso8601String(),
             'preparing_at' => $order->preparing_at?->toIso8601String(),
             'ready_for_pickup_at' => $order->ready_for_pickup_at?->toIso8601String(),

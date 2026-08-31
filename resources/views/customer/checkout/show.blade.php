@@ -19,6 +19,7 @@
             @csrf
             <input type="hidden" name="checkout_token" value="{{ $checkoutToken }}" />
             <input type="hidden" name="fulfilment_method" value="takeaway" />
+            <input type="hidden" name="payment_method" value="manual_upi" />
 
             <section class="space-y-6">
                 <div class="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/20 backdrop-blur sm:p-8">

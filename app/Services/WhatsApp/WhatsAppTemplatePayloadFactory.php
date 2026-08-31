@@ -51,10 +51,16 @@ class WhatsAppTemplatePayloadFactory
     public function templateKey(CustomerNotificationType $type, Order $order): ?string
     {
         return match ($type) {
-            CustomerNotificationType::OrderPlaced => 'order_placed',
-            CustomerNotificationType::PaymentProofReceived => 'payment_proof_received',
-            CustomerNotificationType::PaymentConfirmed => 'payment_confirmed',
-            CustomerNotificationType::PaymentProofRejected => 'payment_proof_rejected',
+            CustomerNotificationType::OrderPlaced => $order->isCashPayment()
+                && filled(config('services.whatsapp.templates.order_placed_cash'))
+                    ? 'order_placed_cash'
+                    : 'order_placed',
+            CustomerNotificationType::PaymentProofReceived => $order->isCashPayment() ? null : 'payment_proof_received',
+            CustomerNotificationType::PaymentConfirmed => $order->isCashPayment()
+                && filled(config('services.whatsapp.templates.cash_received'))
+                    ? 'cash_received'
+                    : 'payment_confirmed',
+            CustomerNotificationType::PaymentProofRejected => $order->isCashPayment() ? null : 'payment_proof_rejected',
             CustomerNotificationType::OrderAccepted => 'order_accepted',
             CustomerNotificationType::OrderPreparing => (bool) config('services.whatsapp.send_preparing', false)
                 ? 'order_preparing'
@@ -112,13 +118,21 @@ class WhatsAppTemplatePayloadFactory
             ),
             default => 'Takeaway',
         };
+
+        if ($order->isCashPayment()) {
+            $fulfilment .= match ($order->fulfilment_method) {
+                OrderFulfilmentMethod::Takeaway => ' · Cash at Pickup',
+                default => ' · Cash',
+            };
+        }
+
         $reason = $this->safeReason($customerFacingReason);
         $table = filled($order->table_name_snapshot) ? (string) $order->table_name_snapshot : 'your table';
 
         return match ($templateKey) {
-            'order_placed' => [$name, $number, $total, $fulfilment, $business],
+            'order_placed', 'order_placed_cash' => [$name, $number, $total, $fulfilment, $business],
             'payment_proof_received' => [$name, $number, $business],
-            'payment_confirmed' => [$name, $number, $business],
+            'payment_confirmed', 'cash_received' => [$name, $number, $business],
             'payment_proof_rejected' => [$name, $number, $reason ?: 'Please upload a clearer payment screenshot.', $business],
             'order_accepted' => [$name, $number, $business],
             'order_preparing' => [$name, $number, $business],

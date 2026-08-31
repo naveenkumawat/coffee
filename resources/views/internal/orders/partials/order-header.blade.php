@@ -24,6 +24,17 @@
                             {{ $fulfilment->label() }}
                         </span>
                     @endif
+                    @if ($order->isCashPayment())
+                        <span class="badge badge-light-success text-uppercase">
+                            @if ($order->payment_status === \App\Enums\PaymentStatus::Confirmed)
+                                Cash Received
+                            @elseif ($order->isTakeaway())
+                                Cash at Pickup
+                            @else
+                                Cash
+                            @endif
+                        </span>
+                    @endif
                 </div>
                 <div class="d-flex flex-wrap gap-6 fs-7">
                     <div>

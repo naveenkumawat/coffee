@@ -64,6 +64,10 @@ interface OrderTransferInterface
 
     public function setCafeTableId(?int $cafeTableId): void;
 
+    public function getPaymentMethod(): ?string;
+
+    public function setPaymentMethod(?string $paymentMethod): void;
+
     public function getItems(): array;
 
     public function setItems(array $items): void;

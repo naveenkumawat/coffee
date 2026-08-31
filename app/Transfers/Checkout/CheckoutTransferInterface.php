@@ -60,5 +60,9 @@ interface CheckoutTransferInterface
 
     public function setCafeTableId(?int $cafeTableId): void;
 
+    public function getPaymentMethod(): ?string;
+
+    public function setPaymentMethod(?string $paymentMethod): void;
+
     public function toArray(): array;
 }

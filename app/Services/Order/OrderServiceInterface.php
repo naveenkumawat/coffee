@@ -18,5 +18,7 @@ interface OrderServiceInterface
 
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order;
 
+    public function markCashReceived(Order $order, User $actor): Order;
+
     public function availableTransitions(Order $order, User $actor): array;
 }

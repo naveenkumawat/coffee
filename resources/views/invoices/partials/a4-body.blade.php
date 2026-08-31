@@ -1,9 +1,11 @@
 @php
     /** @var \App\Services\Invoice\OrderInvoiceData $invoice */
     $showDiscount = bccomp($invoice->discountTotal, '0', 2) > 0;
-    $paymentCompact = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0
+    $isCashPayment = strcasecmp($invoice->paymentMethodLabel, 'Cash') === 0;
+    $paymentPaid = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0;
+    $paymentCompact = $paymentPaid
         ? 'PAID'
-        : strtoupper($invoice->paymentStatusLabel);
+        : ($isCashPayment ? 'PENDING' : strtoupper($invoice->paymentStatusLabel));
     $fulfilmentCompact = $invoice->fulfilmentLabel;
     if ($invoice->tableLabel) {
         $fulfilmentCompact .= ' · TABLE '.$invoice->tableLabel;
@@ -259,8 +261,12 @@
                         </tr>
                     @endif
                     <tr>
-                        <td class="k">Payment</td>
-                        <td class="v">{{ $paymentCompact }} · {{ strtoupper($invoice->paymentMethodLabel) }}</td>
+                        <td class="k">Payment Method</td>
+                        <td class="v">{{ $invoice->paymentMethodLabel }}</td>
+                    </tr>
+                    <tr>
+                        <td class="k">Payment Status</td>
+                        <td class="v">{{ $paymentPaid ? 'Paid' : ($isCashPayment ? 'Pending' : $invoice->paymentStatusLabel) }}</td>
                     </tr>
                 </table>
             </td>

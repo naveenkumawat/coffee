@@ -63,6 +63,7 @@ class Order extends AbstractModel
         'payment_proof_rejection_notes',
         'placed_at',
         'payment_confirmed_at',
+        'payment_received_by_id',
         'accepted_at',
         'preparing_at',
         'ready_for_pickup_at',
@@ -110,6 +111,11 @@ class Order extends AbstractModel
     public function assignedBarista(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_barista_id')->withTrashed();
+    }
+
+    public function paymentReceivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payment_received_by_id')->withTrashed();
     }
 
     public function cafeTable(): BelongsTo
@@ -161,6 +167,18 @@ class Order extends AbstractModel
         return $this->customerLabelForStatus($this->status instanceof OrderStatus ? $this->status : null);
     }
 
+    public function isCashPayment(): bool
+    {
+        return $this->payment_method === PaymentMethod::Cash;
+    }
+
+    public function canMarkCashReceived(): bool
+    {
+        return $this->isCashPayment()
+            && $this->payment_status !== PaymentStatus::Confirmed
+            && ! in_array($this->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true);
+    }
+
     public function hasPaymentProof(): bool
     {
         return filled($this->payment_proof_path);
@@ -168,6 +186,10 @@ class Order extends AbstractModel
 
     public function canUploadPaymentProof(): bool
     {
+        if ($this->isCashPayment() || ! ($this->payment_method?->requiresPaymentProof() ?? true)) {
+            return false;
+        }
+
         return $this->status === OrderStatus::PendingPayment
             && in_array($this->payment_status, [PaymentStatus::Pending, PaymentStatus::AwaitingReview, PaymentStatus::Rejected], true);
     }

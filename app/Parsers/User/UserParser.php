@@ -19,6 +19,7 @@ class UserParser extends AbstractParser implements UserParserInterface
         $transfer->setPhone($user->phone);
         $transfer->setRole($user->role->value);
         $transfer->setIsActive((bool) $user->is_active);
+        $transfer->setCashTakeawayAllowed((bool) $user->cash_takeaway_allowed);
         $transfer->setCreatedAt($user->created_at);
         $transfer->setUpdatedAt($user->updated_at);
 
@@ -37,6 +38,7 @@ class UserParser extends AbstractParser implements UserParserInterface
         );
         $transfer->setRole((string) $userData['role']);
         $transfer->setIsActive((bool) ($userData['is_active'] ?? true));
+        $transfer->setCashTakeawayAllowed((bool) ($userData['cash_takeaway_allowed'] ?? false));
         $transfer->setPassword(filled($userData['password'] ?? null) ? (string) $userData['password'] : null);
 
         return $transfer;

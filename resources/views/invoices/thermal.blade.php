@@ -5,9 +5,11 @@
     $fontSize = $widthMm === '58' ? '10px' : '12px';
     $brandSize = $widthMm === '58' ? '12px' : '14px';
     $showDiscount = bccomp($invoice->discountTotal, '0', 2) > 0;
-    $paymentCompact = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0
-        ? 'PAID'
-        : strtoupper($invoice->paymentStatusLabel);
+    $isCashPayment = strcasecmp($invoice->paymentMethodLabel, 'Cash') === 0;
+    $paymentPaid = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0;
+    $paymentCompact = $isCashPayment
+        ? ($paymentPaid ? 'CASH · PAID' : 'CASH')
+        : ($paymentPaid ? 'PAID' : strtoupper($invoice->paymentStatusLabel));
     $fulfilmentCompact = $invoice->fulfilmentLabel;
     if ($invoice->tableLabel) {
         $fulfilmentCompact .= ' · TABLE '.$invoice->tableLabel;

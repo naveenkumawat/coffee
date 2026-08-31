@@ -15,6 +15,7 @@ import { Order, OrderPaymentInstructions } from '../types/order';
 import { formatCurrency, joinLabels } from '../utils/format';
 import {
   fulfilmentChipLabel,
+  isCashPayment,
   isDeliveryOrder,
   isDineInOrder,
   isPendingPayment,
@@ -22,7 +23,7 @@ import {
 
 interface ConfirmationLocationState {
   order?: Order;
-  payment?: CheckoutPaymentInstructions;
+  payment?: CheckoutPaymentInstructions | null;
 }
 
 function getPaymentCacheKey(orderId: string): string {
@@ -48,6 +49,18 @@ function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions):
 }
 
 function confirmationNextStep(order: Order): string {
+  if (isCashPayment(order)) {
+    if (order.payment_status === 'confirmed' || order.cash_received_at) {
+      return 'Cash received. Track your order for preparation updates.';
+    }
+
+    if (isDineInOrder(order)) {
+      return `Pay ${formatCurrency(order.total_amount)} in cash at the cafe / table. No payment screenshot needed.`;
+    }
+
+    return `Your order has been placed. Pay ${formatCurrency(order.total_amount)} in cash when you collect it.`;
+  }
+
   if (order.payment_status === 'awaiting_review') {
     return 'Payment proof submitted. Waiting for cafe confirmation.';
   }
@@ -69,6 +82,22 @@ function confirmationNextStep(order: Order): string {
   }
 
   return 'Pay now and share your payment screenshot so we can start preparing your order.';
+}
+
+function paymentChipLabel(order: Order): string | null {
+  if (!isCashPayment(order)) {
+    return null;
+  }
+
+  if (order.payment_status === 'confirmed' || order.cash_received_at) {
+    return 'Paid · Cash';
+  }
+
+  if (isDineInOrder(order)) {
+    return 'Cash';
+  }
+
+  return 'Cash at Pickup';
 }
 
 function fulfilmentContextLabel(order: Order): string | null {
@@ -109,7 +138,7 @@ export function OrderConfirmationPage() {
       return;
     }
 
-    if (order && payment) {
+    if (order && (payment || isCashPayment(order))) {
       return;
     }
 
@@ -142,9 +171,14 @@ export function OrderConfirmationPage() {
 
   const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
   const fulfilmentLabel = useMemo(() => fulfilmentChipLabel(order), [order]);
+  const cashLabel = useMemo(() => (order ? paymentChipLabel(order) : null), [order]);
   const needsPaymentUi = useMemo(() => {
     if (!order) {
       return false;
+    }
+
+    if (isCashPayment(order)) {
+      return true;
     }
 
     return (
@@ -202,6 +236,7 @@ export function OrderConfirmationPage() {
         </div>
         <div className="confirmation-meta-row" aria-label="Order fulfilment and status">
           <span className="status-badge is-neutral fulfilment-badge">{fulfilmentLabel}</span>
+          {cashLabel ? <span className="status-badge is-neutral fulfilment-badge">{cashLabel}</span> : null}
           <OrderStatusBadge status={order.status} label={statusLabel} className="confirmation-status-badge" />
         </div>
         {contextLabel ? (
