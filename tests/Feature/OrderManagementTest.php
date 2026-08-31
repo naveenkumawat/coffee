@@ -215,7 +215,8 @@ class OrderManagementTest extends TestCase
             ->assertSee('Preparation Detail', false)
             ->assertSee('Status History', false)
             ->assertDontSee('Subtotal', false)
-            ->assertDontSee('Invoice', false)
+            ->assertSee('Invoice', false)
+            ->assertSee(route('barista.orders.invoice.print', $order), false)
             ->assertDontSee(route('administrator.orders.invoice.print', $order), false);
 
         $this->actingAs($barista, 'admin')
@@ -252,9 +253,9 @@ class OrderManagementTest extends TestCase
             ->assertSee('Customer')
             ->assertDontSee('Subtotal')
             ->assertDontSee('Line total')
-            ->assertDontSee('Invoice')
-            ->assertDontSee('Download PDF')
-            ->assertDontSee('Print A4')
+            ->assertSee('Invoice')
+            ->assertSee('Download PDF')
+            ->assertSee('Print A4')
             ->assertDontSee('Production Cost')
             ->assertDontSee('Margin');
 

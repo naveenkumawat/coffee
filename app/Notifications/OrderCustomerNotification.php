@@ -6,6 +6,7 @@ use App\Enums\CustomerNotificationType;
 use App\Enums\OrderFulfilmentMethod;
 use App\Models\Order;
 use App\Notifications\Concerns\BuildsCustomerMail;
+use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Support\CustomerAppUrl;
 use App\Support\CustomerEmailBrand;
 use Illuminate\Bus\Queueable;
@@ -13,6 +14,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class OrderCustomerNotification extends Notification implements ShouldQueue
 {
@@ -39,7 +43,7 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
         $orderUrl = CustomerAppUrl::order($this->order->getKey());
         $content = $this->content($brand);
 
-        return $this->customerMail(
+        $mail = $this->customerMail(
             subject: $content['subject'],
             greeting: $this->greetingFor(is_string($name) ? $name : null),
             introLines: $content['intro'],
@@ -52,6 +56,78 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'statusTone' => $content['statusTone'],
             ],
         );
+
+        if ($this->type === CustomerNotificationType::PaymentConfirmed) {
+            $this->attachPaymentConfirmedFiles($mail);
+        }
+
+        return $mail;
+    }
+
+    protected function attachPaymentConfirmedFiles(MailMessage $mail): void
+    {
+        try {
+            $invoices = app(OrderInvoiceServiceInterface::class);
+            $invoice = $invoices->build($this->order);
+            $mail->attachData(
+                $invoices->pdfBinary($this->order),
+                $invoice->downloadBasename.'.pdf',
+                ['mime' => 'application/pdf'],
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Payment confirmation email could not attach invoice PDF.', [
+                'order_id' => $this->order->getKey(),
+                'order_number' => $this->order->order_number,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        if (! ($this->order->payment_method?->requiresPaymentProof() ?? false)) {
+            return;
+        }
+
+        if (! $this->order->hasPaymentProof()) {
+            Log::info('Payment confirmation email skipped proof attachment; proof file missing.', [
+                'order_id' => $this->order->getKey(),
+                'order_number' => $this->order->order_number,
+            ]);
+
+            return;
+        }
+
+        try {
+            $disk = $this->order->payment_proof_disk ?: 'local';
+            $path = (string) $this->order->payment_proof_path;
+
+            if (! Storage::disk($disk)->exists($path)) {
+                Log::warning('Payment confirmation email skipped proof attachment; storage path missing.', [
+                    'order_id' => $this->order->getKey(),
+                    'disk' => $disk,
+                    'path' => $path,
+                ]);
+
+                return;
+            }
+
+            $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+            $mime = filled($this->order->payment_proof_mime)
+                ? (string) $this->order->payment_proof_mime
+                : (Storage::disk($disk)->mimeType($path) ?: 'application/octet-stream');
+
+            $mail->attachData(
+                Storage::disk($disk)->get($path),
+                'payment-proof.'.$extension,
+                ['mime' => $mime],
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Payment confirmation email could not attach payment proof.', [
+                'order_id' => $this->order->getKey(),
+                'order_number' => $this->order->order_number,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -125,11 +201,14 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'statusTone' => 'success',
                 'intro' => array_values(array_filter([
                     $this->order->isCashPayment()
-                        ? 'Cash payment for order #'.$number.' has been received.'
+                        ? 'Cash payment received for order #'.$number.'.'
                         : 'Payment for order #'.$number.' has been confirmed.',
                     $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
                         ? 'Table: '.$tableLabel
                         : null,
+                    $this->order->isCashPayment()
+                        ? 'Your invoice is attached.'
+                        : 'Your invoice'.($this->order->hasPaymentProof() ? ' and payment screenshot are' : ' is').' attached.',
                     $this->order->isCashPayment()
                         ? null
                         : 'The café will accept and prepare your order next.',

@@ -134,6 +134,16 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
         return $pdf->download($invoice->downloadBasename.'.pdf');
     }
 
+    public function pdfBinary(Order $order): string
+    {
+        $invoice = $this->build($order);
+
+        return Pdf::loadView('invoices.a4', [
+            'invoice' => $invoice,
+            'mode' => 'pdf',
+        ])->setPaper('a4')->output();
+    }
+
     public function normalizeThermalWidth(string|int|null $widthMm): string
     {
         return ((string) $widthMm) === '58' ? '58' : '80';

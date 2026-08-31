@@ -36,6 +36,9 @@ Route::middleware(['auth:admin', 'role:barista'])->group(function (): void {
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
     Route::post('/orders/{order}/cash/receive', [OrderController::class, 'markCashReceived'])->name('orders.cash.receive');
+    Route::get('/orders/{order}/invoice/pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice.pdf');
+    Route::get('/orders/{order}/invoice/print', [OrderController::class, 'printInvoice'])->name('orders.invoice.print');
+    Route::get('/orders/{order}/invoice/receipt', [OrderController::class, 'printReceipt'])->name('orders.invoice.receipt');
     Route::post('/notifications/read-all', [StaffNotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])

@@ -68,6 +68,8 @@ class OrderPolicy
 
     public function printInvoice(User $user, Order $order): bool
     {
-        return $user->canManageOrders();
+        // Customer-facing invoice/receipt only (owner/manager + barista).
+        // Does not grant payment-proof admin, reporting, or cost/margin access.
+        return $user->canManageOrders() || $user->canOperateOrders();
     }
 }

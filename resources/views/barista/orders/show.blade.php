@@ -15,6 +15,19 @@
         <x-internal.button-group :items="[
             ['label' => 'Back', 'url' => route('barista.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
         ]" />
+        @can('printInvoice', $order)
+            <x-internal.action-dropdown
+                label="Invoice"
+                button-class="btn btn-light-dark btn-active-light-dark btn-sm internal-button internal-action-dropdown-trigger"
+                menu-width-class="w-225px"
+                :items="[
+                    ['label' => 'Print A4', 'url' => route('barista.orders.invoice.print', $order), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Print 80mm Receipt', 'url' => route('barista.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Print 58mm Receipt', 'url' => route('barista.orders.invoice.receipt', ['order' => $order, 'width' => 58]), 'icon' => 'ki-printer', 'target' => '_blank'],
+                    ['label' => 'Download PDF', 'url' => route('barista.orders.invoice.pdf', $order), 'icon' => 'ki-file-down'],
+                ]"
+            />
+        @endcan
     </div>
 @endsection
 

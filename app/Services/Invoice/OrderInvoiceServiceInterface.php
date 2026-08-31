@@ -14,6 +14,11 @@ interface OrderInvoiceServiceInterface
     public function downloadPdf(Order $order): Response;
 
     /**
+     * Generate invoice PDF binary for email attachment / streaming.
+     */
+    public function pdfBinary(Order $order): string;
+
+    /**
      * @param  '80'|'58'  $widthMm
      * @return '80'|'58'
      */

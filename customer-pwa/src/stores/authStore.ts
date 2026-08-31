@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { fetchCurrentCustomer, loginCustomer, logoutCustomer, registerCustomer } from '../api/auth';
 import { ApiError, setUnauthorizedHandler } from '../api/client';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
-import { setSessionAuthenticated } from '../utils/authSession';
+import { setSessionAuthenticated, isSessionAuthenticated } from '../utils/authSession';
 import { useCartStore } from './cartStore';
 import { useFavouriteStore } from './favouriteStore';
 
@@ -63,7 +63,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     setUnauthorizedHandler(() => {
-      resetCustomerSession(set);
+      // Definitive 401 from an authenticated API call — clear client session only.
+      if (get().status === 'authenticated' || isSessionAuthenticated()) {
+        resetCustomerSession(set);
+      }
     });
 
     if (bootstrapPromise) {
@@ -80,13 +83,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         return true;
       } catch (error) {
+        // Only treat definitive unauthenticated responses as logout.
+        // Network / 5xx / CSRF races must not wipe a valid session.
         if (error instanceof ApiError && error.status === 401) {
           resetCustomerSession(set);
 
           return false;
         }
 
-        resetCustomerSession(set);
+        set({ status: 'guest', customer: null, hasBootstrapped: true });
 
         return false;
       } finally {
