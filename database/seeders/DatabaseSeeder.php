@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
                 InventoryTransactionSeeder::class,
                 ProductCategorySeeder::class,
                 ProductFlavourSeeder::class,
+                ProductTagSeeder::class,
                 ProductSeeder::class,
                 RecipeSeeder::class,
                 InventoryRefillRequestSeeder::class,

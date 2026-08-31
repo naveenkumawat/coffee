@@ -60,7 +60,7 @@ export function OrderDetailPage() {
   if (errorMessage) {
     return (
       <div className="page-container">
-        <PageHeader title="Order" description="Track your pickup order." showBack />
+        <PageHeader title="Order" description="Track your order status." showBack />
         <ErrorState description={errorMessage} onRetry={() => void loadOrder()} />
       </div>
     );
@@ -69,7 +69,7 @@ export function OrderDetailPage() {
   if (!order) {
     return (
       <div className="page-container">
-        <PageHeader title="Order" description="Track your pickup order." showBack />
+        <PageHeader title="Order" description="Track your order status." showBack />
         <EmptyState
           title="Order not found"
           description="We couldn’t find that order in your account."
@@ -87,7 +87,11 @@ export function OrderDetailPage() {
     <div className="page-container order-detail-page">
       <PageHeader
         title="Order"
-        description="Status, payment, and pickup details"
+        description={
+          order.fulfilment_method === 'delivery'
+            ? 'Status, payment, and delivery details'
+            : 'Status, payment, and pickup details'
+        }
         showBack
         rightSlot={
           <button type="button" className="link-button" onClick={() => void loadOrder()}>

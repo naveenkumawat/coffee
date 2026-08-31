@@ -76,8 +76,8 @@ export function ContentPage({ page }: ContentPageProps) {
         <div className="content-shell motion-enter">
           {page === 'about' ? (
             <section className="content-about-hero">
-              <p className="eyebrow">{business?.name ?? 'Coffee Cafe'}</p>
-              <h2>Crafted for pickup</h2>
+              <p className="eyebrow">{business?.name ?? 'The88Coffees'}</p>
+              <h2>Made for your next cup</h2>
               {business?.about_short ? <p>{business.about_short}</p> : null}
             </section>
           ) : null}

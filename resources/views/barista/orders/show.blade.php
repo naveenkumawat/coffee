@@ -29,7 +29,7 @@
                     <div class="d-flex flex-column gap-5">
                         <div>
                             <div class="text-muted fs-7 mb-1">Status</div>
-                            <x-internal.order-status-badge :status="$order->status" />
+                            <x-internal.order-status-badge :status="$order->status" :order="$order" />
                         </div>
                         @include('internal.orders.partials.fulfilment', ['order' => $order])
                         <div>

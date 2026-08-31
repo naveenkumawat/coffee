@@ -254,6 +254,8 @@ Implementation note:
 - [x] Customer PWA Orders + Tracking + Account polish (C4): status emphasis, tracker, payment reuse, account sections
 - [x] Customer PWA Auth + Content polish (C5): AuthCard, forms, FAQ accordion, Contact/About/Terms/Privacy
 - [x] Customer PWA final QA + launch readiness (C6): responsive/PWA/offline fixes, imagery fallbacks, `docs/pwa-launch-checklist.md`
+- [x] Customer PWA branding polish (C7): The88Coffees lockup, brand tokens, manifest/meta, Ombe asset cleanup
+- [x] Customer PWA product tags + unified ordering (C8): reusable `product_tags`, `ProductTags`, shared `ProductOrderControl` compact/full
 
 ### Website Structure
 
@@ -326,6 +328,8 @@ Status: Partial
 - [x] Delivery address snapshot and third-party delivery disclaimer implemented
 - [x] Customer payment proof upload (image) implemented
 - [x] Administrator payment proof review / replacement request implemented
+- [x] Extensible delivery fields reserved (`delivery_provider`, `delivery_fee_amount`, `delivery_tracking_reference`, `delivery_status`) without courier API integration
+- [x] Manual payment method (`manual`) with Website Settings UPI/phone/QR/instructions/WhatsApp resolver
 - [x] Order status workflow implemented
 - [x] Prepared-by / assigned barista tracking implemented
 - [x] Preparation timestamps implemented
@@ -391,7 +395,8 @@ Status: Pending
 - [ ] OTP authentication implemented
 - [ ] QR menu implemented
 - [ ] Table ordering implemented
-- [ ] Dine-in and delivery order modes implemented
+- [ ] Dine-in order mode implemented
+- [x] Delivery order mode implemented (third-party arrangement; no courier API yet)
 - [ ] Coupons, offers, loyalty, wallet, and gift cards implemented
 - [ ] Ratings and reviews implemented
 - [ ] Order scheduling implemented

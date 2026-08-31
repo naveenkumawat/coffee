@@ -23,6 +23,9 @@ class ProductResource extends JsonResource
             'id' => $product->getKey(),
             'category' => $product->category ? new ProductCategoryResource($product->category) : null,
             'flavours' => ProductFlavourResource::collection($product->flavours),
+            'tags' => ProductTagResource::collection($product->relationLoaded('tags')
+                ? $product->tags
+                : $product->tags()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get()),
             'default_variant' => $product->defaultVariant ? new ProductVariantResource($product->defaultVariant) : null,
             'variants' => ProductVariantResource::collection($product->variants),
             'name' => $product->name,

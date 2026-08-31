@@ -63,6 +63,12 @@ class Product extends AbstractModel
             ->withTimestamps();
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductTag::class, 'product_product_tag')
+            ->withTimestamps();
+    }
+
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('name');

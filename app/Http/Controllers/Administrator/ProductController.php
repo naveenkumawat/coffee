@@ -12,6 +12,7 @@ use App\Parsers\Product\ProductParserInterface;
 use App\Repositories\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Repositories\Product\ProductRepositoryInterface;
+use App\Repositories\Product\ProductTagRepositoryInterface;
 use App\Services\Product\ProductServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,7 @@ class ProductController extends Controller
         protected ProductRepositoryInterface $products,
         protected ProductCategoryRepositoryInterface $categories,
         protected ProductFlavourRepositoryInterface $flavours,
+        protected ProductTagRepositoryInterface $tags,
         protected ProductServiceInterface $service,
     ) {}
 
@@ -45,15 +47,13 @@ class ProductController extends Controller
             'product' => new Product([
                 'is_active' => true,
                 'is_available' => true,
-                'is_featured' => false,
-                'is_new' => false,
-                'is_bestseller' => false,
                 'is_vegetarian' => false,
                 'is_customizable' => false,
                 'sort_order' => 10,
             ]),
             'categoryOptions' => $this->categories->activeOptions(),
             'flavourOptions' => $this->flavours->activeOptions(),
+            'tagOptions' => $this->tags->activeOptions(),
             'variantUnitOptions' => ProductServingUnit::options(),
             'variantRows' => $this->defaultVariantRows(),
         ]);
@@ -79,7 +79,7 @@ class ProductController extends Controller
         $this->authorize('view', $product);
 
         return view('administrator.products.show', [
-            'product' => $product->load(['category', 'flavours', 'variants.recipe']),
+            'product' => $product->load(['category', 'flavours', 'tags', 'variants.recipe']),
         ]);
     }
 
@@ -88,9 +88,10 @@ class ProductController extends Controller
         $this->authorize('update', $product);
 
         return view('administrator.products.edit', [
-            'product' => $product->load(['category', 'flavours', 'variants']),
+            'product' => $product->load(['category', 'flavours', 'tags', 'variants']),
             'categoryOptions' => $this->categoryOptionsForEdit($product),
             'flavourOptions' => $this->flavourOptionsForEdit($product),
+            'tagOptions' => $this->tagOptionsForEdit($product),
             'variantUnitOptions' => ProductServingUnit::options(),
             'variantRows' => $product->variants->isNotEmpty() ? $product->variants : $this->defaultVariantRows(),
         ]);
@@ -143,6 +144,21 @@ class ProductController extends Controller
         foreach ($product->flavours as $flavour) {
             if (! array_key_exists($flavour->getKey(), $options)) {
                 $options[$flavour->getKey()] = sprintf('%s (Inactive)', $flavour->name);
+            }
+        }
+
+        asort($options);
+
+        return $options;
+    }
+
+    protected function tagOptionsForEdit(Product $product): array
+    {
+        $options = $this->tags->activeOptions();
+
+        foreach ($product->tags as $tag) {
+            if (! array_key_exists($tag->getKey(), $options)) {
+                $options[$tag->getKey()] = sprintf('%s (Inactive)', $tag->name);
             }
         }
 

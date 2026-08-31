@@ -53,6 +53,21 @@ class OrderFactory extends Factory
         ];
     }
 
+    public function takeaway(): static
+    {
+        return $this->state(fn (): array => [
+            'fulfilment_method' => OrderFulfilmentMethod::Takeaway,
+            'delivery_address' => null,
+            'delivery_phone' => null,
+            'delivery_contact_name' => null,
+            'delivery_notes' => null,
+            'delivery_provider' => null,
+            'delivery_fee_amount' => null,
+            'delivery_tracking_reference' => null,
+            'delivery_status' => null,
+        ]);
+    }
+
     public function delivery(): static
     {
         return $this->state(fn (): array => [
@@ -65,6 +80,7 @@ class OrderFactory extends Factory
             'delivery_contact_name' => fake()->name(),
             'delivery_notes' => fake()->optional()->sentence(),
             'delivery_fee_amount' => null,
+            'delivery_status' => null,
         ]);
     }
 
@@ -77,6 +93,15 @@ class OrderFactory extends Factory
             'payment_proof_mime' => 'image/jpeg',
             'payment_proof_size' => 1024,
             'payment_proof_uploaded_at' => now(),
+        ]);
+    }
+
+    public function paymentConfirmed(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => OrderStatus::PaymentConfirmed,
+            'payment_status' => PaymentStatus::Confirmed,
+            'payment_confirmed_at' => now()->subMinutes(5),
         ]);
     }
 }

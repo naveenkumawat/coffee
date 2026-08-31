@@ -37,6 +37,8 @@ interface ProductRepositoryInterface
 
     public function syncFlavours(Product $product, array $flavourIds): void;
 
+    public function syncTags(Product $product, array $tagIds): void;
+
     public function replaceVariants(Product $product, array $variants): Product;
 
     public function slugExists(string $slug, ?int $ignoreId = null): bool;

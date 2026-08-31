@@ -38,6 +38,12 @@ export interface ProductVariant {
   major_ingredients?: ProductMajorIngredient[];
 }
 
+export interface ProductTag {
+  key: string;
+  label: string;
+  style?: 'primary' | 'accent' | 'soft' | 'warning' | 'muted' | string;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -52,6 +58,7 @@ export interface Product {
   is_bestseller: boolean;
   is_vegetarian: boolean;
   is_customizable: boolean;
+  tags: ProductTag[];
   category: ProductCategory | null;
   flavours: ProductFlavour[];
   default_variant: ProductVariant | null;

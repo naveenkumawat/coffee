@@ -63,7 +63,7 @@ export function OrdersPage() {
         description={
           activeCount > 0
             ? `${activeCount} active · newest statuses first`
-            : 'Your pickup orders and live status'
+            : 'Your takeaway and delivery orders'
         }
         rightSlot={
           <button type="button" className="link-button" onClick={() => void loadOrders(1)} disabled={isLoading}>
@@ -77,7 +77,7 @@ export function OrdersPage() {
       {!isLoading && !errorMessage && orders.length === 0 ? (
         <EmptyState
           title="No orders yet"
-          description="Place a pickup order and track payment and preparation here."
+          description="Place an order for takeaway or delivery, then track payment and preparation here."
           actionLabel="Browse menu"
           actionHref="/menu"
         />

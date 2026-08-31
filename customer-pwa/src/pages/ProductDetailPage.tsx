@@ -1,29 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
-import { ProductBadges } from '../components/catalog/ProductBadges';
-import { ProductCartControl } from '../components/catalog/ProductCartControl';
+import { ProductOrderControl } from '../components/catalog/ProductOrderControl';
+import { ProductTags } from '../components/catalog/ProductTags';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
-import { StickyActionBar } from '../components/common/StickyActionBar';
-import { useCartStore } from '../stores/cartStore';
-import { Product } from '../types/catalog';
-import { quantityForVariant } from '../utils/cartQuantity';
-import { formatCurrency } from '../utils/format';
-import { getPreferredVariant } from '../utils/productActions';
 import { ProductImage } from '../components/common/ProductImage';
+import { Product } from '../types/catalog';
+import { getProductVariants, isProductUnavailable } from '../utils/productActions';
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const cart = useCartStore((state) => state.cart);
 
   useEffect(() => {
     async function load(): Promise<void> {
@@ -32,9 +26,7 @@ export function ProductDetailPage() {
 
       try {
         const response = await fetchProduct(productId);
-        const nextProduct = response.data;
-        setProduct(nextProduct);
-        setSelectedVariantId(getPreferredVariant(nextProduct)?.id ?? null);
+        setProduct(response.data);
       } catch (error) {
         setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this drink.');
       } finally {
@@ -44,15 +36,6 @@ export function ProductDetailPage() {
 
     void load();
   }, [productId]);
-
-  const selectedVariant = useMemo(
-    () => product?.variants.find((variant) => variant.id === selectedVariantId) ?? null,
-    [product, selectedVariantId],
-  );
-
-  const cartQuantity = selectedVariant ? quantityForVariant(cart, selectedVariant.id) : 0;
-  const displayQuantity = Math.max(cartQuantity, 1);
-  const lineTotal = selectedVariant ? Number(selectedVariant.price) * displayQuantity : 0;
 
   if (isLoading) {
     return (
@@ -86,10 +69,11 @@ export function ProductDetailPage() {
     );
   }
 
-  const hasAvailableVariant = product.variants.some((variant) => variant.is_available);
+  const unavailable = isProductUnavailable(product);
+  const variants = getProductVariants(product);
 
   return (
-    <div className="page-container detail-page has-sticky-cta">
+    <div className="page-container detail-page">
       <PageHeader
         title={product.category?.name ?? 'Menu'}
         description="Choose size and add to cart"
@@ -113,12 +97,14 @@ export function ProductDetailPage() {
         <div className="detail-panel">
           <div className="detail-heading">
             <h1 className="detail-title">{product.name}</h1>
-            <p className="detail-price-live" aria-live="polite">
-              {selectedVariant ? formatCurrency(selectedVariant.price) : 'Unavailable'}
-            </p>
           </div>
 
-          <ProductBadges product={product} showCustomizable />
+          <ProductTags
+            tags={product.tags}
+            mode="detail"
+            showCustomizable
+            isCustomizable={product.is_customizable}
+          />
 
           <p className="detail-description">
             {product.description || product.short_description || 'Freshly prepared for quick pickup.'}
@@ -128,23 +114,6 @@ export function ProductDetailPage() {
             <div className="detail-info-block">
               <span className="detail-info-label">About this drink</span>
               <p>{product.customer_ingredient_summary}</p>
-            </div>
-          ) : null}
-
-          {(selectedVariant?.major_ingredients?.length ?? 0) > 0 ? (
-            <div className="detail-info-block">
-              <span className="detail-info-label">Contains</span>
-              <div className="detail-ingredient-chips" aria-label="Major ingredients">
-                {selectedVariant?.major_ingredients?.map((ingredient, index) => (
-                  <span
-                    key={ingredient.id}
-                    className="detail-ingredient-chip motion-chip"
-                    style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
-                  >
-                    {ingredient.label}
-                  </span>
-                ))}
-              </div>
             </div>
           ) : null}
 
@@ -168,42 +137,13 @@ export function ProductDetailPage() {
             <p className="detail-meta">{product.preparation_time_minutes} min prep</p>
           ) : null}
 
-          <div className="variant-group">
-            <div className="variant-group-header">
-              <h2>Choose a size</h2>
-              {selectedVariant ? (
-                <span className="detail-selected-size" aria-live="polite">
-                  {selectedVariant.name} · {formatCurrency(selectedVariant.price)}
-                </span>
-              ) : null}
-            </div>
-            <div className="variant-options" role="radiogroup" aria-label="Size options">
-              {product.variants.map((variant) => {
-                const isSelected = selectedVariant?.id === variant.id;
-                const isDisabled = !variant.is_available;
-
-                return (
-                  <button
-                    type="button"
-                    key={variant.id}
-                    role="radio"
-                    aria-checked={isSelected}
-                    disabled={isDisabled}
-                    className={`variant-option ${isSelected ? 'active' : ''} ${isDisabled ? 'is-disabled' : ''}`}
-                    onClick={() => setSelectedVariantId(variant.id)}
-                  >
-                    <span>{variant.name}</span>
-                    <small>{isDisabled ? 'Unavailable' : variant.serving_size.label}</small>
-                    <strong>{formatCurrency(variant.price)}</strong>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="detail-order-block">
+            <h2 className="detail-order-heading">{variants.length > 1 ? 'Choose sizes' : 'Add to order'}</h2>
+            <ProductOrderControl product={product} mode="full" className="detail-order-control" />
+            {unavailable ? (
+              <p className="summary-warning">This drink is currently unavailable. Browse another menu item.</p>
+            ) : null}
           </div>
-
-          {!hasAvailableVariant ? (
-            <p className="summary-warning">This drink is currently unavailable. Browse another size or menu item.</p>
-          ) : null}
         </div>
       </section>
 
@@ -213,29 +153,6 @@ export function ProductDetailPage() {
           {product.category ? `More in ${product.category.name}` : 'Back to menu'}
         </Link>
       </div>
-
-      <StickyActionBar
-        eyebrow={cartQuantity > 0 ? 'In your cart' : 'Add to cart'}
-        title={selectedVariant?.is_available ? selectedVariant.name : 'Unavailable'}
-        value={formatCurrency(lineTotal)}
-        note={
-          !selectedVariant?.is_available
-            ? 'Pick an available size'
-            : cartQuantity > 0
-              ? `${cartQuantity} × ${formatCurrency(selectedVariant.price)}`
-              : formatCurrency(selectedVariant.price)
-        }
-      >
-        {product && selectedVariant ? (
-          <ProductCartControl
-            product={product}
-            variant={selectedVariant}
-            size="lg"
-            addLabel="Add to order"
-            className="product-detail-cart-control"
-          />
-        ) : null}
-      </StickyActionBar>
     </div>
   );
 }

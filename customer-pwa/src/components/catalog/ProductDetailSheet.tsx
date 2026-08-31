@@ -1,15 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchProduct } from '../../api/catalog';
 import { ApiError } from '../../api/client';
 import { useProductOverlay } from '../../hooks/useProductOverlay';
 import { Product } from '../../types/catalog';
-import { formatCurrency } from '../../utils/format';
-import { getPreferredVariant, getProductVariants } from '../../utils/productActions';
 import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
-import { ProductBadges } from './ProductBadges';
-import { ProductCartControl } from './ProductCartControl';
+import { ProductOrderControl } from './ProductOrderControl';
+import { ProductTags } from './ProductTags';
 
 interface ProductDetailSheetProps {
   product: Product;
@@ -28,9 +26,6 @@ export function ProductDetailSheet({
   const descriptionId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [product, setProduct] = useState(initialProduct);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
-    () => getPreferredVariant(initialProduct)?.id ?? null,
-  );
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,7 +34,6 @@ export function ProductDetailSheet({
     }
 
     setProduct(initialProduct);
-    setSelectedVariantId(getPreferredVariant(initialProduct)?.id ?? null);
     setLoadError(null);
 
     let cancelled = false;
@@ -51,14 +45,6 @@ export function ProductDetailSheet({
         }
 
         setProduct(response.data);
-        setSelectedVariantId((current) => {
-          const nextPreferred = getPreferredVariant(response.data);
-          const stillValid = response.data.variants.some(
-            (variant) => variant.id === current && variant.is_available,
-          );
-
-          return stillValid ? current : nextPreferred?.id ?? null;
-        });
       })
       .catch((error) => {
         if (!cancelled) {
@@ -77,13 +63,6 @@ export function ProductDetailSheet({
     onClose,
     focusRef: closeButtonRef,
   });
-
-  const variants = getProductVariants(product);
-  const selectedVariant = useMemo(
-    () => variants.find((variant) => variant.id === selectedVariantId) ?? null,
-    [variants, selectedVariantId],
-  );
-  const majorIngredients = selectedVariant?.major_ingredients ?? [];
 
   if (!open || typeof document === 'undefined') {
     return null;
@@ -129,7 +108,12 @@ export function ProductDetailSheet({
               className="product-detail-sheet-image"
               eager
             />
-            <ProductBadges product={product} showCustomizable />
+            <ProductTags
+              tags={product.tags}
+              mode="detail"
+              showCustomizable
+              isCustomizable={product.is_customizable}
+            />
           </div>
 
           <div className="product-overlay-body">
@@ -137,9 +121,6 @@ export function ProductDetailSheet({
               <h2 id={titleId} className="product-overlay-title">
                 {product.name}
               </h2>
-              <p className="product-overlay-price" aria-live="polite">
-                {selectedVariant ? formatCurrency(selectedVariant.price) : 'Unavailable'}
-              </p>
             </div>
 
             <p id={descriptionId} className="product-overlay-description">
@@ -181,11 +162,17 @@ export function ProductDetailSheet({
               </div>
             ) : null}
 
-            {majorIngredients.length > 0 ? (
+            {(product.default_variant?.major_ingredients?.length ?? 0) > 0 ||
+            product.variants.some((variant) => (variant.major_ingredients?.length ?? 0) > 0) ? (
               <div className="product-overlay-block">
                 <span className="product-overlay-label">Contains</span>
                 <div className="detail-ingredient-chips" aria-label="Major ingredients">
-                  {majorIngredients.map((ingredient) => (
+                  {(
+                    product.variants.find((variant) => (variant.major_ingredients?.length ?? 0) > 0)
+                      ?.major_ingredients ??
+                    product.default_variant?.major_ingredients ??
+                    []
+                  ).map((ingredient) => (
                     <span key={ingredient.id} className="detail-ingredient-chip">
                       {ingredient.label}
                     </span>
@@ -194,65 +181,11 @@ export function ProductDetailSheet({
               </div>
             ) : null}
 
-            {variants.length > 0 ? (
-              <div className="product-overlay-block">
-                <div className="product-overlay-block-header">
-                  <span className="product-overlay-label">
-                    {variants.length > 1 ? 'Sizes' : 'Size'}
-                  </span>
-                  {selectedVariant ? (
-                    <span className="product-overlay-selected" aria-live="polite">
-                      {selectedVariant.name} · {formatCurrency(selectedVariant.price)}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="quick-add-variants is-detail" role="radiogroup" aria-label="Size options">
-                  {variants.map((variant) => {
-                    const isSelected = selectedVariant?.id === variant.id;
-                    const isDisabled = !variant.is_available;
-
-                    return (
-                      <button
-                        type="button"
-                        key={variant.id}
-                        role="radio"
-                        aria-checked={isSelected}
-                        disabled={isDisabled}
-                        className={`quick-add-variant ${isSelected ? 'is-selected' : ''} ${isDisabled ? 'is-disabled' : ''}`}
-                        onClick={() => setSelectedVariantId(variant.id)}
-                      >
-                        <span className="quick-add-variant-name">{variant.name}</span>
-                        <small className="quick-add-variant-meta">
-                          {isDisabled ? 'Unavailable' : variant.serving_size.label}
-                        </small>
-                        <strong className="quick-add-variant-price">{formatCurrency(variant.price)}</strong>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
+            <div className="product-overlay-block product-overlay-order">
+              <span className="product-overlay-label">Add to order</span>
+              <ProductOrderControl product={product} mode="full" className="product-overlay-order-control" />
+            </div>
           </div>
-        </div>
-
-        <div className="product-overlay-footer">
-          <div className="product-overlay-footer-meta">
-            <span>{selectedVariant?.is_available ? selectedVariant.name : 'Unavailable'}</span>
-            <strong>
-              {selectedVariant?.is_available ? formatCurrency(selectedVariant.price) : '—'}
-            </strong>
-          </div>
-          {selectedVariant ? (
-            <ProductCartControl
-              product={product}
-              variant={selectedVariant}
-              size="lg"
-              addLabel="Add to order"
-              className="product-overlay-cart"
-            />
-          ) : (
-            <span className="product-card-action is-disabled">Unavailable</span>
-          )}
         </div>
       </div>
     </div>,

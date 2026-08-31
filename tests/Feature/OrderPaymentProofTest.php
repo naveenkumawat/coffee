@@ -140,6 +140,45 @@ class OrderPaymentProofTest extends TestCase
         $this->assertNotNull($order->payment_confirmed_at);
     }
 
+    public function test_administrator_can_view_payment_proof_stream(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->manager()->create();
+        $order = Order::factory()->withPaymentProof()->create([
+            'status' => OrderStatus::PendingPayment,
+        ]);
+
+        Storage::disk('local')->put($order->payment_proof_path, 'admin-proof-bytes');
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('administrator.orders.payment-proof.show', $order))
+            ->assertOk();
+    }
+
+    public function test_payment_confirmed_at_is_preserved_on_later_status_transitions(): void
+    {
+        $admin = User::factory()->manager()->create();
+        $confirmedAt = now()->subHour();
+        $order = Order::factory()->paymentConfirmed()->create([
+            'payment_confirmed_at' => $confirmedAt,
+        ]);
+
+        $this->actingAs($admin, 'admin')
+            ->patch(route('administrator.orders.status.update', $order), [
+                'status' => OrderStatus::Accepted->value,
+                'notes' => 'Accepted after payment.',
+            ])
+            ->assertRedirect(route('administrator.orders.show', $order));
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::Accepted, $order->status);
+        $this->assertSame(
+            $confirmedAt->format('Y-m-d H:i:s'),
+            $order->payment_confirmed_at?->format('Y-m-d H:i:s'),
+        );
+    }
+
     public function test_customer_can_view_own_payment_proof_stream(): void
     {
         Storage::fake('local');

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" fill="none" role="img" aria-hidden="true">
+  <!-- The88Coffees cup mark  green cup + cream base (matches app icons) -->
+  <path
+    d="M18 28h30c1.1 0 2 .9 2 2v18.5c0 7.5-6.1 13.5-13.5 13.5h-7C22.1 62 16 55.9 16 48.5V30c0-1.1.9-2 2-2z"
+    stroke="#04764e"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M50 32h4.5c5.2 0 9.5 4.3 9.5 9.5S59.7 51 54.5 51H50"
+    stroke="#04764e"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path d="M28 14c0 3-1.5 5-1.5 8" stroke="#04764e" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M36 12c0 3.5-1.5 6-1.5 10" stroke="#04764e" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M44 14c0 3-1.5 5-1.5 8" stroke="#04764e" stroke-width="3.5" stroke-linecap="round" />
+  <rect x="14" y="64" width="36" height="5" rx="2.5" fill="#d4b896" />
+</svg>

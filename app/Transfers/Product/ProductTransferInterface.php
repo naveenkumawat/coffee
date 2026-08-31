@@ -48,6 +48,10 @@ interface ProductTransferInterface
 
     public function setProductFlavourIds(array $productFlavourIds): void;
 
+    public function getProductTagIds(): array;
+
+    public function setProductTagIds(array $productTagIds): void;
+
     public function getVariants(): array;
 
     public function setVariants(array $variants): void;

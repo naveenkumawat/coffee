@@ -26,6 +26,8 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
 
     protected array $productFlavourIds = [];
 
+    protected array $productTagIds = [];
+
     protected array $variants = [];
 
     protected bool $isActive = true;
@@ -140,6 +142,16 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
     public function setProductFlavourIds(array $productFlavourIds): void
     {
         $this->productFlavourIds = $productFlavourIds;
+    }
+
+    public function getProductTagIds(): array
+    {
+        return $this->productTagIds;
+    }
+
+    public function setProductTagIds(array $productTagIds): void
+    {
+        $this->productTagIds = $productTagIds;
     }
 
     public function getVariants(): array

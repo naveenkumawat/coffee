@@ -5,7 +5,7 @@ return [
         'menu_ttl' => env('COFFEE_MENU_CACHE_TTL', 15),
     ],
     'company' => [
-        'name' => env('APP_NAME', 'Coffee'),
+        'name' => env('APP_NAME', 'The88Coffees'),
         'support_email' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
     ],
     'pwa' => [

@@ -43,6 +43,7 @@ class Order extends AbstractModel
         'delivery_provider',
         'delivery_fee_amount',
         'delivery_tracking_reference',
+        'delivery_status',
         'payment_method',
         'payment_status',
         'payment_reference',

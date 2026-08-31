@@ -3,6 +3,10 @@
         ->map(fn ($value): string => (string) $value)
         ->all();
 
+    $selectedTags = collect(old('product_tag_ids', $product->tags?->pluck('id')->all() ?? []))
+        ->map(fn ($value): string => (string) $value)
+        ->all();
+
     $variantRows = collect(old('variants', collect($variantRows)->map(function ($variant): array {
         return [
             'id' => is_object($variant) ? $variant->getKey() : ($variant['id'] ?? null),
@@ -145,7 +149,7 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-                <div class="col-12">
+                <div class="col-md-6">
                     <label for="product_flavour_ids" class="form-label">Flavours</label>
                     <select id="product_flavour_ids" name="product_flavour_ids[]" class="form-select @error('product_flavour_ids') is-invalid @enderror" data-control="select2" multiple data-placeholder="Select flavours">
                         @foreach ($flavourOptions as $id => $name)
@@ -153,6 +157,18 @@
                         @endforeach
                     </select>
                     @error('product_flavour_ids')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="product_tag_ids" class="form-label">Marketing tags</label>
+                    <select id="product_tag_ids" name="product_tag_ids[]" class="form-select @error('product_tag_ids') is-invalid @enderror" data-control="select2" multiple data-placeholder="Select tags (New, Top Seller, Featured…)">
+                        @foreach ($tagOptions as $id => $name)
+                            <option value="{{ $id }}" @selected(in_array((string) $id, $selectedTags, true))>{{ $name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">Customer badges come from these tags. Featured / New / Top Seller also power home rails.</div>
+                    @error('product_tag_ids')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
@@ -247,30 +263,9 @@
                 </div>
                 <div class="col-md-4">
                     <div class="form-check form-switch form-check-custom form-check-solid">
-                        <input type="hidden" name="is_featured" value="0">
-                        <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1" @checked(old('is_featured', $product->is_featured))>
-                        <label class="form-check-label" for="is_featured">Featured on the storefront</label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check form-switch form-check-custom form-check-solid">
-                        <input type="hidden" name="is_new" value="0">
-                        <input class="form-check-input" type="checkbox" id="is_new" name="is_new" value="1" @checked(old('is_new', $product->is_new))>
-                        <label class="form-check-label" for="is_new">Mark as new</label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check form-switch form-check-custom form-check-solid">
-                        <input type="hidden" name="is_bestseller" value="0">
-                        <input class="form-check-input" type="checkbox" id="is_bestseller" name="is_bestseller" value="1" @checked(old('is_bestseller', $product->is_bestseller))>
-                        <label class="form-check-label" for="is_bestseller">Mark as bestseller</label>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check form-switch form-check-custom form-check-solid">
                         <input type="hidden" name="is_vegetarian" value="0">
                         <input class="form-check-input" type="checkbox" id="is_vegetarian" name="is_vegetarian" value="1" @checked(old('is_vegetarian', $product->is_vegetarian))>
-                        <label class="form-check-label" for="is_vegetarian">Vegetarian</label>
+                        <label class="form-check-label" for="is_vegetarian">Vegetarian (metadata)</label>
                     </div>
                 </div>
                 <div class="col-md-4">

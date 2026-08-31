@@ -84,7 +84,12 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
     public function featured(int $limit = 4): Collection
     {
         return $this->model->newQuery()
-            ->with(['category', 'defaultVariant', 'flavours'])
+            ->with([
+                'category',
+                'defaultVariant',
+                'flavours',
+                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
+            ])
             ->where('is_active', true)
             ->where('is_available', true)
             ->where('is_featured', true)
@@ -100,6 +105,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
+                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
                 'defaultVariant.recipe.lines' => fn ($query) => $query
                     ->where('show_to_customer', true)
                     ->orderBy('sort_order')
@@ -177,6 +183,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
+                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
                 'defaultVariant.recipe.lines' => fn ($query) => $query
                     ->where('show_to_customer', true)
                     ->orderBy('sort_order')
@@ -220,6 +227,11 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
     public function syncFlavours(Product $product, array $flavourIds): void
     {
         $product->flavours()->sync($flavourIds);
+    }
+
+    public function syncTags(Product $product, array $tagIds): void
+    {
+        $product->tags()->sync($tagIds);
     }
 
     public function replaceVariants(Product $product, array $variants): Product

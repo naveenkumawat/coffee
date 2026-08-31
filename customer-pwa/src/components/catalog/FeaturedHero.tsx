@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { BRAND_DISPLAY_NAME } from '../common/BrandLogo';
 import { pickHeroImage, resolveCatalogMediaUrl } from '../../utils/images';
 import { WebsiteHeroContent } from '../../types/content';
 
@@ -9,10 +10,10 @@ interface FeaturedHeroProps {
 }
 
 export function FeaturedHero({ hero, businessName }: FeaturedHeroProps) {
-  const brand = businessName?.trim() || 'Coffee Cafe';
+  const brand = businessName?.trim() || BRAND_DISPLAY_NAME;
   const title = hero?.title?.trim() || brand;
   const subtitle =
-    hero?.subtitle?.trim() || 'Browse the live menu, order ahead, and pick up when it’s ready.';
+    hero?.subtitle?.trim() || 'Browse the live menu, order ahead, and collect when it is ready.';
   const fallback = pickHeroImage(0);
   const [imageSrc, setImageSrc] = useState(() => resolveCatalogMediaUrl(hero?.image_path, fallback));
 
@@ -38,7 +39,7 @@ export function FeaturedHero({ hero, businessName }: FeaturedHeroProps) {
       </div>
       <div className="hero-copy">
         <p className="eyebrow">{brand}</p>
-        <h1>{title === brand ? 'Fresh coffee, ready for pickup' : title}</h1>
+        <h1>{title === brand ? 'Fresh coffee, ready when you are' : title}</h1>
         <p>{subtitle}</p>
         <div className="hero-actions">
           <Link to="/menu" className="btn btn-primary btn-lg rounded-pill px-4">

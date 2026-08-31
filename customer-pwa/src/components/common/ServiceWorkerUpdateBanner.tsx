@@ -11,7 +11,7 @@ export function ServiceWorkerUpdateBanner({ visible, onRefresh, onDismiss }: Ser
 
   return (
     <div className="sw-update-banner" role="status" aria-live="polite">
-      <p>A new Coffee app version is ready.</p>
+      <p>A new The88Coffees update is ready.</p>
       <div className="sw-update-actions">
         <button type="button" className="btn btn-primary btn-sm rounded-pill" onClick={onRefresh}>
           Refresh

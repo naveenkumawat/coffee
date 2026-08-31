@@ -5,6 +5,8 @@ namespace App\Services\Product;
 use App\Models\Product;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Repositories\Product\ProductRepositoryInterface;
+use App\Repositories\Product\ProductTagRepositoryInterface;
+use App\Support\ProductMarketingTags;
 use App\Support\PublicMedia;
 use App\Transfers\Product\ProductTransferInterface;
 use Illuminate\Http\UploadedFile;
@@ -17,15 +19,21 @@ class ProductService implements ProductServiceInterface
     public function __construct(
         protected ProductRepositoryInterface $products,
         protected ProductFlavourRepositoryInterface $flavours,
+        protected ProductTagRepositoryInterface $tags,
         protected ProductCatalogServiceInterface $catalog,
     ) {}
 
     public function store(ProductTransferInterface $data): Product
     {
         $product = DB::transaction(function () use ($data): Product {
-            $attributes = $this->prepareAttributes($data);
+            $tagIds = $this->resolveActiveTagIds($data->getProductTagIds());
+            $attributes = array_merge(
+                $this->prepareAttributes($data),
+                $this->marketingFlagsFromTagIds($tagIds),
+            );
             $product = $this->products->create($attributes);
             $this->products->syncFlavours($product, $data->getProductFlavourIds());
+            $this->products->syncTags($product, $tagIds);
 
             return $this->products->replaceVariants($product, $this->prepareVariants($data->getVariants()));
         });
@@ -38,9 +46,14 @@ class ProductService implements ProductServiceInterface
     public function update(Product $product, ProductTransferInterface $data): Product
     {
         $product = DB::transaction(function () use ($product, $data): Product {
-            $attributes = $this->prepareAttributes($data, (int) $product->getKey());
+            $tagIds = $this->resolveActiveTagIds($data->getProductTagIds());
+            $attributes = array_merge(
+                $this->prepareAttributes($data, (int) $product->getKey()),
+                $this->marketingFlagsFromTagIds($tagIds),
+            );
             $product = $this->products->update($product, $attributes);
             $this->products->syncFlavours($product, $data->getProductFlavourIds());
+            $this->products->syncTags($product, $tagIds);
 
             return $this->products->replaceVariants($product, $this->prepareVariants($data->getVariants()));
         });
@@ -69,6 +82,7 @@ class ProductService implements ProductServiceInterface
                 'is_bestseller' => false,
             ])->save();
 
+            $this->products->syncTags($product, []);
             $this->products->delete($product);
         });
 
@@ -107,10 +121,38 @@ class ProductService implements ProductServiceInterface
             ]);
         }
 
-        return array_merge($data->toArray(), [
+        $attributes = $data->toArray();
+        unset($attributes['is_featured'], $attributes['is_new'], $attributes['is_bestseller']);
+
+        return array_merge($attributes, [
             'slug' => $this->uniqueSlug((string) $data->getName(), $ignoreId),
             'sku' => $sku,
         ]);
+    }
+
+    /**
+     * @param  list<int>  $tagIds
+     * @return list<int>
+     */
+    protected function resolveActiveTagIds(array $tagIds): array
+    {
+        return $this->tags->findActiveByIds($tagIds)
+            ->modelKeys();
+    }
+
+    /**
+     * @param  list<int>  $tagIds
+     * @return array{is_new: bool, is_bestseller: bool, is_featured: bool}
+     */
+    protected function marketingFlagsFromTagIds(array $tagIds): array
+    {
+        $slugs = $this->tags->findActiveByIds($tagIds)->pluck('slug');
+
+        return [
+            'is_new' => $slugs->contains(ProductMarketingTags::NEW),
+            'is_bestseller' => $slugs->contains(ProductMarketingTags::TOP_SELLER),
+            'is_featured' => $slugs->contains(ProductMarketingTags::FEATURED),
+        ];
     }
 
     protected function prepareVariants(array $variants): array

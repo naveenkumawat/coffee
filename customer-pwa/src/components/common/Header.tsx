@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import logo from '../../assets/images/app-logo/logo.png';
+import { BrandLogo } from './BrandLogo';
 import { useAuthStore } from '../../stores/authStore';
 
 export function Header() {
@@ -10,11 +10,11 @@ export function Header() {
   return (
     <header className="coffee-topbar coffee-topbar-slim">
       <div className="topbar-brand">
-        <img src={logo} alt="Coffee Cafe" className="brand-logo" />
+        <BrandLogo linked size="sm" />
         <p className="eyebrow">
           {status === 'authenticated' && firstName
             ? `Welcome back, ${firstName}`
-            : 'Order ahead · Pickup ready'}
+            : 'Order ahead · Takeaway or delivery'}
         </p>
       </div>
       <Link to="/menu" className="btn btn-primary btn-sm rounded-pill topbar-order-cta">

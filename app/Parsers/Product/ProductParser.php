@@ -23,6 +23,7 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setPreparationTimeMinutes($product->preparation_time_minutes ? (int) $product->preparation_time_minutes : null);
         $transfer->setSortOrder((int) $product->sort_order);
         $transfer->setProductFlavourIds($product->flavours()->pluck('product_flavours.id')->map(fn ($id): int => (int) $id)->all());
+        $transfer->setProductTagIds($product->tags()->pluck('product_tags.id')->map(fn ($id): int => (int) $id)->all());
         $transfer->setVariants($product->variants->map(function ($variant): array {
             return [
                 'id' => $variant->getKey(),
@@ -61,6 +62,7 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setPreparationTimeMinutes(filled($productData['preparation_time_minutes'] ?? null) ? (int) $productData['preparation_time_minutes'] : null);
         $transfer->setSortOrder((int) ($productData['sort_order'] ?? 0));
         $transfer->setProductFlavourIds(collect($productData['product_flavour_ids'] ?? [])->filter(fn ($id) => filled($id))->map(fn ($id): int => (int) $id)->unique()->values()->all());
+        $transfer->setProductTagIds(collect($productData['product_tag_ids'] ?? [])->filter(fn ($id) => filled($id))->map(fn ($id): int => (int) $id)->unique()->values()->all());
         $transfer->setVariants(collect($productData['variants'] ?? [])->filter(function (array $variant): bool {
             return filled($variant['name'] ?? null) || filled($variant['price'] ?? null) || filled($variant['serving_size_value'] ?? null);
         })->values()->map(function (array $variant): array {
@@ -77,9 +79,9 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         })->all());
         $transfer->setIsActive((bool) ($productData['is_active'] ?? true));
         $transfer->setIsAvailable((bool) ($productData['is_available'] ?? true));
-        $transfer->setIsFeatured((bool) ($productData['is_featured'] ?? false));
-        $transfer->setIsNew((bool) ($productData['is_new'] ?? false));
-        $transfer->setIsBestseller((bool) ($productData['is_bestseller'] ?? false));
+        $transfer->setIsFeatured(false);
+        $transfer->setIsNew(false);
+        $transfer->setIsBestseller(false);
         $transfer->setIsVegetarian((bool) ($productData['is_vegetarian'] ?? false));
         $transfer->setIsCustomizable((bool) ($productData['is_customizable'] ?? false));
 

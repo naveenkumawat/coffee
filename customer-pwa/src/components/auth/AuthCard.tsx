@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import logo from '../../assets/images/app-logo/logo.png';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface AuthCardProps {
   badge: string;
@@ -23,9 +22,7 @@ export function AuthCard({
     <section className="auth-card motion-enter">
       {showBrand ? (
         <div className="auth-brand">
-          <Link to="/" className="auth-brand-link">
-            <img src={logo} alt="Coffee Cafe" className="auth-brand-logo" />
-          </Link>
+          <BrandLogo linked size="md" />
         </div>
       ) : null}
 

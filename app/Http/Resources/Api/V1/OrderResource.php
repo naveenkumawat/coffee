@@ -39,6 +39,7 @@ class OrderResource extends JsonResource
             'delivery_provider' => $order->delivery_provider,
             'delivery_fee_amount' => $order->delivery_fee_amount,
             'delivery_tracking_reference' => $order->delivery_tracking_reference,
+            'delivery_status' => $order->delivery_status,
             'delivery_disclaimer' => $order->isDelivery()
                 ? (string) config('coffee.fulfilment.delivery_disclaimer')
                 : null,

@@ -7,8 +7,10 @@ use App\Enums\UserRole;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
+use App\Models\ProductTag;
 use App\Models\User;
 use App\Services\Product\ProductCatalogService;
+use Database\Seeders\ProductTagSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -79,6 +81,12 @@ class ProductManagementTest extends TestCase
         $manager = User::factory()->manager()->create();
         $category = ProductCategory::factory()->create();
         $flavour = ProductFlavour::factory()->create();
+        $this->seed(ProductTagSeeder::class);
+
+        $tagIds = ProductTag::query()
+            ->whereIn('slug', ['new', 'top-seller', 'featured'])
+            ->pluck('id')
+            ->all();
 
         $response = $this->actingAs($manager, 'admin')->post(route('administrator.products.store'), [
             'product_category_id' => $category->id,
@@ -91,11 +99,9 @@ class ProductManagementTest extends TestCase
             'preparation_time_minutes' => 4,
             'sort_order' => 1,
             'product_flavour_ids' => [$flavour->id],
+            'product_tag_ids' => $tagIds,
             'is_active' => 1,
             'is_available' => 1,
-            'is_featured' => 1,
-            'is_new' => 1,
-            'is_bestseller' => 1,
             'is_vegetarian' => 1,
             'is_customizable' => 1,
             'variants' => [
@@ -127,10 +133,12 @@ class ProductManagementTest extends TestCase
         $this->assertSame('TONIC-001', $product->sku);
         $this->assertTrue($product->is_new);
         $this->assertTrue($product->is_bestseller);
+        $this->assertTrue($product->is_featured);
         $this->assertTrue($product->is_vegetarian);
         $this->assertTrue($product->is_customizable);
         $this->assertCount(2, $product->variants);
         $this->assertTrue($product->flavours->contains($flavour));
+        $this->assertCount(3, $product->tags);
         $this->assertDatabaseHas('product_variants', [
             'product_id' => $product->id,
             'name' => 'Large',

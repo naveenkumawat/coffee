@@ -109,7 +109,7 @@ export function CartPage() {
     <div className={`page-container ${cart?.items.length ? 'has-sticky-cta' : ''}`.trim()}>
       <PageHeader
         title="Cart"
-        description={summary ? `${summary.item_count} item(s) ready for pickup` : 'Review your pickup order'}
+        description={summary ? `${summary.item_count} item(s) ready for checkout` : 'Review your order'}
         rightSlot={
           cart?.items.length ? (
             <button type="button" className="link-button" onClick={() => void handleClear()} disabled={isClearing}>
@@ -167,14 +167,14 @@ export function CartPage() {
           </section>
 
           <StickyActionBar
-            eyebrow="Pickup total"
+            eyebrow="Order total"
             title="Ready to checkout?"
             value={formatCurrency(summary?.total ?? 0)}
             note={
               summary?.has_unavailable_items
                 ? 'Fix unavailable items to continue.'
                 : authStatus === 'authenticated'
-                  ? 'Next: confirm pickup details'
+                  ? 'Next: choose takeaway or delivery'
                   : 'Next: sign in to continue'
             }
           >

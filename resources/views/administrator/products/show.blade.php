@@ -53,19 +53,22 @@
                             <div class="d-flex flex-wrap gap-2">
                                 <span class="badge {{ $product->is_active ? 'badge-light-success' : 'badge-light-warning' }}">{{ $product->is_active ? 'Active' : 'Inactive' }}</span>
                                 <span class="badge {{ $product->is_available ? 'badge-light-primary' : 'badge-light-danger' }}">{{ $product->is_available ? 'Available' : 'Unavailable' }}</span>
-                                <span class="badge {{ $product->is_featured ? 'badge-light-success' : 'badge-light-dark' }}">{{ $product->is_featured ? 'Featured' : 'Standard' }}</span>
-                                @if ($product->is_new)
-                                    <span class="badge badge-light-info">New</span>
-                                @endif
-                                @if ($product->is_bestseller)
-                                    <span class="badge badge-light-warning">Bestseller</span>
-                                @endif
                                 @if ($product->is_vegetarian)
                                     <span class="badge badge-light-success">Vegetarian</span>
                                 @endif
                                 @if ($product->is_customizable)
                                     <span class="badge badge-light-primary">Customizable</span>
                                 @endif
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-muted fs-7 mb-1">Marketing tags</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @forelse ($product->tags as $tag)
+                                    <span class="badge badge-light-info">{{ $tag->name }}</span>
+                                @empty
+                                    <span class="text-gray-700">No marketing tags assigned.</span>
+                                @endforelse
                             </div>
                         </div>
                         <div>

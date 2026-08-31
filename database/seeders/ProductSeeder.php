@@ -6,6 +6,8 @@ use App\Enums\ProductServingUnit;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
+use App\Models\ProductTag;
+use App\Support\ProductMarketingTags;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -42,6 +44,24 @@ class ProductSeeder extends Seeder
                 ->all();
 
             $product->flavours()->sync($flavourIds);
+
+            $tagSlugs = [];
+
+            if ($product->is_new) {
+                $tagSlugs[] = ProductMarketingTags::NEW;
+            }
+
+            if ($product->is_bestseller) {
+                $tagSlugs[] = ProductMarketingTags::TOP_SELLER;
+            }
+
+            if ($product->is_featured) {
+                $tagSlugs[] = ProductMarketingTags::FEATURED;
+            }
+
+            $product->tags()->sync(
+                ProductTag::query()->whereIn('slug', $tagSlugs)->pluck('id')->all()
+            );
 
             foreach ($productData['variants'] as $variant) {
                 $product->variants()->updateOrCreate(

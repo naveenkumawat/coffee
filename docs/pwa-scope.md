@@ -198,7 +198,7 @@ Use it to guide:
 
 Do not copy forward theme features that conflict with Coffee scope, especially:
 
-- delivery-first patterns where Coffee currently uses pickup/manual payment
+- delivery-provider marketplace UX (Coffee uses takeaway + third-party delivery coordination without integrating a courier API yet)
 - wallet/card storage patterns
 - chat, rewards, review, and unrelated demo pages
 - jQuery plugin assumptions that do not fit the React/Vite architecture
@@ -247,6 +247,7 @@ See `customer-pwa/README.md` for the deployment checklist.
 - building the React project now
 - replacing the temporary Blade customer frontend now
 - implementing a payment gateway
+- integrating a third-party courier/delivery provider API
 - implementing inventory consumption from orders
 - implementing push notifications now
 - modifying internal Blade Administrator or Barista surfaces

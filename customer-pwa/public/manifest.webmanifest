@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "Coffee Cafe",
-  "short_name": "Coffee",
-  "description": "Coffee customer ordering PWA.",
+  "name": "The88Coffees",
+  "short_name": "88Coffees",
+  "description": "Order ahead from The88Coffees — takeaway and delivery.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "lang": "en",
-  "background_color": "#f6f1eb",
+  "background_color": "#f7f3ee",
   "theme_color": "#04764e",
   "icons": [
     {

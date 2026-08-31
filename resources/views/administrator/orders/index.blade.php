@@ -110,7 +110,7 @@
                                 </td>
                                 <td>{{ $order->items->pluck('product_name')->join(', ') }}</td>
                                 <td>Rs {{ number_format((float) $order->total_amount, 2) }}</td>
-                                <td><x-internal.order-status-badge :status="$order->status" /></td>
+                                <td><x-internal.order-status-badge :status="$order->status" :order="$order" /></td>
                                 <td>{{ $order->assignedBarista?->name ?: 'Unassigned' }}</td>
                                 <td>{{ $order->placed_at?->format('d M Y, h:i A') }}</td>
                                 <td class="text-end internal-action-cell">

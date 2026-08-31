@@ -1,18 +1,11 @@
 import { useCallback, useState } from 'react';
 import { Product } from '../../types/catalog';
-import { formatCurrency } from '../../utils/format';
-import {
-  hasRecognizedSizeControls,
-  isProductUnavailable,
-  needsQuickAddFallback,
-  startingPrice,
-} from '../../utils/productActions';
+import { isProductUnavailable } from '../../utils/productActions';
 import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
-import { ProductBadges } from './ProductBadges';
-import { ProductCartControl } from './ProductCartControl';
 import { ProductDetailSheet } from './ProductDetailSheet';
-import { QuickAddSheet } from './QuickAddSheet';
+import { ProductOrderControl } from './ProductOrderControl';
+import { ProductTags } from './ProductTags';
 
 interface ProductCardProps {
   product: Product;
@@ -26,13 +19,7 @@ export function ProductCard({
   layout = 'grid',
 }: ProductCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const unavailable = isProductUnavailable(product);
-  const recognizedSizes = hasRecognizedSizeControls(product);
-  const quickAddFallback = needsQuickAddFallback(product);
-  const price = recognizedSizes
-    ? startingPrice(product)
-    : product.default_variant?.price ?? product.variants.find((variant) => variant.is_available)?.price;
 
   const openDetails = useCallback((): void => {
     setDetailOpen(true);
@@ -40,14 +27,6 @@ export function ProductCard({
 
   const closeDetails = useCallback((): void => {
     setDetailOpen(false);
-  }, []);
-
-  const openQuickAdd = useCallback((): void => {
-    setQuickAddOpen(true);
-  }, []);
-
-  const closeQuickAdd = useCallback((): void => {
-    setQuickAddOpen(false);
   }, []);
 
   return (
@@ -73,7 +52,7 @@ export function ProductCard({
           {showFavouriteToggle ? (
             <FavouriteToggle productId={product.id} className="favourite-toggle-float" size="sm" />
           ) : null}
-          <ProductBadges product={product} compact />
+          <ProductTags tags={product.tags} mode="compact" maxVisible={2} />
         </div>
 
         <div className="product-card-body">
@@ -85,41 +64,11 @@ export function ProductCard({
             {unavailable ? <span className="availability-chip">Unavailable</span> : null}
           </div>
 
-          <div
-            className={[
-              'product-card-action-zone',
-              recognizedSizes ? 'is-multi-size' : '',
-              quickAddFallback ? 'is-quick-add-fallback' : '',
-              !recognizedSizes && !quickAddFallback ? 'is-single' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            {recognizedSizes ? (
-              <ProductCartControl product={product} size="sm" />
-            ) : quickAddFallback ? (
-              <ProductCartControl
-                product={product}
-                size="sm"
-                onRequestConfigure={openQuickAdd}
-              />
-            ) : (
-              <>
-                <div className="product-card-action-zone-price">
-                  <strong>{price ? formatCurrency(price) : '—'}</strong>
-                </div>
-                <div className="product-card-action-zone-cta">
-                  <ProductCartControl product={product} size="sm" iconOnly />
-                </div>
-              </>
-            )}
+          <div className="product-card-action-zone">
+            <ProductOrderControl product={product} mode="compact" />
           </div>
         </div>
       </article>
-
-      {quickAddFallback ? (
-        <QuickAddSheet product={product} open={quickAddOpen} onClose={closeQuickAdd} />
-      ) : null}
 
       <ProductDetailSheet
         product={product}

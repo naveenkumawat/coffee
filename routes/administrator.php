@@ -12,6 +12,7 @@ use App\Http\Controllers\Administrator\OrderController;
 use App\Http\Controllers\Administrator\ProductCategoryController;
 use App\Http\Controllers\Administrator\ProductController;
 use App\Http\Controllers\Administrator\ProductFlavourController;
+use App\Http\Controllers\Administrator\ProductTagController;
 use App\Http\Controllers\Administrator\RecipeController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Administrator\WebsiteSettingController;
@@ -76,6 +77,11 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('products/flavours', ProductFlavourController::class)
         ->parameters(['flavours' => 'product_flavour'])
         ->names('products.flavours');
+
+    Route::resource('products/tags', ProductTagController::class)
+        ->except(['show'])
+        ->parameters(['tags' => 'product_tag'])
+        ->names('products.tags');
 
     Route::resource('products', ProductController::class)
         ->parameters(['products' => 'product'])

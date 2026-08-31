@@ -62,7 +62,7 @@ export function RegisterPage() {
     <div className="page-container auth-page">
       <PageHeader title="Create account" description="Faster checkout and order tracking." showBack />
       <AuthCard
-        badge="Join Coffee Cafe"
+        badge="Join The88Coffees"
         title="Create your account"
         description="Just the essentials so you can get into the menu quickly."
         footer={

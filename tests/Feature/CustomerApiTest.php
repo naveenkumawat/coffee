@@ -12,10 +12,12 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
+use App\Models\ProductTag;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Notifications\CustomerResetPasswordNotification;
+use Database\Seeders\ProductTagSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -176,12 +178,21 @@ class CustomerApiTest extends TestCase
             'is_customizable' => false,
         ]);
 
+        $this->seed(ProductTagSeeder::class);
+        $product->tags()->sync(
+            ProductTag::query()
+                ->whereIn('slug', ['new', 'top-seller'])
+                ->pluck('id')
+                ->all()
+        );
+
         $this->getJson(route('api.v1.catalog.products.index', ['new' => 'new']))
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.is_new', true)
             ->assertJsonPath('data.0.is_vegetarian', true)
-            ->assertJsonPath('data.0.is_customizable', false);
+            ->assertJsonPath('data.0.is_customizable', false)
+            ->assertJsonPath('data.0.tags.0.key', 'new');
 
         $this->getJson(route('api.v1.catalog.products.index', ['bestseller' => 'bestseller']))
             ->assertOk()
@@ -194,6 +205,7 @@ class CustomerApiTest extends TestCase
             ->assertJsonPath('data.default_variant.id', $variant->id)
             ->assertJsonPath('data.is_new', true)
             ->assertJsonPath('data.is_bestseller', true)
+            ->assertJsonPath('data.tags.1.key', 'top-seller')
             ->assertJsonMissingPath('data.recipe')
             ->assertJsonMissingPath('data.internal_notes');
 

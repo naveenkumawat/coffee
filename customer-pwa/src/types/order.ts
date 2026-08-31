@@ -52,6 +52,7 @@ export interface Order {
   delivery_provider: string | null;
   delivery_fee_amount: string | null;
   delivery_tracking_reference: string | null;
+  delivery_status: string | null;
   delivery_disclaimer: string | null;
   subtotal: string;
   discount_total: string;

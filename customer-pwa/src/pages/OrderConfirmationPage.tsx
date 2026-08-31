@@ -119,7 +119,7 @@ export function OrderConfirmationPage() {
         <PageHeader title="Order placed" showBack />
         <EmptyState
           title="Confirmation not available"
-          description="Open My Orders to find your latest pickup order."
+          description="Open My Orders to find your latest order."
           actionLabel="My Orders"
           actionHref="/orders"
         />
@@ -138,9 +138,63 @@ export function OrderConfirmationPage() {
         <p className="eyebrow">Thank you</p>
         <h1>Order placed</h1>
         <p className="confirmation-order-number">{order.order_number}</p>
-        <p className="confirmation-total">Total due {formatCurrency(order.total_amount)}</p>
-        <OrderStatusBadge status={order.status} label={statusLabel} />
+        <p className="confirmation-total">Cafe total {formatCurrency(order.total_amount)}</p>
+        <div className="confirmation-meta-row">
+          <span className="auth-badge">
+            {order.fulfilment_method_label ?? (order.fulfilment_method === 'delivery' ? 'Delivery' : 'Takeaway')}
+          </span>
+          <OrderStatusBadge status={order.status} label={statusLabel} />
+        </div>
         <p className="confirmation-next-step">Pay now, then share your screenshot so the cafe can start preparing.</p>
+      </section>
+
+      <section className="account-section">
+        <div className="account-section-heading">
+          <div>
+            <span className="auth-badge">Fulfilment</span>
+            <h2>{order.fulfilment_method === 'delivery' ? 'Delivery details' : 'Pickup details'}</h2>
+          </div>
+        </div>
+        {order.fulfilment_method === 'delivery' ? (
+          <div className="summary-card checkout-summary-grid">
+            {order.delivery_contact_name ? (
+              <div>
+                <span>Contact</span>
+                <strong>{order.delivery_contact_name}</strong>
+              </div>
+            ) : null}
+            <div>
+              <span>Phone</span>
+              <strong>{order.delivery_phone ?? order.customer_phone}</strong>
+            </div>
+            <div>
+              <span>Address</span>
+              <strong style={{ whiteSpace: 'pre-wrap' }}>{order.delivery_address}</strong>
+            </div>
+            {order.delivery_disclaimer ? (
+              <p className="summary-warning" style={{ gridColumn: '1 / -1' }}>
+                {order.delivery_disclaimer}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="summary-card checkout-summary-grid">
+            <div>
+              <span>Name</span>
+              <strong>{order.pickup_name ?? order.customer_name}</strong>
+            </div>
+            <div>
+              <span>Phone</span>
+              <strong>{order.pickup_phone ?? order.customer_phone}</strong>
+            </div>
+            {order.pickup_notes ? (
+              <div>
+                <span>Notes</span>
+                <strong>{order.pickup_notes}</strong>
+              </div>
+            ) : null}
+          </div>
+        )}
       </section>
 
       <PaymentInstructionsCard

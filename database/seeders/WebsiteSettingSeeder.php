@@ -18,8 +18,8 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::HeroTitle->value => 'Brew your next order before you arrive.',
             WebsiteSettingKey::HeroSubtitle->value => 'Browse the live menu, customise your cup, and pick up when it is ready.',
             WebsiteSettingKey::HeroImagePath->value => null,
-            WebsiteSettingKey::BusinessName->value => 'Coffee Cafe',
-            WebsiteSettingKey::BusinessAboutShort->value => 'Neighborhood espresso bar focused on fast pickup and carefully crafted drinks.',
+            WebsiteSettingKey::BusinessName->value => 'The88Coffees',
+            WebsiteSettingKey::BusinessAboutShort->value => 'Neighborhood espresso bar focused on carefully crafted drinks, takeaway, and third-party delivery.',
             WebsiteSettingKey::BusinessPhone->value => '+91 98765 43210',
             WebsiteSettingKey::BusinessWhatsappNumber->value => '+919876543210',
             WebsiteSettingKey::BusinessEmail->value => 'hello@coffee.local',
@@ -31,11 +31,11 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::PaymentPhone->value => '+91 98765 43210',
             WebsiteSettingKey::PaymentQrImagePath->value => null,
             WebsiteSettingKey::PaymentWhatsappNumber->value => '+919876543210',
-            WebsiteSettingKey::PagesAbout->value => "Coffee Cafe is a pickup-first neighborhood cafe.\n\nWe keep the menu focused, the espresso consistent, and the wait short so you can order ahead and collect when ready.",
-            WebsiteSettingKey::PagesContact->value => "Need help with an order or pickup timing?\n\nCall, email, or WhatsApp us and include your order number when you can.",
+            WebsiteSettingKey::PagesAbout->value => "The88Coffees is a neighborhood cafe built for order-ahead takeaway and third-party delivery.\n\nWe keep the menu focused, the espresso consistent, and the wait short so you can order ahead and collect when ready.",
+            WebsiteSettingKey::PagesContact->value => "Need help with an order or timing?\n\nCall, email, or WhatsApp us and include your order number when you can.",
             WebsiteSettingKey::PagesFaq->value => "How do I order?\nBrowse the menu, add items to your cart, and checkout while signed in.\n\nWhen do I pay?\nOrders start as Pending Payment. Pay by UPI and upload the screenshot in the app (or WhatsApp).\n\nDo you deliver?\nYes — choose Delivery at checkout. A third-party service arranges delivery and charges you separately.\n\nCan I customise drinks?\nYes where a product is marked customizable. Flavours and sizes appear on the product page.",
-            WebsiteSettingKey::PagesTerms->value => "Orders placed in the Coffee Cafe app support takeaway pickup and third-party delivery.\n\nPrices and availability are confirmed by the cafe at checkout time. Delivery charges are paid separately to the delivery provider.\n\nPayment remains pending until the cafe team confirms your transfer.",
-            WebsiteSettingKey::PagesPrivacy->value => "We use your name, email, and phone to process pickup or delivery orders and share payment instructions.\n\nAccount data is not sold to third parties.\n\nContact hello@coffee.local for privacy questions.",
+            WebsiteSettingKey::PagesTerms->value => "Orders placed through The88Coffees support takeaway and third-party delivery.\n\nPrices and availability are confirmed by the cafe at checkout time. Delivery charges are paid separately to the delivery provider.\n\nPayment remains pending until the cafe team confirms your transfer.",
+            WebsiteSettingKey::PagesPrivacy->value => "We use your name, email, and phone to process takeaway or delivery orders and share payment instructions.\n\nAccount data is not sold to third parties.\n\nContact hello@coffee.local for privacy questions.",
         ];
 
         foreach (WebsiteSettingKey::ordered() as $key) {

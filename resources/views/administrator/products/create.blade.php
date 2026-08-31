@@ -19,6 +19,7 @@
         'product' => $product,
         'categoryOptions' => $categoryOptions,
         'flavourOptions' => $flavourOptions,
+        'tagOptions' => $tagOptions,
         'variantUnitOptions' => $variantUnitOptions,
         'variantRows' => $variantRows,
     ])
