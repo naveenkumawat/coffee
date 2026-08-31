@@ -187,6 +187,46 @@ class OrderManagementTest extends TestCase
         $this->assertSame(OrderStatus::PendingPayment, $order->fresh()->status);
     }
 
+    public function test_admin_and_barista_order_detail_share_shell_with_role_specific_financial_controls(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $barista = User::factory()->barista()->create();
+        $order = $this->createPendingOrder();
+        $order->update([
+            'status' => OrderStatus::PaymentConfirmed->value,
+            'payment_status' => 'confirmed',
+            'payment_confirmed_at' => now(),
+        ]);
+
+        $this->actingAs($manager, 'admin')
+            ->get(route('administrator.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Order detail', false)
+            ->assertSee('Preparation Detail', false)
+            ->assertSee('Status History', false)
+            ->assertSee('Subtotal', false)
+            ->assertSee('Invoice', false)
+            ->assertSee(route('administrator.orders.invoice.print', $order), false);
+
+        $this->actingAs($barista, 'admin')
+            ->get(route('barista.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Order detail', false)
+            ->assertSee('Preparation Detail', false)
+            ->assertSee('Status History', false)
+            ->assertDontSee('Subtotal', false)
+            ->assertDontSee('Invoice', false)
+            ->assertDontSee(route('administrator.orders.invoice.print', $order), false);
+
+        $this->actingAs($barista, 'admin')
+            ->get(route('administrator.orders.show', $order))
+            ->assertForbidden();
+
+        $this->actingAs($barista, 'admin')
+            ->get(route('administrator.orders.invoice.pdf', $order))
+            ->assertForbidden();
+    }
+
     public function test_barista_can_view_and_update_only_operational_statuses_without_financial_recipe_data(): void
     {
         $barista = User::factory()->barista()->create(['name' => 'Shift Barista']);
@@ -207,7 +247,14 @@ class OrderManagementTest extends TestCase
             ->assertSee($order->order_number)
             ->assertSee($order->items()->firstOrFail()->product_name)
             ->assertSee('Preparation Detail')
+            ->assertSee('Order detail')
+            ->assertSee('Status History')
+            ->assertSee('Customer')
             ->assertDontSee('Subtotal')
+            ->assertDontSee('Line total')
+            ->assertDontSee('Invoice')
+            ->assertDontSee('Download PDF')
+            ->assertDontSee('Print A4')
             ->assertDontSee('Production Cost')
             ->assertDontSee('Margin');
 

@@ -66,7 +66,7 @@
     <div class="card card-flush internal-card">
         <div class="card-header pt-7">
             <div class="card-title">
-                <h3 class="fw-bold text-gray-900">Station Inventory View</h3>
+                <h3 class="fw-bold text-gray-900">Inventory</h3>
             </div>
         </div>
         <div class="card-body pt-0">

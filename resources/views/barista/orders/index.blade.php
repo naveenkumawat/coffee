@@ -1,6 +1,6 @@
 @extends('barista.layouts.default')
 
-@section('page-title', 'Order Queue')
+@section('page-title', 'Orders')
 
 @section('page-description', 'Operational queue for accepted, preparing, ready, and completed orders.')
 
@@ -66,10 +66,11 @@
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Order</th>
-                            <th>Queue Detail</th>
+                            <th>Customer</th>
+                            <th>Items</th>
                             <th>Status</th>
                             <th>Assigned</th>
-                            <th>Placed</th>
+                            <th>Date</th>
                             <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
@@ -79,7 +80,7 @@
                                 <td>
                                     <div class="d-flex flex-column">
                                         <span class="text-gray-900 fw-bold">{{ $order->order_number }}</span>
-                                        <span class="text-muted">{{ $order->customer?->name ?: 'Walk-in / internal order' }}</span>
+                                        <span class="text-muted">{{ $order->items->count() }} item(s)</span>
                                         @if ($order->isDineIn())
                                             <span class="badge badge-light-primary mt-1 align-self-start">DINE-IN · TABLE {{ $order->tableDisplayLabel() ?: '—' }}</span>
                                         @elseif ($order->isDelivery())
@@ -87,9 +88,15 @@
                                         @endif
                                     </div>
                                 </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="text-gray-900 fw-bold">{{ $order->customer?->name ?: 'Walk-in / internal order' }}</span>
+                                        <span class="text-muted">{{ $order->customer?->email ?: 'No linked customer account' }}</span>
+                                    </div>
+                                </td>
                                 <td>{{ $order->items->pluck('product_name')->join(', ') }}</td>
                                 <td><x-internal.order-status-badge :status="$order->status" :order="$order" /></td>
-                                <td>{{ $order->assignedBarista?->name ?: 'Open queue' }}</td>
+                                <td>{{ $order->assignedBarista?->name ?: 'Unassigned' }}</td>
                                 <td>{{ $order->placed_at?->format('d M Y, h:i A') }}</td>
                                 <td class="text-end internal-action-cell">
                                     <x-internal.action-dropdown :items="[
@@ -99,7 +106,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-10">No operational orders matched the current filters.</td>
+                                <td colspan="7" class="text-center text-muted py-10">No operational orders matched the current filters.</td>
                             </tr>
                         @endforelse
                     </tbody>

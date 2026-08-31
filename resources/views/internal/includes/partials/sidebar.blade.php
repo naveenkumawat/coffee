@@ -69,13 +69,28 @@
         ],
         'barista' => [
             [
-                'heading' => 'Station',
+                'heading' => 'Dashboard',
                 'items' => [
-                    ['label' => 'Dashboard', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-abstract-26'],
+                    ['label' => 'Overview', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-chart-line'],
+                ],
+            ],
+            [
+                'heading' => 'Orders',
+                'items' => [
                     ['label' => 'Orders', 'route' => 'barista.orders.index', 'pattern' => 'barista.orders.*', 'icon' => 'ki-delivery-2'],
+                ],
+            ],
+            [
+                'heading' => 'Catalog',
+                'items' => [
                     ['label' => 'Products', 'route' => 'barista.products.index', 'pattern' => 'barista.products.*', 'icon' => 'ki-basket'],
                     ['label' => 'Recipes', 'route' => 'barista.recipes.index', 'pattern' => 'barista.recipes.*', 'icon' => 'ki-book'],
-                    ['label' => 'Inventory', 'route' => 'barista.inventory.index', 'pattern' => 'barista.inventory.*', 'icon' => 'ki-abstract-41'],
+                ],
+            ],
+            [
+                'heading' => 'Inventory',
+                'items' => [
+                    ['label' => 'Overview', 'route' => 'barista.inventory.index', 'pattern' => 'barista.inventory.*', 'icon' => 'ki-abstract-41'],
                     ['label' => 'Refill Requests', 'route' => 'barista.refill-requests.index', 'pattern' => 'barista.refill-requests.*', 'icon' => 'ki-delivery-3'],
                 ],
             ],

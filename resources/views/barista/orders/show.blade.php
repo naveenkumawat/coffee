@@ -11,93 +11,52 @@
 @endsection
 
 @section('toolbar-actions')
-    <x-internal.button-group :items="[
-        ['label' => 'Back', 'url' => route('barista.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
-    ]" />
+    <div class="internal-order-toolbar-actions d-flex flex-wrap align-items-stretch align-items-md-center gap-2 justify-content-start justify-content-lg-end">
+        <x-internal.button-group :items="[
+            ['label' => 'Back', 'url' => route('barista.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+        ]" />
+    </div>
 @endsection
 
 @section('content')
-    <div class="row g-5 g-xl-10 mb-7">
-        <div class="col-xl-4">
-            <div class="card card-flush internal-card h-xl-100">
-                <div class="card-header pt-7">
+    @include('internal.orders.partials.order-header', [
+        'order' => $order,
+        'showFinancialSummary' => false,
+        'showPaymentBadge' => true,
+    ])
+
+    <div class="row g-5 g-xl-8">
+        <div class="col-xl-8">
+            <div class="card card-flush internal-card mb-5">
+                <div class="card-header pt-6 pb-0">
                     <div class="card-title">
-                        <h3 class="fw-bold text-gray-900">Queue Overview</h3>
+                        <h3 class="fw-bold text-gray-900">Order detail</h3>
                     </div>
                 </div>
-                <div class="card-body pt-5">
-                    <div class="d-flex flex-column gap-5">
-                        <div>
-                            <div class="text-muted fs-7 mb-1">Status</div>
-                            <x-internal.order-status-badge :status="$order->status" :order="$order" />
-                        </div>
-                        @include('internal.orders.partials.fulfilment', ['order' => $order])
-                        <div>
-                            <div class="text-muted fs-7 mb-1">Customer</div>
-                            <div class="fw-bold text-gray-900">{{ $order->customer?->name ?: 'Walk-in / internal order' }}</div>
-                        </div>
-                        <div>
-                            <div class="text-muted fs-7 mb-1">Assigned Barista</div>
-                            <div class="text-gray-700">{{ $order->assignedBarista?->name ?: 'Not assigned yet' }}</div>
-                        </div>
-                        <div>
-                            <div class="text-muted fs-7 mb-1">Order Notes</div>
-                            <div class="text-gray-700">{{ $order->customer_notes ?: 'No customer notes provided.' }}</div>
-                        </div>
+                <div class="card-body pt-4">
+                    <div class="mb-5">
+                        <div class="text-muted fs-8 text-uppercase mb-2">Fulfilment</div>
+                        @include('internal.orders.partials.fulfilment', ['order' => $order, 'showHeading' => false])
                     </div>
+
+                    <div class="separator separator-dashed mb-5"></div>
+
+                    <div class="text-muted fs-8 text-uppercase mb-2">Items</div>
+                    @include('internal.orders.partials.order-items-table', [
+                        'order' => $order,
+                        'showPrices' => false,
+                        'showCustomerSummary' => true,
+                    ])
                 </div>
             </div>
-        </div>
-        <div class="col-xl-8">
-            @include('internal.orders.partials.status-actions', [
-                'order' => $order,
-                'availableTransitions' => $availableTransitions,
-                'routeName' => 'barista.orders.status.update',
-            ])
-        </div>
-    </div>
 
-    <div class="card card-flush internal-card mb-7">
-        <div class="card-header pt-7">
-            <div class="card-title">
-                <h3 class="fw-bold text-gray-900">Order Items</h3>
-            </div>
-        </div>
-        <div class="card-body pt-0">
-            <div class="table-responsive internal-table-wrapper">
-                <table class="table align-middle table-row-dashed fs-6 gy-5 internal-table">
-                    <thead>
-                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>Product</th>
-                            <th>Variant</th>
-                            <th>Quantity</th>
-                            <th>Customer Summary</th>
-                        </tr>
-                    </thead>
-                    <tbody class="fw-semibold text-gray-600">
-                        @foreach ($order->items as $item)
-                            <tr>
-                                <td>{{ $item->product_name }}</td>
-                                <td>{{ $item->variant_name }}</td>
-                                <td>{{ $item->quantity }}</td>
-                                <td>{{ $item->customer_ingredient_summary ?: 'No public summary set.' }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-5 g-xl-10">
-        <div class="col-xl-8">
-            <div class="card card-flush internal-card">
-                <div class="card-header pt-7">
+            <div class="card card-flush internal-card mb-5 mb-xl-0">
+                <div class="card-header pt-6 pb-0">
                     <div class="card-title">
                         <h3 class="fw-bold text-gray-900">Preparation Detail</h3>
                     </div>
                 </div>
-                <div class="card-body pt-0">
+                <div class="card-body pt-4">
                     @include('internal.orders.partials.preparation-cards', [
                         'items' => $order->items,
                         'emptyMessage' => 'Recipe instructions will appear here once the ordered variants have recipes configured.',
@@ -105,30 +64,17 @@
                 </div>
             </div>
         </div>
+
         <div class="col-xl-4">
-            <div class="card card-flush internal-card">
-                <div class="card-header pt-7">
-                    <div class="card-title">
-                        <h3 class="fw-bold text-gray-900">Status History</h3>
-                    </div>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="timeline-label">
-                        @foreach ($order->statusHistory as $entry)
-                            <div class="timeline-item mb-5">
-                                <div class="timeline-label fw-bold text-gray-800 fs-7">{{ $entry->created_at?->format('d M, h:i A') }}</div>
-                                <div class="timeline-badge">
-                                    <i class="fa fa-genderless text-primary fs-1"></i>
-                                </div>
-                                <div class="fw-mormal timeline-content text-muted ps-3">
-                                    <span class="fw-bold text-gray-900">{{ $entry->to_status->label() }}</span>
-                                    <div>{{ $entry->changedBy?->name ?: 'System' }}</div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
+            @include('internal.orders.partials.customer-card', ['order' => $order])
+
+            @include('internal.orders.partials.status-actions', [
+                'order' => $order,
+                'availableTransitions' => $availableTransitions,
+                'routeName' => 'barista.orders.status.update',
+            ])
+
+            @include('internal.orders.partials.status-history', ['order' => $order])
         </div>
     </div>
 @endsection

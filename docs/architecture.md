@@ -221,6 +221,14 @@ For current menu writes:
 - Shared internal UI remains separate from the customer storefront.
 - Existing event/listener cache invalidation remains intact.
 
+## Internal panel UI system
+
+Administrator and Barista use one shared internal design system/shell (`internal.layouts.default`, shared header/sidebar/components, and `public/internal` assets). Role-specific differences must be implemented through permissions, navigation configuration, data visibility, and action authorization — not separate visual systems.
+
+- Shared: page header, breadcrumbs, cards, tables/filters, buttons, badges, notification bell, order detail shell partials under `resources/views/internal/orders/partials/`.
+- Role-specific: nav entries, financial totals, payment proof review, invoice actions, create-order, and other policy-gated controls.
+- Never treat UI hiding as the security boundary; middleware and policies remain authoritative.
+
 ## Naming Conventions
 
 - Interface names end with `Interface`.

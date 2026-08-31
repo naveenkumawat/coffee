@@ -391,7 +391,9 @@ class AdministratorInventoryManagementTest extends TestCase
         $this->actingAs($barista, 'admin')
             ->get(route('barista.inventory.index'))
             ->assertOk()
-            ->assertSee('Station Inventory View');
+            ->assertSee('Inventory', false)
+            ->assertSee('Request Refill', false)
+            ->assertDontSee('Record Movement', false);
 
         $this->actingAs($barista, 'admin')
             ->get(route('administrator.inventory.index'))
