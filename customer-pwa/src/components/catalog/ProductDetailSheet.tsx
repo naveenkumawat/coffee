@@ -2,11 +2,14 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchProduct } from '../../api/catalog';
 import { ApiError } from '../../api/client';
+import { fetchProductRatings } from '../../api/ratings';
 import { useProductOverlay } from '../../hooks/useProductOverlay';
 import { Product } from '../../types/catalog';
+import { PublicProductReview, RatingSummary } from '../../types/rating';
 import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
 import { ProductOrderControl } from './ProductOrderControl';
+import { ProductReviewsBlock } from './ProductReviewsBlock';
 import { ProductTags } from './ProductTags';
 
 interface ProductDetailSheetProps {
@@ -27,6 +30,8 @@ export function ProductDetailSheet({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [product, setProduct] = useState(initialProduct);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(initialProduct.rating_summary ?? null);
+  const [reviews, setReviews] = useState<PublicProductReview[]>([]);
 
   useEffect(() => {
     if (!open) {
@@ -34,17 +39,24 @@ export function ProductDetailSheet({
     }
 
     setProduct(initialProduct);
+    setRatingSummary(initialProduct.rating_summary ?? null);
     setLoadError(null);
+    setReviews([]);
 
     let cancelled = false;
 
-    void fetchProduct(String(initialProduct.id))
-      .then((response) => {
+    void Promise.all([
+      fetchProduct(String(initialProduct.id)),
+      fetchProductRatings(initialProduct.id, 1, 3),
+    ])
+      .then(([productResponse, ratingsResponse]) => {
         if (cancelled) {
           return;
         }
 
-        setProduct(response.data);
+        setProduct(productResponse.data);
+        setRatingSummary(ratingsResponse.data.rating_summary);
+        setReviews(ratingsResponse.data.reviews);
       })
       .catch((error) => {
         if (!cancelled) {
@@ -134,6 +146,14 @@ export function ProductDetailSheet({
                 Showing saved menu details. Live availability may be delayed.
               </p>
             ) : null}
+
+            <ProductReviewsBlock
+              summary={ratingSummary}
+              reviews={reviews}
+              productId={product.id}
+              previewLimit={2}
+              compact
+            />
 
             {product.flavours.length > 0 ? (
               <div className="product-overlay-block">

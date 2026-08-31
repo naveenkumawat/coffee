@@ -1502,7 +1502,7 @@ After café operations stabilize, the following can be introduced:
 * Loyalty points
 * Customer wallet
 * Gift cards
-* Product ratings/reviews
+* ~~Product ratings/reviews~~ (implemented: verified-purchase 1–5 ratings, optional review, catalog aggregates, admin moderation)
 * Order scheduling
 * Scheduled pickup
 * Advanced inventory purchasing

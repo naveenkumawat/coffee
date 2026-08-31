@@ -22,6 +22,7 @@ class ProductIndexRequest extends AbstractRequest
             'featured' => ['nullable', 'string', Rule::in(['featured', 'standard'])],
             'new' => ['nullable', 'string', Rule::in(['new'])],
             'bestseller' => ['nullable', 'string', Rule::in(['bestseller'])],
+            'sort' => ['nullable', 'string', Rule::in(['rating_high_to_low', 'most_reviewed'])],
         ];
     }
 

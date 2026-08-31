@@ -398,7 +398,7 @@ Status: Pending
 - [ ] Dine-in order mode implemented
 - [x] Delivery order mode implemented (third-party arrangement; no courier API yet)
 - [ ] Coupons, offers, loyalty, wallet, and gift cards implemented
-- [ ] Ratings and reviews implemented
+- [x] Ratings and reviews implemented
 - [ ] Order scheduling implemented
 - [ ] Advanced purchasing, suppliers, expenses, tax/GST, barcode, printer, and display integrations implemented
 

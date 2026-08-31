@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchOrder } from '../api/orders';
 import { ApiError } from '../api/client';
+import { fetchOrder } from '../api/orders';
+import { RatingSheet } from '../components/catalog/RatingSheet';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
 import { EmptyState } from '../components/common/EmptyState';
@@ -10,9 +11,16 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
-import { Order, OrderPaymentInstructions } from '../types/order';
+import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
+import { MyProductRating, RatingSummary } from '../types/rating';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
 import { isPendingPayment, statusTone } from '../utils/orders';
+
+interface RatingTarget {
+  productId: number;
+  productName: string;
+  myRating: MyProductRating | null;
+}
 
 export function OrderDetailPage() {
   const { orderId = '' } = useParams();
@@ -20,6 +28,7 @@ export function OrderDetailPage() {
   const [payment, setPayment] = useState<OrderPaymentInstructions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
 
   async function loadOrder(): Promise<void> {
     if (!orderId) {
@@ -47,6 +56,50 @@ export function OrderDetailPage() {
   useEffect(() => {
     void loadOrder();
   }, [orderId]);
+
+  const ratedProductIds = useMemo(() => {
+    if (!order || order.status !== 'completed') {
+      return new Set<number>();
+    }
+
+    const firstIds = new Set<number>();
+    const seen = new Set<number>();
+
+    for (const item of order.items) {
+      if (!item.product_id || seen.has(item.product_id)) {
+        continue;
+      }
+
+      seen.add(item.product_id);
+      firstIds.add(item.id);
+    }
+
+    return firstIds;
+  }, [order]);
+
+  function applyRatingToOrder(
+    productId: number,
+    payload: { my_rating: MyProductRating | null; rating_summary: RatingSummary; can_rate: boolean },
+  ): void {
+    setOrder((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: current.items.map((item) =>
+          item.product_id === productId
+            ? {
+                ...item,
+                my_rating: payload.my_rating,
+                can_rate: payload.can_rate,
+              }
+            : item,
+        ),
+      };
+    });
+  }
 
   if (isLoading) {
     return (
@@ -127,15 +180,36 @@ export function OrderDetailPage() {
         </div>
 
         <div className="checkout-list">
-          {order.items.map((item) => (
-            <CheckoutItemCard
-              key={item.id}
-              name={item.product_name}
-              subtitle={joinLabels([item.variant_name, item.customer_ingredient_summary])}
-              quantity={item.quantity}
-              amount={item.line_subtotal}
-            />
-          ))}
+          {order.items.map((item: OrderItem) => {
+            const showRateCta =
+              order.status === 'completed' && item.can_rate && item.product_id !== null && ratedProductIds.has(item.id);
+
+            return (
+              <div key={item.id} className="order-item-with-rating">
+                <CheckoutItemCard
+                  name={item.product_name}
+                  subtitle={joinLabels([item.variant_name, item.customer_ingredient_summary])}
+                  quantity={item.quantity}
+                  amount={item.line_subtotal}
+                />
+                {showRateCta && item.product_id ? (
+                  <button
+                    type="button"
+                    className="link-button order-rate-cta"
+                    onClick={() =>
+                      setRatingTarget({
+                        productId: item.product_id as number,
+                        productName: item.product_name,
+                        myRating: item.my_rating ?? null,
+                      })
+                    }
+                  >
+                    {item.my_rating ? `★ ${item.my_rating.rating}/5 · Edit rating` : '☆ Rate this item'}
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
 
         <div className="summary-card checkout-summary-grid">
@@ -216,6 +290,17 @@ export function OrderDetailPage() {
         <span>Need another order?</span>
         <Link to="/orders">Back to My Orders</Link>
       </div>
+
+      {ratingTarget ? (
+        <RatingSheet
+          open
+          productId={ratingTarget.productId}
+          productName={ratingTarget.productName}
+          initialRating={ratingTarget.myRating}
+          onClose={() => setRatingTarget(null)}
+          onSaved={(payload) => applyRatingToOrder(ratingTarget.productId, payload)}
+        />
+      ) : null}
     </div>
   );
 }

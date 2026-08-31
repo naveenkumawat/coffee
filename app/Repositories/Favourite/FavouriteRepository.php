@@ -26,9 +26,12 @@ class FavouriteRepository extends AbstractRepository implements FavouriteReposit
             ->with([
                 'category',
                 'flavours',
+                'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
                 'defaultVariant',
                 'variants' => fn ($query) => $query->where('is_active', true)->where('is_available', true),
             ])
+            ->withAvg('ratings as ratings_avg_rating', 'rating')
+            ->withCount('ratings')
             ->orderByDesc(
                 ProductFavourite::query()
                     ->select('created_at')

@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
                 WebsiteSettingSeeder::class,
                 DemoCustomerActivitySeeder::class,
                 DemoOrderSeeder::class,
+                ProductRatingSeeder::class,
             ]);
         }
 

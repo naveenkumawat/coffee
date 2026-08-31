@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
+import { fetchProductRatings } from '../api/ratings';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
 import { ProductOrderControl } from '../components/catalog/ProductOrderControl';
+import { ProductReviewsBlock } from '../components/catalog/ProductReviewsBlock';
 import { ProductTags } from '../components/catalog/ProductTags';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -11,11 +13,14 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { ProductImage } from '../components/common/ProductImage';
 import { Product } from '../types/catalog';
+import { PublicProductReview, RatingSummary } from '../types/rating';
 import { getProductVariants, isProductUnavailable } from '../utils/productActions';
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
+  const [reviews, setReviews] = useState<PublicProductReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -25,8 +30,13 @@ export function ProductDetailPage() {
       setErrorMessage(null);
 
       try {
-        const response = await fetchProduct(productId);
-        setProduct(response.data);
+        const [productResponse, ratingsResponse] = await Promise.all([
+          fetchProduct(productId),
+          fetchProductRatings(productId, 1, 20),
+        ]);
+        setProduct(productResponse.data);
+        setRatingSummary(ratingsResponse.data.rating_summary);
+        setReviews(ratingsResponse.data.reviews);
       } catch (error) {
         setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this drink.');
       } finally {
@@ -110,6 +120,14 @@ export function ProductDetailPage() {
           <p className="detail-description">
             {product.description || product.short_description || 'Freshly prepared for quick pickup.'}
           </p>
+
+          <ProductReviewsBlock
+            summary={ratingSummary}
+            reviews={reviews}
+            productId={product.id}
+            previewLimit={20}
+            showViewAll={false}
+          />
 
           {product.customer_ingredient_summary ? (
             <div className="detail-info-block">

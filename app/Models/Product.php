@@ -89,4 +89,9 @@ class Product extends AbstractModel
         return $this->belongsToMany(User::class, 'product_favourites', 'product_id', 'customer_id')
             ->withTimestamps();
     }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(ProductRating::class);
+    }
 }

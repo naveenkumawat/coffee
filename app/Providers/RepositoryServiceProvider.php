@@ -30,6 +30,8 @@ use App\Repositories\Product\ProductRepository;
 use App\Repositories\Product\ProductRepositoryInterface;
 use App\Repositories\Product\ProductTagRepository;
 use App\Repositories\Product\ProductTagRepositoryInterface;
+use App\Repositories\Rating\ProductRatingRepository;
+use App\Repositories\Rating\ProductRatingRepositoryInterface;
 use App\Repositories\Recipe\RecipeRepository;
 use App\Repositories\Recipe\RecipeRepositoryInterface;
 use App\Repositories\User\UserRepository;
@@ -44,6 +46,7 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavouriteRepositoryInterface::class, FavouriteRepository::class);
+        $this->app->bind(ProductRatingRepositoryInterface::class, ProductRatingRepository::class);
         $this->app->bind(IngredientCategoryRepositoryInterface::class, IngredientCategoryRepository::class);
         $this->app->bind(IngredientBrandRepositoryInterface::class, IngredientBrandRepository::class);
         $this->app->bind(IngredientRepositoryInterface::class, IngredientRepository::class);

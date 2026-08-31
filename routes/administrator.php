@@ -12,6 +12,7 @@ use App\Http\Controllers\Administrator\OrderController;
 use App\Http\Controllers\Administrator\ProductCategoryController;
 use App\Http\Controllers\Administrator\ProductController;
 use App\Http\Controllers\Administrator\ProductFlavourController;
+use App\Http\Controllers\Administrator\ProductRatingController;
 use App\Http\Controllers\Administrator\ProductTagController;
 use App\Http\Controllers\Administrator\RecipeController;
 use App\Http\Controllers\Administrator\UserController;
@@ -82,6 +83,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
         ->except(['show'])
         ->parameters(['tags' => 'product_tag'])
         ->names('products.tags');
+
+    Route::get('products/ratings', [ProductRatingController::class, 'index'])->name('products.ratings.index');
+    Route::get('products/ratings/{productRating}', [ProductRatingController::class, 'show'])->name('products.ratings.show');
+    Route::patch('products/ratings/{productRating}/hide', [ProductRatingController::class, 'hide'])->name('products.ratings.hide');
+    Route::patch('products/ratings/{productRating}/publish', [ProductRatingController::class, 'publish'])->name('products.ratings.publish');
+    Route::delete('products/ratings/{productRating}', [ProductRatingController::class, 'destroy'])->name('products.ratings.destroy');
 
     Route::resource('products', ProductController::class)
         ->parameters(['products' => 'product'])

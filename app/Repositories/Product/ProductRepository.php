@@ -118,6 +118,8 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
                     ->orderBy('id'),
                 'variants.recipe.lines.ingredient',
             ])
+            ->withAvg('ratings as ratings_avg_rating', 'rating')
+            ->withCount('ratings')
             ->where('is_active', true)
             ->where('is_available', true)
             ->whereHas('category', fn ($query) => $query->where('is_active', true))
@@ -146,11 +148,19 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->when(($filters['featured'] ?? null) === 'featured', fn ($query) => $query->where('is_featured', true))
             ->when(($filters['new'] ?? null) === 'new', fn ($query) => $query->where('is_new', true))
             ->when(($filters['bestseller'] ?? null) === 'bestseller', fn ($query) => $query->where('is_bestseller', true))
-            ->orderByDesc('is_featured')
-            ->orderByDesc('is_bestseller')
-            ->orderByDesc('is_new')
-            ->orderBy('sort_order')
-            ->orderBy('name')
+            ->when(($filters['sort'] ?? null) === 'rating_high_to_low', function ($query): void {
+                $query->orderByDesc('ratings_avg_rating')->orderByDesc('ratings_count');
+            })
+            ->when(($filters['sort'] ?? null) === 'most_reviewed', function ($query): void {
+                $query->orderByDesc('ratings_count')->orderByDesc('ratings_avg_rating');
+            })
+            ->when(! in_array($filters['sort'] ?? null, ['rating_high_to_low', 'most_reviewed'], true), function ($query): void {
+                $query->orderByDesc('is_featured')
+                    ->orderByDesc('is_bestseller')
+                    ->orderByDesc('is_new')
+                    ->orderBy('sort_order')
+                    ->orderBy('name');
+            })
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -205,6 +215,8 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
                     ->orderBy('id'),
                 'variants.recipe.lines.ingredient',
             ])
+            ->withAvg('ratings as ratings_avg_rating', 'rating')
+            ->withCount('ratings')
             ->whereKey($productId)
             ->where('is_active', true)
             ->where('is_available', true)

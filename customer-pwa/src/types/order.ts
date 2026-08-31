@@ -11,6 +11,14 @@ export interface OrderItem {
   unit_price: string | null;
   quantity: number;
   line_subtotal: string | null;
+  my_rating?: {
+    id: number;
+    rating: number;
+    review: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  } | null;
+  can_rate?: boolean;
 }
 
 export interface OrderStatusTimelineItem {

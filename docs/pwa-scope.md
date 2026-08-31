@@ -98,6 +98,7 @@ The PWA foundation must support these flows over time:
 - Payment instructions
 - Order confirmation
 - Order tracking and order history
+- Verified-purchase product ratings and reviews (submit/edit/delete from completed orders; summaries on cards; reviews on detail)
 - Reorder later when implemented
 
 ## API Dependencies
@@ -107,14 +108,14 @@ The current customer API target is `/api/v1`.
 PWA features depend on:
 
 - auth/account endpoints
-- catalog endpoints for categories, flavours, products, featured products, product detail, variants
+- catalog endpoints for categories, flavours, products, featured products, product detail, variants, product ratings
 - cart endpoints for show, add, update quantity, remove, clear, count/totals
 - checkout endpoints for summary and submit
 - orders endpoints for own list and own detail
+- authenticated product rating create/update/delete
 
 Future API additions expected:
 
-- favourites CRUD
 - richer order timeline/status presentation if needed
 - push notification registration endpoints if notifications are introduced later
 - loyalty/rewards endpoints if added later
@@ -200,7 +201,7 @@ Do not copy forward theme features that conflict with Coffee scope, especially:
 
 - delivery-provider marketplace UX (Coffee uses takeaway + third-party delivery coordination without integrating a courier API yet)
 - wallet/card storage patterns
-- chat, rewards, review, and unrelated demo pages
+- chat and unrelated demo pages
 - jQuery plugin assumptions that do not fit the React/Vite architecture
 
 See [pwa-theme-map.md](./pwa-theme-map.md) for the detailed theme inventory and mapping plan.

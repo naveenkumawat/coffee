@@ -4950,3 +4950,241 @@ body.product-overlay-open .bottom-navigation {
     padding-bottom: 1rem;
   }
 }
+
+/* ——— Product ratings ——— */
+.product-rating-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-height: 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1;
+  color: var(--coffee-muted);
+}
+
+.product-rating-summary i {
+  color: #b8893d;
+  font-size: 0.72rem;
+}
+
+.product-rating-summary strong {
+  color: var(--coffee-text);
+  font-weight: 700;
+}
+
+.product-rating-summary.is-new {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--coffee-muted);
+}
+
+.product-rating-summary.is-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.product-rating-summary-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.product-rating-summary-copy strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.product-rating-empty {
+  margin: 0.35rem 0 0.75rem;
+  color: var(--coffee-muted);
+  font-size: 0.9rem;
+}
+
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.rating-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: rgba(27, 22, 16, 0.18);
+  line-height: 1;
+}
+
+.rating-star.is-full,
+.rating-star.is-half {
+  color: #b8893d;
+}
+
+.rating-stars.size-sm .rating-star {
+  font-size: 0.85rem;
+}
+
+.rating-stars.size-md .rating-star {
+  font-size: 1.05rem;
+}
+
+.rating-stars.size-lg .rating-star {
+  font-size: 1.7rem;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+}
+
+.rating-stars.is-interactive .rating-star {
+  cursor: pointer;
+  border-radius: 0.55rem;
+  transition: transform var(--motion-base) var(--motion-ease), color var(--motion-base) var(--motion-ease);
+}
+
+.rating-stars.is-interactive .rating-star:hover,
+.rating-stars.is-interactive .rating-star:focus-visible {
+  transform: translateY(-1px) scale(1.05);
+  outline: none;
+}
+
+.product-reviews-block {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0.35rem 0 1rem;
+}
+
+.product-reviews-block.is-compact .rating-distribution {
+  display: none;
+}
+
+.rating-distribution {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rating-distribution-row {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 1.5rem;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--coffee-muted);
+}
+
+.rating-distribution-track {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(27, 22, 16, 0.08);
+}
+
+.rating-distribution-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c9a26b, #b8893d);
+}
+
+.product-review-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-review-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid rgba(27, 22, 16, 0.08);
+}
+
+.product-review-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.product-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.product-review-item p {
+  margin: 0;
+  color: var(--coffee-text);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.product-review-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  font-size: 0.75rem;
+  color: var(--coffee-muted);
+}
+
+.order-item-with-rating {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.order-rate-cta {
+  justify-self: start;
+  padding-inline: 0.15rem;
+  font-size: 0.88rem;
+}
+
+.rating-sheet-body {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rating-sheet-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--coffee-text);
+}
+
+.rating-sheet-label span {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--coffee-muted);
+}
+
+.rating-sheet-textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+  border: 1px solid var(--coffee-border);
+  border-radius: 0.9rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--coffee-text);
+  font: inherit;
+}
+
+.rating-sheet-textarea:focus {
+  outline: 2px solid rgba(184, 137, 61, 0.35);
+  outline-offset: 1px;
+}
+
+.rating-sheet-delete {
+  justify-self: center;
+}
+
+.product-overlay-panel-rating {
+  max-height: min(78dvh, 34rem);
+}

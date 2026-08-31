@@ -28,6 +28,18 @@ class OrderItemResource extends JsonResource
             'unit_price' => $item->unit_price,
             'quantity' => (int) $item->quantity,
             'line_subtotal' => $item->line_subtotal,
+            'my_rating' => $this->when(
+                $item->relationLoaded('myRating'),
+                function () use ($item) {
+                    $rating = $item->getRelation('myRating');
+
+                    return $rating ? (new MyProductRatingResource($rating))->resolve() : null;
+                },
+            ),
+            'can_rate' => $this->when(
+                array_key_exists('can_rate', $item->getAttributes()),
+                fn () => (bool) $item->getAttribute('can_rate'),
+            ),
         ];
     }
 }

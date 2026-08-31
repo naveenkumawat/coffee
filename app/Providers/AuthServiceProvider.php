@@ -16,6 +16,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFavourite;
 use App\Models\ProductFlavour;
+use App\Models\ProductRating;
 use App\Models\ProductTag;
 use App\Models\Recipe;
 use App\Models\User;
@@ -34,6 +35,7 @@ use App\Policies\ProductCategoryPolicy;
 use App\Policies\ProductFavouritePolicy;
 use App\Policies\ProductFlavourPolicy;
 use App\Policies\ProductPolicy;
+use App\Policies\ProductRatingPolicy;
 use App\Policies\ProductTagPolicy;
 use App\Policies\RecipePolicy;
 use App\Policies\UserPolicy;
@@ -58,6 +60,7 @@ class AuthServiceProvider extends ServiceProvider
         ProductCategory::class => ProductCategoryPolicy::class,
         ProductFavourite::class => ProductFavouritePolicy::class,
         ProductFlavour::class => ProductFlavourPolicy::class,
+        ProductRating::class => ProductRatingPolicy::class,
         ProductTag::class => ProductTagPolicy::class,
         Recipe::class => RecipePolicy::class,
         User::class => UserPolicy::class,

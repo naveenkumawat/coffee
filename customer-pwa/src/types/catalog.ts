@@ -63,6 +63,18 @@ export interface Product {
   flavours: ProductFlavour[];
   default_variant: ProductVariant | null;
   variants: ProductVariant[];
+  rating_summary?: {
+    average: number | null;
+    count: number;
+  } | null;
+  my_rating?: {
+    id: number;
+    rating: number;
+    review: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  } | null;
+  can_rate?: boolean;
 }
 
 export interface ProductListMeta {

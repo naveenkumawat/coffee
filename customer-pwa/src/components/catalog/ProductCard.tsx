@@ -5,6 +5,7 @@ import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
 import { ProductDetailSheet } from './ProductDetailSheet';
 import { ProductOrderControl } from './ProductOrderControl';
+import { ProductRatingSummary } from './ProductRatingSummary';
 import { ProductTags } from './ProductTags';
 
 interface ProductCardProps {
@@ -55,6 +56,7 @@ export function ProductCard({
           <div className="product-card-copy">
             <span className="product-card-category">{product.category?.name ?? 'Menu'}</span>
             <h3 className="product-card-title">{product.name}</h3>
+            <ProductRatingSummary summary={product.rating_summary} />
             <div className="product-card-tags-slot">
               <ProductTags tags={product.tags} mode="compact" maxVisible={2} />
             </div>

@@ -38,6 +38,8 @@ use App\Services\Product\ProductService;
 use App\Services\Product\ProductServiceInterface;
 use App\Services\Product\ProductTagService;
 use App\Services\Product\ProductTagServiceInterface;
+use App\Services\Rating\ProductRatingService;
+use App\Services\Rating\ProductRatingServiceInterface;
 use App\Services\Recipe\RecipeCostingService;
 use App\Services\Recipe\RecipeCostingServiceInterface;
 use App\Services\Recipe\RecipeService;
@@ -55,6 +57,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
+        $this->app->bind(ProductRatingServiceInterface::class, ProductRatingService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);
         $this->app->bind(IngredientServiceInterface::class, IngredientService::class);

@@ -16,6 +16,7 @@
                     ['label' => 'Categories', 'route' => 'administrator.products.categories.index', 'pattern' => 'administrator.products.categories.*', 'icon' => 'ki-category'],
                     ['label' => 'Flavours', 'route' => 'administrator.products.flavours.index', 'pattern' => 'administrator.products.flavours.*', 'icon' => 'ki-cup'],
                     ['label' => 'Tags', 'route' => 'administrator.products.tags.index', 'pattern' => 'administrator.products.tags.*', 'icon' => 'ki-price-tag'],
+                    ['label' => 'Ratings', 'route' => 'administrator.products.ratings.index', 'pattern' => 'administrator.products.ratings.*', 'icon' => 'ki-star'],
                     ['label' => 'Products', 'route' => 'administrator.products.index', 'pattern' => ['administrator.products.index', 'administrator.products.create', 'administrator.products.store', 'administrator.products.show', 'administrator.products.edit', 'administrator.products.update'], 'icon' => 'ki-basket'],
                     ['label' => 'Recipes', 'route' => 'administrator.recipes.index', 'pattern' => 'administrator.recipes.*', 'icon' => 'ki-book'],
                 ] : [],

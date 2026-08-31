@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
+use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -24,6 +25,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/products', [CatalogController::class, 'products'])->name('products.index');
         Route::get('/products/featured', [CatalogController::class, 'featured'])->name('products.featured');
         Route::get('/products/{product}', [CatalogController::class, 'show'])->name('products.show');
+        Route::get('/products/{product}/ratings', [CustomerProductRatingController::class, 'index'])->name('products.ratings.index');
         Route::get('/variants', [CatalogController::class, 'variants'])->name('variants.index');
     });
 
@@ -61,6 +63,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/ids', [CustomerFavouriteController::class, 'ids'])->name('ids');
             Route::post('/', [CustomerFavouriteController::class, 'store'])->name('store');
             Route::delete('/{product}', [CustomerFavouriteController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('products/{product}/rating')->name('products.rating.')->group(function (): void {
+            Route::post('/', [CustomerProductRatingController::class, 'store'])->name('store');
+            Route::put('/', [CustomerProductRatingController::class, 'update'])->name('update');
+            Route::delete('/', [CustomerProductRatingController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('orders')->name('orders.')->group(function (): void {

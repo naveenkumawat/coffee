@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\ProductVariantResource;
 use App\Repositories\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Services\Product\ProductCatalogServiceInterface;
+use App\Services\Rating\ProductRatingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,7 @@ class CatalogController extends Controller
         protected ProductCatalogServiceInterface $catalog,
         protected ProductCategoryRepositoryInterface $categories,
         protected ProductFlavourRepositoryInterface $flavours,
+        protected ProductRatingServiceInterface $ratings,
     ) {}
 
     public function categories(): JsonResponse
@@ -67,11 +69,17 @@ class CatalogController extends Controller
         );
     }
 
-    public function show(int $product): JsonResponse
+    public function show(Request $request, int $product): JsonResponse
     {
         $productModel = $this->catalog->findPublicProduct($product);
 
         abort_if($productModel === null, 404);
+
+        $customer = $request->user('web') ?? $request->user();
+        $payload = $this->ratings->detailPayload($customer, $productModel);
+
+        $productModel->setRelation('myRating', $payload['my_rating']);
+        $productModel->setAttribute('can_rate', $payload['can_rate']);
 
         return $this->respondWithResource(
             new ProductResource($productModel),
