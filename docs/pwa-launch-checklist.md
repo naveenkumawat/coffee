@@ -16,9 +16,9 @@ Legend: **CONFIGURED** = Admin/system ready · **NEEDS REAL VALUE** = café must
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Brand name / slogan targets | NEEDS REAL VALUE | Enter **The88Coffees** + **Sip. Relax. Enjoy.** in Website Settings (content-driven; not hardcoded in PWA). Local fields currently empty. |
+| Brand name / slogan targets | CONFIGURED (local baseline) | Website Settings: **The88Coffees** + **Sip. Relax. Enjoy.** (content-driven; not hardcoded in PWA). |
 | Business phone / WhatsApp / email / address / hours | NEEDS REAL VALUE | Local empty. Demo seeder phones/email/address are **DEMO-ONLY**. |
-| Social Links admin + footer | CONFIGURED | Dynamic CRUD. Facebook/Instagram URLs **NEEDS REAL VALUE**. WhatsApp can reuse business WhatsApp. Local: 0 rows (create/seed shells). |
+| Social Links admin + footer | CONFIGURED | Dynamic CRUD. Local shells: Facebook/WhatsApp/Instagram (inactive, blank URLs — not public). URLs still **NEEDS REAL VALUE**. |
 | Payment UPI / phone / QR / instructions | NEEDS REAL VALUE | Admin supports all. Demo UPI is **DEMO-ONLY**. |
 | Fulfilment Takeaway + Delivery model | CONFIGURED | Third-party delivery; no invented fee. Disclaimer text: review (**NEEDS REAL VALUE** or keep default if approved). |
 | CMS About / Visit / FAQ / Terms / Privacy | NEEDS REAL VALUE | Local empty. Do not invent legal Terms/Privacy. |
@@ -31,9 +31,9 @@ Legend: **CONFIGURED** = Admin/system ready · **NEEDS REAL VALUE** = café must
 | Catalog readiness command | CONFIGURED | `php artisan coffee:catalog-readiness` — local: 0 products. |
 
 ### Brand & business
-- [ ] Brand / café name (`business_name`) — **The88Coffees** — NEEDS REAL VALUE
-- [ ] Home slogan (`hero_subtitle`) — **Sip. Relax. Enjoy.** — NEEDS REAL VALUE
-- [ ] Social links (Facebook / WhatsApp / Instagram) — NEEDS REAL VALUE (URLs)
+- [x] Brand / café name (`business_name`) — **The88Coffees** — CONFIGURED (local baseline)
+- [x] Home slogan (`hero_subtitle`) — **Sip. Relax. Enjoy.** — CONFIGURED (local baseline)
+- [ ] Social links (Facebook / WhatsApp / Instagram) — shells present; URLs NEEDS REAL VALUE
 - [ ] Phone — NEEDS REAL VALUE
 - [ ] WhatsApp — NEEDS REAL VALUE
 - [ ] Email — OPTIONAL / NEEDS REAL VALUE if shown
