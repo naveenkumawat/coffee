@@ -7,6 +7,11 @@ use App\Models\ProductTag;
 use App\Support\ProductMarketingTags;
 use Illuminate\Database\Seeder;
 
+/**
+ * Structural marketing tag definitions — safe for every environment.
+ *
+ * Does not attach tags to products; DemoSeeder / admin assign tags to catalog items.
+ */
 class ProductTagSeeder extends Seeder
 {
     public function run(): void

@@ -13,20 +13,29 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed strategy:
+     * Seed strategy (gated by APP_ENV, never APP_DEBUG alone):
      *
-     * - Always: structural taxonomy (ingredient categories, social platform shells) + optional ADMIN_* owner.
-     * - local/testing only: DemoSeeder (full demo catalog, CMS, customers, orders, tables, staff bell data).
-     * - production: NEVER DemoSeeder — configure Website Settings / catalog in Administrator after migrate.
+     * Always (every environment):
+     * - IngredientCategorySeeder — inventory taxonomy reference rows
+     * - ProductTagSeeder — marketing tag definitions (New / Top Seller / …)
+     * - SocialLinkSeeder — platform shells without fake URLs
+     * - Optional Owner bootstrap when ADMIN_EMAIL + ADMIN_PASSWORD are set
+     *
+     * local / testing only:
+     * - DemoSeeder — full café simulation (staff, customers, catalog, CMS, orders, …)
+     *
+     * production:
+     * - Never calls DemoSeeder. Configure real catalog/CMS in Administrator after migrate.
      */
     public function run(): void
     {
         $this->call([
             IngredientCategorySeeder::class,
+            ProductTagSeeder::class,
             SocialLinkSeeder::class,
         ]);
 
-        if (app()->environment('local', 'testing')) {
+        if (app()->environment(['local', 'testing'])) {
             $this->call(DemoSeeder::class);
         }
 

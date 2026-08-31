@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
-import { downloadOrderInvoice, fetchOrder } from '../api/orders';
+import { fetchOrder } from '../api/orders';
 import { RatingSheet } from '../components/catalog/RatingSheet';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
@@ -9,6 +9,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
+import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
@@ -29,8 +30,6 @@ export function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
-  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
-  const [invoiceError, setInvoiceError] = useState<string | null>(null);
 
   async function loadOrder(): Promise<void> {
     if (!orderId) {
@@ -103,23 +102,6 @@ export function OrderDetailPage() {
     });
   }
 
-  async function handleDownloadInvoice(): Promise<void> {
-    if (!order) {
-      return;
-    }
-
-    setIsDownloadingInvoice(true);
-    setInvoiceError(null);
-
-    try {
-      await downloadOrderInvoice(order.id, order.order_number);
-    } catch (error) {
-      setInvoiceError(error instanceof ApiError ? error.message : 'Unable to download invoice.');
-    } finally {
-      setIsDownloadingInvoice(false);
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="page-container">
@@ -177,19 +159,7 @@ export function OrderDetailPage() {
         <h1 className="order-status-number">{order.order_number}</h1>
         <p className="order-status-total">Total {formatCurrency(order.total_amount)}</p>
         <p className="order-status-meta">Placed {formatDateTime(order.placed_at)}</p>
-        {order.invoice_available ? (
-          <div className="order-invoice-actions">
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => void handleDownloadInvoice()}
-              disabled={isDownloadingInvoice}
-            >
-              {isDownloadingInvoice ? 'Preparing PDF…' : 'Download Invoice'}
-            </button>
-            {invoiceError ? <p className="form-error-text">{invoiceError}</p> : null}
-          </div>
-        ) : null}
+        <DownloadInvoiceButton order={order} />
       </section>
 
       {pendingPayment ? (

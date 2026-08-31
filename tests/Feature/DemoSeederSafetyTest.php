@@ -5,14 +5,19 @@ namespace Tests\Feature;
 use App\Contracts\WhatsApp\WhatsAppNotificationProviderInterface;
 use App\Models\CafeTable;
 use App\Models\HomeSection;
+use App\Models\IngredientCategory;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductTag;
+use App\Models\SocialLink;
 use App\Models\User;
 use App\Models\WebsiteSetting;
 use App\Services\Product\ProductCatalogService;
 use App\Services\Product\ProductCatalogServiceInterface;
+use App\Support\ProductMarketingTags;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
+use Database\Seeders\IngredientCategorySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -36,7 +41,17 @@ class DemoSeederSafetyTest extends TestCase
         $this->app->make(DemoSeeder::class)->run();
     }
 
-    public function test_production_database_seeder_skips_demo_catalog_and_customers(): void
+    public function test_demo_seeder_refuses_non_local_non_testing_environments(): void
+    {
+        $this->app['env'] = 'staging';
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('DemoSeeder refused');
+
+        $this->app->make(DemoSeeder::class)->run();
+    }
+
+    public function test_production_database_seeder_seeds_structural_data_without_demo_content(): void
     {
         $this->app['env'] = 'production';
 
@@ -45,14 +60,25 @@ class DemoSeederSafetyTest extends TestCase
             '--force' => true,
         ])->assertSuccessful();
 
+        $this->assertSame(count(IngredientCategorySeeder::CATEGORIES), IngredientCategory::query()->count());
+        $this->assertGreaterThanOrEqual(3, SocialLink::query()->count());
+        $this->assertTrue(ProductTag::query()->where('slug', ProductMarketingTags::NEW)->exists());
+        $this->assertTrue(ProductTag::query()->where('slug', ProductMarketingTags::TOP_SELLER)->exists());
+        $this->assertDatabaseHas('social_links', [
+            'platform_key' => 'whatsapp',
+            'url' => null,
+        ]);
+
         $this->assertSame(0, Product::query()->count());
         $this->assertSame(0, Order::query()->count());
         $this->assertSame(0, CafeTable::query()->count());
+        $this->assertSame(0, HomeSection::query()->count());
+        $this->assertFalse(
+            WebsiteSetting::query()->where('key', 'hero_title')->whereNotNull('value')->where('value', '!=', '')->exists(),
+        );
+        $this->assertFalse(User::query()->where('email', 'like', '%@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'customer@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'admin@coffee.local')->exists());
-        $this->assertFalse(
-            WebsiteSetting::query()->where('key', 'hero_title')->whereNotNull('value')->exists(),
-        );
     }
 
     public function test_local_database_seeder_loads_demo_data_without_outbound_side_effects(): void

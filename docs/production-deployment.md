@@ -113,8 +113,8 @@ composer install --no-dev --optimize-autoloader
 
 php artisan migrate --force
 
-# Production seed: structural taxonomy + social shells + optional ADMIN_* owner.
-# Does NOT load demo customers/orders/ratings when APP_ENV=production.
+# Production seed: structural reference only (ingredient categories, product tags,
+# social platform shells) + optional ADMIN_* owner. Never loads DemoSeeder when APP_ENV=production.
 php artisan db:seed --force
 
 php artisan storage:link
@@ -143,8 +143,7 @@ sudo find storage bootstrap/cache -type f -exec chmod 664 {} \;
 - Always: `php artisan migrate --force`
 - **Never** on production: `migrate:fresh`, `db:wipe`, `migrate:refresh`
 - Backup MySQL before migrations
-- Seed: `php artisan db:seed --force` with `APP_ENV=production` (IngredientCategory + SocialLink + optional ADMIN_*)
-
+- Seed: `php artisan db:seed --force` with `APP_ENV=production` (IngredientCategory + ProductTag + SocialLink + optional ADMIN_*). No demo catalog/customers/orders.
 ---
 
 ## F. Storage / media

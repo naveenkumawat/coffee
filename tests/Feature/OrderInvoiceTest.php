@@ -256,10 +256,69 @@ class OrderInvoiceTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_order_show_exposes_invoice_actions_for_managers_and_owners(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $owner = User::factory()->owner()->create();
+        $order = $this->makePaidOrder(User::factory()->customer()->create());
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        foreach ([$manager, $owner] as $user) {
+            $this->actingAs($user, 'admin')
+                ->get(route('administrator.orders.show', $order))
+                ->assertOk()
+                ->assertSee('Invoice', false)
+                ->assertSee('Print A4 Invoice', false)
+                ->assertSee('Print 80mm Receipt', false)
+                ->assertSee('Print 58mm Receipt', false)
+                ->assertSee('Download PDF', false)
+                ->assertSee(route('administrator.orders.invoice.print', $order), false)
+                ->assertSee(route('administrator.orders.invoice.pdf', $order), false)
+                ->assertDontSee('<x-internal.button', false);
+        }
+    }
+
+    public function test_barista_order_show_does_not_expose_administrator_invoice_actions(): void
+    {
+        $barista = User::factory()->barista()->create();
+        $order = $this->makePaidOrder(User::factory()->customer()->create());
+        OrderItem::factory()->create(['order_id' => $order->id]);
+
+        $this->actingAs($barista, 'admin')
+            ->get(route('administrator.orders.show', $order))
+            ->assertForbidden();
+    }
+
+    public function test_invoice_route_names_resolve(): void
+    {
+        $order = $this->makePaidOrder(User::factory()->customer()->create());
+
+        $this->assertSame(
+            url("/api/v1/orders/{$order->id}/invoice"),
+            route('api.v1.orders.invoice.download', $order),
+        );
+        $this->assertSame(
+            url("/administrator/orders/{$order->id}/invoice/pdf"),
+            route('administrator.orders.invoice.pdf', $order),
+        );
+        $this->assertSame(
+            url("/administrator/orders/{$order->id}/invoice/print"),
+            route('administrator.orders.invoice.print', $order),
+        );
+        $this->assertSame(
+            url("/administrator/orders/{$order->id}/invoice/receipt?width=80"),
+            route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]),
+        );
+    }
+
     public function test_order_resource_exposes_invoice_available_flag(): void
     {
         $customer = User::factory()->customer()->create();
         $eligible = $this->makePaidOrder($customer);
+        $completed = $this->makePaidOrder($customer, [
+            'status' => OrderStatus::Completed,
+            'completed_at' => now(),
+        ]);
         $pending = Order::factory()->create([
             'customer_id' => $customer->id,
             'status' => OrderStatus::PendingPayment,
@@ -269,6 +328,10 @@ class OrderInvoiceTest extends TestCase
         Sanctum::actingAs($customer);
 
         $this->getJson(route('api.v1.orders.show', $eligible))
+            ->assertOk()
+            ->assertJsonPath('data.invoice_available', true);
+
+        $this->getJson(route('api.v1.orders.show', $completed))
             ->assertOk()
             ->assertJsonPath('data.invoice_available', true);
 

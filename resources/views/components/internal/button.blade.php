@@ -7,6 +7,7 @@
     'disabled' => false,
     'stretch' => false,
     'iconSize' => 'fs-6',
+    'target' => null,
 ])
 
 @php
@@ -18,6 +19,7 @@
     ];
 
     $classes = trim(($variantClasses[$variant] ?? $variantClasses['default']).' internal-button '.($stretch ? 'w-100' : ''));
+    $linkTarget = filled($target) ? (string) $target : null;
 @endphp
 
 @if ($url)
@@ -25,6 +27,10 @@
         href="{{ $disabled ? '#' : $url }}"
         {{ $attributes->merge(['class' => $classes]) }}
         @if ($disabled) aria-disabled="true" tabindex="-1" @endif
+        @if ($linkTarget)
+            target="{{ $linkTarget }}"
+            rel="noopener"
+        @endif
     >
         @if ($icon)
             <i class="ki-duotone {{ $icon }} {{ $iconSize }}">

@@ -12,22 +12,17 @@ use RuntimeException;
 /**
  * Local/testing demo catalog + operational dataset only.
  *
- * Never run in production. Prefer `php artisan migrate:fresh --seed`
- * which calls this via DatabaseSeeder when APP_ENV is local or testing.
+ * Hard-guarded: throws unless APP_ENV is local or testing.
+ * Prefer `php artisan migrate:fresh --seed` (DatabaseSeeder routes here for local/testing).
+ * Never run in production — even `php artisan db:seed --class=DemoSeeder` must fail loudly.
  */
 class DemoSeeder extends Seeder
 {
     public function run(): void
     {
-        if (app()->environment('production')) {
+        if (! app()->environment(['local', 'testing'])) {
             throw new RuntimeException(
-                'DemoSeeder refused: demo/catalog data must never be seeded in production.',
-            );
-        }
-
-        if (! app()->environment('local', 'testing')) {
-            throw new RuntimeException(
-                'DemoSeeder refused: only local and testing environments may receive demo data (APP_ENV='.app()->environment().').',
+                'DemoSeeder refused: demo/catalog data must never be seeded outside local/testing (APP_ENV='.app()->environment().').',
             );
         }
 

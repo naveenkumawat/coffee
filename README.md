@@ -91,20 +91,36 @@ ADMIN_EMAIL="owner@example.com"
 ADMIN_PASSWORD="change-me"
 ```
 
-5. Reset and seed the local database (canonical demo reset):
+5. Database seeding
+
+### Development / testing
+
+Canonical local reset (structural + full café demo):
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-This loads structural taxonomy always, then `DemoSeeder` for **local/testing only** (catalog, CMS, customers, orders, café tables, staff bell data). Production (`APP_ENV=production`) never loads `DemoSeeder`.
+This always seeds structural/reference rows (ingredient categories, product tag definitions, social platform shells), then runs `DemoSeeder` when `APP_ENV` is `local` or `testing`. Gating uses `APP_ENV`, not `APP_DEBUG`.
 
-Optional one-shot owner bootstrap (any environment, including production):
+After seeding, inspect intentional incomplete demo catalog items:
 
 ```bash
-ADMIN_EMAIL="owner@example.com"
-ADMIN_PASSWORD="change-me"
+php artisan coffee:catalog-readiness
 ```
+
+### Production
+
+```bash
+php artisan migrate --force
+php artisan db:seed --force
+```
+
+Production seeding includes **structural/reference data only** (plus optional Owner bootstrap when `ADMIN_EMAIL` / `ADMIN_PASSWORD` are set). It never runs `DemoSeeder`.
+
+**Never** run `migrate:fresh` (or `db:wipe` / `migrate:refresh`) in production.
+
+Directly invoking `php artisan db:seed --class=DemoSeeder` outside local/testing throws and inserts nothing.
 
 6. Start the app:
 

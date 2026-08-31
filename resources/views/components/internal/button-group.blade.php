@@ -22,11 +22,8 @@
                     :variant="$item['variant'] ?? 'default'"
                     :icon="$item['icon'] ?? null"
                     :disabled="(bool) ($item['disabled'] ?? false)"
+                    :target="$item['target'] ?? null"
                     class="internal-button-group-button"
-                    @if (! empty($item['target']))
-                        target="{{ $item['target'] }}"
-                        rel="noopener"
-                    @endif
                 />
             @endforeach
         </div>

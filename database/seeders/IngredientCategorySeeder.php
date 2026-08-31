@@ -6,6 +6,11 @@ use App\Models\IngredientCategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+/**
+ * Structural inventory taxonomy — safe for every environment.
+ *
+ * Café-specific brands/ingredients/stock live in DemoSeeder only.
+ */
 class IngredientCategorySeeder extends Seeder
 {
     public const CATEGORIES = [

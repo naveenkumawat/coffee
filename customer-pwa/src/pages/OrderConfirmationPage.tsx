@@ -8,6 +8,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
+import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
@@ -159,6 +160,7 @@ export function OrderConfirmationPage() {
           <p className="confirmation-table">Table {order.table_name.trim()}</p>
         ) : null}
         <p className="confirmation-next-step">{confirmationNextStep(order)}</p>
+        <DownloadInvoiceButton order={order} />
       </section>
 
       <section className="account-section">
