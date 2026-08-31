@@ -1,137 +1,139 @@
-import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../layouts/AppLayout';
+import { RouteErrorPage } from '../pages/RouteErrorPage';
+import { lazyPage } from '../utils/lazyPage';
 import { GuestRoute } from './GuestRoute';
 import { ProtectedRoute } from './ProtectedRoute';
 
-const HomePage = lazy(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
-const MenuPage = lazy(() => import('../pages/MenuPage').then((module) => ({ default: module.MenuPage })));
-const ProductDetailPage = lazy(() =>
-  import('../pages/ProductDetailPage').then((module) => ({ default: module.ProductDetailPage }))
+const HomePage = lazyPage(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
+const MenuPage = lazyPage(() => import('../pages/MenuPage').then((module) => ({ default: module.MenuPage })));
+const ProductDetailPage = lazyPage(() =>
+  import('../pages/ProductDetailPage').then((module) => ({ default: module.ProductDetailPage })),
 );
-const AboutPage = lazy(() => import('../pages/AboutPage').then((module) => ({ default: module.AboutPage })));
-const ContactPage = lazy(() => import('../pages/ContactPage').then((module) => ({ default: module.ContactPage })));
-const FaqPage = lazy(() => import('../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
-const TermsPage = lazy(() => import('../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
-const PrivacyPage = lazy(() => import('../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
-const LoginPage = lazy(() => import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
-const RegisterPage = lazy(() => import('../pages/RegisterPage').then((module) => ({ default: module.RegisterPage })));
-const ForgotPasswordPage = lazy(() =>
-  import('../pages/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage }))
+const AboutPage = lazyPage(() => import('../pages/AboutPage').then((module) => ({ default: module.AboutPage })));
+const ContactPage = lazyPage(() => import('../pages/ContactPage').then((module) => ({ default: module.ContactPage })));
+const FaqPage = lazyPage(() => import('../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
+const TermsPage = lazyPage(() => import('../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
+const PrivacyPage = lazyPage(() => import('../pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
+const LoginPage = lazyPage(() => import('../pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const RegisterPage = lazyPage(() => import('../pages/RegisterPage').then((module) => ({ default: module.RegisterPage })));
+const ForgotPasswordPage = lazyPage(() =>
+  import('../pages/ForgotPasswordPage').then((module) => ({ default: module.ForgotPasswordPage })),
 );
-const ResetPasswordPage = lazy(() =>
-  import('../pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage }))
+const ResetPasswordPage = lazyPage(() =>
+  import('../pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })),
 );
-const CartPage = lazy(() => import('../pages/CartPage').then((module) => ({ default: module.CartPage })));
-const CheckoutPage = lazy(() => import('../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
-const FavouritesPage = lazy(() =>
-  import('../pages/FavouritesPage').then((module) => ({ default: module.FavouritesPage }))
+const CartPage = lazyPage(() => import('../pages/CartPage').then((module) => ({ default: module.CartPage })));
+const CheckoutPage = lazyPage(() => import('../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
+const FavouritesPage = lazyPage(() =>
+  import('../pages/FavouritesPage').then((module) => ({ default: module.FavouritesPage })),
 );
-const OrdersPage = lazy(() => import('../pages/OrdersPage').then((module) => ({ default: module.OrdersPage })));
-const OrderConfirmationPage = lazy(() =>
-  import('../pages/OrderConfirmationPage').then((module) => ({ default: module.OrderConfirmationPage }))
+const OrdersPage = lazyPage(() => import('../pages/OrdersPage').then((module) => ({ default: module.OrdersPage })));
+const OrderConfirmationPage = lazyPage(() =>
+  import('../pages/OrderConfirmationPage').then((module) => ({ default: module.OrderConfirmationPage })),
 );
-const OrderDetailPage = lazy(() =>
-  import('../pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage }))
+const OrderDetailPage = lazyPage(() =>
+  import('../pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
 );
-const AccountPage = lazy(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
-const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
+const NotFoundPage = lazyPage(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       {
         index: true,
-        element: <HomePage />
+        element: <HomePage />,
       },
       {
         path: 'menu',
-        element: <MenuPage />
+        element: <MenuPage />,
       },
       {
         path: 'menu/:productId',
-        element: <ProductDetailPage />
+        element: <ProductDetailPage />,
       },
       {
         path: 'about',
-        element: <AboutPage />
+        element: <AboutPage />,
       },
       {
         path: 'contact',
-        element: <ContactPage />
+        element: <ContactPage />,
       },
       {
         path: 'faq',
-        element: <FaqPage />
+        element: <FaqPage />,
       },
       {
         path: 'terms',
-        element: <TermsPage />
+        element: <TermsPage />,
       },
       {
         path: 'privacy',
-        element: <PrivacyPage />
+        element: <PrivacyPage />,
       },
       {
         element: <GuestRoute />,
         children: [
           {
             path: 'login',
-            element: <LoginPage />
+            element: <LoginPage />,
           },
           {
             path: 'register',
-            element: <RegisterPage />
+            element: <RegisterPage />,
           },
           {
             path: 'forgot-password',
-            element: <ForgotPasswordPage />
+            element: <ForgotPasswordPage />,
           },
           {
             path: 'reset-password',
-            element: <ResetPasswordPage />
-          }
-        ]
+            element: <ResetPasswordPage />,
+          },
+        ],
       },
       {
         path: 'cart',
-        element: <CartPage />
+        element: <CartPage />,
       },
       {
         element: <ProtectedRoute />,
         children: [
           {
             path: 'checkout',
-            element: <CheckoutPage />
+            element: <CheckoutPage />,
           },
           {
             path: 'favourites',
-            element: <FavouritesPage />
+            element: <FavouritesPage />,
           },
           {
             path: 'orders',
-            element: <OrdersPage />
+            element: <OrdersPage />,
           },
           {
             path: 'orders/:orderId/confirmation',
-            element: <OrderConfirmationPage />
+            element: <OrderConfirmationPage />,
           },
           {
             path: 'orders/:orderId',
-            element: <OrderDetailPage />
+            element: <OrderDetailPage />,
           },
           {
             path: 'account',
-            element: <AccountPage />
-          }
-        ]
+            element: <AccountPage />,
+          },
+        ],
       },
       {
         path: '*',
-        element: <NotFoundPage />
-      }
-    ]
-  }
+        element: <NotFoundPage />,
+      },
+    ],
+  },
 ]);

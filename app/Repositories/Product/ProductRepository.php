@@ -132,8 +132,17 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
                         ->orWhere('customer_ingredient_summary', 'like', "%{$search}%");
                 });
             })
-            ->when(filled($filters['product_category_id'] ?? null), fn ($query) => $query->where('product_category_id', (int) $filters['product_category_id']))
-            ->when(filled($filters['product_flavour_id'] ?? null), fn ($query) => $query->whereHas('flavours', fn ($flavourQuery) => $flavourQuery->whereKey((int) $filters['product_flavour_id'])->where('is_active', true)))
+            ->when($this->normalizedFilterIds($filters, 'product_category_id', 'product_category_ids') !== [], function ($query) use ($filters): void {
+                $query->whereIn('product_category_id', $this->normalizedFilterIds($filters, 'product_category_id', 'product_category_ids'));
+            })
+            ->when($this->normalizedFilterIds($filters, 'product_flavour_id', 'product_flavour_ids') !== [], function ($query) use ($filters): void {
+                $flavourIds = $this->normalizedFilterIds($filters, 'product_flavour_id', 'product_flavour_ids');
+
+                $query->whereHas(
+                    'flavours',
+                    fn ($flavourQuery) => $flavourQuery->whereIn('product_flavours.id', $flavourIds)->where('is_active', true),
+                );
+            })
             ->when(($filters['featured'] ?? null) === 'featured', fn ($query) => $query->where('is_featured', true))
             ->when(($filters['new'] ?? null) === 'new', fn ($query) => $query->where('is_new', true))
             ->when(($filters['bestseller'] ?? null) === 'bestseller', fn ($query) => $query->where('is_bestseller', true))
@@ -328,5 +337,20 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->when($filters->getAvailability() === 'unavailable', fn ($query) => $query->where('is_available', false))
             ->when($filters->getFeatured() === 'featured', fn ($query) => $query->where('is_featured', true))
             ->when($filters->getFeatured() === 'standard', fn ($query) => $query->where('is_featured', false));
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return list<int>
+     */
+    protected function normalizedFilterIds(array $filters, string $singularKey, string $pluralKey): array
+    {
+        return collect($filters[$pluralKey] ?? [])
+            ->when(filled($filters[$singularKey] ?? null), fn ($ids) => $ids->push($filters[$singularKey]))
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

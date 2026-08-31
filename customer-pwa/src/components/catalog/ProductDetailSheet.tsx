@@ -83,6 +83,7 @@ export function ProductDetailSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="product-overlay-handle" aria-hidden="true" />
 
@@ -91,7 +92,7 @@ export function ProductDetailSheet({
             ref={closeButtonRef}
             type="button"
             className="product-overlay-close"
-            aria-label="Close"
+            aria-label="Close product details"
             onClick={onClose}
           >
             <i className="bi bi-x-lg" aria-hidden="true"></i>
@@ -180,12 +181,12 @@ export function ProductDetailSheet({
                 </div>
               </div>
             ) : null}
-
-            <div className="product-overlay-block product-overlay-order">
-              <span className="product-overlay-label">Add to order</span>
-              <ProductOrderControl product={product} mode="full" className="product-overlay-order-control" />
-            </div>
           </div>
+        </div>
+
+        <div className="product-overlay-footer-order">
+          <span className="product-overlay-label">Add to order</span>
+          <ProductOrderControl product={product} mode="full" className="product-overlay-order-control" />
         </div>
       </div>
     </div>,

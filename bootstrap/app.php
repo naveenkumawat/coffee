@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AddRequestContext;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\ExposeSanctumCsrfToken;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(AddRequestContext::class);
+        $middleware->appendToGroup('web', ExposeSanctumCsrfToken::class);
         $middleware->statefulApi();
         $middleware->redirectGuestsTo(function (Request $request): string {
             $routeName = (string) ($request->route()?->getName() ?? '');

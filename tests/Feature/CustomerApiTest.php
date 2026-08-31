@@ -218,6 +218,67 @@ class CustomerApiTest extends TestCase
             ->assertJsonMissingPath('data.0.cost');
     }
 
+    public function test_catalog_products_support_multi_category_and_flavour_filters(): void
+    {
+        [$hotCategory, $mocha, $hotProduct] = $this->createPublicCatalogProduct(
+            price: '10.00',
+            productName: 'Hot Mocha',
+            variantName: 'Regular',
+        );
+        $mocha->update(['name' => 'Mocha Filter']);
+        $hotProduct->flavours()->sync([$mocha->id]);
+
+        [$coldCategory, $caramel, $coldProduct] = $this->createPublicCatalogProduct(
+            price: '11.00',
+            productName: 'Iced Caramel',
+            variantName: 'Regular',
+        );
+        $caramel->update(['name' => 'Caramel Filter']);
+        $coldProduct->flavours()->sync([$caramel->id]);
+
+        [$teaCategory, $vanilla, $teaProduct] = $this->createPublicCatalogProduct(
+            price: '9.00',
+            productName: 'Vanilla Tea',
+            variantName: 'Regular',
+        );
+        $vanilla->update(['name' => 'Vanilla Filter']);
+        $teaProduct->flavours()->sync([$vanilla->id]);
+
+        $this->getJson(route('api.v1.catalog.products.index', [
+            'product_category_ids' => [$hotCategory->id, $coldCategory->id],
+        ]))
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'Hot Mocha'])
+            ->assertJsonFragment(['name' => 'Iced Caramel'])
+            ->assertJsonMissing(['name' => 'Vanilla Tea']);
+
+        $this->getJson(route('api.v1.catalog.products.index', [
+            'product_flavour_ids' => [$mocha->id, $caramel->id],
+        ]))
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'Hot Mocha'])
+            ->assertJsonFragment(['name' => 'Iced Caramel'])
+            ->assertJsonMissing(['name' => 'Vanilla Tea']);
+
+        $this->getJson(route('api.v1.catalog.products.index', [
+            'product_category_ids' => [$hotCategory->id, $coldCategory->id],
+            'product_flavour_ids' => [$mocha->id],
+        ]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Hot Mocha');
+
+        $this->getJson(route('api.v1.catalog.products.index', [
+            'product_category_id' => $teaCategory->id,
+            'product_flavour_id' => $vanilla->id,
+        ]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Vanilla Tea');
+    }
+
     public function test_customer_cart_api_crud_count_and_totals_are_customer_scoped(): void
     {
         $customer = User::factory()->customer()->create();

@@ -6,7 +6,6 @@ import { StickyActionBar } from '../components/common/StickyActionBar';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
@@ -107,17 +106,17 @@ export function CartPage() {
 
   return (
     <div className={`page-container ${cart?.items.length ? 'has-sticky-cta' : ''}`.trim()}>
-      <PageHeader
-        title="Cart"
-        description={summary ? `${summary.item_count} item(s) ready for checkout` : 'Review your order'}
-        rightSlot={
-          cart?.items.length ? (
-            <button type="button" className="link-button" onClick={() => void handleClear()} disabled={isClearing}>
-              {isClearing ? 'Clearing...' : 'Clear all'}
-            </button>
-          ) : null
-        }
-      />
+      <h1 className="visually-hidden">Cart</h1>
+      {cart?.items.length ? (
+        <div className="page-toolbar">
+          <span className="page-toolbar-meta">
+            {summary ? `${summary.item_count} item(s)` : 'Your cart'}
+          </span>
+          <button type="button" className="link-button" onClick={() => void handleClear()} disabled={isClearing}>
+            {isClearing ? 'Clearing...' : 'Clear all'}
+          </button>
+        </div>
+      ) : null}
 
       {isLoading ? <LoadingSkeleton cardCount={2} lines={3} variant="list" /> : null}
       {!isLoading && errorMessage ? <FormFeedback message={errorMessage} variant="error" /> : null}

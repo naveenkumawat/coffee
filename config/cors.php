@@ -11,7 +11,7 @@ return [
     'allowed_origins' => $allowedOrigins,
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['Content-Type', 'X-Requested-With', 'X-CSRF-TOKEN', 'X-XSRF-TOKEN', 'Accept', 'Authorization', 'Origin'],
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-CSRF-TOKEN'],
     'max_age' => 0,
     'supports_credentials' => true,
 ];

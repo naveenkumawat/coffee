@@ -4,7 +4,9 @@ import { Product, ProductCategory, ProductFlavour, ProductListMeta, ProductVaria
 export interface ProductQueryFilters {
   search?: string | null;
   categoryId?: number | null;
+  categoryIds?: number[];
   flavourId?: number | null;
+  flavourIds?: number[];
   featured?: boolean;
   isNew?: boolean;
   isBestseller?: boolean;
@@ -30,12 +32,22 @@ export function buildProductQuery(filters: ProductQueryFilters = {}): string {
     params.set('search', filters.search.trim());
   }
 
-  if (filters.categoryId) {
-    params.set('product_category_id', String(filters.categoryId));
+  const categoryIds = [
+    ...(filters.categoryIds ?? []),
+    ...(filters.categoryId ? [filters.categoryId] : []),
+  ].filter((id, index, list) => id > 0 && list.indexOf(id) === index);
+
+  const flavourIds = [
+    ...(filters.flavourIds ?? []),
+    ...(filters.flavourId ? [filters.flavourId] : []),
+  ].filter((id, index, list) => id > 0 && list.indexOf(id) === index);
+
+  for (const categoryId of categoryIds) {
+    params.append('product_category_ids[]', String(categoryId));
   }
 
-  if (filters.flavourId) {
-    params.set('product_flavour_id', String(filters.flavourId));
+  for (const flavourId of flavourIds) {
+    params.append('product_flavour_ids[]', String(flavourId));
   }
 
   if (filters.featured) {

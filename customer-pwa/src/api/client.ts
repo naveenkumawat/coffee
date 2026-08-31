@@ -26,12 +26,66 @@ type UnauthorizedHandler = () => void;
 
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 
-export function getApiBaseUrl(): string {
-  const value = import.meta.env.VITE_API_BASE_URL?.trim();
+/** Plain CSRF token from Sanctum response header when XSRF cookie is not JS-readable (cross-port SPA). */
+let csrfTokenFromHeader: string | null = null;
 
-  return value && value.length > 0 ? value.replace(/\/$/, '') : '/api/v1';
+function isLocalOrPrivateHostname(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1') {
+    return true;
+  }
+
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+
+  return false;
 }
 
+/**
+ * Absolute API base ending in /api/v1.
+ * On local/LAN, rewrite the hostname to match the address bar so opening
+ * localhost:4173 or 192.168.x.x:4173 both hit Apache on that same host
+ * (never copies the PWA port onto the API URL). Production cross-host APIs are left alone.
+ */
+export function getApiBaseUrl(): string {
+  const value = import.meta.env.VITE_API_BASE_URL?.trim();
+  const configured = value && value.length > 0 ? value.replace(/\/$/, '') : '/api/v1';
+
+  let url: URL;
+
+  try {
+    url = new URL(configured, window.location.origin);
+  } catch {
+    return configured;
+  }
+
+  const pageHost = window.location.hostname;
+
+  if (
+    url.hostname !== pageHost
+    && (isLocalOrPrivateHostname(url.hostname) || isLocalOrPrivateHostname(pageHost))
+  ) {
+    url.hostname = pageHost;
+    url.port = '';
+    url.protocol = window.location.protocol;
+  }
+
+  return `${url.origin}${url.pathname}`.replace(/\/$/, '');
+}
+
+/**
+ * Laravel app root (scheme + host + optional subdirectory), derived from VITE_API_BASE_URL.
+ * Example: http://192.168.0.10/coffee/api/v1 → http://192.168.0.10/coffee/
+ * Used for /sanctum/csrf-cookie (never /api/v1/sanctum/...).
+ */
 export function getBackendBaseUrl(): string {
   const baseUrl = new URL(getApiBaseUrl(), window.location.origin);
   const normalizedPath = baseUrl.pathname.replace(/\/api\/v1\/?$/, '/');
@@ -41,6 +95,18 @@ export function getBackendBaseUrl(): string {
   baseUrl.hash = '';
 
   return baseUrl.toString();
+}
+
+export function readXsrfToken(): string | null {
+  return readCookie('XSRF-TOKEN');
+}
+
+export function setCsrfTokenFromHeader(token: string | null): void {
+  csrfTokenFromHeader = token;
+}
+
+export function clearCsrfTokenFromHeader(): void {
+  csrfTokenFromHeader = null;
 }
 
 function readCookie(name: string): string | null {
@@ -91,10 +157,16 @@ export async function request<TResponse>(path: string, init: RequestInit = {}): 
     headers.set('Content-Type', 'application/json');
   }
 
-  const xsrfToken = readCookie('XSRF-TOKEN');
+  const xsrfToken = readXsrfToken();
 
   if (xsrfToken && !headers.has('X-XSRF-TOKEN') && !headers.has('X-CSRF-TOKEN')) {
     headers.set('X-XSRF-TOKEN', xsrfToken);
+  } else if (csrfTokenFromHeader && !headers.has('X-XSRF-TOKEN') && !headers.has('X-CSRF-TOKEN')) {
+    headers.set('X-CSRF-TOKEN', csrfTokenFromHeader);
+  }
+
+  if (!headers.has('X-Requested-With')) {
+    headers.set('X-Requested-With', 'XMLHttpRequest');
   }
 
   const response = await fetch(toUrl(path), {

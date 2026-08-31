@@ -30,6 +30,8 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
 
     let cancelled = false;
     let updateIntervalId: number | undefined;
+    let onVisible: (() => void) | undefined;
+    let onFocus: (() => void) | undefined;
 
     function onControllerChange(): void {
       if (refreshingRef.current) {
@@ -74,9 +76,21 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
           });
         });
 
-        updateIntervalId = window.setInterval(() => {
+        const checkForUpdate = (): void => {
           void registration.update();
-        }, 60 * 60 * 1000);
+        };
+
+        onVisible = (): void => {
+          if (document.visibilityState === 'visible') {
+            checkForUpdate();
+          }
+        };
+        onFocus = checkForUpdate;
+
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onFocus);
+
+        updateIntervalId = window.setInterval(checkForUpdate, 60 * 60 * 1000);
       } catch {
         // Installability still works from the manifest even if SW registration fails locally.
       }
@@ -87,6 +101,14 @@ export function useServiceWorkerUpdate(): ServiceWorkerUpdateState {
     return () => {
       cancelled = true;
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+
+      if (onVisible) {
+        document.removeEventListener('visibilitychange', onVisible);
+      }
+
+      if (onFocus) {
+        window.removeEventListener('focus', onFocus);
+      }
 
       if (updateIntervalId !== undefined) {
         window.clearInterval(updateIntervalId);

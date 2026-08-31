@@ -96,11 +96,26 @@ npm run preview
 
 ## PWA Runtime Behavior
 
-- Service worker: precaches app shell/static assets only (`scripts/generate-sw.mjs` after `vite build`)
-- `/api/*` and `/sanctum/*` are never intercepted as authoritative cache; navigation falls back to the shell/`offline.html`
+- Service worker: custom Workbox-style SW from `scripts/generate-sw.mjs` (after `vite build`) — not `vite-plugin-pwa` codegen
+- Navigation / `index.html`: **network-first**, then refresh the shell cache (avoids stale HTML pointing at deleted hashed chunks)
+- Hashed `/assets/*`: **cache-first** (immutable filenames); HTML MIME responses are never stored as JS/CSS
+- `sw.js` + web manifest: **network-first** (never long-cached by the SW)
+- `/api/*`, `/sanctum/*`, and `/storage/*` are never intercepted
 - Offline banner + `public/offline.html` explain that live data needs a connection
-- Update banner prompts refresh when a new service-worker version is waiting
+- Update banner prompts refresh when a new service-worker version is waiting (`SKIP_WAITING` only on user action)
+- Lazy route chunk failures: one automatic recovery reload per build (clears shell caches); otherwise branded `RouteErrorPage`
 - Manifest: `public/manifest.webmanifest` with standalone display and `any` + `maskable` icons
+
+### Clean LAN / preview rebuild testing
+
+`npm run preview` is production-mode and **will** register the service worker. After frequent rebuilds:
+
+1. Stop preview, rebuild (`npm run build`), start preview again.
+2. In the browser (same origin: host + port): DevTools → Application → **Unregister** service workers, then **Clear site data** (or at least Cache Storage + unregister).
+3. Hard-refresh / reopen `http://<host>:4173`.
+4. Optional check: open app → navigate Menu/Home → rebuild while the tab stays open → navigate again. Expect one silent recovery reload **or** the branded refresh screen — never the React Router “Hey developer” page.
+
+`npm run dev` unregisters any SW on that origin so local HMR is not controlled by a stale production worker.
 
 ## Production Deployment / Cutover Checklist
 

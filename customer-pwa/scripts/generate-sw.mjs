@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,6 +46,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
   );
+  // Do not skipWaiting here — the app prompts via SKIP_WAITING to avoid mid-session corruption.
 });
 
 self.addEventListener('activate', (event) => {
@@ -61,7 +62,102 @@ self.addEventListener('activate', (event) => {
 });
 
 function isAuthoritativeApi(url) {
-  return url.pathname.startsWith('/api/') || url.pathname.startsWith('/sanctum/') || /\\/api\\/v\\d+\\//.test(url.pathname);
+  return url.pathname.startsWith('/api/')
+    || url.pathname.startsWith('/sanctum/')
+    || /\\/api\\/v\\d+\\//.test(url.pathname);
+}
+
+function isNavigationShell(url) {
+  return url.pathname === '/'
+    || url.pathname === '/index.html'
+    || url.pathname.endsWith('/index.html');
+}
+
+function isNeverCachePath(url) {
+  return url.pathname.endsWith('/sw.js')
+    || url.pathname.endsWith('sw.js')
+    || url.pathname.endsWith('.webmanifest')
+    || url.pathname.endsWith('/manifest.webmanifest');
+}
+
+function isHashedAsset(url) {
+  return url.pathname.startsWith('/assets/');
+}
+
+async function networkFirstNavigation(request) {
+  try {
+    const response = await fetch(request);
+
+    if (response && response.ok) {
+      const cache = await caches.open(SHELL_CACHE);
+      await cache.put('/index.html', response.clone());
+    }
+
+    return response;
+  } catch {
+    return (await caches.match('/index.html'))
+      || (await caches.match('/offline.html'))
+      || Response.error();
+  }
+}
+
+async function networkFirst(request) {
+  try {
+    return await fetch(request);
+  } catch {
+    return (await caches.match(request)) || Response.error();
+  }
+}
+
+async function cacheFirstHashedAsset(request) {
+  const cached = await caches.match(request);
+
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetch(request);
+
+  if (!response || response.status !== 200 || response.type !== 'basic') {
+    return response;
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+
+  // Never cache HTML (or other documents) as static assets — prevents MIME mistakes
+  // when a host falls back unknown paths to index.html.
+  if (contentType.includes('text/html') || contentType.includes('text/xml')) {
+    return response;
+  }
+
+  const copy = response.clone();
+  void caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
+
+  return response;
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  const cached = await cache.match(request);
+  const networkPromise = fetch(request)
+    .then((response) => {
+      if (!response || response.status !== 200 || response.type !== 'basic') {
+        return response;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+
+      if (contentType.includes('text/html') || contentType.includes('text/xml')) {
+        return response;
+      }
+
+      void cache.put(request, response.clone());
+
+      return response;
+    })
+    .catch(() => null);
+
+  return cached || (await networkPromise) || Response.error();
 }
 
 self.addEventListener('fetch', (event) => {
@@ -74,55 +170,29 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (url.origin !== self.location.origin) {
-    if (isAuthoritativeApi(url)) {
-      return;
-    }
-
     return;
   }
 
-  if (isAuthoritativeApi(url)) {
+  if (isAuthoritativeApi(url) || url.pathname.startsWith('/storage/')) {
     return;
   }
 
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          return response;
-        })
-        .catch(async () => {
-          return (await caches.match('/index.html')) || (await caches.match('/offline.html')) || Response.error();
-        })
-    );
+  if (isNeverCachePath(url)) {
+    event.respondWith(networkFirst(request));
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached;
-      }
+  if (request.mode === 'navigate' || isNavigationShell(url)) {
+    event.respondWith(networkFirstNavigation(request));
+    return;
+  }
 
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+  if (isHashedAsset(url)) {
+    event.respondWith(cacheFirstHashedAsset(request));
+    return;
+  }
 
-        const contentType = response.headers.get('content-type') || '';
-
-        // Never cache HTML (or other documents) as static assets — prevents MIME mistakes
-        // when a host falls back unknown paths to index.html.
-        if (contentType.includes('text/html') || contentType.includes('text/xml')) {
-          return response;
-        }
-
-        const copy = response.clone();
-        void caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
-        return response;
-      });
-    })
-  );
+  event.respondWith(staleWhileRevalidate(request));
 });
 
 self.addEventListener('message', (event) => {

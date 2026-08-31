@@ -7,6 +7,7 @@ import { ToastHost } from '../components/common/ToastHost';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
+import { clearChunkRecoveryFlag } from '../utils/chunkRecovery';
 
 export function AppLayout() {
   const networkStatus = useNetworkStatus();
@@ -15,6 +16,16 @@ export function AppLayout() {
   const [hasStickyCta, setHasStickyCta] = useState(false);
 
   useAppBootstrap();
+
+  useEffect(() => {
+    // Clear recovery guard only after a short healthy window so a failed
+    // post-reload boot cannot loop forever.
+    const timer = window.setTimeout(() => {
+      clearChunkRecoveryFlag();
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const update = (): void => {

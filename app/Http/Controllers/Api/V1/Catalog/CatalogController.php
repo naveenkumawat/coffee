@@ -45,7 +45,7 @@ class CatalogController extends Controller
 
     public function products(ProductIndexRequest $request): JsonResponse
     {
-        $filters = $request->validated();
+        $filters = $request->catalogFilters();
         $filters['availability'] = 'available';
         $perPage = max(1, min(50, (int) $request->integer('per_page', 12)));
 

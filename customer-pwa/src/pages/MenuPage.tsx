@@ -8,19 +8,28 @@ import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-function parsePositiveInt(value: string | null): number | null {
-  if (!value) {
-    return null;
+function parseIdList(raw: string | null): number[] {
+  if (!raw?.trim()) {
+    return [];
   }
 
-  const parsed = Number(value);
+  return raw
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((value) => Number.isInteger(value) && value > 0)
+    .filter((value, index, list) => list.indexOf(value) === index);
+}
 
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+function serializeIdList(ids: number[]): string {
+  return ids.join(',');
+}
+
+function toggleId(ids: number[], id: number): number[] {
+  return ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id];
 }
 
 export function MenuPage() {
@@ -34,21 +43,40 @@ export function MenuPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const productRequestId = useRef(0);
 
-  const activeCategoryId = useMemo(() => parsePositiveInt(searchParams.get('category')), [searchParams]);
-  const activeFlavourId = useMemo(() => parsePositiveInt(searchParams.get('flavour')), [searchParams]);
+  const selectedCategoryIds = useMemo(() => {
+    const fromList = parseIdList(searchParams.get('categories'));
+    if (fromList.length > 0) {
+      return fromList;
+    }
+
+    const legacy = Number(searchParams.get('category'));
+    return Number.isInteger(legacy) && legacy > 0 ? [legacy] : [];
+  }, [searchParams]);
+
+  const selectedFlavourIds = useMemo(() => {
+    const fromList = parseIdList(searchParams.get('flavours'));
+    if (fromList.length > 0) {
+      return fromList;
+    }
+
+    const legacy = Number(searchParams.get('flavour'));
+    return Number.isInteger(legacy) && legacy > 0 ? [legacy] : [];
+  }, [searchParams]);
+
   const activeSearch = useMemo(() => (searchParams.get('q') ?? '').trim(), [searchParams]);
   const [searchInput, setSearchInput] = useState(activeSearch);
 
-  const activeCategory = useMemo(
-    () => categories.find((category) => category.id === activeCategoryId) ?? null,
-    [activeCategoryId, categories],
+  const selectedCategories = useMemo(
+    () => categories.filter((category) => selectedCategoryIds.includes(category.id)),
+    [categories, selectedCategoryIds],
   );
-  const activeFlavour = useMemo(
-    () => flavours.find((flavour) => flavour.id === activeFlavourId) ?? null,
-    [activeFlavourId, flavours],
+  const selectedFlavours = useMemo(
+    () => flavours.filter((flavour) => selectedFlavourIds.includes(flavour.id)),
+    [flavours, selectedFlavourIds],
   );
 
-  const hasActiveFilters = Boolean(activeCategoryId || activeFlavourId || activeSearch);
+  const facetFilterCount = selectedCategoryIds.length + selectedFlavourIds.length;
+  const hasActiveFilters = facetFilterCount > 0 || Boolean(activeSearch);
 
   useEffect(() => {
     setSearchInput(activeSearch);
@@ -126,8 +154,8 @@ export function MenuPage() {
         const response = await fetchProducts(
           buildProductQuery({
             search: activeSearch,
-            categoryId: activeCategoryId,
-            flavourId: activeFlavourId,
+            categoryIds: selectedCategoryIds,
+            flavourIds: selectedFlavourIds,
             perPage: 24,
           }),
         );
@@ -158,31 +186,54 @@ export function MenuPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeCategoryId, activeFlavourId, activeSearch, isBootstrapping]);
+  }, [selectedCategoryIds, selectedFlavourIds, activeSearch, isBootstrapping]);
 
   function updateFilterParams(mutator: (params: URLSearchParams) => void): void {
     const nextParams = new URLSearchParams(searchParams);
     mutator(nextParams);
+    nextParams.delete('category');
+    nextParams.delete('flavour');
     setSearchParams(nextParams, { replace: true });
   }
 
-  function handleSelectCategory(categoryId: number | null): void {
+  function handleToggleCategory(categoryId: number | null): void {
     updateFilterParams((params) => {
-      if (categoryId) {
-        params.set('category', String(categoryId));
+      if (categoryId === null) {
+        params.delete('categories');
+        return;
+      }
+
+      const nextIds = toggleId(selectedCategoryIds, categoryId);
+
+      if (nextIds.length === 0) {
+        params.delete('categories');
       } else {
-        params.delete('category');
+        params.set('categories', serializeIdList(nextIds));
       }
     });
   }
 
-  function handleSelectFlavour(flavourId: number | null): void {
+  function handleToggleFlavour(flavourId: number | null): void {
     updateFilterParams((params) => {
-      if (flavourId) {
-        params.set('flavour', String(flavourId));
-      } else {
-        params.delete('flavour');
+      if (flavourId === null) {
+        params.delete('flavours');
+        return;
       }
+
+      const nextIds = toggleId(selectedFlavourIds, flavourId);
+
+      if (nextIds.length === 0) {
+        params.delete('flavours');
+      } else {
+        params.set('flavours', serializeIdList(nextIds));
+      }
+    });
+  }
+
+  function handleClearFacetFilters(): void {
+    updateFilterParams((params) => {
+      params.delete('categories');
+      params.delete('flavours');
     });
   }
 
@@ -198,6 +249,14 @@ export function MenuPage() {
     });
   }
 
+  function removeCategory(categoryId: number): void {
+    handleToggleCategory(categoryId);
+  }
+
+  function removeFlavour(flavourId: number): void {
+    handleToggleFlavour(flavourId);
+  }
+
   const emptyDescription = hasActiveFilters
     ? 'No drinks match these filters. Clear them or try another search.'
     : 'No drinks are available on the menu right now.';
@@ -211,7 +270,7 @@ export function MenuPage() {
 
   return (
     <div className="page-container menu-page">
-      <PageHeader title="Menu" description="Find a drink and order for pickup." />
+      <h1 className="visually-hidden">Menu</h1>
 
       <div className="menu-discovery">
         <label className="menu-search-field">
@@ -234,37 +293,59 @@ export function MenuPage() {
           ) : null}
         </label>
 
-        <div className="menu-filter-block">
+        <section className="menu-filter-section">
           <p className="menu-filter-label">Categories</p>
-          <CategoryPills categories={categories} activeCategoryId={activeCategoryId} onSelect={handleSelectCategory} />
-        </div>
+          <div className="menu-filter-rail">
+            <CategoryPills
+              categories={categories}
+              selectedCategoryIds={selectedCategoryIds}
+              onToggle={handleToggleCategory}
+            />
+          </div>
+        </section>
 
-        <div className="menu-filter-block">
-          <p className="menu-filter-label">Flavours</p>
-          <FlavourPills flavours={flavours} activeFlavourId={activeFlavourId} onSelect={handleSelectFlavour} />
-        </div>
+        {flavours.length > 0 ? (
+          <section className="menu-filter-section">
+            <p className="menu-filter-label">Flavours</p>
+            <div className="menu-filter-rail">
+              <FlavourPills
+                flavours={flavours}
+                selectedFlavourIds={selectedFlavourIds}
+                onToggle={handleToggleFlavour}
+              />
+            </div>
+          </section>
+        ) : null}
 
-        {hasActiveFilters ? (
-          <div className="menu-active-filters" aria-label="Active filters">
-            {activeSearch ? (
-              <button type="button" className="filter-chip" onClick={handleClearSearch}>
-                “{activeSearch}”
-                <i className="bi bi-x" aria-hidden="true"></i>
-              </button>
-            ) : null}
-            {activeCategory ? (
-              <button type="button" className="filter-chip" onClick={() => handleSelectCategory(null)}>
-                {activeCategory.name}
-                <i className="bi bi-x" aria-hidden="true"></i>
-              </button>
-            ) : null}
-            {activeFlavour ? (
-              <button type="button" className="filter-chip" onClick={() => handleSelectFlavour(null)}>
-                {activeFlavour.name}
-                <i className="bi bi-x" aria-hidden="true"></i>
-              </button>
-            ) : null}
-            <button type="button" className="link-button" onClick={handleClearFilters}>
+        {facetFilterCount > 0 ? (
+          <div className="menu-active-summary" aria-label="Selected filters">
+            <div className="menu-active-summary-rail">
+              {selectedCategories.map((category) => (
+                <button
+                  type="button"
+                  key={`category-${category.id}`}
+                  className="menu-active-chip"
+                  onClick={() => removeCategory(category.id)}
+                  aria-label={`Remove ${category.name} filter`}
+                >
+                  {category.name}
+                  <i className="bi bi-x" aria-hidden="true"></i>
+                </button>
+              ))}
+              {selectedFlavours.map((flavour) => (
+                <button
+                  type="button"
+                  key={`flavour-${flavour.id}`}
+                  className="menu-active-chip"
+                  onClick={() => removeFlavour(flavour.id)}
+                  aria-label={`Remove ${flavour.name} filter`}
+                >
+                  {flavour.name}
+                  <i className="bi bi-x" aria-hidden="true"></i>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="link-button menu-clear-filters" onClick={handleClearFacetFilters}>
               Clear all
             </button>
           </div>

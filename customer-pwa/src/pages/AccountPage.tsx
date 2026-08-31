@@ -5,7 +5,7 @@ import { ApiError, ApiValidationErrors } from '../api/client';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { PasswordField } from '../components/forms/PasswordField';
-import { PageHeader } from '../components/common/PageHeader';
+import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { useAuthStore } from '../stores/authStore';
 import { useToastStore } from '../stores/toastStore';
 import { getFieldError } from '../utils/forms';
@@ -124,7 +124,8 @@ export function AccountPage() {
   if (!customer) {
     return (
       <div className="page-container">
-        <PageHeader title="Account" description="Loading your account…" />
+        <h1 className="visually-hidden">Account</h1>
+        <LoadingSkeleton cardCount={2} lines={3} />
       </div>
     );
   }
@@ -133,7 +134,7 @@ export function AccountPage() {
 
   return (
     <div className="page-container account-page">
-      <PageHeader title="Account" description="Profile, orders, and cafe info" />
+      <h1 className="visually-hidden">Account</h1>
 
       <section className="account-hero account-hero-clean motion-enter">
         <p className="eyebrow">Signed in</p>

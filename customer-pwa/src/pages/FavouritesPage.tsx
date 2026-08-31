@@ -7,7 +7,6 @@ import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { useFavouriteStore } from '../stores/favouriteStore';
 import { Product } from '../types/catalog';
 import { buildLoginRedirect } from '../utils/navigation';
@@ -73,11 +72,7 @@ export function FavouritesPage() {
 
   return (
     <div className="page-container">
-      <PageHeader
-        title="Favourites"
-        description="Your saved drinks for quicker ordering."
-        showBack
-      />
+      <h1 className="visually-hidden">Favourites</h1>
 
       {isLoading ? <LoadingSkeleton cardCount={3} lines={3} /> : null}
       {!isLoading && errorMessage ? <ErrorState description={errorMessage} onRetry={() => void loadFavourites(1)} /> : null}

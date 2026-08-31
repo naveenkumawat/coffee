@@ -46,6 +46,7 @@ export function useProductOverlay({
     style.position = 'fixed';
     style.top = `-${scrollY}px`;
     style.width = '100%';
+    document.body.classList.add('product-overlay-open');
 
     closedByPopRef.current = false;
     const alreadyOurs = window.history.state?.productOverlay === historyKey;
@@ -80,6 +81,7 @@ export function useProductOverlay({
       style.position = previousPosition;
       style.top = previousTop;
       style.width = previousWidth;
+      document.body.classList.remove('product-overlay-open');
       window.scrollTo(0, scrollY);
 
       if (pushedHistoryRef.current && !closedByPopRef.current) {

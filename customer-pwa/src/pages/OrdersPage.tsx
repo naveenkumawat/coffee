@@ -4,7 +4,6 @@ import { ApiError } from '../api/client';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { PageHeader } from '../components/common/PageHeader';
 import { OrderListCard } from '../components/orders/OrderListCard';
 import { Order } from '../types/order';
 import { isActiveOrder, sortOrdersForDisplay } from '../utils/orders';
@@ -58,19 +57,15 @@ export function OrdersPage() {
 
   return (
     <div className="page-container orders-page">
-      <PageHeader
-        title="Orders"
-        description={
-          activeCount > 0
-            ? `${activeCount} active · newest statuses first`
-            : 'Your takeaway and delivery orders'
-        }
-        rightSlot={
-          <button type="button" className="link-button" onClick={() => void loadOrders(1)} disabled={isLoading}>
-            {isLoading ? 'Refreshing…' : 'Refresh'}
-          </button>
-        }
-      />
+      <h1 className="visually-hidden">Orders</h1>
+      <div className="page-toolbar">
+        <span className="page-toolbar-meta">
+          {activeCount > 0 ? `${activeCount} active · newest first` : 'Your orders'}
+        </span>
+        <button type="button" className="link-button" onClick={() => void loadOrders(1)} disabled={isLoading}>
+          {isLoading ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </div>
 
       {isLoading ? <LoadingSkeleton cardCount={3} lines={3} variant="list" /> : null}
       {!isLoading && errorMessage ? <ErrorState description={errorMessage} onRetry={() => void loadOrders(1)} /> : null}
