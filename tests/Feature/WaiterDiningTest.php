@@ -70,6 +70,55 @@ class WaiterDiningTest extends TestCase
         $this->get(route('administrator.website-settings.edit'))->assertForbidden();
     }
 
+    public function test_waiter_can_download_dining_invoice_after_bill_flow(): void
+    {
+        $this->enableDining();
+
+        $waiter = User::factory()->create([
+            'role' => UserRole::Waiter,
+            'is_active' => true,
+        ]);
+        $table = CafeTable::factory()->create(['code' => 'W2', 'is_active' => true]);
+        $variant = $this->makePurchasableVariant();
+
+        $this->actingAs($waiter, 'admin');
+
+        $this->post(route('waiter.sessions.store'), [
+            'cafe_table_id' => $table->id,
+            'guest_count' => 2,
+        ])->assertRedirect();
+
+        $session = app(DiningSessionServiceInterface::class)->findActiveForTable($table);
+        $this->assertNotNull($session);
+
+        $this->post(route('waiter.sessions.rounds.store', $session), [
+            'product_variant_id' => $variant->id,
+            'quantity' => 1,
+        ])->assertRedirect();
+
+        $this->post(route('waiter.sessions.request-bill', $session))->assertRedirect();
+
+        $this->get(route('waiter.sessions.invoice', $session))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_waiter_cannot_access_administrator_management_surfaces(): void
+    {
+        $waiter = User::factory()->create([
+            'role' => UserRole::Waiter,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($waiter, 'admin');
+
+        $this->get(route('administrator.users.index'))->assertForbidden();
+        $this->get(route('administrator.website-settings.edit'))->assertForbidden();
+        $this->get(route('administrator.promotions.index'))->assertForbidden();
+        $this->get(route('administrator.referrals.index'))->assertForbidden();
+        $this->get(route('administrator.inventory.index'))->assertForbidden();
+    }
+
     public function test_waiter_cannot_open_administrator_dashboard(): void
     {
         $waiter = User::factory()->create([

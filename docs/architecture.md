@@ -6,6 +6,7 @@ Internal surfaces:
 
 - Administrator = Laravel Blade
 - Barista = Laravel Blade
+- Waiter = Laravel Blade
 
 Customer surface:
 
@@ -30,7 +31,7 @@ React + Vite + TypeScript PWA
 Internal panels:
 
 ```text
-Administrator / Barista Blade
+Administrator / Barista / Waiter Blade
   -> controllers
   -> existing Services
   -> Repositories
@@ -223,10 +224,12 @@ For current menu writes:
 
 ## Internal panel UI system
 
-Administrator and Barista use one shared internal design system/shell (`internal.layouts.default`, shared header/sidebar/components, and `public/internal` assets). Role-specific differences must be implemented through permissions, navigation configuration, data visibility, and action authorization — not separate visual systems.
+Administrator, Barista, and Waiter share one internal design system and shell (`internal.layouts.default`, shared header/sidebar/components, and `public/internal` assets). Role wrappers (`administrator.layouts.default`, `barista.layouts.default`, `waiter.layouts.default`) only set the panel context.
 
-- Shared: page header, breadcrumbs, cards, tables/filters, buttons, badges, notification bell, order detail shell partials under `resources/views/internal/orders/partials/`.
-- Role-specific: nav entries, financial totals, payment proof review, invoice actions, create-order, and other policy-gated controls.
+**Invariant:** same feature + same role-allowed data ⇒ same UI component/layout/interaction. Role differences come from permissions, navigation, allowed data, and allowed actions — not duplicate visual implementations.
+
+- Shared primitives: page header, breadcrumbs, metric cards, filter bars, buttons/button groups, status badges, action/invoice dropdowns, empty states, notification bell, order detail shell (`resources/views/internal/orders/partials/`), dining primitives (`resources/views/internal/dining/partials/`).
+- Role-specific: nav entries; Administrator financial/config/user/promotion/referral controls; Barista preparation/inventory ops without cost/margin analytics or admin payment-proof approval; Waiter dining ops (tables/sessions/bill/cash/invoice) without admin config surfaces.
 - Never treat UI hiding as the security boundary; middleware and policies remain authoritative.
 
 ## Naming Conventions

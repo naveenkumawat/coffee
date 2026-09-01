@@ -53,4 +53,16 @@ enum DiningSessionStatus: string
             self::Closed, self::Cancelled => 'available',
         };
     }
+
+    public function badgeClass(): string
+    {
+        return match ($this) {
+            self::Open => 'badge-light-warning',
+            self::BillingRequested => 'badge-light-info',
+            self::AwaitingPayment => 'badge-light-primary',
+            self::Paid => 'badge-light-success',
+            self::Closed => 'badge-light-dark',
+            self::Cancelled => 'badge-light-danger',
+        };
+    }
 }

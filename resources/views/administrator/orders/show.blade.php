@@ -16,10 +16,7 @@
             ['label' => 'Back', 'url' => route('administrator.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
         ]" />
         @can('printInvoice', $order)
-            <x-internal.action-dropdown
-                label="Invoice"
-                button-class="btn btn-light-dark btn-active-light-dark btn-sm internal-button internal-action-dropdown-trigger"
-                menu-width-class="w-225px"
+            <x-internal.invoice-dropdown
                 :items="[
                     ['label' => 'Print A4', 'url' => route('administrator.orders.invoice.print', $order), 'icon' => 'ki-printer', 'target' => '_blank'],
                     ['label' => 'Print 80mm Receipt', 'url' => route('administrator.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'icon' => 'ki-printer', 'target' => '_blank'],

@@ -1,65 +1,61 @@
-@extends('internal.layouts.default', ['panel' => 'waiter'])
+@extends('waiter.layouts.default')
 
-@section('title', 'Session '.$session->session_number)
+@section('page-title', 'Session '.$session->session_number)
+
+@section('page-description', 'Manage rounds, bill request, cash close, and dining invoice.')
+
+@section('breadcrumbs')
+    <x-internal.breadcrumbs :items="[
+        ['label' => 'Waiter Panel', 'url' => route('waiter.dashboard')],
+        ['label' => 'Sessions', 'url' => route('waiter.sessions.index')],
+        ['label' => $session->session_number],
+    ]" />
+@endsection
+
+@section('toolbar-actions')
+    <x-internal.button-group :items="[
+        ['label' => 'Back', 'url' => route('waiter.sessions.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+    ]" />
+@endsection
 
 @section('content')
-    <div class="card card-flush mb-5">
-        <div class="card-body">
-            <div class="fw-bold fs-3">{{ $session->session_number }} · {{ $session->tableDisplayLabel() }}</div>
-            <div class="text-muted mb-4">{{ $session->status?->label() }}</div>
-            <div>Running total: <strong>{{ $bill['total'] }}</strong></div>
-        </div>
-    </div>
+    @include('internal.dining.partials.session-header', [
+        'session' => $session,
+        'bill' => $bill,
+        'showAdminMeta' => false,
+        'invoiceRoute' => route('waiter.sessions.invoice', $session),
+        'actions' => view('waiter.sessions.partials.actions', compact('session')),
+    ])
 
     @if ($session->allowsNewRounds())
-        <div class="card card-flush mb-5">
-            <div class="card-header"><h3 class="card-title">Add round</h3></div>
-            <div class="card-body">
-                <form method="POST" action="{{ route('waiter.sessions.rounds.store', $session) }}" class="row g-3">
+        <div class="card card-flush internal-card mb-7">
+            <div class="card-header pt-6">
+                <div class="card-title">
+                    <h3 class="fw-bold text-gray-900">Add round</h3>
+                </div>
+            </div>
+            <div class="card-body pt-4">
+                <form method="POST" action="{{ route('waiter.sessions.rounds.store', $session) }}" class="row g-4 align-items-end">
                     @csrf
                     <div class="col-md-6">
-                        <select name="product_variant_id" class="form-select" required>
+                        <label class="form-label" for="product_variant_id">Item</label>
+                        <select id="product_variant_id" name="product_variant_id" class="form-select" required>
                             @foreach ($variants as $variant)
                                 <option value="{{ $variant->getKey() }}">{{ $variant->product?->name }} — {{ $variant->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <input type="number" name="quantity" value="1" min="1" class="form-control" required>
+                        <label class="form-label" for="quantity">Qty</label>
+                        <input id="quantity" type="number" name="quantity" value="1" min="1" class="form-control" required>
                     </div>
                     <div class="col-md-4">
-                        <button class="btn btn-primary" type="submit">Place round</button>
+                        <x-internal.button label="Place round" type="submit" variant="success" icon="ki-plus" />
                     </div>
                 </form>
             </div>
         </div>
     @endif
 
-    <div class="card card-flush mb-5">
-        <div class="card-header"><h3 class="card-title">Rounds</h3></div>
-        <div class="card-body">
-            @forelse ($session->orders as $order)
-                <div class="mb-4">
-                    <div class="fw-bold">Round {{ $order->dining_round_number }} · {{ $order->order_number }} · {{ $order->status?->label() }}</div>
-                    <ul>
-                        @foreach ($order->items as $item)
-                            <li>{{ $item->quantity }} × {{ $item->product_name }} @if($item->variant_name)({{ $item->variant_name }})@endif</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @empty
-                <div class="text-muted">No rounds yet.</div>
-            @endforelse
-        </div>
-    </div>
-
-    <div class="d-flex flex-wrap gap-2">
-        @if ($session->allowsNewRounds())
-            <form method="POST" action="{{ route('waiter.sessions.request-bill', $session) }}">@csrf<button class="btn btn-warning">Request bill</button></form>
-        @endif
-        <form method="POST" action="{{ route('waiter.sessions.cash.receive', $session) }}">@csrf<button class="btn btn-success">Mark cash received</button></form>
-        <form method="POST" action="{{ route('waiter.sessions.reopen', $session) }}">@csrf<button class="btn btn-light">Reopen</button></form>
-        <form method="POST" action="{{ route('waiter.sessions.close', $session) }}">@csrf<button class="btn btn-dark">Close session</button></form>
-        <a class="btn btn-light-primary" href="{{ route('waiter.sessions.invoice', $session) }}">Invoice PDF</a>
-    </div>
+    @include('internal.dining.partials.rounds-list', ['session' => $session])
 @endsection

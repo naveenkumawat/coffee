@@ -3,12 +3,26 @@
     use Illuminate\Support\Str;
 
     $user = auth('admin')->user();
-    $panelName = $panel === 'administrator' ? 'Administrator' : 'Barista';
-    $dashboardRoute = $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard');
-    $logoutRoute = $panel === 'administrator' ? route('administrator.logout') : route('barista.logout');
-    $notificationsReadAllRoute = $panel === 'administrator'
-        ? route('administrator.notifications.read-all')
-        : route('barista.notifications.read-all');
+    $panelName = match ($panel) {
+        'administrator' => 'Administrator',
+        'waiter' => 'Waiter',
+        default => 'Barista',
+    };
+    $dashboardRoute = match ($panel) {
+        'administrator' => route('administrator.dashboard'),
+        'waiter' => route('waiter.dashboard'),
+        default => route('barista.dashboard'),
+    };
+    $logoutRoute = match ($panel) {
+        'administrator' => route('administrator.logout'),
+        'waiter' => route('waiter.logout'),
+        default => route('barista.logout'),
+    };
+    $notificationsReadAllRoute = match ($panel) {
+        'administrator' => route('administrator.notifications.read-all'),
+        'waiter' => route('waiter.notifications.read-all'),
+        default => route('barista.notifications.read-all'),
+    };
     $roleLabel = $user?->role instanceof UserRole ? $user->role->label() : null;
     $staffNotifications = $staffNotifications ?? collect();
     $staffUnreadCount = (int) ($staffUnreadCount ?? 0);
@@ -95,9 +109,11 @@
                                         $title = (string) ($data['title'] ?? 'Notification');
                                         $message = (string) ($data['message'] ?? '');
                                         $url = (string) ($data['url'] ?? $dashboardRoute);
-                                        $readRoute = $panel === 'administrator'
-                                            ? route('administrator.notifications.read', $notification)
-                                            : route('barista.notifications.read', $notification);
+                                        $readRoute = match ($panel) {
+                                            'administrator' => route('administrator.notifications.read', $notification),
+                                            'waiter' => route('waiter.notifications.read', $notification),
+                                            default => route('barista.notifications.read', $notification),
+                                        };
                                     @endphp
                                     <div class="d-flex flex-stack py-4 {{ $notification->read_at ? '' : 'bg-light-primary rounded px-2' }}">
                                         <div class="d-flex align-items-center">

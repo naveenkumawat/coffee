@@ -12,9 +12,9 @@
 @endsection
 
 @section('content')
-    <div class="card card-flush internal-card mb-7">
+    <div class="card card-flush internal-card internal-filter-card mb-7">
         <div class="card-body pt-6">
-            <form method="GET" action="{{ route('administrator.dining-sessions.index') }}" class="row g-4 align-items-end">
+            <form method="GET" action="{{ route('administrator.dining-sessions.index') }}" class="row g-4 align-items-end internal-filter-form">
                 <div class="col-md-4">
                     <label class="form-label" for="status">Status</label>
                     <select id="status" name="status" class="form-select">
@@ -25,7 +25,10 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-primary" type="submit">Filter</button>
+                    <x-internal.button-group :items="[
+                        ['label' => 'Search', 'type' => 'submit', 'variant' => 'success', 'icon' => 'ki-magnifier'],
+                        ['label' => 'Reset', 'url' => route('administrator.dining-sessions.index'), 'variant' => 'dark', 'icon' => 'ki-arrows-circle'],
+                    ]" />
                 </div>
             </form>
         </div>
@@ -52,22 +55,26 @@
                                 <td class="fw-bold text-gray-900">{{ $session->session_number }}</td>
                                 <td>{{ $session->tableDisplayLabel() }}</td>
                                 <td>{{ $session->customer_name_snapshot ?: ($session->customer?->name ?: 'Walk-in') }}</td>
-                                <td><span class="badge badge-light-primary">{{ $session->status?->label() }}</span></td>
+                                <td><x-internal.dining-session-status-badge :status="$session->status" /></td>
                                 <td>{{ $session->opened_at?->timezone(config('app.timezone'))->format('d M Y H:i') }}</td>
                                 <td>{{ $session->total_amount !== null ? number_format((float) $session->total_amount, 2) : '—' }}</td>
                                 <td class="text-end">
-                                    <a href="{{ route('administrator.dining-sessions.show', $session) }}" class="btn btn-sm btn-light-primary">Open</a>
+                                    <x-internal.action-dropdown :items="[
+                                        ['label' => 'Open', 'url' => route('administrator.dining-sessions.show', $session), 'icon' => 'ki-eye'],
+                                    ]" />
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-10">No dining sessions yet.</td>
+                                <td colspan="7">
+                                    <x-internal.empty-state message="No dining sessions yet." />
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <div class="mt-6">{{ $sessions->links('components.internal.pagination') }}</div>
+            <div class="mt-6">{{ $sessions->links() }}</div>
         </div>
     </div>
 @endsection

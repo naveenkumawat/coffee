@@ -1,28 +1,34 @@
-@extends('internal.layouts.default', ['panel' => 'waiter'])
+@extends('waiter.layouts.default')
 
-@section('title', 'Tables')
+@section('page-title', 'Tables')
+
+@section('page-description', 'Operational floor view for seating and active table service.')
+
+@section('breadcrumbs')
+    <x-internal.breadcrumbs :items="[
+        ['label' => 'Waiter Panel', 'url' => route('waiter.dashboard')],
+        ['label' => 'Tables'],
+    ]" />
+@endsection
 
 @section('content')
     <div class="row g-5">
-        @foreach ($tables as $row)
-            @php($table = $row['table'])
-            <div class="col-md-3">
-                <div class="card card-flush h-100">
+        @forelse ($tables as $row)
+            <div class="col-sm-6 col-md-4 col-xl-3">
+                @include('internal.dining.partials.table-card', [
+                    'row' => $row,
+                    'sessionShowRoute' => 'waiter.sessions.show',
+                    'startSessionRoute' => route('waiter.sessions.store'),
+                ])
+            </div>
+        @empty
+            <div class="col-12">
+                <div class="card card-flush internal-card">
                     <div class="card-body">
-                        <div class="fw-bold fs-4">{{ $table->displayLabel() }}</div>
-                        <div class="text-muted mb-4">{{ str_replace('_', ' ', $row['state']) }}</div>
-                        @if ($row['session'])
-                            <a class="btn btn-sm btn-primary" href="{{ route('waiter.sessions.show', $row['session']) }}">Open session</a>
-                        @elseif ($row['state'] === 'available' && $table->is_active)
-                            <form method="POST" action="{{ route('waiter.sessions.store') }}">
-                                @csrf
-                                <input type="hidden" name="cafe_table_id" value="{{ $table->getKey() }}">
-                                <button class="btn btn-sm btn-light-primary" type="submit">Start session</button>
-                            </form>
-                        @endif
+                        <x-internal.empty-state message="No café tables are configured yet." />
                     </div>
                 </div>
             </div>
-        @endforeach
+        @endforelse
     </div>
 @endsection
