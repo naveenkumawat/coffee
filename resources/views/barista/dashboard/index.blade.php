@@ -11,13 +11,22 @@
 
 @section('content')
     <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <x-internal.stat-card
+                label="Cafe Ordering"
+                :value="$cafeAvailability->available ? 'OPEN' : 'CLOSED'"
+                icon="ki-shop"
+                :color="$cafeAvailability->available ? 'success' : 'danger'"
+                :description="$cafeAvailability->message"
+            />
+        </div>
+        <div class="col-md-3">
             <x-internal.stat-card label="Active Station" :value="$activeShift['station']" icon="ki-coffee" color="warning" description="Shared internal theme applied to barista workflows without duplicating assets." />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <x-internal.stat-card label="Shift Started" :value="$activeShift['started_at']" icon="ki-timer" color="primary" description="Prepared for role-specific station modules once cafe operations are implemented." />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <x-internal.stat-card label="Focus" :value="$activeShift['focus']" icon="ki-flag" color="success" description="Current dashboard is a foundation screen only, not a finished business workflow." />
         </div>
     </div>

@@ -64,6 +64,9 @@
                     $user?->canManageWebsiteSettings()
                         ? ['label' => 'Café Tables', 'route' => 'administrator.cafe-tables.index', 'pattern' => 'administrator.cafe-tables.*', 'icon' => 'ki-tablet']
                         : null,
+                    $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Café Schedule', 'route' => 'administrator.cafe-schedule.index', 'pattern' => 'administrator.cafe-schedule.*', 'icon' => 'ki-calendar']
+                        : null,
                 ])),
             ],
         ],

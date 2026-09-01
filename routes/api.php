@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\CustomerAuthController;
+use App\Http\Controllers\Api\V1\CafeAvailability\CafeAvailabilityController;
 use App\Http\Controllers\Api\V1\CafeTable\CafeTableController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogController;
 use App\Http\Controllers\Api\V1\Content\WebsiteContentController;
@@ -40,6 +41,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     });
 
     Route::get('/content', [WebsiteContentController::class, 'show'])->name('content.show');
+    Route::get('/cafe-availability', [CafeAvailabilityController::class, 'show'])->name('cafe-availability.show');
     Route::get('/home', [HomeController::class, 'show'])->name('home.show');
     Route::get('/cafe-tables', [CafeTableController::class, 'index'])->name('cafe-tables.index');
 

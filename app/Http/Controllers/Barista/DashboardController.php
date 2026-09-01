@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Barista;
 
 use App\Http\Controllers\Controller;
+use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(CafeAvailabilityServiceInterface $cafeAvailability): View
     {
         return view('barista.dashboard.index', [
+            'cafeAvailability' => $cafeAvailability->status(),
             'activeShift' => [
                 'station' => 'Main Espresso Bar',
                 'started_at' => now()->format('g:i A'),

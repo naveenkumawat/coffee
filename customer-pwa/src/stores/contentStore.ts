@@ -3,6 +3,7 @@ import { fetchWebsiteContent } from '../api/content';
 import {
   DEFAULT_BRAND_NAME,
   DEFAULT_HOME_SLOGAN,
+  WebsiteAvailabilityContent,
   WebsiteContent,
   WebsiteSocialLink,
 } from '../types/content';
@@ -53,4 +54,8 @@ export function selectHomeSlogan(content: WebsiteContent | null): string {
 
 export function selectSocialLinks(content: WebsiteContent | null): readonly WebsiteSocialLink[] {
   return content?.social_links ?? EMPTY_SOCIAL_LINKS;
+}
+
+export function selectAvailability(content: WebsiteContent | null): WebsiteAvailabilityContent | null {
+  return content?.availability ?? null;
 }

@@ -4,6 +4,7 @@ namespace App\Services\WebsiteSetting;
 
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Support\PublicMedia;
 
@@ -39,6 +40,14 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         }
 
         $this->settings->upsertValues($values);
+
+        if (array_key_exists(WebsiteSettingKey::BusinessTimezone->value, $values)
+            || array_key_exists(WebsiteSettingKey::OrderingManualClosed->value, $values)
+            || array_key_exists(WebsiteSettingKey::OrderingManualClosedUntil->value, $values)
+            || array_key_exists(WebsiteSettingKey::OrderingManualClosedMessage->value, $values)
+        ) {
+            app(CafeAvailabilityServiceInterface::class)->flushAvailabilityCache();
+        }
     }
 
     public function customerContent(): array
@@ -78,6 +87,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 'privacy' => $this->filledOrNull($values[WebsiteSettingKey::PagesPrivacy->value] ?? null),
             ],
             'social_links' => $this->socialLinks->customerFacingLinks($businessWhatsapp),
+            'availability' => app(CafeAvailabilityServiceInterface::class)->publicStatus()->toPublicArray(),
         ];
     }
 

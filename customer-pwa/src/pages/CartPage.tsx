@@ -10,6 +10,7 @@ import { FormFeedback } from '../components/forms/FormFeedback';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
+import { selectAvailability, useContentStore } from '../stores/contentStore';
 import { useToastStore } from '../stores/toastStore';
 import { formatCurrency } from '../utils/format';
 import { buildLoginRedirect } from '../utils/navigation';
@@ -23,6 +24,8 @@ export function CartPage() {
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
   const authStatus = useAuthStore((state) => state.status);
+  const availability = useContentStore((state) => selectAvailability(state.content));
+  const orderingClosed = Boolean(availability && !availability.available);
   const toastSuccess = useToastStore((state) => state.success);
   const toastError = useToastStore((state) => state.error);
   const navigate = useNavigate();
@@ -171,23 +174,34 @@ export function CartPage() {
 
           <StickyActionBar
             eyebrow="Order total"
-            title="Ready to checkout?"
+            title={orderingClosed ? 'Ordering Closed' : 'Ready to checkout?'}
             value={formatCurrency(summary?.total ?? 0)}
             note={
-              summary?.has_unavailable_items
-                ? 'Fix unavailable items to continue.'
-                : authStatus === 'authenticated'
-                  ? 'Next: choose takeaway or delivery'
-                  : 'Next: sign in to continue'
+              orderingClosed
+                ? availability?.message ?? 'Checkout unavailable right now.'
+                : summary?.has_unavailable_items
+                  ? 'Fix unavailable items to continue.'
+                  : authStatus === 'authenticated'
+                    ? 'Next: choose takeaway or delivery'
+                    : 'Next: sign in to continue'
             }
           >
             <button
               type="button"
               className="btn btn-primary btn-lg rounded-pill w-100"
-              disabled={Boolean(summary?.has_unavailable_items) || isClearing || pendingItemId !== null}
+              disabled={
+                orderingClosed
+                || Boolean(summary?.has_unavailable_items)
+                || isClearing
+                || pendingItemId !== null
+              }
               onClick={handleCheckout}
             >
-              {authStatus === 'authenticated' ? 'Continue to checkout' : 'Sign in to checkout'}
+              {orderingClosed
+                ? 'Checkout unavailable'
+                : authStatus === 'authenticated'
+                  ? 'Continue to checkout'
+                  : 'Sign in to checkout'}
             </button>
           </StickyActionBar>
         </>

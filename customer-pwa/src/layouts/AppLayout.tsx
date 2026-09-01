@@ -8,13 +8,14 @@ import { ToastHost } from '../components/common/ToastHost';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
-import { selectBrandName, useContentStore } from '../stores/contentStore';
+import { selectBrandName, selectAvailability, useContentStore } from '../stores/contentStore';
 import { clearChunkRecoveryFlag } from '../utils/chunkRecovery';
 
 export function AppLayout() {
   const networkStatus = useNetworkStatus();
   const { needRefresh, applyUpdate, dismiss } = useServiceWorkerUpdate();
   const brandName = useContentStore((state) => selectBrandName(state.content));
+  const availability = useContentStore((state) => selectAvailability(state.content));
   const location = useLocation();
   const [hasStickyCta, setHasStickyCta] = useState(false);
 
@@ -60,6 +61,11 @@ export function AppLayout() {
       {networkStatus === 'restored' ? (
         <div className="offline-banner is-restored" role="status" aria-live="polite">
           Back online. Your live cart and account data will refresh.
+        </div>
+      ) : null}
+      {availability && !availability.available ? (
+        <div className="offline-banner is-offline" role="status" aria-live="polite">
+          {availability.message}
         </div>
       ) : null}
       <main className="app-main" id="main-content">

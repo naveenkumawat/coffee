@@ -43,6 +43,7 @@ class DemoSeeder extends Seeder
             InventoryRefillRequestSeeder::class,
             CafeTableSeeder::class,
             WebsiteSettingSeeder::class,
+            CafeScheduleSeeder::class,
             DemoSocialLinkSeeder::class,
             DemoCustomerActivitySeeder::class,
             DemoOrderSeeder::class,

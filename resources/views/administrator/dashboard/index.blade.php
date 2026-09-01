@@ -17,16 +17,50 @@
 
 @section('content')
     <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <x-internal.stat-card
+                label="Cafe Ordering"
+                :value="$cafeAvailability->available ? 'OPEN' : 'CLOSED'"
+                icon="ki-shop"
+                :color="$cafeAvailability->available ? 'success' : 'danger'"
+                :description="$cafeAvailability->available
+                    ? ('Today · '.($cafeAvailability->todayHoursLabel ?: 'Hours set'))
+                    : $cafeAvailability->message"
+            />
+        </div>
+        <div class="col-md-3">
             <x-internal.stat-card label="Product Categories" :value="$categoryCount" icon="ki-category" color="warning" description="Shared product groups available for the storefront and future recipe-driven catalog flows." />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <x-internal.stat-card label="Products" :value="$itemCount" icon="ki-basket" color="primary" description="Manage catalog records, flavours, and sellable variants without affecting the public theme layer." />
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <x-internal.stat-card label="Theme Layer" value="1" icon="ki-layer" color="success" description="Administrator and Barista share one internal asset and component foundation." />
         </div>
     </div>
+
+    @if ($canManageCafeSchedule)
+        <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 mb-8">
+            <i class="ki-outline ki-calendar fs-2tx text-primary me-4"></i>
+            <div class="d-flex flex-stack flex-grow-1 flex-wrap gap-3">
+                <div>
+                    <h4 class="text-gray-900 fw-bold mb-1">Café Schedule</h4>
+                    <span class="fs-6 text-gray-700">{{ $cafeAvailability->message }}</span>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('administrator.cafe-schedule.index') }}" class="btn btn-sm btn-light-primary">Manage schedule</a>
+                    @if ($cafeAvailability->code === \App\Enums\CafeAvailabilityCode::ManualClosed)
+                        <form method="POST" action="{{ route('administrator.cafe-schedule.reopen') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-light-success">Reopen Ordering</button>
+                        </form>
+                    @else
+                        <a href="{{ route('administrator.cafe-schedule.index') }}" class="btn btn-sm btn-light-danger">Close Ordering</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <div class="row g-5 g-xl-10">
         <div class="col-xl-8">

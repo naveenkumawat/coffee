@@ -31,6 +31,7 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::BusinessEmail->value => 'hello@coffee.local',
             WebsiteSettingKey::BusinessAddress->value => "12 Brew Street\nIndiranagar, Bengaluru 560038\n(DEMO address — not a real café)",
             WebsiteSettingKey::BusinessOpeningHours->value => "Mon–Fri: 8:00 AM – 9:00 PM\nSat–Sun: 9:00 AM – 10:00 PM",
+            WebsiteSettingKey::BusinessTimezone->value => 'Asia/Kolkata',
             WebsiteSettingKey::PaymentDisplayName->value => 'UPI Transfer (DEMO)',
             WebsiteSettingKey::PaymentInstructions->value => 'DEMO ONLY — Pay the order total via UPI or to the payment number, upload your screenshot in the app, or share it on WhatsApp with the order number. Do not use these values in production.',
             WebsiteSettingKey::PaymentUpiId->value => 'demo-the88coffees@upi',

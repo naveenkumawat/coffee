@@ -39,4 +39,5 @@ return [
             'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
         ),
     ],
+    'timezone' => env('COFFEE_TIMEZONE', 'Asia/Kolkata'),
 ];

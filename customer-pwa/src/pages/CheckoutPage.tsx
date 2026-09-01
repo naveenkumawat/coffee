@@ -16,6 +16,7 @@ import { FormField } from '../components/forms/FormField';
 import { FormTextarea } from '../components/forms/FormTextarea';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useCartStore } from '../stores/cartStore';
+import { selectAvailability, useContentStore } from '../stores/contentStore';
 import { Cart } from '../types/cart';
 import {
   CheckoutFulfilmentMethod,
@@ -62,6 +63,8 @@ export function CheckoutPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [displayState, setDisplayState] = useState<'summary' | 'empty' | 'review-cart' | 'error'>('summary');
   const didHydrateDefaults = useRef(false);
+  const availability = useContentStore((state) => selectAvailability(state.content));
+  const orderingClosed = Boolean(availability && !availability.available);
 
   async function loadSummary(preserveForm = false): Promise<void> {
     setIsLoading(true);
@@ -257,7 +260,12 @@ export function CheckoutPage() {
           ?? error.errors.payment_proof?.[0]
           ?? error.message;
 
-        if (securityCode === 'pending_limit' || securityCode === 'ordering_blocked' || securityCode === 'rate_limit') {
+        if (
+          securityCode === 'pending_limit'
+          || securityCode === 'ordering_blocked'
+          || securityCode === 'rate_limit'
+          || securityCode === 'cafe_closed'
+        ) {
           setErrors(error.errors);
           setMessage(securityMessage);
           return;
@@ -341,12 +349,16 @@ export function CheckoutPage() {
   const isCashSelected = paymentMethod === 'cash';
   const placeOrderLabel = isSubmitting
     ? 'Placing order…'
-    : `Place Order · ${formatCurrency(summaryMeta.summary.total)}`;
-  const stickyNote = isCashSelected
-    ? fulfilmentMethod === 'takeaway'
-      ? 'Cash at pickup — no payment screenshot needed'
-      : 'Pay cash at the cafe — no payment screenshot needed'
-    : 'Payment comes next — Pending Payment until confirmed';
+    : orderingClosed
+      ? 'Ordering Closed'
+      : `Place Order · ${formatCurrency(summaryMeta.summary.total)}`;
+  const stickyNote = orderingClosed
+    ? availability?.message ?? 'Checkout unavailable right now.'
+    : isCashSelected
+      ? fulfilmentMethod === 'takeaway'
+        ? 'Cash at pickup — no payment screenshot needed'
+        : 'Pay cash at the cafe — no payment screenshot needed'
+      : 'Payment comes next — Pending Payment until confirmed';
   const paymentSectionSubtitle = isCashSelected
     ? fulfilmentMethod === 'takeaway'
       ? 'Pay cash when collecting'
@@ -685,14 +697,14 @@ export function CheckoutPage() {
 
         <StickyActionBar
           eyebrow="Cafe total"
-          title={isSubmitting ? 'Placing order…' : 'Ready to place'}
+          title={orderingClosed ? 'Ordering Closed' : isSubmitting ? 'Placing order…' : 'Ready to place'}
           value={formatCurrency(summaryMeta.summary.total)}
           note={stickyNote}
         >
           <button
             type="submit"
             className="btn btn-primary btn-lg rounded-pill w-100"
-            disabled={isSubmitting}
+            disabled={isSubmitting || orderingClosed}
             aria-busy={isSubmitting}
           >
             {placeOrderLabel}

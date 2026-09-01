@@ -43,6 +43,22 @@ export interface WebsiteSocialLink {
   sort_order?: number;
 }
 
+export interface WebsiteAvailabilityContent {
+  available: boolean;
+  code: string;
+  message: string;
+  next_open_at: string | null;
+  reopens_at: string | null;
+  timezone: string;
+  today_hours?: string | null;
+  weekly_hours?: Array<{
+    weekday: number;
+    label: string;
+    is_open: boolean;
+    intervals: Array<{ opens_at: string; closes_at: string }>;
+  }>;
+}
+
 export interface WebsiteContent {
   hero: WebsiteHeroContent;
   business: WebsiteBusinessContent;
@@ -50,6 +66,7 @@ export interface WebsiteContent {
   fulfilment?: WebsiteFulfilmentContent;
   pages: WebsitePagesContent;
   social_links?: WebsiteSocialLink[];
+  availability?: WebsiteAvailabilityContent;
 }
 
 export type ContentPageKey = keyof WebsitePagesContent;

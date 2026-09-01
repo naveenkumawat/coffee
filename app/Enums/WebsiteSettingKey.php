@@ -14,6 +14,7 @@ enum WebsiteSettingKey: string
     case BusinessEmail = 'business_email';
     case BusinessAddress = 'business_address';
     case BusinessOpeningHours = 'business_opening_hours';
+    case BusinessTimezone = 'business_timezone';
     case PaymentDisplayName = 'payment_display_name';
     case PaymentInstructions = 'payment_instructions';
     case PaymentUpiId = 'payment_upi_id';
@@ -34,6 +35,9 @@ enum WebsiteSettingKey: string
     case OrderSecurityCheckoutAttemptsPer10Minutes = 'order_security_checkout_attempts_per_10_minutes';
     case OrderSecurityPaymentProofAttemptsPer15Minutes = 'order_security_payment_proof_attempts_per_15_minutes';
     case OrderSecurityDuplicateOrderWindowMinutes = 'order_security_duplicate_order_window_minutes';
+    case OrderingManualClosed = 'ordering_manual_closed';
+    case OrderingManualClosedUntil = 'ordering_manual_closed_until';
+    case OrderingManualClosedMessage = 'ordering_manual_closed_message';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -44,7 +48,7 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
-            self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours => 'business',
+            self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours, self::BusinessTimezone => 'business',
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
             self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
             self::TaxEnabled, self::TaxLabel, self::TaxPercent, self::TaxInclusive, self::TaxGstin, self::TaxLegalBusinessName => 'tax',
@@ -54,6 +58,9 @@ enum WebsiteSettingKey: string
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
             self::OrderSecurityPaymentProofAttemptsPer15Minutes,
             self::OrderSecurityDuplicateOrderWindowMinutes => 'order_security',
+            self::OrderingManualClosed,
+            self::OrderingManualClosedUntil,
+            self::OrderingManualClosedMessage => 'cafe_ordering',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -67,7 +74,7 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 'boolean',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 'boolean',
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
@@ -89,7 +96,8 @@ enum WebsiteSettingKey: string
             self::BusinessWhatsappNumber => 'WhatsApp number',
             self::BusinessEmail => 'Email',
             self::BusinessAddress => 'Address',
-            self::BusinessOpeningHours => 'Opening hours',
+            self::BusinessOpeningHours => 'Opening hours (display text)',
+            self::BusinessTimezone => 'Business timezone',
             self::PaymentDisplayName => 'Payment display name',
             self::PaymentInstructions => 'Payment instructions',
             self::PaymentUpiId => 'UPI ID',
@@ -110,6 +118,9 @@ enum WebsiteSettingKey: string
             self::OrderSecurityCheckoutAttemptsPer10Minutes => 'Checkout attempts / 10 minutes',
             self::OrderSecurityPaymentProofAttemptsPer15Minutes => 'Payment proof attempts / 15 minutes',
             self::OrderSecurityDuplicateOrderWindowMinutes => 'Duplicate order window (minutes)',
+            self::OrderingManualClosed => 'Ordering manually closed',
+            self::OrderingManualClosedUntil => 'Manual closed until',
+            self::OrderingManualClosedMessage => 'Manual closed customer message',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
@@ -122,9 +133,10 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle, self::BusinessName, self::PaymentDisplayName, self::TaxLegalBusinessName => 120,
-            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin => 255,
+            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin, self::BusinessTimezone, self::OrderingManualClosedUntil => 255,
             self::TaxLabel => 40,
             self::TaxPercent => 8,
+            self::OrderingManualClosedMessage => 500,
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
@@ -132,7 +144,7 @@ enum WebsiteSettingKey: string
             self::OrderSecurityDuplicateOrderWindowMinutes => 3,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 1,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -142,7 +154,7 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 'checkbox',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 'checkbox',
             self::TaxPercent,
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
@@ -163,6 +175,7 @@ enum WebsiteSettingKey: string
             self::TaxGstin => 'Printed on invoices only when set. Leave blank if not applicable.',
             self::TaxLegalBusinessName => 'Optional legal name for invoices when different from the café display brand.',
             self::FulfilmentDineInEnabled => 'Allow customers to place dine-in / table orders from the PWA. Manage café tables under Café Tables.',
+            self::BusinessTimezone => 'IANA timezone used for operating hours and closures (e.g. Asia/Kolkata). Never use the customer browser timezone.',
             self::OrderSecurityEnabled => 'When enabled, pending-order limits, duplicate detection, and order rate limits apply at checkout.',
             self::OrderSecurityMaxOpenUnpaidOrders => 'Customers cannot place another order while they already have this many unpaid/open orders (1–20).',
             self::OrderSecurityMaxOrdersPerHour => 'Successful new orders per customer per rolling hour (1–60).',

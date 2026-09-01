@@ -43,6 +43,12 @@ class WebsiteSettingUpdateRequest extends FormRequest
                 continue;
             }
 
+            if ($key === WebsiteSettingKey::BusinessTimezone) {
+                $rules[$key->value] = ['nullable', 'string', 'timezone:all'];
+
+                continue;
+            }
+
             if ($key === WebsiteSettingKey::TaxPercent) {
                 $rules[$key->value] = [
                     'nullable',

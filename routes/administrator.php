@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\HomeSectionController;
@@ -161,6 +162,18 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('cafe-tables/{cafe_table}/toggle', [CafeTableController::class, 'toggle'])->name('cafe-tables.toggle');
     Route::patch('cafe-tables/{cafe_table}/move-up', [CafeTableController::class, 'moveUp'])->name('cafe-tables.move-up');
     Route::patch('cafe-tables/{cafe_table}/move-down', [CafeTableController::class, 'moveDown'])->name('cafe-tables.move-down');
+
+    Route::get('cafe-schedule', [CafeScheduleController::class, 'index'])->name('cafe-schedule.index');
+    Route::get('cafe-schedule/hours', [CafeScheduleController::class, 'editHours'])->name('cafe-schedule.hours.edit');
+    Route::put('cafe-schedule/hours', [CafeScheduleController::class, 'updateHours'])->name('cafe-schedule.hours.update');
+    Route::get('cafe-schedule/closures/create', [CafeScheduleController::class, 'createClosure'])->name('cafe-schedule.closures.create');
+    Route::post('cafe-schedule/closures', [CafeScheduleController::class, 'storeClosure'])->name('cafe-schedule.closures.store');
+    Route::get('cafe-schedule/closures/{cafe_closure}/edit', [CafeScheduleController::class, 'editClosure'])->name('cafe-schedule.closures.edit');
+    Route::put('cafe-schedule/closures/{cafe_closure}', [CafeScheduleController::class, 'updateClosure'])->name('cafe-schedule.closures.update');
+    Route::patch('cafe-schedule/closures/{cafe_closure}/toggle', [CafeScheduleController::class, 'toggleClosure'])->name('cafe-schedule.closures.toggle');
+    Route::delete('cafe-schedule/closures/{cafe_closure}', [CafeScheduleController::class, 'destroyClosure'])->name('cafe-schedule.closures.destroy');
+    Route::post('cafe-schedule/close-ordering', [CafeScheduleController::class, 'closeOrdering'])->name('cafe-schedule.close');
+    Route::post('cafe-schedule/reopen-ordering', [CafeScheduleController::class, 'reopenOrdering'])->name('cafe-schedule.reopen');
 
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->defaults('panel', 'administrator')

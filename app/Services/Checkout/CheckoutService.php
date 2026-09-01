@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\User;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
@@ -24,6 +25,7 @@ class CheckoutService implements CheckoutServiceInterface
         protected OrderServiceInterface $orderService,
         protected OrderTransferInterface $orderTransfer,
         protected OrderSecurityServiceInterface $orderSecurity,
+        protected CafeAvailabilityServiceInterface $cafeAvailability,
     ) {}
 
     public function getCheckoutContext(User $customer): array
@@ -76,6 +78,7 @@ class CheckoutService implements CheckoutServiceInterface
 
             $this->orderSecurity->assertCustomerMayOrder($lockedCustomer);
             $this->orderSecurity->assertCheckoutAttemptAllowed($lockedCustomer);
+            $this->cafeAvailability->assertOrderingAvailable();
             $this->orderSecurity->assertOpenUnpaidLimit($lockedCustomer);
             $this->orderSecurity->assertOrderCreateRateLimit($lockedCustomer);
 

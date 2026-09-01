@@ -245,12 +245,25 @@ Checkout protection is layered server-side (CAPTCHA / Turnstile intentionally de
 1. Authenticated checkout (Sanctum / session)
 2. Account ordering permission (`ordering_blocked`)
 3. Checkout attempt + successful-order rate limits
-4. Open unpaid / pending-payment order limit
-5. `checkout_token` idempotency + short-window duplicate fingerprint
-6. Normal checkout validation
-7. Order creation (notifications only for successful creates)
+4. Café availability (manual override → scheduled closure/holiday → weekly hours)
+5. Open unpaid / pending-payment order limit
+6. `checkout_token` idempotency + short-window duplicate fingerprint
+7. Normal checkout validation
+8. Order creation (notifications only for successful creates)
 
 Limits live in Website Settings → Order Security. Trusted cash (`cash_takeaway_allowed`) is independent and never bypasses these controls.
+
+## Café availability / operating hours
+
+`CafeAvailabilityService` is the single source of truth for whether **new** orders may be placed.
+
+Priority:
+
+1. Manual Out of Service (indefinite or `closed_until`, evaluated live — no cron required to reopen)
+2. Active scheduled closure / holiday window
+3. Recurring weekly operating hours (multiple intervals/day supported)
+
+Closing ordering never cancels or pauses existing orders. Menu browsing, carts, account, and invoices stay available. Customer-safe status is exposed on `GET /api/v1/content` (`availability`) and `GET /api/v1/cafe-availability`. Business timezone defaults to `Asia/Kolkata` (`business_timezone` / `config('coffee.timezone')`) — never the browser timezone.
 
 - Coffee does not use a global root interface and factory graph because the current Laravel container can resolve the same seams more simply.
 - Coffee has not added empty `Factories`, `Integrations`, `Tools`, `Jobs`, or domain-specific exception trees solely for structural parity; those should be added when a real shared use case arrives.
