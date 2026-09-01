@@ -22,6 +22,10 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
 
     protected ?int $preparationTimeMinutes = null;
 
+    protected ?string $productType = null;
+
+    protected ?string $preparationStation = null;
+
     protected int $sortOrder = 0;
 
     protected array $productFlavourIds = [];
@@ -122,6 +126,26 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
     public function setPreparationTimeMinutes(?int $preparationTimeMinutes): void
     {
         $this->preparationTimeMinutes = $preparationTimeMinutes;
+    }
+
+    public function getProductType(): ?string
+    {
+        return $this->productType;
+    }
+
+    public function setProductType(?string $productType): void
+    {
+        $this->productType = $productType;
+    }
+
+    public function getPreparationStation(): ?string
+    {
+        return $this->preparationStation;
+    }
+
+    public function setPreparationStation(?string $preparationStation): void
+    {
+        $this->preparationStation = $preparationStation;
     }
 
     public function getSortOrder(): int
@@ -245,6 +269,8 @@ class ProductTransfer extends AbstractTransfer implements ProductTransferInterfa
             'customer_ingredient_summary' => $this->customerIngredientSummary,
             'image_path' => $this->imagePath,
             'preparation_time_minutes' => $this->preparationTimeMinutes,
+            'product_type' => $this->productType,
+            'preparation_station' => $this->preparationStation,
             'sort_order' => $this->sortOrder,
             'is_active' => $this->isActive,
             'is_available' => $this->isAvailable,

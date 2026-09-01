@@ -40,6 +40,8 @@ class ProductResource extends JsonResource
             'is_bestseller' => (bool) $product->is_bestseller,
             'is_vegetarian' => (bool) $product->is_vegetarian,
             'is_customizable' => (bool) $product->is_customizable,
+            'product_type' => $product->product_type?->value ?? 'beverage',
+            'preparation_station' => $product->preparation_station?->value ?? 'bar',
             'rating_summary' => $this->ratingSummary($product),
             'my_rating' => $this->when(
                 $product->relationLoaded('myRating'),

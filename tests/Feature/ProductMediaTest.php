@@ -28,6 +28,8 @@ class ProductMediaTest extends TestCase
         $create = $this->actingAs($manager, 'admin')->post(route('administrator.products.store'), [
             'product_category_id' => $category->id,
             'name' => 'Media Latte',
+            'product_type' => 'beverage',
+            'preparation_station' => 'bar',
             'is_active' => 1,
             'is_available' => 1,
             'variants' => [
@@ -56,6 +58,8 @@ class ProductMediaTest extends TestCase
         $this->actingAs($manager, 'admin')->put(route('administrator.products.update', $product), [
             'product_category_id' => $category->id,
             'name' => 'Media Latte',
+            'product_type' => 'beverage',
+            'preparation_station' => 'bar',
             'is_active' => 1,
             'is_available' => 1,
             'image_path' => $firstPath,
@@ -84,6 +88,8 @@ class ProductMediaTest extends TestCase
         $this->actingAs($manager, 'admin')->put(route('administrator.products.update', $product), [
             'product_category_id' => $category->id,
             'name' => 'Media Latte',
+            'product_type' => 'beverage',
+            'preparation_station' => 'bar',
             'is_active' => 1,
             'is_available' => 1,
             'image_path' => $secondPath,

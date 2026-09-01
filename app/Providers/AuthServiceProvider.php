@@ -7,6 +7,7 @@ use App\Models\CafeTable;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerReferral;
+use App\Models\DiningSession;
 use App\Models\HomeSection;
 use App\Models\Ingredient;
 use App\Models\IngredientBrand;
@@ -32,6 +33,7 @@ use App\Policies\CafeTablePolicy;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
 use App\Policies\CustomerReferralPolicy;
+use App\Policies\DiningSessionPolicy;
 use App\Policies\HomeSectionPolicy;
 use App\Policies\IngredientBrandPolicy;
 use App\Policies\IngredientCategoryPolicy;
@@ -63,6 +65,7 @@ class AuthServiceProvider extends ServiceProvider
         CustomerReferral::class => CustomerReferralPolicy::class,
         CafeClosure::class => CafeClosurePolicy::class,
         CafeTable::class => CafeTablePolicy::class,
+        DiningSession::class => DiningSessionPolicy::class,
         HomeSection::class => HomeSectionPolicy::class,
         Ingredient::class => IngredientPolicy::class,
         IngredientBrand::class => IngredientBrandPolicy::class,

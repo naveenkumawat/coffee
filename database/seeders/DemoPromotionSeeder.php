@@ -23,7 +23,7 @@ class DemoPromotionSeeder extends Seeder
         }
 
         $this->upsert([
-            'name' => 'Dine-in 10%',
+            'name' => 'Dining 10%',
             'code' => null,
             'description' => 'Automatic 10% off for dine-in orders.',
             'type' => PromotionType::Automatic,
@@ -41,13 +41,13 @@ class DemoPromotionSeeder extends Seeder
             'applies_to_all_products' => true,
             'applies_to_all_customers' => true,
             'first_order_only' => false,
-            'fulfilment_scope' => PromotionFulfilmentScope::DineIn,
+            'fulfilment_scope' => PromotionFulfilmentScope::Dining,
             'weekdays' => null,
             'daily_starts_at' => null,
             'daily_ends_at' => null,
-            'customer_message' => '10% dine-in discount applied.',
-            'internal_note' => 'Demo automatic dine-in offer.',
-        ], matchOn: ['name' => 'Dine-in 10%']);
+            'customer_message' => '10% dining discount applied.',
+            'internal_note' => 'Demo automatic dining offer.',
+        ], matchOn: ['name' => 'Dining 10%']);
 
         $this->upsert([
             'name' => 'Festival Coffee Offer',

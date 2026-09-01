@@ -13,6 +13,8 @@ use App\Services\Cart\CartService;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Checkout\CheckoutService;
 use App\Services\Checkout\CheckoutServiceInterface;
+use App\Services\Dining\DiningSessionService;
+use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Favourite\FavouriteService;
 use App\Services\Favourite\FavouriteServiceInterface;
 use App\Services\Home\HomeSectionService;
@@ -27,6 +29,8 @@ use App\Services\Inventory\InventoryRefillRequestService;
 use App\Services\Inventory\InventoryRefillRequestServiceInterface;
 use App\Services\Inventory\InventoryService;
 use App\Services\Inventory\InventoryServiceInterface;
+use App\Services\Invoice\DiningInvoiceService;
+use App\Services\Invoice\DiningInvoiceServiceInterface;
 use App\Services\Invoice\OrderInvoiceService;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Menu\MenuCatalogService;
@@ -86,6 +90,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
+        $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);
         $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
         $this->app->bind(HomeSectionServiceInterface::class, HomeSectionService::class);
         $this->app->bind(ProductRatingServiceInterface::class, ProductRatingService::class);
@@ -95,6 +100,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(InventoryRefillRequestServiceInterface::class, InventoryRefillRequestService::class);
         $this->app->bind(InventoryServiceInterface::class, InventoryService::class);
         $this->app->bind(OrderInvoiceServiceInterface::class, OrderInvoiceService::class);
+        $this->app->bind(DiningInvoiceServiceInterface::class, DiningInvoiceService::class);
         $this->app->bind(TaxCalculatorInterface::class, TaxCalculator::class);
         $this->app->bind(PaymentEligibilityServiceInterface::class, PaymentEligibilityService::class);
         $this->app->bind(RoleServiceInterface::class, RoleService::class);

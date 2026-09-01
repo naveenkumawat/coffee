@@ -92,6 +92,8 @@ class ProductManagementTest extends TestCase
             'product_category_id' => $category->id,
             'name' => 'Citrus Espresso Tonic',
             'sku' => 'TONIC-001',
+            'product_type' => 'beverage',
+            'preparation_station' => 'bar',
             'short_description' => 'Espresso with citrus tonic.',
             'description' => 'A sparkling espresso signature.',
             'customer_ingredient_summary' => 'Espresso, tonic, citrus',

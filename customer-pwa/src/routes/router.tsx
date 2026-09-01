@@ -38,6 +38,13 @@ const OrderDetailPage = lazyPage(() =>
 const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage').then((module) => ({ default: module.ReferralPage })));
 const RewardsPage = lazyPage(() => import('../pages/RewardsPage').then((module) => ({ default: module.RewardsPage })));
+const DiningPage = lazyPage(() => import('../pages/DiningPage').then((module) => ({ default: module.DiningPage })));
+const DiningSessionPage = lazyPage(() =>
+  import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningSessionPage })),
+);
+const DiningBillPage = lazyPage(() =>
+  import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningBillPage })),
+);
 const NotFoundPage = lazyPage(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 
 export const router = createBrowserRouter([
@@ -109,6 +116,18 @@ export const router = createBrowserRouter([
           {
             path: 'checkout',
             element: <CheckoutPage />,
+          },
+          {
+            path: 'dining',
+            element: <DiningPage />,
+          },
+          {
+            path: 'dining/sessions/:sessionId',
+            element: <DiningSessionPage />,
+          },
+          {
+            path: 'dining/sessions/:sessionId/bill',
+            element: <DiningBillPage />,
           },
           {
             path: 'favourites',

@@ -98,6 +98,20 @@ trait HasRoles
         return $role->canOperateOrders();
     }
 
+    public function canOperateDining(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canOperateDining();
+    }
+
+    public function canAccessWaiterPanel(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canAccessWaiterPanel();
+    }
+
     public function canAccessInternalPanel(string $panel): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
@@ -105,6 +119,7 @@ trait HasRoles
         return match ($panel) {
             'administrator' => $role->canAccessAdministratorPanel(),
             'barista' => $role->canAccessBaristaPanel(),
+            'waiter' => $role->canAccessWaiterPanel(),
             default => false,
         };
     }

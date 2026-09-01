@@ -68,6 +68,11 @@ interface WebsiteSettingServiceInterface
     public function dineInEnabled(): bool;
 
     /**
+     * Dining / table-service feature toggle (same setting as legacy fulfilment_dine_in_enabled).
+     */
+    public function diningEnabled(): bool;
+
+    /**
      * @return array{
      *     enabled: bool,
      *     max_open_unpaid_orders: int,

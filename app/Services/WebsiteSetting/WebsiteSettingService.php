@@ -77,7 +77,8 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
             'payment' => $payment,
             'fulfilment' => [
                 'delivery_disclaimer' => $this->deliveryDisclaimer(),
-                'dine_in_enabled' => $this->dineInEnabled(),
+                'dine_in_enabled' => $this->diningEnabled(),
+                'dining_enabled' => $this->diningEnabled(),
             ],
             'pages' => [
                 'about' => $this->filledOrNull($values[WebsiteSettingKey::PagesAbout->value] ?? null),
@@ -139,6 +140,11 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         $raw = $values->get(WebsiteSettingKey::FulfilmentDineInEnabled->value);
 
         return in_array(strtolower(trim((string) ($raw ?? ''))), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    public function diningEnabled(): bool
+    {
+        return $this->dineInEnabled();
     }
 
     public function orderSecurityConfig(): array

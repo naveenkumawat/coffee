@@ -6,7 +6,6 @@ use App\Enums\OrderFulfilmentMethod;
 use App\Http\Requests\AbstractRequest;
 use App\Models\User;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
-use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -32,11 +31,17 @@ class CheckoutStoreRequest extends AbstractRequest
         $method = (string) $this->input('fulfilment_method');
         $isTakeaway = $method === OrderFulfilmentMethod::Takeaway->value;
         $isDelivery = $method === OrderFulfilmentMethod::Delivery->value;
-        $isDineIn = $method === OrderFulfilmentMethod::DineIn->value;
 
         return [
             'checkout_token' => ['required', 'string', 'max:64'],
-            'fulfilment_method' => ['required', 'string', Rule::enum(OrderFulfilmentMethod::class)],
+            'fulfilment_method' => [
+                'required',
+                'string',
+                Rule::in([
+                    OrderFulfilmentMethod::Takeaway->value,
+                    OrderFulfilmentMethod::Delivery->value,
+                ]),
+            ],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email:rfc', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:50'],
@@ -48,13 +53,7 @@ class CheckoutStoreRequest extends AbstractRequest
             'delivery_phone' => [$isDelivery ? 'required' : 'nullable', 'string', 'max:50'],
             'delivery_contact_name' => ['nullable', 'string', 'max:255'],
             'delivery_notes' => ['nullable', 'string', 'max:2000'],
-            'cafe_table_id' => [
-                $isDineIn ? 'required' : 'nullable',
-                'integer',
-                Rule::exists('cafe_tables', 'id')->where(fn ($query) => $query
-                    ->where('is_active', true)
-                    ->whereNull('deleted_at')),
-            ],
+            'cafe_table_id' => ['prohibited'],
             'payment_method' => ['required', 'string', Rule::in(['manual_upi', 'manual', 'cash'])],
         ];
     }
@@ -62,9 +61,11 @@ class CheckoutStoreRequest extends AbstractRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ((string) $this->input('fulfilment_method') === OrderFulfilmentMethod::DineIn->value
-                && ! app(WebsiteSettingServiceInterface::class)->dineInEnabled()) {
-                $validator->errors()->add('fulfilment_method', 'Dine-in ordering is not available.');
+            if ((string) $this->input('fulfilment_method') === OrderFulfilmentMethod::DineIn->value) {
+                $validator->errors()->add(
+                    'fulfilment_method',
+                    'Dine-in is no longer available through checkout. Use Dining to start a table session.',
+                );
             }
 
             /** @var User|null $user */
@@ -85,8 +86,8 @@ class CheckoutStoreRequest extends AbstractRequest
         return [
             'delivery_address.required' => 'A delivery address is required for delivery orders.',
             'delivery_phone.required' => 'A contact phone is required for delivery orders.',
-            'cafe_table_id.required' => 'Please select your table for dine-in.',
-            'cafe_table_id.exists' => 'Selected table is not available.',
+            'fulfilment_method.in' => 'Choose Takeaway or Delivery. Dining uses the Dining flow.',
+            'cafe_table_id.prohibited' => 'Table selection is only available in Dining.',
         ];
     }
 }

@@ -23,7 +23,7 @@ export interface CheckoutPaymentInstructions {
   whatsapp_number: string | null;
 }
 
-export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery' | 'dine_in';
+export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery';
 export type CheckoutPaymentMethod = 'manual_upi' | 'cash';
 
 export interface CheckoutFulfilmentMeta {
@@ -31,6 +31,7 @@ export interface CheckoutFulfilmentMeta {
   pickup_address: string | null;
   delivery_disclaimer: string;
   dine_in_enabled?: boolean;
+  dining_enabled?: boolean;
 }
 
 export interface CheckoutSummaryMeta extends Record<string, unknown> {

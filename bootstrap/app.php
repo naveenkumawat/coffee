@@ -46,9 +46,15 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('customer.login');
             }
 
-            return str_starts_with($routeName, 'barista.')
-                ? route('barista.login')
-                : route('administrator.login');
+            if (str_starts_with($routeName, 'barista.')) {
+                return route('barista.login');
+            }
+
+            if (str_starts_with($routeName, 'waiter.')) {
+                return route('waiter.login');
+            }
+
+            return route('administrator.login');
         });
         $middleware->alias([
             'role' => EnsureUserHasRole::class,

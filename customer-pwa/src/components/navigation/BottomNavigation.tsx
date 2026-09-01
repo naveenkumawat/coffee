@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
+import { useContentStore } from '../../stores/contentStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
 import { buildLoginRedirect } from '../../utils/navigation';
 
@@ -18,6 +19,10 @@ export function BottomNavigation() {
   const count = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const isAuthenticated = status === 'authenticated';
+  const content = useContentStore((state) => state.content);
+  const diningEnabled = Boolean(
+    content?.fulfilment?.dining_enabled ?? content?.fulfilment?.dine_in_enabled,
+  );
   const previousCount = useRef(count);
   const [badgeBump, setBadgeBump] = useState(false);
   const badgeLabel = formatCartBadgeCount(count);
@@ -37,13 +42,21 @@ export function BottomNavigation() {
   const items: BottomNavItem[] = [
     { to: '/', label: 'Home', icon: 'bi-house-door', end: true },
     { to: '/menu', label: 'Menu', icon: 'bi-grid' },
+    ...(diningEnabled
+      ? [
+          {
+            to: isAuthenticated ? '/dining' : buildLoginRedirect('/dining'),
+            label: 'Dining',
+            icon: 'bi-cup-hot',
+          } satisfies BottomNavItem,
+        ]
+      : []),
     {
       to: '/cart',
       label: 'Cart',
       icon: 'bi-bag',
       ariaLabel: cartBadgeAriaLabel(count),
     },
-    { to: isAuthenticated ? '/orders' : buildLoginRedirect('/orders'), label: 'Orders', icon: 'bi-receipt' },
     {
       to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
       label: isAuthenticated ? 'Account' : 'Sign in',

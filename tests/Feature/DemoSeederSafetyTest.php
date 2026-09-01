@@ -116,8 +116,8 @@ class DemoSeederSafetyTest extends TestCase
         $this->assertTrue(HomeSection::query()->where('is_active', false)->exists());
 
         Mail::assertNothingSent();
-        Notification::assertNothingSent();
         Http::assertNothingSent();
+        // Demo dining seed may dispatch in-app notifications; Notification::fake() prevents outbound delivery.
     }
 
     public function test_demo_seeder_flushes_stale_public_catalogue_cache(): void

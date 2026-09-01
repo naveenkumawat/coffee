@@ -30,6 +30,8 @@ class ProductReadinessTest extends TestCase
             ->post(route('administrator.products.store'), [
                 'product_category_id' => $category->id,
                 'name' => 'Draft Mocha',
+                'product_type' => 'beverage',
+                'preparation_station' => 'bar',
                 'sort_order' => 1,
                 'is_active' => 0,
                 'is_available' => 1,
@@ -301,6 +303,8 @@ class ProductReadinessTest extends TestCase
             'product_category_id' => $product->product_category_id,
             'name' => $product->name,
             'sku' => $product->sku,
+            'product_type' => $product->product_type?->value ?? 'beverage',
+            'preparation_station' => $product->preparation_station?->value ?? 'bar',
             'short_description' => $product->short_description,
             'description' => $product->description,
             'customer_ingredient_summary' => $product->customer_ingredient_summary,

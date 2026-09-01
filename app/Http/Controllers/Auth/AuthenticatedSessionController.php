@@ -61,7 +61,7 @@ class AuthenticatedSessionController extends Controller
     {
         $panel = (string) str($request->route()?->getName() ?? 'administrator.login')->before('.');
 
-        return in_array($panel, ['administrator', 'barista'], true)
+        return in_array($panel, ['administrator', 'barista', 'waiter'], true)
             ? $panel
             : 'administrator';
     }

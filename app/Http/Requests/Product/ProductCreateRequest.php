@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Product;
 
+use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
+use App\Enums\ProductType;
 use App\Http\Requests\AbstractRequest;
 use App\Support\PublicMedia;
 use Illuminate\Validation\Rule;
@@ -18,6 +20,8 @@ class ProductCreateRequest extends AbstractRequest
     {
         return [
             'product_category_id' => ['required', 'integer', Rule::exists('product_categories', 'id')->whereNull('deleted_at')],
+            'product_type' => ['required', 'string', Rule::enum(ProductType::class)],
+            'preparation_station' => ['required', 'string', Rule::enum(PreparationStation::class)],
             'name' => ['required', 'string', 'max:180'],
             'sku' => ['nullable', 'string', 'max:80', Rule::unique('products', 'sku')->whereNull('deleted_at')],
             'short_description' => ['nullable', 'string', 'max:255'],

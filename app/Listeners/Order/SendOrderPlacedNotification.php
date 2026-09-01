@@ -17,6 +17,11 @@ class SendOrderPlacedNotification
     public function handle(OrderPlaced $event): void
     {
         $order = $event->order->loadMissing(['items', 'customer']);
+
+        if ($order->dining_session_id) {
+            return;
+        }
+
         $recipient = OrderCustomerMailRecipient::resolve($order);
 
         if ($recipient === null) {

@@ -50,4 +50,9 @@ class CafeTable extends AbstractModel
     {
         return $this->hasMany(Order::class);
     }
+
+    public function diningSessions(): HasMany
+    {
+        return $this->hasMany(DiningSession::class);
+    }
 }

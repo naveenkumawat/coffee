@@ -126,6 +126,7 @@ class OrderSecurityService implements OrderSecurityServiceInterface
     {
         return (int) Order::query()
             ->where('customer_id', $customer->getKey())
+            ->whereNull('dining_session_id')
             ->where('payment_status', '!=', PaymentStatus::Confirmed->value)
             ->whereNotIn('status', [
                 OrderStatus::Cancelled->value,

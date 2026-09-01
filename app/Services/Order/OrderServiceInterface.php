@@ -2,6 +2,7 @@
 
 namespace App\Services\Order;
 
+use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\User;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
@@ -11,6 +12,11 @@ use Illuminate\Http\UploadedFile;
 interface OrderServiceInterface
 {
     public function store(User $actor, OrderTransferInterface $data): Order;
+
+    /**
+     * @param  list<array{product_variant_id: int, quantity: int}>  $items
+     */
+    public function placeDiningRound(User $actor, DiningSession $session, array $items, ?string $customerNotes = null): Order;
 
     public function transition(Order $order, User $actor, OrderStatusTransitionTransferInterface $data): Order;
 

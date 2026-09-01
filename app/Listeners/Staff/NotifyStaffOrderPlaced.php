@@ -16,7 +16,35 @@ class NotifyStaffOrderPlaced
 
     public function handle(OrderPlaced $event): void
     {
-        $order = $event->order->loadMissing(['items', 'customer']);
+        $order = $event->order->loadMissing(['items', 'customer', 'diningSession.cafeTable']);
+
+        if ($order->dining_session_id) {
+            $this->dispatcher->notify(
+                StaffNotificationType::OrderPlaced,
+                'staff:dining_round_placed:'.$order->getKey(),
+                StaffNotificationAudience::Baristas,
+                StaffNotificationContext::forOrder($order),
+                sendEmail: false,
+            );
+
+            $this->dispatcher->notify(
+                StaffNotificationType::OrderPlaced,
+                'staff:dining_round_placed_waiter:'.$order->getKey(),
+                StaffNotificationAudience::Waiters,
+                StaffNotificationContext::forOrder($order),
+                sendEmail: false,
+            );
+
+            $this->dispatcher->notify(
+                StaffNotificationType::OrderPlaced,
+                'staff:dining_round_placed_admin:'.$order->getKey(),
+                StaffNotificationAudience::Administrators,
+                StaffNotificationContext::forOrder($order),
+                sendEmail: true,
+            );
+
+            return;
+        }
 
         $this->dispatcher->notify(
             StaffNotificationType::OrderPlaced,

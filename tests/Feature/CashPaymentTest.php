@@ -124,7 +124,7 @@ class CashPaymentTest extends TestCase
         $this->assertFalse($order->canUploadPaymentProof());
     }
 
-    public function test_dine_in_cash_allowed_and_delivery_cash_rejected(): void
+    public function test_dining_session_cash_allowed_and_delivery_cash_rejected(): void
     {
         $this->enableDineIn();
         $table = CafeTable::factory()->create(['is_active' => true, 'code' => 'T1']);
@@ -132,24 +132,29 @@ class CashPaymentTest extends TestCase
         $variant = $this->makePurchasableVariant('12.00');
 
         Sanctum::actingAs($customer);
-        $this->postJson(route('api.v1.cart.items.store'), [
+
+        $start = $this->postJson(route('api.v1.dining.sessions.store'), [
+            'cafe_table_id' => $table->id,
+            'guest_count' => 2,
+        ])->assertCreated();
+
+        $sessionId = (int) $start->json('data.id');
+
+        $this->postJson(route('api.v1.dining.sessions.drafts.store', $sessionId), [
             'product_variant_id' => $variant->id,
             'quantity' => 1,
-        ])->assertCreated();
-        $token = (string) $this->getJson(route('api.v1.checkout.summary'))->json('meta.checkout_token');
+        ])->assertOk();
 
-        $this->postJson(route('api.v1.checkout.store'), [
-            'checkout_token' => $token,
-            'fulfilment_method' => 'dine_in',
+        $this->postJson(route('api.v1.dining.sessions.rounds.store', $sessionId))
+            ->assertCreated();
+
+        $this->postJson(route('api.v1.dining.sessions.request-bill', $sessionId))
+            ->assertOk();
+
+        $this->postJson(route('api.v1.dining.sessions.payment-method', $sessionId), [
             'payment_method' => 'cash',
-            'customer_name' => $customer->name,
-            'customer_email' => $customer->email,
-            'customer_phone' => $customer->phone,
-            'cafe_table_id' => $table->id,
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.payment_method', 'cash')
-            ->assertJsonPath('data.fulfilment_method', 'dine_in');
+        ])->assertOk()
+            ->assertJsonPath('data.payment_method', 'cash');
 
         $this->postJson(route('api.v1.cart.items.store'), [
             'product_variant_id' => $variant->id,

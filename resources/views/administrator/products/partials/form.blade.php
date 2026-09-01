@@ -65,6 +65,28 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+                <div class="col-md-3">
+                    <label for="product_type" class="required form-label">Product type</label>
+                    <select id="product_type" name="product_type" required class="form-select @error('product_type') is-invalid @enderror">
+                        @foreach (\App\Enums\ProductType::options() as $value => $label)
+                            <option value="{{ $value }}" @selected((string) old('product_type', $product->product_type?->value ?? 'beverage') === (string) $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('product_type')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-3">
+                    <label for="preparation_station" class="required form-label">Prep station</label>
+                    <select id="preparation_station" name="preparation_station" required class="form-select @error('preparation_station') is-invalid @enderror">
+                        @foreach (\App\Enums\PreparationStation::options() as $value => $label)
+                            <option value="{{ $value }}" @selected((string) old('preparation_station', $product->preparation_station?->value ?? 'bar') === (string) $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('preparation_station')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
                 <div class="col-md-8">
                     <label for="name" class="required form-label">Product Name</label>
                     <input id="name" name="name" type="text" value="{{ old('name', $product->name) }}" required class="form-control @error('name') is-invalid @enderror" />

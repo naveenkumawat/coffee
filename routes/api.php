@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Content\WebsiteContentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerAccountController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
+use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
@@ -92,6 +93,24 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('/', [CustomerProductRatingController::class, 'store'])->name('store');
             Route::put('/', [CustomerProductRatingController::class, 'update'])->name('update');
             Route::delete('/', [CustomerProductRatingController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('dining')->name('dining.')->group(function (): void {
+            Route::get('/tables', [CustomerDiningController::class, 'tables'])->name('tables');
+            Route::post('/sessions', [CustomerDiningController::class, 'storeSession'])->name('sessions.store');
+            Route::get('/sessions/active', [CustomerDiningController::class, 'activeSession'])->name('sessions.active');
+            Route::get('/sessions/{session}', [CustomerDiningController::class, 'showSession'])->name('sessions.show');
+            Route::post('/sessions/{session}/drafts', [CustomerDiningController::class, 'storeDraft'])->name('sessions.drafts.store');
+            Route::put('/sessions/{session}/drafts/{draft}', [CustomerDiningController::class, 'updateDraft'])->name('sessions.drafts.update');
+            Route::delete('/sessions/{session}/drafts/{draft}', [CustomerDiningController::class, 'destroyDraft'])->name('sessions.drafts.destroy');
+            Route::delete('/sessions/{session}/drafts', [CustomerDiningController::class, 'clearDrafts'])->name('sessions.drafts.clear');
+            Route::post('/sessions/{session}/rounds', [CustomerDiningController::class, 'placeRound'])->name('sessions.rounds.store');
+            Route::post('/sessions/{session}/request-bill', [CustomerDiningController::class, 'requestBill'])->name('sessions.request-bill');
+            Route::post('/sessions/{session}/payment-method', [CustomerDiningController::class, 'setPaymentMethod'])->name('sessions.payment-method');
+            Route::post('/sessions/{session}/payment-proof', [CustomerDiningController::class, 'uploadPaymentProof'])
+                ->middleware('throttle:payment-proof')
+                ->name('sessions.payment-proof');
+            Route::get('/sessions/{session}/invoice', [CustomerDiningController::class, 'invoice'])->name('sessions.invoice');
         });
 
         Route::prefix('orders')->name('orders.')->group(function (): void {

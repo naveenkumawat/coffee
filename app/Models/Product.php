@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\PreparationStation;
+use App\Enums\ProductType;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +37,8 @@ class Product extends AbstractModel
         'is_bestseller',
         'is_vegetarian',
         'is_customizable',
+        'product_type',
+        'preparation_station',
     ];
 
     protected function casts(): array
@@ -49,6 +53,8 @@ class Product extends AbstractModel
             'is_bestseller' => 'boolean',
             'is_vegetarian' => 'boolean',
             'is_customizable' => 'boolean',
+            'product_type' => ProductType::class,
+            'preparation_station' => PreparationStation::class,
         ];
     }
 

@@ -40,6 +40,14 @@ interface ProductTransferInterface
 
     public function setPreparationTimeMinutes(?int $preparationTimeMinutes): void;
 
+    public function getProductType(): ?string;
+
+    public function setProductType(?string $productType): void;
+
+    public function getPreparationStation(): ?string;
+
+    public function setPreparationStation(?string $preparationStation): void;
+
     public function getSortOrder(): int;
 
     public function setSortOrder(int $sortOrder): void;

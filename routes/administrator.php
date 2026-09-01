@@ -3,6 +3,7 @@
 use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\DashboardController;
+use App\Http\Controllers\Administrator\DiningSessionController;
 use App\Http\Controllers\Administrator\HomeSectionController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
@@ -72,6 +73,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('menu/items', MenuItemController::class)
         ->parameters(['items' => 'menu_item'])
         ->names('menu.items');
+
+    Route::get('dining-sessions', [DiningSessionController::class, 'index'])->name('dining-sessions.index');
+    Route::get('dining-sessions/{dining_session}', [DiningSessionController::class, 'show'])->name('dining-sessions.show');
+    Route::post('dining-sessions/{dining_session}/close', [DiningSessionController::class, 'close'])->name('dining-sessions.close');
+    Route::post('dining-sessions/{dining_session}/reopen', [DiningSessionController::class, 'reopen'])->name('dining-sessions.reopen');
+    Route::get('dining-sessions/{dining_session}/invoice', [DiningSessionController::class, 'invoice'])->name('dining-sessions.invoice');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('orders/create', [OrderController::class, 'create'])->name('orders.create');

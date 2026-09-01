@@ -50,7 +50,7 @@ export interface Order {
   order_number: string;
   status: string | null;
   status_label: string | null;
-  fulfilment_method: CheckoutFulfilmentMethod | null;
+  fulfilment_method: CheckoutFulfilmentMethod | 'dine_in' | null;
   fulfilment_method_label: string | null;
   cafe_table_id: number | null;
   table_name: string | null;

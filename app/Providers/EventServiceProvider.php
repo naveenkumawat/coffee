@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Events\Customer\CustomerPasswordChanged;
 use App\Events\Customer\CustomerRegistered;
+use App\Events\Dining\DiningBillReady;
+use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Inventory\IngredientStockStatusChanged;
 use App\Events\Inventory\InventoryRefillRequestCreated;
 use App\Events\Inventory\InventoryRefillRequestStatusChanged;
@@ -16,6 +18,8 @@ use App\Events\Order\OrderPlaced;
 use App\Events\Order\OrderStatusChanged;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
+use App\Listeners\Dining\SendDiningBillReadyNotification;
+use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
 use App\Listeners\Order\QualifyReferralOnPaymentConfirmed;
 use App\Listeners\Order\SendOrderCashReceivedNotification;
@@ -60,6 +64,12 @@ class EventServiceProvider extends ServiceProvider
             SendOrderStatusChangedNotification::class,
             NotifyStaffOrderStatusChanged::class,
             QualifyReferralOnPaymentConfirmed::class,
+        ],
+        DiningBillReady::class => [
+            SendDiningBillReadyNotification::class,
+        ],
+        DiningPaymentConfirmed::class => [
+            SendDiningPaymentConfirmedNotification::class,
         ],
         OrderCashReceived::class => [
             SendOrderCashReceivedNotification::class,

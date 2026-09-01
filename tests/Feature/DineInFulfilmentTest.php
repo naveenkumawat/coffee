@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\CustomerNotificationType;
-use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\ProductServingUnit;
 use App\Enums\StaffNotificationType;
@@ -80,14 +79,18 @@ class DineInFulfilmentTest extends TestCase
             'quantity' => 1,
         ])->assertCreated();
 
-        $this->getJson(route('api.v1.checkout.summary'))
-            ->assertOk()
-            ->assertJsonPath('meta.fulfilment.dine_in_enabled', true)
-            ->assertJsonPath('meta.fulfilment.methods.1.value', 'dine_in');
+        $summary = $this->getJson(route('api.v1.checkout.summary'))->assertOk();
+        $this->assertTrue((bool) $summary->json('meta.fulfilment.dine_in_enabled'));
+        $this->assertTrue((bool) $summary->json('meta.fulfilment.dining_enabled'));
+        $this->assertSame(
+            ['takeaway', 'delivery'],
+            collect($summary->json('meta.fulfilment.methods'))->pluck('value')->all(),
+        );
 
         $this->getJson(route('api.v1.content.show'))
             ->assertOk()
-            ->assertJsonPath('data.fulfilment.dine_in_enabled', true);
+            ->assertJsonPath('data.fulfilment.dine_in_enabled', true)
+            ->assertJsonPath('data.fulfilment.dining_enabled', true);
 
         $this->getJson(route('api.v1.cafe-tables.index'))
             ->assertOk()
@@ -98,7 +101,7 @@ class DineInFulfilmentTest extends TestCase
             ->assertJsonMissingPath('data.0.sort_order');
     }
 
-    public function test_dine_in_checkout_requires_active_table_and_persists_snapshot(): void
+    public function test_dine_in_checkout_is_rejected_in_favour_of_dining_sessions(): void
     {
         $this->enableDineIn();
         $table = CafeTable::factory()->create([
@@ -106,7 +109,6 @@ class DineInFulfilmentTest extends TestCase
             'name' => null,
             'is_active' => true,
         ]);
-        $inactive = CafeTable::factory()->inactive()->create(['code' => 'TX']);
 
         $customer = User::factory()->customer()->create([
             'name' => 'Dine Customer',
@@ -129,46 +131,12 @@ class DineInFulfilmentTest extends TestCase
             'customer_name' => $customer->name,
             'customer_email' => $customer->email,
             'customer_phone' => $customer->phone,
-        ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['cafe_table_id']);
-
-        $this->postJson(route('api.v1.checkout.store'), [
-            'checkout_token' => $checkoutToken,
-            'fulfilment_method' => 'dine_in',
-            'customer_name' => $customer->name,
-            'customer_email' => $customer->email,
-            'customer_phone' => $customer->phone,
-            'cafe_table_id' => $inactive->id,
-        ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['cafe_table_id']);
-
-        $this->postJson(route('api.v1.checkout.store'), [
-            'checkout_token' => $checkoutToken,
-            'fulfilment_method' => 'dine_in',
-            'customer_name' => $customer->name,
-            'customer_email' => $customer->email,
-            'customer_phone' => $customer->phone,
             'cafe_table_id' => $table->id,
-            'delivery_address' => 'Should be ignored',
-            'pickup_name' => 'Should be ignored',
         ])
-            ->assertCreated()
-            ->assertJsonPath('data.fulfilment_method', 'dine_in')
-            ->assertJsonPath('data.fulfilment_method_label', 'Dine-in')
-            ->assertJsonPath('data.cafe_table_id', $table->id)
-            ->assertJsonPath('data.table_name', 'T4')
-            ->assertJsonPath('data.pickup_name', null)
-            ->assertJsonPath('data.delivery_address', null)
-            ->assertJsonPath('data.status_label', 'Pending Payment');
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fulfilment_method']);
 
-        $order = Order::query()->firstOrFail();
-        $this->assertSame(OrderFulfilmentMethod::DineIn, $order->fulfilment_method);
-        $this->assertSame($table->id, $order->cafe_table_id);
-        $this->assertSame('T4', $order->table_name_snapshot);
-        $this->assertNull($order->delivery_address);
-        $this->assertNull($order->pickup_name);
+        $this->assertSame(0, Order::query()->count());
     }
 
     public function test_dine_in_rejected_when_feature_disabled(): void

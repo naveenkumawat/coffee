@@ -43,6 +43,8 @@ class Order extends AbstractModel
         'pickup_notes',
         'fulfilment_method',
         'cafe_table_id',
+        'dining_session_id',
+        'dining_round_number',
         'table_name_snapshot',
         'delivery_address',
         'delivery_phone',
@@ -81,6 +83,7 @@ class Order extends AbstractModel
             'payment_status' => PaymentStatus::class,
             'order_date' => 'date',
             'daily_sequence' => 'integer',
+            'dining_round_number' => 'integer',
             'subtotal' => 'decimal:2',
             'discount_total' => 'decimal:2',
             'tax_enabled_snapshot' => 'boolean',
@@ -121,6 +124,16 @@ class Order extends AbstractModel
     public function cafeTable(): BelongsTo
     {
         return $this->belongsTo(CafeTable::class)->withTrashed();
+    }
+
+    public function diningSession(): BelongsTo
+    {
+        return $this->belongsTo(DiningSession::class);
+    }
+
+    public function isDiningRound(): bool
+    {
+        return $this->dining_session_id !== null;
     }
 
     public function items(): HasMany

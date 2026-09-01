@@ -18,6 +18,7 @@ use App\Models\Promotion;
 use App\Models\User;
 use App\Models\WebsiteSetting;
 use App\Services\Cart\CartServiceInterface;
+use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -40,12 +41,13 @@ class PromotionEngineTest extends TestCase
 
         $this->addVariantToCart($variant);
 
-        $this->getJson(route('api.v1.checkout.summary', ['fulfilment_method' => 'dine_in']))
-            ->assertOk()
-            ->assertJsonPath('meta.summary.subtotal', '100.00')
-            ->assertJsonPath('meta.summary.discount_total', '10.00')
-            ->assertJsonPath('meta.summary.discounts.0.amount', '10.00')
-            ->assertJsonPath('meta.summary.discounts.0.name', 'Dine-in discount applied.');
+        $cart = app(CartServiceInterface::class)->getForCustomer($customer);
+        $summary = app(CartServiceInterface::class)->summarize($cart, 'dine_in');
+
+        $this->assertSame('100.00', $summary['subtotal']);
+        $this->assertSame('10.00', $summary['discount_total']);
+        $this->assertNotEmpty($summary['discounts'] ?? []);
+        $this->assertSame('10.00', $summary['discounts'][0]['amount'] ?? null);
     }
 
     public function test_dine_in_discount_not_applied_for_takeaway(): void
@@ -430,10 +432,6 @@ class PromotionEngineTest extends TestCase
         $this->assertSame('10.00', $dineIn['discount_total']);
         $this->assertSame('0.00', $takeaway['discount_total']);
 
-        $this->getJson(route('api.v1.checkout.summary', ['fulfilment_method' => 'dine_in']))
-            ->assertOk()
-            ->assertJsonPath('meta.summary.discount_total', '10.00');
-
         $this->getJson(route('api.v1.checkout.summary', ['fulfilment_method' => 'takeaway']))
             ->assertOk()
             ->assertJsonPath('meta.summary.discount_total', '0.00');
@@ -698,7 +696,7 @@ class PromotionEngineTest extends TestCase
             ->assertJsonPath('meta.summary.discount_total', '0.00');
     }
 
-    public function test_dine_in_checkout_persists_automatic_promotion_on_order(): void
+    public function test_dine_in_dining_round_persists_automatic_promotion_on_order(): void
     {
         $this->enableDineIn();
         $table = CafeTable::factory()->create(['is_active' => true, 'code' => 'P1']);
@@ -709,31 +707,21 @@ class PromotionEngineTest extends TestCase
         ]);
 
         $customer = User::factory()->customer()->create(['phone' => '9111000066']);
+        $variant = $this->makePurchasableVariant('100.00');
         Sanctum::actingAs($customer);
-        $this->addVariantToCart($this->makePurchasableVariant('100.00'));
 
-        $token = (string) $this->getJson(route('api.v1.checkout.summary', [
-            'fulfilment_method' => 'dine_in',
-        ]))->json('meta.checkout_token');
+        $dining = app(DiningSessionServiceInterface::class);
+        $session = $dining->startSession($table, $customer, $customer, ['guest_count' => 2]);
+        $dining->addDraftItem($session, (int) $variant->getKey(), 1, $customer);
+        $order = $dining->placeRound($session, $customer);
 
-        $this->postJson(route('api.v1.checkout.store'), [
-            'checkout_token' => $token,
-            'fulfilment_method' => 'dine_in',
-            'cafe_table_id' => $table->id,
-            'payment_method' => 'manual_upi',
-            'customer_name' => $customer->name,
-            'customer_email' => $customer->email,
-            'customer_phone' => $customer->phone,
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.discount_total', '10.00')
-            ->assertJsonPath('data.promotions.0.name', 'Table 10%')
-            ->assertJsonPath('data.total_amount', '90.00');
+        $this->assertSame('10.00', (string) $order->discount_total);
+        $this->assertDatabaseHas('order_promotions', [
+            'order_id' => $order->getKey(),
+        ]);
+        $this->assertSame('90.00', (string) $order->total_amount);
     }
 
-    /**
-     * @param  array{gstin?: ?string, legal?: ?string}  $extra
-     */
     protected function setTaxSettings(
         bool $enabled,
         string $percent,

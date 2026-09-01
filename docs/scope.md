@@ -1578,3 +1578,11 @@ Customer API coverage should ultimately include:
 * cart
 * checkout
 * orders/tracking
+
+
+## Dining flow
+
+- **Normal:** Menu → Cart → Checkout (takeaway / delivery only)
+- **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
+- PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
+- Waiter role operates table service; food & beverage catalog uses product type + prep station.

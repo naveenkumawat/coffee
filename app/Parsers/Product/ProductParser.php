@@ -21,6 +21,8 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setCustomerIngredientSummary($product->customer_ingredient_summary);
         $transfer->setImagePath($product->image_path);
         $transfer->setPreparationTimeMinutes($product->preparation_time_minutes ? (int) $product->preparation_time_minutes : null);
+        $transfer->setProductType($product->product_type?->value ?? 'beverage');
+        $transfer->setPreparationStation($product->preparation_station?->value ?? 'bar');
         $transfer->setSortOrder((int) $product->sort_order);
         $transfer->setProductFlavourIds($product->flavours()->pluck('product_flavours.id')->map(fn ($id): int => (int) $id)->all());
         $transfer->setProductTagIds($product->tags()->pluck('product_tags.id')->map(fn ($id): int => (int) $id)->all());
@@ -60,6 +62,8 @@ class ProductParser extends AbstractParser implements ProductParserInterface
         $transfer->setCustomerIngredientSummary(filled($productData['customer_ingredient_summary'] ?? null) ? trim((string) $productData['customer_ingredient_summary']) : null);
         $transfer->setImagePath(filled($productData['image_path'] ?? null) ? trim((string) $productData['image_path']) : null);
         $transfer->setPreparationTimeMinutes(filled($productData['preparation_time_minutes'] ?? null) ? (int) $productData['preparation_time_minutes'] : null);
+        $transfer->setProductType(filled($productData['product_type'] ?? null) ? (string) $productData['product_type'] : 'beverage');
+        $transfer->setPreparationStation(filled($productData['preparation_station'] ?? null) ? (string) $productData['preparation_station'] : 'bar');
         $transfer->setSortOrder((int) ($productData['sort_order'] ?? 0));
         $transfer->setProductFlavourIds(collect($productData['product_flavour_ids'] ?? [])->filter(fn ($id) => filled($id))->map(fn ($id): int => (int) $id)->unique()->values()->all());
         $transfer->setProductTagIds(collect($productData['product_tag_ids'] ?? [])->filter(fn ($id) => filled($id))->map(fn ($id): int => (int) $id)->unique()->values()->all());

@@ -253,3 +253,11 @@ See `customer-pwa/README.md` for the deployment checklist.
 - implementing inventory consumption from orders
 - implementing push notifications now
 - modifying internal Blade Administrator or Barista surfaces
+
+
+## Dining flow
+
+- **Normal:** Menu → Cart → Checkout (takeaway / delivery only)
+- **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
+- PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
+- Waiter role operates table service; food & beverage catalog uses product type + prep station.

@@ -62,6 +62,9 @@ class StaffNotificationDispatcher implements StaffNotificationDispatcherInterfac
             StaffNotificationAudience::Baristas => [
                 UserRole::Barista->value,
             ],
+            StaffNotificationAudience::Waiters => [
+                UserRole::Waiter->value,
+            ],
         };
 
         return User::query()

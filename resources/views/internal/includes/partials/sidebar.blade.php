@@ -1,6 +1,10 @@
 @php
     $user = auth('admin')->user();
-    $dashboardRoute = $panel === 'administrator' ? route('administrator.dashboard') : route('barista.dashboard');
+    $dashboardRoute = match ($panel) {
+        'administrator' => route('administrator.dashboard'),
+        'waiter' => route('waiter.dashboard'),
+        default => route('barista.dashboard'),
+    };
 
     $navigation = match ($panel) {
         'administrator' => [
@@ -39,6 +43,7 @@
                 'heading' => 'Orders',
                 'items' => $user?->canViewOrders() ? [
                     ['label' => 'Orders', 'route' => 'administrator.orders.index', 'pattern' => 'administrator.orders.*', 'icon' => 'ki-delivery-2'],
+                    ['label' => 'Dining Sessions', 'route' => 'administrator.dining-sessions.index', 'pattern' => 'administrator.dining-sessions.*', 'icon' => 'ki-coffee'],
                 ] : [],
             ],
             [
@@ -76,6 +81,21 @@
                 ])),
             ],
         ],
+        'waiter' => [
+            [
+                'heading' => 'Dashboard',
+                'items' => [
+                    ['label' => 'Overview', 'route' => 'waiter.dashboard', 'pattern' => 'waiter.dashboard*', 'icon' => 'ki-chart-line'],
+                ],
+            ],
+            [
+                'heading' => 'Dining',
+                'items' => [
+                    ['label' => 'Tables', 'route' => 'waiter.tables.index', 'pattern' => 'waiter.tables.*', 'icon' => 'ki-tablet'],
+                    ['label' => 'Sessions', 'route' => 'waiter.sessions.index', 'pattern' => 'waiter.sessions.*', 'icon' => 'ki-coffee'],
+                ],
+            ],
+        ],
         'barista' => [
             [
                 'heading' => 'Dashboard',
@@ -106,14 +126,18 @@
         ],
     };
 
-    $logoutRoute = $panel === 'administrator' ? route('administrator.logout') : route('barista.logout');
+    $logoutRoute = match ($panel) {
+        'administrator' => route('administrator.logout'),
+        'waiter' => route('waiter.logout'),
+        default => route('barista.logout'),
+    };
 @endphp
 
 <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="225px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
         <a href="{{ $dashboardRoute }}" class="text-decoration-none d-flex flex-column">
             <span class="fs-3 fw-bold text-white">{{ config('app.name') }}</span>
-            <span class="text-gray-400 fs-8 text-uppercase">{{ $panel === 'administrator' ? 'Administrator' : 'Barista' }}</span>
+            <span class="text-gray-400 fs-8 text-uppercase">{{ match($panel) { 'administrator' => 'Administrator', 'waiter' => 'Waiter', default => 'Barista' } }}</span>
         </a>
 
         <div id="kt_app_sidebar_toggle" class="app-sidebar-toggle btn btn-icon btn-shadow btn-sm btn-color-muted btn-active-color-primary body-bg h-30px w-30px position-absolute top-50 start-100 translate-middle rotate" data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body" data-kt-toggle-name="app-sidebar-minimize">

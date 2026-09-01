@@ -15,6 +15,7 @@ use App\Events\Order\OrderPaymentProofRejected;
 use App\Events\Order\OrderPlaced;
 use App\Events\Order\OrderStatusChanged;
 use App\Models\CustomerReward;
+use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -257,7 +258,17 @@ class OrderService implements OrderServiceInterface
                 'placed_at' => $placedAt,
             ]);
 
-            $this->orders->createItems($order, $preparedItems);
+            $this->orders->createItems($order, array_map(static fn (array $item): array => [
+                'product_id' => $item['product_id'] ?? null,
+                'product_variant_id' => $item['product_variant_id'] ?? null,
+                'recipe_id' => $item['recipe_id'] ?? null,
+                'product_name' => $item['product_name'],
+                'variant_name' => $item['variant_name'],
+                'customer_ingredient_summary' => $item['customer_ingredient_summary'] ?? null,
+                'unit_price' => $item['unit_price'],
+                'quantity' => $item['quantity'],
+                'line_subtotal' => $item['line_subtotal'],
+            ], $preparedItems));
             $this->persistOrderPromotions($order, $promotionResult['discounts']);
             $this->persistAndRedeemRewards(
                 $order,
@@ -590,6 +601,127 @@ class OrderService implements OrderServiceInterface
         );
 
         return collect($baristaAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+    }
+
+    /**
+     * @param  list<array{product_variant_id: int, quantity: int}>  $items
+     */
+    public function placeDiningRound(User $actor, DiningSession $session, array $items, ?string $customerNotes = null): Order
+    {
+        return DB::transaction(function () use ($actor, $session, $items, $customerNotes): Order {
+            $preparedItems = $this->prepareItems($items);
+
+            if ($preparedItems === []) {
+                throw ValidationException::withMessages([
+                    'items' => 'At least one order item is required.',
+                ]);
+            }
+
+            $subtotal = $this->sumLineSubtotals($preparedItems);
+            $pricedItems = array_map(static fn (array $item): array => [
+                'product_id' => isset($item['product_id']) ? (int) $item['product_id'] : null,
+                'product_variant_id' => isset($item['product_variant_id']) ? (int) $item['product_variant_id'] : null,
+                'product_category_id' => isset($item['product_category_id']) ? (int) $item['product_category_id'] : null,
+                'quantity' => (int) $item['quantity'],
+                'unit_price' => (string) $item['unit_price'],
+                'line_subtotal' => (string) $item['line_subtotal'],
+            ], $preparedItems);
+
+            $customer = $session->customer;
+            $promotionResult = $this->promotions->assertAndEvaluateForCheckout([
+                'customer' => $customer,
+                'fulfilment' => OrderFulfilmentMethod::DineIn,
+                'promo_code' => null,
+                'items' => $pricedItems,
+            ]);
+
+            $discountTotal = (string) $promotionResult['discount_total'];
+            $gstBasis = bcsub($subtotal, $discountTotal, 2);
+            if (bccomp($gstBasis, '0', 2) < 0) {
+                $gstBasis = '0.00';
+            }
+
+            $tax = $this->taxCalculator->calculateForPayableAndGstBasis($gstBasis, $gstBasis);
+            $totalAmount = $this->taxCalculator->payableTotal($tax);
+            $placedAt = now();
+            $dailySequence = $this->orders->nextDailySequenceForDate(Carbon::instance($placedAt));
+            $roundNumber = ((int) $session->orders()->max('dining_round_number')) + 1;
+
+            $order = $this->orders->create([
+                'order_number' => $this->formatOrderNumber(Carbon::instance($placedAt), $dailySequence),
+                'order_date' => $placedAt->toDateString(),
+                'daily_sequence' => $dailySequence,
+                'customer_id' => $session->customer_id,
+                'customer_name' => $session->customer_name_snapshot ?: $customer?->name,
+                'customer_email' => $customer?->email,
+                'customer_phone' => $session->customer_phone_snapshot ?: $customer?->phone,
+                'pickup_name' => null,
+                'pickup_phone' => null,
+                'assigned_barista_id' => null,
+                'checkout_token' => null,
+                'status' => OrderStatus::Accepted->value,
+                'subtotal' => $subtotal,
+                'discount_total' => $discountTotal,
+                'tax_enabled_snapshot' => $tax->enabled,
+                'tax_label_snapshot' => $tax->enabled ? $tax->label : null,
+                'tax_percent_snapshot' => $tax->enabled ? $tax->percent : null,
+                'tax_inclusive_snapshot' => $tax->enabled ? $tax->inclusive : false,
+                'taxable_amount' => $tax->taxableAmount,
+                'tax_amount' => $tax->taxAmount,
+                'total_amount' => $totalAmount,
+                'customer_notes' => $customerNotes,
+                'pickup_notes' => null,
+                'fulfilment_method' => OrderFulfilmentMethod::DineIn->value,
+                'cafe_table_id' => $session->cafe_table_id,
+                'dining_session_id' => $session->getKey(),
+                'dining_round_number' => $roundNumber,
+                'table_name_snapshot' => $session->table_name_snapshot,
+                'delivery_address' => null,
+                'delivery_phone' => null,
+                'delivery_contact_name' => null,
+                'delivery_notes' => null,
+                'delivery_provider' => null,
+                'delivery_fee_amount' => null,
+                'delivery_tracking_reference' => null,
+                'payment_method' => PaymentMethod::Manual->value,
+                'payment_status' => PaymentStatus::Pending->value,
+                'placed_at' => $placedAt,
+                'accepted_at' => $placedAt,
+            ]);
+
+            $this->orders->createItems($order, array_map(static fn (array $item): array => [
+                'product_id' => $item['product_id'] ?? null,
+                'product_variant_id' => $item['product_variant_id'] ?? null,
+                'recipe_id' => $item['recipe_id'] ?? null,
+                'product_name' => $item['product_name'],
+                'variant_name' => $item['variant_name'],
+                'customer_ingredient_summary' => $item['customer_ingredient_summary'] ?? null,
+                'unit_price' => $item['unit_price'],
+                'quantity' => $item['quantity'],
+                'line_subtotal' => $item['line_subtotal'],
+            ], $preparedItems));
+            $this->persistOrderPromotions($order, $promotionResult['discounts']);
+            $this->orders->createStatusHistory($order, [
+                'from_status' => null,
+                'to_status' => OrderStatus::Accepted->value,
+                'changed_by' => $actor->getKey(),
+                'notes' => 'Dining round '.$roundNumber.' placed — kitchen can start without session payment.',
+            ]);
+
+            $order = $order->fresh([
+                'customer',
+                'assignedBarista',
+                'items.recipe.lines.ingredient.brand',
+                'promotions',
+                'rewardRedemptions',
+                'statusHistory.changedBy',
+                'diningSession',
+            ]);
+
+            OrderPlaced::dispatch($order);
+
+            return $order;
+        });
     }
 
     protected function prepareItems(array $items): array

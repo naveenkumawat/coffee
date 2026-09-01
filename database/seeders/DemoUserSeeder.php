@@ -47,6 +47,13 @@ class DemoUserSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'email' => 'waiter@coffee.local',
+                'name' => 'Coffee Waiter',
+                'phone' => '9000000090',
+                'role' => UserRole::Waiter,
+                'is_active' => true,
+            ],
+            [
                 'email' => 'inactive.staff@coffee.local',
                 'name' => 'Inactive Cashier',
                 'phone' => '9000000005',

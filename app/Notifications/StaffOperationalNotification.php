@@ -57,7 +57,9 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
             'message' => $content['message'],
             'severity' => $severity->value,
             'url' => $this->actionUrl($notifiable),
-            'audience' => $isAdmin ? 'administrator' : 'barista',
+            'audience' => $notifiable instanceof User && $notifiable->canAccessWaiterPanel()
+                ? 'waiter'
+                : ($isAdmin ? 'administrator' : 'barista'),
             'order_id' => $this->context->order?->getKey(),
             'order_number' => $this->context->order?->order_number,
             'ingredient_id' => $this->context->ingredient?->getKey(),
@@ -144,8 +146,10 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
         return match ($this->type) {
             StaffNotificationType::OrderPlaced => [
                 'title' => $this->newOrderTitle($number),
-                'message' => 'A new order needs payment follow-up.',
-                'actionText' => 'Open order',
+                'message' => $order->dining_session_id
+                    ? 'A new dining round is ready for preparation.'
+                    : 'A new order needs payment follow-up.',
+                'actionText' => $order->dining_session_id ? 'Open dining order' : 'Open order',
             ],
             StaffNotificationType::PaymentProofReceived => [
                 'title' => 'Payment proof for #'.$number.' needs review',
@@ -245,9 +249,14 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
         $isAdmin = $notifiable instanceof User && $notifiable->isAdministratorRole();
 
         if ($this->context->order) {
+            $order = $this->context->order;
+            if ($notifiable instanceof User && $notifiable->canAccessWaiterPanel() && $order->dining_session_id) {
+                return route('waiter.sessions.show', $order->dining_session_id);
+            }
+
             return $isAdmin
-                ? route('administrator.orders.show', $this->context->order)
-                : route('barista.orders.show', $this->context->order);
+                ? route('administrator.orders.show', $order)
+                : route('barista.orders.show', $order);
         }
 
         if ($this->context->refillRequest) {
@@ -277,6 +286,13 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
     protected function newOrderTitle(string $number): string
     {
         $order = $this->context->order;
+
+        if ($order?->dining_session_id) {
+            $table = $order->tableDisplayLabel() ?: 'Table';
+            $round = $order->dining_round_number ? ' round '.$order->dining_round_number : '';
+
+            return 'New dining'.$round.' #'.$number.' — '.$table;
+        }
 
         if ($order?->isDineIn()) {
             $table = $order->tableDisplayLabel() ?: 'Table';

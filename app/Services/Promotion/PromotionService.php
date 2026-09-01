@@ -5,7 +5,6 @@ namespace App\Services\Promotion;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PromotionDiscountType;
-use App\Enums\PromotionFulfilmentScope;
 use App\Enums\PromotionType;
 use App\Models\Promotion;
 use App\Models\User;
@@ -491,15 +490,9 @@ class PromotionService implements PromotionServiceInterface
 
     protected function matchesFulfilment(Promotion $promotion, ?OrderFulfilmentMethod $fulfilment): bool
     {
-        if ($promotion->fulfilment_scope === PromotionFulfilmentScope::Any) {
-            return true;
-        }
+        $context = $fulfilment?->value;
 
-        if ($fulfilment === null) {
-            return false;
-        }
-
-        return $promotion->fulfilment_scope->value === $fulfilment->value;
+        return $promotion->fulfilment_scope->matchesContext($context);
     }
 
     protected function matchesCustomer(Promotion $promotion, ?User $customer): bool

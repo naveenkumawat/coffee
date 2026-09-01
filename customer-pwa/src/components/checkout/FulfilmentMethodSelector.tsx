@@ -24,10 +24,6 @@ const METHOD_META: Record<
     icon: 'bi-bicycle',
     subtitle: 'Third-party delivery — fees paid separately.',
   },
-  dine_in: {
-    icon: 'bi-cup-hot',
-    subtitle: "We'll serve your order at your table.",
-  },
 };
 
 export function FulfilmentMethodSelector({

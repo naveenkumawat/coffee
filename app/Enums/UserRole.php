@@ -7,6 +7,7 @@ enum UserRole: string
     case Owner = 'owner';
     case Manager = 'manager';
     case Barista = 'barista';
+    case Waiter = 'waiter';
     case Cashier = 'cashier';
     case Customer = 'customer';
 
@@ -16,6 +17,7 @@ enum UserRole: string
             self::Owner => 'Owner',
             self::Manager => 'Manager',
             self::Barista => 'Barista',
+            self::Waiter => 'Waiter',
             self::Cashier => 'Cashier',
             self::Customer => 'Customer',
         };
@@ -24,7 +26,7 @@ enum UserRole: string
     public function canAccessAdmin(): bool
     {
         return match ($this) {
-            self::Owner, self::Manager, self::Barista, self::Cashier => true,
+            self::Owner, self::Manager, self::Barista, self::Waiter, self::Cashier => true,
             self::Customer => false,
         };
     }
@@ -33,7 +35,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            self::Barista, self::Waiter, self::Cashier, self::Customer => false,
         };
     }
 
@@ -41,7 +43,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -49,7 +51,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -57,7 +59,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -65,7 +67,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -73,15 +75,15 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
     public function canViewProducts(): bool
     {
         return match ($this) {
-            self::Owner, self::Manager, self::Barista => true,
-            self::Cashier, self::Customer => false,
+            self::Owner, self::Manager, self::Barista, self::Waiter => true,
+            default => false,
         };
     }
 
@@ -89,7 +91,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager, self::Barista => true,
-            self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -97,15 +99,15 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
     public function canViewOrders(): bool
     {
         return match ($this) {
-            self::Owner, self::Manager, self::Barista => true,
-            self::Cashier, self::Customer => false,
+            self::Owner, self::Manager, self::Barista, self::Waiter => true,
+            default => false,
         };
     }
 
@@ -113,7 +115,15 @@ enum UserRole: string
     {
         return match ($this) {
             self::Barista => true,
-            self::Owner, self::Manager, self::Cashier, self::Customer => false,
+            default => false,
+        };
+    }
+
+    public function canOperateDining(): bool
+    {
+        return match ($this) {
+            self::Waiter, self::Owner, self::Manager => true,
+            default => false,
         };
     }
 
@@ -121,7 +131,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Owner, self::Manager => true,
-            self::Barista, self::Cashier, self::Customer => false,
+            default => false,
         };
     }
 
@@ -129,7 +139,15 @@ enum UserRole: string
     {
         return match ($this) {
             self::Barista => true,
-            self::Owner, self::Manager, self::Cashier, self::Customer => false,
+            default => false,
+        };
+    }
+
+    public function canAccessWaiterPanel(): bool
+    {
+        return match ($this) {
+            self::Waiter => true,
+            default => false,
         };
     }
 
@@ -138,6 +156,7 @@ enum UserRole: string
         return match ($this) {
             self::Owner, self::Manager => 'Administrator',
             self::Barista => 'Barista',
+            self::Waiter => 'Waiter',
             self::Customer => 'Customer',
             self::Cashier => 'Cashier',
         };

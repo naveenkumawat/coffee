@@ -50,16 +50,14 @@ class CustomerCheckoutController extends Controller
                     'phone' => $request->user()->phone,
                 ],
                 'fulfilment' => [
-                    'methods' => array_values(array_filter([
+                    'methods' => [
                         ['value' => 'takeaway', 'label' => 'Takeaway'],
-                        $this->websiteSettings->dineInEnabled()
-                            ? ['value' => 'dine_in', 'label' => 'Dine-in']
-                            : null,
                         ['value' => 'delivery', 'label' => 'Delivery'],
-                    ])),
+                    ],
                     'pickup_address' => $this->websiteSettings->customerContent()['business']['address'] ?? null,
                     'delivery_disclaimer' => $this->websiteSettings->deliveryDisclaimer(),
-                    'dine_in_enabled' => $this->websiteSettings->dineInEnabled(),
+                    'dining_enabled' => $this->websiteSettings->diningEnabled(),
+                    'dine_in_enabled' => $this->websiteSettings->diningEnabled(),
                 ],
                 'payment_methods' => $this->paymentEligibility->methodsByFulfilment($request->user()),
                 'payment' => $this->paymentInstructions(),

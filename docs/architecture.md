@@ -330,3 +330,16 @@ Closing ordering never cancels or pauses existing orders. Menu browsing, carts, 
 - Keep public storefront behavior separate from internal panel architecture.
 - Do not treat current customer Blade views/controllers as the final storefront architecture.
 - Treat the customer API/PWA migration as pending work until the PWA replaces temporary customer Blade screens.
+
+
+## Dining / table service
+
+Separate from takeaway/delivery checkout:
+
+1. Customer or waiter opens a **dining session** on a cafe table.
+2. Items are collected in a **session draft** (not the takeaway cart), then placed as **rounds** (orders with `fulfilment_method=dine_in`, `dining_session_id`, `dining_round_number`).
+3. Kitchen/bar starts on **Accepted** rounds without requiring payment first.
+4. At the end: request bill → session payment (cash or UPI proof) → close session (frees table).
+
+Roles: **Waiter** panel for tables/sessions; administrators can reopen/close; baristas still prepare round orders.
+Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).

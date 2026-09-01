@@ -177,9 +177,9 @@ class PromotionAdminTest extends TestCase
         $this->seed(DemoPromotionSeeder::class);
 
         $this->assertDatabaseHas('promotions', [
-            'name' => 'Dine-in 10%',
+            'name' => 'Dining 10%',
             'type' => PromotionType::Automatic->value,
-            'fulfilment_scope' => PromotionFulfilmentScope::DineIn->value,
+            'fulfilment_scope' => PromotionFulfilmentScope::Dining->value,
             'discount_value' => 10,
             'is_active' => true,
         ]);

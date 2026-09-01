@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchCafeTables, CafeTableOption } from '../api/cafeTables';
 import { fetchCheckoutSummary, submitCheckout } from '../api/checkout';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
@@ -42,8 +41,6 @@ export function CheckoutPage() {
   const [summaryMeta, setSummaryMeta] = useState<CheckoutSummaryMeta | null>(null);
   const [fulfilmentMethod, setFulfilmentMethod] = useState<CheckoutFulfilmentMethod>('takeaway');
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>('manual_upi');
-  const [cafeTables, setCafeTables] = useState<CafeTableOption[]>([]);
-  const [cafeTableId, setCafeTableId] = useState<number | null>(null);
   const [form, setForm] = useState({
     customer_name: '',
     customer_email: '',
@@ -124,36 +121,6 @@ export function CheckoutPage() {
     void loadSummary(preserveForm, fulfilmentMethod);
   }, [fulfilmentMethod]);
 
-  useEffect(() => {
-    const dineInOffered = summaryMeta?.fulfilment?.methods?.some((method) => method.value === 'dine_in');
-
-    if (!dineInOffered) {
-      setCafeTables([]);
-      setCafeTableId(null);
-
-      return;
-    }
-
-    let cancelled = false;
-
-    void fetchCafeTables()
-      .then((response) => {
-        if (cancelled) {
-          return;
-        }
-
-        setCafeTables(response.data);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCafeTables([]);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [summaryMeta?.fulfilment?.methods]);
 
   useEffect(() => {
     const available = summaryMeta?.fulfilment?.methods?.map((method) => method.value) ?? ['takeaway', 'delivery'];
@@ -243,11 +210,7 @@ export function CheckoutPage() {
               pickup_phone: pickupPhone,
               pickup_notes: form.pickup_notes.trim() || null,
             }
-          : fulfilmentMethod === 'dine_in'
-            ? {
-                cafe_table_id: cafeTableId,
-              }
-            : {
+          : {
                 delivery_address: form.delivery_address.trim(),
                 delivery_phone: deliveryPhone,
                 delivery_contact_name: deliveryContactName.trim() || null,
@@ -519,66 +482,6 @@ export function CheckoutPage() {
           </section>
         ) : null}
 
-        {fulfilmentMethod === 'dine_in' ? (
-          <section className="checkout-section" aria-labelledby="checkout-table-heading">
-            <div className="checkout-section-heading">
-              <h2 id="checkout-table-heading">Your table</h2>
-              <p>Select the table you are seated at.</p>
-            </div>
-
-            <div className="checkout-table-grid" role="radiogroup" aria-label="Café table">
-              {cafeTables.length === 0 ? (
-                <p className="form-error-text" role="alert">
-                  No active tables are available right now.
-                </p>
-              ) : (
-                cafeTables.map((table) => (
-                  <label
-                    key={table.id}
-                    className={['checkout-table-option', cafeTableId === table.id ? 'is-selected' : '']
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    <input
-                      type="radio"
-                      name="cafe_table_id"
-                      value={table.id}
-                      checked={cafeTableId === table.id}
-                      onChange={() => setCafeTableId(table.id)}
-                    />
-                    <span>{table.label}</span>
-                  </label>
-                ))
-              )}
-            </div>
-            {getFieldError(errors, 'cafe_table_id') ? (
-              <p className="form-error-text" role="alert">
-                {getFieldError(errors, 'cafe_table_id')}
-              </p>
-            ) : null}
-
-            {cafeTableId ? (
-              <div className="checkout-inline-note is-emphasis">
-                <span>Selected table</span>
-                <strong>
-                  {cafeTables.find((table) => table.id === cafeTableId)?.label ?? `Table #${cafeTableId}`}
-                </strong>
-              </div>
-            ) : null}
-
-            <div className="checkout-field-group">
-              <FormTextarea
-                label="Notes for the cafe (optional)"
-                name="customer_notes"
-                rows={2}
-                placeholder="Extra hot, less sweet, allergy notes…"
-                value={form.customer_notes}
-                onChange={(event) => updateField('customer_notes', event.target.value)}
-                error={getFieldError(errors, 'customer_notes')}
-              />
-            </div>
-          </section>
-        ) : null}
 
         {fulfilmentMethod === 'delivery' ? (
           <section className="checkout-section" aria-labelledby="checkout-delivery-heading">
