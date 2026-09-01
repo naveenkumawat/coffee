@@ -68,6 +68,18 @@ interface WebsiteSettingServiceInterface
     public function dineInEnabled(): bool;
 
     /**
+     * @return array{
+     *     enabled: bool,
+     *     max_open_unpaid_orders: int,
+     *     max_orders_per_hour: int,
+     *     checkout_attempts_per_10_minutes: int,
+     *     payment_proof_attempts_per_15_minutes: int,
+     *     duplicate_order_window_minutes: int
+     * }
+     */
+    public function orderSecurityConfig(): array;
+
+    /**
      * Live tax/GST configuration from Website Settings.
      *
      * @return array{

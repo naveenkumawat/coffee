@@ -17,6 +17,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
@@ -36,6 +37,7 @@ class OrderService implements OrderServiceInterface
         protected WebsiteSettingServiceInterface $websiteSettings,
         protected TaxCalculatorInterface $taxCalculator,
         protected PaymentEligibilityServiceInterface $paymentEligibility,
+        protected OrderSecurityServiceInterface $orderSecurity,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -274,6 +276,8 @@ class OrderService implements OrderServiceInterface
                 'payment_proof' => 'Payment proof can only be uploaded while the order is awaiting payment confirmation.',
             ]);
         }
+
+        $this->orderSecurity->assertPaymentProofUploadAllowed($customer, $order);
 
         $isResubmission = $order->hasPaymentProof()
             || $order->payment_status === PaymentStatus::Rejected;

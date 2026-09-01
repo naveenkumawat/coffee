@@ -131,6 +131,20 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         return in_array(strtolower(trim((string) ($raw ?? ''))), ['1', 'true', 'yes', 'on'], true);
     }
 
+    public function orderSecurityConfig(): array
+    {
+        $values = $this->settings->keyedValues();
+
+        return [
+            'enabled' => $this->toBoolSetting($values->get(WebsiteSettingKey::OrderSecurityEnabled->value), true),
+            'max_open_unpaid_orders' => $this->toIntSetting($values->get(WebsiteSettingKey::OrderSecurityMaxOpenUnpaidOrders->value), 2, 1, 20),
+            'max_orders_per_hour' => $this->toIntSetting($values->get(WebsiteSettingKey::OrderSecurityMaxOrdersPerHour->value), 5, 1, 60),
+            'checkout_attempts_per_10_minutes' => $this->toIntSetting($values->get(WebsiteSettingKey::OrderSecurityCheckoutAttemptsPer10Minutes->value), 5, 1, 60),
+            'payment_proof_attempts_per_15_minutes' => $this->toIntSetting($values->get(WebsiteSettingKey::OrderSecurityPaymentProofAttemptsPer15Minutes->value), 5, 1, 60),
+            'duplicate_order_window_minutes' => $this->toIntSetting($values->get(WebsiteSettingKey::OrderSecurityDuplicateOrderWindowMinutes->value), 3, 1, 30),
+        ];
+    }
+
     public function taxConfig(): array
     {
         $values = $this->settings->keyedValues();
@@ -202,5 +216,23 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         }
 
         return $this->filledOrNull(is_string($configValue) ? $configValue : (filled($configValue) ? (string) $configValue : null));
+    }
+
+    protected function toBoolSetting(mixed $raw, bool $default): bool
+    {
+        if ($raw === null || $raw === '') {
+            return $default;
+        }
+
+        return in_array(strtolower(trim((string) $raw)), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    protected function toIntSetting(mixed $raw, int $default, int $min, int $max): int
+    {
+        if (! is_numeric($raw)) {
+            return $default;
+        }
+
+        return max($min, min($max, (int) $raw));
     }
 }

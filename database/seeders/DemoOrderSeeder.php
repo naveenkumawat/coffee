@@ -37,6 +37,85 @@ class DemoOrderSeeder extends Seeder
         foreach ($this->orders($customer, $priya, $arjun, $barista, $admin) as $definition) {
             $this->seedOrder($definition);
         }
+
+        $this->seedOrderSecurityDemoOrders();
+    }
+
+    protected function seedOrderSecurityDemoOrders(): void
+    {
+        $pendingLimitCustomer = User::query()->where('email', 'pending.limit@coffee.local')->first();
+
+        if (! $pendingLimitCustomer) {
+            return;
+        }
+
+        $variant = ProductVariant::query()
+            ->with('product')
+            ->where('is_active', true)
+            ->where('is_available', true)
+            ->first();
+
+        if (! $variant) {
+            return;
+        }
+
+        foreach ([1, 2] as $index) {
+            $orderNumber = 'CC-SEC-000'.$index;
+            $placedAt = CarbonImmutable::now()->subMinutes(30 - ($index * 5));
+
+            $order = Order::query()->updateOrCreate(
+                ['order_number' => $orderNumber],
+                [
+                    'order_date' => $placedAt->toDateString(),
+                    'daily_sequence' => 9000 + $index,
+                    'customer_id' => $pendingLimitCustomer->id,
+                    'customer_name' => $pendingLimitCustomer->name,
+                    'customer_email' => $pendingLimitCustomer->email,
+                    'customer_phone' => $pendingLimitCustomer->phone,
+                    'pickup_name' => $pendingLimitCustomer->name,
+                    'pickup_phone' => $pendingLimitCustomer->phone,
+                    'assigned_barista_id' => null,
+                    'checkout_token' => 'demo-security-token-'.$index,
+                    'status' => OrderStatus::PendingPayment,
+                    'subtotal' => '10.00',
+                    'discount_total' => '0.00',
+                    'tax_enabled_snapshot' => false,
+                    'tax_label_snapshot' => null,
+                    'tax_percent_snapshot' => null,
+                    'tax_inclusive_snapshot' => false,
+                    'taxable_amount' => '10.00',
+                    'tax_amount' => '0.00',
+                    'total_amount' => '10.00',
+                    'customer_notes' => 'DEMO ONLY — pending-limit account',
+                    'fulfilment_method' => 'takeaway',
+                    'payment_method' => 'manual',
+                    'payment_status' => 'pending',
+                    'placed_at' => $placedAt,
+                    'payment_confirmed_at' => null,
+                    'accepted_at' => null,
+                    'preparing_at' => null,
+                    'ready_for_pickup_at' => null,
+                    'completed_at' => null,
+                    'cancelled_at' => null,
+                    'rejected_at' => null,
+                ],
+            );
+
+            OrderItem::query()->updateOrCreate(
+                [
+                    'order_id' => $order->id,
+                    'product_variant_id' => $variant->id,
+                ],
+                [
+                    'product_id' => $variant->product_id,
+                    'product_name' => $variant->product?->name ?? 'Demo Drink',
+                    'variant_name' => $variant->name,
+                    'unit_price' => '10.00',
+                    'quantity' => 1,
+                    'line_subtotal' => '10.00',
+                ],
+            );
+        }
     }
 
     /**

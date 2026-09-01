@@ -2,6 +2,7 @@
 
 namespace App\Services\User;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Services\Auth\RoleServiceInterface;
@@ -53,11 +54,48 @@ class UserService implements UserServiceInterface
         });
     }
 
+    public function blockOrdering(User $user, User $actor, ?string $reason): User
+    {
+        $this->ensureActorCanManageUsers($actor);
+        $this->ensureCustomerOrderingTarget($user);
+
+        $user->forceFill([
+            'ordering_blocked' => true,
+            'ordering_blocked_at' => now(),
+            'ordering_blocked_reason' => filled($reason) ? trim($reason) : null,
+        ])->save();
+
+        return $user->fresh();
+    }
+
+    public function unblockOrdering(User $user, User $actor): User
+    {
+        $this->ensureActorCanManageUsers($actor);
+        $this->ensureCustomerOrderingTarget($user);
+
+        $user->forceFill([
+            'ordering_blocked' => false,
+            'ordering_blocked_at' => null,
+            'ordering_blocked_reason' => null,
+        ])->save();
+
+        return $user->fresh();
+    }
+
     protected function ensureActorCanManageUsers(User $actor): void
     {
         if (! $actor->canManageUsers()) {
             throw ValidationException::withMessages([
                 'user' => 'This account cannot manage users.',
+            ]);
+        }
+    }
+
+    protected function ensureCustomerOrderingTarget(User $user): void
+    {
+        if ($user->role !== UserRole::Customer) {
+            throw ValidationException::withMessages([
+                'ordering' => 'Ordering restrictions apply to customer accounts only.',
             ]);
         }
     }

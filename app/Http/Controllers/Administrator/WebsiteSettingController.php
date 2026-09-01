@@ -86,6 +86,9 @@ class WebsiteSettingController extends Controller
         $payload[WebsiteSettingKey::TaxInclusive->value] = $request->boolean(
             WebsiteSettingKey::TaxInclusive->value,
         ) ? '1' : '0';
+        $payload[WebsiteSettingKey::OrderSecurityEnabled->value] = $request->boolean(
+            WebsiteSettingKey::OrderSecurityEnabled->value,
+        ) ? '1' : '0';
 
         $this->websiteSettings->update($payload);
 

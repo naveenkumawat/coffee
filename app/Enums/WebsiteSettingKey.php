@@ -28,6 +28,12 @@ enum WebsiteSettingKey: string
     case TaxInclusive = 'tax_inclusive';
     case TaxGstin = 'tax_gstin';
     case TaxLegalBusinessName = 'tax_legal_business_name';
+    case OrderSecurityEnabled = 'order_security_enabled';
+    case OrderSecurityMaxOpenUnpaidOrders = 'order_security_max_open_unpaid_orders';
+    case OrderSecurityMaxOrdersPerHour = 'order_security_max_orders_per_hour';
+    case OrderSecurityCheckoutAttemptsPer10Minutes = 'order_security_checkout_attempts_per_10_minutes';
+    case OrderSecurityPaymentProofAttemptsPer15Minutes = 'order_security_payment_proof_attempts_per_15_minutes';
+    case OrderSecurityDuplicateOrderWindowMinutes = 'order_security_duplicate_order_window_minutes';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -42,6 +48,12 @@ enum WebsiteSettingKey: string
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
             self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
             self::TaxEnabled, self::TaxLabel, self::TaxPercent, self::TaxInclusive, self::TaxGstin, self::TaxLegalBusinessName => 'tax',
+            self::OrderSecurityEnabled,
+            self::OrderSecurityMaxOpenUnpaidOrders,
+            self::OrderSecurityMaxOrdersPerHour,
+            self::OrderSecurityCheckoutAttemptsPer10Minutes,
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes,
+            self::OrderSecurityDuplicateOrderWindowMinutes => 'order_security',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -55,7 +67,12 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 'boolean',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 'boolean',
+            self::OrderSecurityMaxOpenUnpaidOrders,
+            self::OrderSecurityMaxOrdersPerHour,
+            self::OrderSecurityCheckoutAttemptsPer10Minutes,
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes,
+            self::OrderSecurityDuplicateOrderWindowMinutes => 'integer',
             default => 'string',
         };
     }
@@ -87,6 +104,12 @@ enum WebsiteSettingKey: string
             self::TaxInclusive => 'Prices already include GST',
             self::TaxGstin => 'GSTIN (optional)',
             self::TaxLegalBusinessName => 'Legal business name (optional)',
+            self::OrderSecurityEnabled => 'Enable order abuse protection',
+            self::OrderSecurityMaxOpenUnpaidOrders => 'Max open unpaid orders',
+            self::OrderSecurityMaxOrdersPerHour => 'Max new orders per hour',
+            self::OrderSecurityCheckoutAttemptsPer10Minutes => 'Checkout attempts / 10 minutes',
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes => 'Payment proof attempts / 15 minutes',
+            self::OrderSecurityDuplicateOrderWindowMinutes => 'Duplicate order window (minutes)',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
@@ -102,9 +125,14 @@ enum WebsiteSettingKey: string
             self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin => 255,
             self::TaxLabel => 40,
             self::TaxPercent => 8,
+            self::OrderSecurityMaxOpenUnpaidOrders,
+            self::OrderSecurityMaxOrdersPerHour,
+            self::OrderSecurityCheckoutAttemptsPer10Minutes,
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes,
+            self::OrderSecurityDuplicateOrderWindowMinutes => 3,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 1,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -114,8 +142,13 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive => 'checkbox',
-            self::TaxPercent => 'number',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled => 'checkbox',
+            self::TaxPercent,
+            self::OrderSecurityMaxOpenUnpaidOrders,
+            self::OrderSecurityMaxOrdersPerHour,
+            self::OrderSecurityCheckoutAttemptsPer10Minutes,
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes,
+            self::OrderSecurityDuplicateOrderWindowMinutes => 'number',
             default => 'text',
         };
     }
@@ -130,6 +163,12 @@ enum WebsiteSettingKey: string
             self::TaxGstin => 'Printed on invoices only when set. Leave blank if not applicable.',
             self::TaxLegalBusinessName => 'Optional legal name for invoices when different from the café display brand.',
             self::FulfilmentDineInEnabled => 'Allow customers to place dine-in / table orders from the PWA. Manage café tables under Café Tables.',
+            self::OrderSecurityEnabled => 'When enabled, pending-order limits, duplicate detection, and order rate limits apply at checkout.',
+            self::OrderSecurityMaxOpenUnpaidOrders => 'Customers cannot place another order while they already have this many unpaid/open orders (1–20).',
+            self::OrderSecurityMaxOrdersPerHour => 'Successful new orders per customer per rolling hour (1–60).',
+            self::OrderSecurityCheckoutAttemptsPer10Minutes => 'Checkout submission attempts per customer per 10 minutes (1–60).',
+            self::OrderSecurityPaymentProofAttemptsPer15Minutes => 'Payment proof uploads per customer/order per 15 minutes (1–60).',
+            self::OrderSecurityDuplicateOrderWindowMinutes => 'Reuse identical cart/fulfilment/payment intent within this window instead of creating duplicates (1–30).',
             default => null,
         };
     }

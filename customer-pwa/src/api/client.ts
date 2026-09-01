@@ -12,13 +12,21 @@ export class ApiError extends Error {
   public readonly status: number;
   public readonly errors: ApiValidationErrors;
   public readonly payload: unknown;
+  public readonly code: string | null;
 
-  public constructor(message: string, status: number, errors: ApiValidationErrors = {}, payload: unknown = null) {
+  public constructor(
+    message: string,
+    status: number,
+    errors: ApiValidationErrors = {},
+    payload: unknown = null,
+    code: string | null = null,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.errors = errors;
     this.payload = payload;
+    this.code = code;
   }
 }
 
@@ -193,7 +201,9 @@ export async function request<TResponse>(path: string, init: RequestInit = {}): 
       unauthorizedHandler();
     }
 
-    throw new ApiError(message, response.status, errors, payload);
+    const code = typeof normalizedPayload.code === 'string' ? normalizedPayload.code : null;
+
+    throw new ApiError(message, response.status, errors, payload, code);
   }
 
   return payload as TResponse;
@@ -269,7 +279,9 @@ export async function getConditional<TResponse>(
       unauthorizedHandler();
     }
 
-    throw new ApiError(message, response.status, errors, payload);
+    const code = typeof normalizedPayload.code === 'string' ? normalizedPayload.code : null;
+
+    throw new ApiError(message, response.status, errors, payload, code);
   }
 
   return {
@@ -338,7 +350,9 @@ export async function downloadFile(path: string, fallbackFilename: string): Prom
       unauthorizedHandler();
     }
 
-    throw new ApiError(message, response.status, {}, payload);
+    const code = typeof normalizedPayload.code === 'string' ? normalizedPayload.code : null;
+
+    throw new ApiError(message, response.status, {}, payload, code);
   }
 
   const disposition = response.headers.get('content-disposition') ?? '';

@@ -80,6 +80,73 @@
                 </div>
             </div>
 
+            @if ($managedUser->hasRole('customer'))
+                <div class="card card-flush internal-card mb-5">
+                    <div class="card-header pt-7">
+                        <div class="card-title">
+                            <h3 class="fw-bold text-gray-900">Order Security</h3>
+                        </div>
+                    </div>
+                    <div class="card-body pt-5">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="text-muted fs-7">Ordering</div>
+                            <span class="badge {{ $managedUser->ordering_blocked ? 'badge-light-danger' : 'badge-light-success' }}">
+                                {{ $managedUser->ordering_blocked ? 'BLOCKED' : 'ACTIVE' }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="text-muted fs-7">Open unpaid</div>
+                            <div class="fw-bold text-gray-900">{{ $openUnpaidOrders }}</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="text-muted fs-7">Cash Takeaway</div>
+                            <span class="badge {{ $managedUser->cash_takeaway_allowed ? 'badge-light-success' : 'badge-light-dark' }}">
+                                {{ $managedUser->cash_takeaway_allowed ? 'Allowed' : 'Not allowed' }}
+                            </span>
+                        </div>
+
+                        @if ($managedUser->ordering_blocked)
+                            <div class="mb-4">
+                                <div class="text-muted fs-7 mb-1">Reason (internal)</div>
+                                <div class="fw-semibold text-gray-900">{{ $managedUser->ordering_blocked_reason ?: '—' }}</div>
+                            </div>
+                            <div class="mb-5">
+                                <div class="text-muted fs-7 mb-1">Blocked at</div>
+                                <div class="fw-semibold text-gray-900">{{ $managedUser->ordering_blocked_at?->format('d M Y, h:i A') ?? '—' }}</div>
+                            </div>
+                            <form method="POST" action="{{ route('administrator.users.unblock-ordering', $managedUser) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-light-success">
+                                    Unblock Ordering
+                                </button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('administrator.users.block-ordering', $managedUser) }}" class="mt-2">
+                                @csrf
+                                <label for="ordering_blocked_reason" class="form-label fs-7 text-muted">Internal reason (optional)</label>
+                                <textarea
+                                    id="ordering_blocked_reason"
+                                    name="ordering_blocked_reason"
+                                    rows="2"
+                                    class="form-control form-control-sm mb-3 @error('ordering_blocked_reason') is-invalid @enderror"
+                                    maxlength="500"
+                                >{{ old('ordering_blocked_reason') }}</textarea>
+                                @error('ordering_blocked_reason')
+                                    <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                @enderror
+                                <button type="submit" class="btn btn-sm btn-light-danger">
+                                    Block Ordering
+                                </button>
+                            </form>
+                        @endif
+
+                        <div class="form-text mt-4">
+                            Cash Takeaway trust is managed on Edit User and does not bypass pending-order or rate limits.
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="card card-flush internal-card">
                 <div class="card-header pt-7">
                     <div class="card-title">

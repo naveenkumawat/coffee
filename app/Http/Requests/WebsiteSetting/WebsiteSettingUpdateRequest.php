@@ -33,6 +33,16 @@ class WebsiteSettingUpdateRequest extends FormRequest
                 continue;
             }
 
+            if ($key->valueType() === 'integer') {
+                $rules[$key->value] = match ($key) {
+                    WebsiteSettingKey::OrderSecurityMaxOpenUnpaidOrders => ['nullable', 'integer', 'min:1', 'max:20'],
+                    WebsiteSettingKey::OrderSecurityDuplicateOrderWindowMinutes => ['nullable', 'integer', 'min:1', 'max:30'],
+                    default => ['nullable', 'integer', 'min:1', 'max:60'],
+                };
+
+                continue;
+            }
+
             if ($key === WebsiteSettingKey::TaxPercent) {
                 $rules[$key->value] = [
                     'nullable',

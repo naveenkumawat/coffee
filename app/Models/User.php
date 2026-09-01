@@ -43,6 +43,8 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'is_active' => 'boolean',
             'cash_takeaway_allowed' => 'boolean',
+            'ordering_blocked' => 'boolean',
+            'ordering_blocked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

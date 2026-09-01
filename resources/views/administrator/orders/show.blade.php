@@ -36,6 +36,7 @@
         'order' => $order,
         'showFinancialSummary' => true,
         'showPaymentBadge' => true,
+        'openUnpaidOrders' => $openUnpaidOrders ?? 0,
     ])
 
     <div class="row g-5 g-xl-8">

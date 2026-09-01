@@ -13,6 +13,7 @@ use App\Parsers\Order\OrderParserInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Order\OrderServiceInterface;
+use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class OrderController extends Controller
         protected OrderRepositoryInterface $orders,
         protected OrderServiceInterface $service,
         protected OrderInvoiceServiceInterface $invoices,
+        protected OrderSecurityServiceInterface $orderSecurity,
     ) {}
 
     public function index(OrderIndexRequest $request): View
@@ -74,9 +76,16 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
+        $order->load(['customer', 'assignedBarista', 'paymentReceivedBy', 'items.recipe.lines.ingredient.brand', 'statusHistory.changedBy']);
+
+        $openUnpaidOrders = $order->customer
+            ? $this->orderSecurity->countOpenUnpaidOrders($order->customer)
+            : 0;
+
         return view('administrator.orders.show', [
-            'order' => $order->load(['customer', 'assignedBarista', 'paymentReceivedBy', 'items.recipe.lines.ingredient.brand', 'statusHistory.changedBy']),
+            'order' => $order,
             'availableTransitions' => $this->service->availableTransitions($order, request()->user('admin')),
+            'openUnpaidOrders' => $openUnpaidOrders,
         ]);
     }
 

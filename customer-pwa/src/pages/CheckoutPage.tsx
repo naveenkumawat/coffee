@@ -250,6 +250,25 @@ export function CheckoutPage() {
       });
     } catch (error) {
       if (error instanceof ApiError) {
+        const securityCode = error.code;
+        const securityMessage =
+          error.errors.ordering?.[0]
+          ?? error.errors.checkout?.[0]
+          ?? error.errors.payment_proof?.[0]
+          ?? error.message;
+
+        if (securityCode === 'pending_limit' || securityCode === 'ordering_blocked' || securityCode === 'rate_limit') {
+          setErrors(error.errors);
+          setMessage(securityMessage);
+          return;
+        }
+
+        if (error.status === 429) {
+          setErrors(error.errors);
+          setMessage(securityMessage || 'Too many order attempts. Please try again shortly.');
+          return;
+        }
+
         setErrors(error.errors);
         setMessage(error.message);
 

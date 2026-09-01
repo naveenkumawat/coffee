@@ -17,6 +17,7 @@
             'payment' => 'Payment display',
             'fulfilment' => 'Fulfilment',
             'tax' => 'Tax / GST',
+            'order_security' => 'Order Security',
             'pages' => 'Static pages',
         ];
         $mediaKeys = [
@@ -211,6 +212,11 @@
                                             max="100"
                                             step="0.01"
                                             inputmode="decimal"
+                                        @elseif ($key->valueType() === 'integer')
+                                            min="1"
+                                            max="{{ $key === \App\Enums\WebsiteSettingKey::OrderSecurityMaxOpenUnpaidOrders ? 20 : ($key === \App\Enums\WebsiteSettingKey::OrderSecurityDuplicateOrderWindowMinutes ? 30 : 60) }}"
+                                            step="1"
+                                            inputmode="numeric"
                                         @endif
                                     />
                                     @error($key->value)

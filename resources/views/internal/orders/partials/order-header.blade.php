@@ -4,10 +4,16 @@
     $showPaymentBadge = (bool) ($showPaymentBadge ?? $showFinancialSummary);
     $customerName = $order->customer?->name ?: ($order->customer_name ?: 'Walk-in / internal order');
     $fulfilment = $order->fulfilment_method;
+    $openUnpaidOrders = (int) ($openUnpaidOrders ?? 0);
 @endphp
 
 <div class="card card-flush internal-card mb-5">
     <div class="card-body py-5">
+        @if ($openUnpaidOrders > 1)
+            <div class="alert alert-warning py-3 px-4 mb-5 fs-7">
+                Customer has {{ $openUnpaidOrders }} open unpaid orders.
+            </div>
+        @endif
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-4">
             <div class="min-w-0">
                 <div class="text-muted fs-8 text-uppercase mb-1">Order</div>

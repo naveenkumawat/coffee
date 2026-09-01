@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Administrator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\UserCreateRequest;
 use App\Http\Requests\User\UserIndexRequest;
+use App\Http\Requests\User\UserOrderingBlockRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\User;
 use App\Parsers\User\UserParserInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Services\Auth\RoleServiceInterface;
+use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\User\UserServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +24,7 @@ class UserController extends Controller
         protected UserRepositoryInterface $users,
         protected UserServiceInterface $service,
         protected RoleServiceInterface $roles,
+        protected OrderSecurityServiceInterface $orderSecurity,
     ) {}
 
     public function index(UserIndexRequest $request): View
@@ -66,9 +69,14 @@ class UserController extends Controller
     {
         $this->authorize('view', $user);
 
+        $openUnpaidOrders = $user->hasRole('customer')
+            ? $this->orderSecurity->countOpenUnpaidOrders($user)
+            : 0;
+
         return view('administrator.users.show', [
             'managedUser' => $user,
             'selectedRole' => $this->roles->normalizeUserManagementRoleValue($user->role),
+            'openUnpaidOrders' => $openUnpaidOrders,
         ]);
     }
 
@@ -107,5 +115,31 @@ class UserController extends Controller
         return redirect()
             ->route('administrator.users.index')
             ->with('status', 'User archived successfully.');
+    }
+
+    public function blockOrdering(UserOrderingBlockRequest $request, User $user): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        $this->service->blockOrdering(
+            $user,
+            $request->user('admin'),
+            $request->validated('ordering_blocked_reason'),
+        );
+
+        return redirect()
+            ->route('administrator.users.show', $user)
+            ->with('status', 'Customer ordering has been blocked.');
+    }
+
+    public function unblockOrdering(Request $request, User $user): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        $this->service->unblockOrdering($user, $request->user('admin'));
+
+        return redirect()
+            ->route('administrator.users.show', $user)
+            ->with('status', 'Customer ordering has been unblocked.');
     }
 }

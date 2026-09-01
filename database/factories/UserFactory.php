@@ -32,6 +32,9 @@ class UserFactory extends Factory
             'role' => UserRole::Customer,
             'is_active' => true,
             'cash_takeaway_allowed' => false,
+            'ordering_blocked' => false,
+            'ordering_blocked_at' => null,
+            'ordering_blocked_reason' => null,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -71,6 +74,15 @@ class UserFactory extends Factory
     public function cashTakeawayAllowed(): static
     {
         return $this->state(fn () => ['cash_takeaway_allowed' => true]);
+    }
+
+    public function orderingBlocked(?string $reason = 'Demo block reason'): static
+    {
+        return $this->state(fn () => [
+            'ordering_blocked' => true,
+            'ordering_blocked_at' => now(),
+            'ordering_blocked_reason' => $reason,
+        ]);
     }
 
     public function inactive(): static

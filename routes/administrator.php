@@ -136,6 +136,8 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('inventory/refill-requests/{inventoryRefillRequest}/reject', [InventoryRefillRequestController::class, 'reject'])->name('inventory.refill-requests.reject');
 
     Route::resource('users', UserController::class);
+    Route::post('users/{user}/block-ordering', [UserController::class, 'blockOrdering'])->name('users.block-ordering');
+    Route::post('users/{user}/unblock-ordering', [UserController::class, 'unblockOrdering'])->name('users.unblock-ordering');
 
     Route::get('website-settings', [WebsiteSettingController::class, 'edit'])->name('website-settings.edit');
     Route::put('website-settings', [WebsiteSettingController::class, 'update'])->name('website-settings.update');

@@ -238,7 +238,19 @@ Administrator and Barista use one shared internal design system/shell (`internal
 - Repositories use `<Entity>Repository` and `<Entity>RepositoryInterface`.
 - Services use `<Entity>Service` and `<Entity>ServiceInterface`.
 
-## Intentional simplifications
+## Order abuse / fake-order protection
+
+Checkout protection is layered server-side (CAPTCHA / Turnstile intentionally deferred until production bot abuse is evidenced):
+
+1. Authenticated checkout (Sanctum / session)
+2. Account ordering permission (`ordering_blocked`)
+3. Checkout attempt + successful-order rate limits
+4. Open unpaid / pending-payment order limit
+5. `checkout_token` idempotency + short-window duplicate fingerprint
+6. Normal checkout validation
+7. Order creation (notifications only for successful creates)
+
+Limits live in Website Settings → Order Security. Trusted cash (`cash_takeaway_allowed`) is independent and never bypasses these controls.
 
 - Coffee does not use a global root interface and factory graph because the current Laravel container can resolve the same seams more simply.
 - Coffee has not added empty `Factories`, `Integrations`, `Tools`, `Jobs`, or domain-specific exception trees solely for structural parity; those should be added when a real shared use case arrives.

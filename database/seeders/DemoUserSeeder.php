@@ -130,18 +130,39 @@ class DemoUserSeeder extends Seeder
                 'role' => UserRole::Customer,
                 'is_active' => true,
             ],
+            [
+                'email' => 'pending.limit@coffee.local',
+                'name' => 'Pending Limit Customer',
+                'phone' => '9999990010',
+                'role' => UserRole::Customer,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'blocked.ordering@coffee.local',
+                'name' => 'Blocked Ordering Customer',
+                'phone' => '9999990011',
+                'role' => UserRole::Customer,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($users as $user) {
+            $email = $user['email'];
+
             User::query()->updateOrCreate(
-                ['email' => $user['email']],
+                ['email' => $email],
                 [
                     'name' => $user['name'],
                     'phone' => $user['phone'],
                     'role' => $user['role'],
                     'is_active' => $user['is_active'],
                     'cash_takeaway_allowed' => $user['role'] === UserRole::Customer
-                        && in_array($user['email'], ['priya@coffee.local', 'arjun@coffee.local'], true),
+                        && in_array($email, ['priya@coffee.local', 'arjun@coffee.local'], true),
+                    'ordering_blocked' => $email === 'blocked.ordering@coffee.local',
+                    'ordering_blocked_at' => $email === 'blocked.ordering@coffee.local' ? now() : null,
+                    'ordering_blocked_reason' => $email === 'blocked.ordering@coffee.local'
+                        ? 'DEMO ONLY — repeated unpaid / abuse testing account'
+                        : null,
                     'password' => Hash::make(self::DEMO_PASSWORD),
                     'email_verified_at' => now(),
                 ],

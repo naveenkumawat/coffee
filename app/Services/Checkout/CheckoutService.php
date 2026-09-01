@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Order\OrderServiceInterface;
+use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Transfers\Checkout\CheckoutTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -22,6 +23,7 @@ class CheckoutService implements CheckoutServiceInterface
         protected OrderRepositoryInterface $orders,
         protected OrderServiceInterface $orderService,
         protected OrderTransferInterface $orderTransfer,
+        protected OrderSecurityServiceInterface $orderSecurity,
     ) {}
 
     public function getCheckoutContext(User $customer): array
@@ -66,12 +68,31 @@ class CheckoutService implements CheckoutServiceInterface
                 ]);
             }
 
-            $context = $this->getCheckoutContext($customer);
+            /** @var User $lockedCustomer */
+            $lockedCustomer = User::query()
+                ->whereKey($customer->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->orderSecurity->assertCustomerMayOrder($lockedCustomer);
+            $this->orderSecurity->assertCheckoutAttemptAllowed($lockedCustomer);
+            $this->orderSecurity->assertOpenUnpaidLimit($lockedCustomer);
+            $this->orderSecurity->assertOrderCreateRateLimit($lockedCustomer);
+
+            $context = $this->getCheckoutContext($lockedCustomer);
             /** @var Cart $cart */
             $cart = $context['cart'];
 
+            $duplicate = $this->orderSecurity->findRecentDuplicate($lockedCustomer, $data, $context);
+
+            if ($duplicate !== null) {
+                $this->cartService->clear($lockedCustomer);
+
+                return $duplicate;
+            }
+
             $orderTransfer = clone $this->orderTransfer;
-            $orderTransfer->setCustomerId((int) $customer->getKey());
+            $orderTransfer->setCustomerId((int) $lockedCustomer->getKey());
             $orderTransfer->setCheckoutToken((string) $checkoutToken);
             $orderTransfer->setCustomerName($data->getCustomerName());
             $orderTransfer->setCustomerEmail($data->getCustomerEmail());
@@ -98,18 +119,20 @@ class CheckoutService implements CheckoutServiceInterface
             );
 
             try {
-                $order = $this->orderService->store($customer, $orderTransfer);
+                $order = $this->orderService->store($lockedCustomer, $orderTransfer);
             } catch (UniqueConstraintViolationException $exception) {
                 $existingOrder = $this->orders->findByCheckoutToken((string) $checkoutToken);
 
-                if ($existingOrder && (int) $existingOrder->customer_id === (int) $customer->getKey()) {
+                if ($existingOrder && (int) $existingOrder->customer_id === (int) $lockedCustomer->getKey()) {
                     return $existingOrder;
                 }
 
                 throw $exception;
             }
 
-            $this->cartService->clear($customer);
+            $this->orderSecurity->rememberOrderFingerprint($lockedCustomer, $data, $context, $order);
+            $this->orderSecurity->hitSuccessfulOrderCreate($lockedCustomer);
+            $this->cartService->clear($lockedCustomer);
 
             return $order;
         });
