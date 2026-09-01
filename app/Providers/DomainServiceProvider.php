@@ -57,12 +57,18 @@ use App\Services\Product\ProductService;
 use App\Services\Product\ProductServiceInterface;
 use App\Services\Product\ProductTagService;
 use App\Services\Product\ProductTagServiceInterface;
+use App\Services\Promotion\PromotionCatalogService;
+use App\Services\Promotion\PromotionCatalogServiceInterface;
+use App\Services\Promotion\PromotionService;
+use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Rating\ProductRatingService;
 use App\Services\Rating\ProductRatingServiceInterface;
 use App\Services\Recipe\RecipeCostingService;
 use App\Services\Recipe\RecipeCostingServiceInterface;
 use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
+use App\Services\Referral\ReferralService;
+use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Social\SocialLinkService;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\Tax\TaxCalculator;
@@ -113,5 +119,8 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(SocialLinkServiceInterface::class, SocialLinkService::class);
         $this->app->bind(CafeTableServiceInterface::class, CafeTableService::class);
         $this->app->bind(CafeAvailabilityServiceInterface::class, CafeAvailabilityService::class);
+        $this->app->bind(PromotionServiceInterface::class, PromotionService::class);
+        $this->app->bind(PromotionCatalogServiceInterface::class, PromotionCatalogService::class);
+        $this->app->bind(ReferralServiceInterface::class, ReferralService::class);
     }
 }

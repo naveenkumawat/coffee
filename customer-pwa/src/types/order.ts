@@ -39,6 +39,12 @@ export interface OrderPaymentProof {
   rejection_notes: string | null;
 }
 
+export interface OrderPromotion {
+  name: string;
+  code?: string | null;
+  amount: string;
+}
+
 export interface Order {
   id: number;
   order_number: string;
@@ -66,6 +72,16 @@ export interface Order {
   delivery_disclaimer: string | null;
   subtotal: string;
   discount_total: string;
+  /** Present when the API includes applied promotions on the order payload. */
+  promotions?: OrderPromotion[];
+  reward_redemptions?: Array<{
+    reward_type: string | null;
+    description: string | null;
+    benefit_amount: string;
+    original_amount?: string | null;
+    preserves_gst_basis?: boolean;
+    coupon_code?: string | null;
+  }>;
   total_amount: string;
   tax: {
     enabled: boolean;

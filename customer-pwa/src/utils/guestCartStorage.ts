@@ -21,6 +21,10 @@ function emptySummary(): CartSummary {
   return {
     item_count: 0,
     subtotal: '0.00',
+    discount_total: '0.00',
+    discounts: [],
+    promo_code: null,
+    promo_error: null,
     total: '0.00',
     has_unavailable_items: false,
   };
@@ -112,6 +116,10 @@ export function buildGuestCartState(items: GuestCartStoredItem[]): {
   const summary: CartSummary = {
     item_count: itemCount,
     subtotal: money(subtotal),
+    discount_total: '0.00',
+    discounts: [],
+    promo_code: null,
+    promo_error: null,
     total: money(subtotal),
     has_unavailable_items: false,
   };

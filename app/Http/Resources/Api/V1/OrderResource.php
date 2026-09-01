@@ -51,6 +51,25 @@ class OrderResource extends JsonResource
                 : null,
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
+            'promotions' => $order->relationLoaded('promotions')
+                ? $order->promotions->map(static fn ($promotion): array => [
+                    'name' => $promotion->name_snapshot,
+                    'code' => $promotion->code_snapshot,
+                    'discount_type' => $promotion->discount_type_snapshot?->value ?? $promotion->discount_type_snapshot,
+                    'discount_value' => $promotion->discount_value_snapshot,
+                    'amount' => $promotion->discount_amount,
+                ])->values()->all()
+                : [],
+            'reward_redemptions' => $order->relationLoaded('rewardRedemptions')
+                ? $order->rewardRedemptions->map(static fn ($redemption): array => [
+                    'reward_type' => $redemption->reward_type?->value,
+                    'description' => $redemption->description_snapshot,
+                    'benefit_amount' => $redemption->benefit_amount,
+                    'original_amount' => $redemption->original_amount,
+                    'preserves_gst_basis' => $redemption->reward_type?->value === 'free_drink',
+                    'coupon_code' => $redemption->coupon_code_snapshot,
+                ])->values()->all()
+                : [],
             'total_amount' => $order->total_amount,
             'tax' => app(TaxCalculatorInterface::class)
                 ->fromOrderSnapshot($order)

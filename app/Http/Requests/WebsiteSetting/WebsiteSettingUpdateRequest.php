@@ -37,8 +37,36 @@ class WebsiteSettingUpdateRequest extends FormRequest
                 $rules[$key->value] = match ($key) {
                     WebsiteSettingKey::OrderSecurityMaxOpenUnpaidOrders => ['nullable', 'integer', 'min:1', 'max:20'],
                     WebsiteSettingKey::OrderSecurityDuplicateOrderWindowMinutes => ['nullable', 'integer', 'min:1', 'max:30'],
+                    WebsiteSettingKey::ReferralRewardQuantity => ['nullable', 'integer', 'min:1', 'max:20'],
+                    WebsiteSettingKey::ReferralRewardRedemptionDurationDays => ['nullable', 'integer', 'min:1', 'max:3650'],
+                    WebsiteSettingKey::ReferralMaxRewardsPerCustomerMonth => ['nullable', 'integer', 'min:1', 'max:1000'],
+                    WebsiteSettingKey::ReferralRewardProductId,
+                    WebsiteSettingKey::ReferralRewardVariantId => ['nullable', 'integer', 'min:1'],
                     default => ['nullable', 'integer', 'min:1', 'max:60'],
                 };
+
+                continue;
+            }
+
+            if ($key === WebsiteSettingKey::ReferralRewardType) {
+                $rules[$key->value] = ['nullable', 'string', 'in:free_drink,coupon'];
+
+                continue;
+            }
+
+            if ($key === WebsiteSettingKey::ReferralCouponDiscountType) {
+                $rules[$key->value] = ['nullable', 'string', 'in:fixed,percentage'];
+
+                continue;
+            }
+
+            if (in_array($key, [
+                WebsiteSettingKey::ReferralCouponDiscountValue,
+                WebsiteSettingKey::ReferralCouponMaxDiscount,
+                WebsiteSettingKey::ReferralCouponMinimumSubtotal,
+                WebsiteSettingKey::ReferralMinimumQualifyingOrderAmount,
+            ], true)) {
+                $rules[$key->value] = ['nullable', 'numeric', 'min:0', 'regex:/^\d{1,6}(\.\d{1,2})?$/'];
 
                 continue;
             }

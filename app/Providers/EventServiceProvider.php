@@ -17,6 +17,7 @@ use App\Events\Order\OrderStatusChanged;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
+use App\Listeners\Order\QualifyReferralOnPaymentConfirmed;
 use App\Listeners\Order\SendOrderCashReceivedNotification;
 use App\Listeners\Order\SendOrderPaymentProofReceivedNotification;
 use App\Listeners\Order\SendOrderPaymentProofRejectedNotification;
@@ -58,6 +59,7 @@ class EventServiceProvider extends ServiceProvider
         OrderStatusChanged::class => [
             SendOrderStatusChangedNotification::class,
             NotifyStaffOrderStatusChanged::class,
+            QualifyReferralOnPaymentConfirmed::class,
         ],
         OrderCashReceived::class => [
             SendOrderCashReceivedNotification::class,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { CartItemCard } from '../components/cart/CartItemCard';
+import { CartOffersSection } from '../components/cart/CartOffersSection';
 import { StickyActionBar } from '../components/common/StickyActionBar';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -12,6 +13,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { selectAvailability, useContentStore } from '../stores/contentStore';
 import { useToastStore } from '../stores/toastStore';
+import { cartDiscounts } from '../utils/discounts';
 import { formatCurrency } from '../utils/format';
 import { buildLoginRedirect } from '../utils/navigation';
 
@@ -23,6 +25,11 @@ export function CartPage() {
   const updateItemQuantity = useCartStore((state) => state.updateItemQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
   const clear = useCartStore((state) => state.clear);
+  const applyPromoCode = useCartStore((state) => state.applyPromoCode);
+  const clearPromoCode = useCartStore((state) => state.clearPromoCode);
+  const applyFreeDrinkReward = useCartStore((state) => state.applyFreeDrinkReward);
+  const applyReferralCoupon = useCartStore((state) => state.applyReferralCoupon);
+  const clearReferralRewards = useCartStore((state) => state.clearReferralRewards);
   const authStatus = useAuthStore((state) => state.status);
   const availability = useContentStore((state) => selectAvailability(state.content));
   const orderingClosed = Boolean(availability && !availability.available);
@@ -149,12 +156,45 @@ export function CartPage() {
             ))}
           </div>
 
+          {authStatus === 'authenticated' ? (
+            <CartOffersSection
+              summary={summary}
+              onApply={async (promoCode) => {
+                await applyPromoCode(promoCode);
+                toastSuccess('Promo code applied');
+              }}
+              onRemove={async () => {
+                await clearPromoCode();
+                toastSuccess('Promo code removed');
+              }}
+              onApplyFreeDrink={async (rewardId) => {
+                await applyFreeDrinkReward(rewardId);
+                toastSuccess('Free drink reward applied');
+              }}
+              onApplyReferralCoupon={async (code) => {
+                await applyReferralCoupon(code);
+                toastSuccess('Referral reward applied');
+              }}
+              onClearReferralRewards={async () => {
+                await clearReferralRewards();
+                toastSuccess('Referral reward removed');
+              }}
+            />
+          ) : (
+            <p className="summary-warning cart-offers-signin">
+              Sign in at checkout to apply promo codes. Automatic offers are calculated then too.
+            </p>
+          )}
+
           <section className="cart-summary-card">
             <OrderTaxBreakdown
               subtotal={summary?.subtotal ?? 0}
               total={summary?.total ?? 0}
               tax={summary?.tax}
+              discounts={cartDiscounts(summary)}
+              discountTotal={summary?.discount_total}
               totalLabel="Total"
+              showSavingsNote={false}
               estimateNote={
                 summary?.tax
                   ? null

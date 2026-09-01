@@ -92,4 +92,22 @@ interface WebsiteSettingServiceInterface
      * }
      */
     public function taxConfig(): array;
+
+    /**
+     * @return array{
+     *     enabled: bool,
+     *     reward_type: string,
+     *     reward_product_id: ?int,
+     *     reward_variant_id: ?int,
+     *     reward_quantity: int,
+     *     coupon_discount_type: string,
+     *     coupon_discount_value: string,
+     *     coupon_max_discount: ?string,
+     *     coupon_minimum_subtotal: ?string,
+     *     minimum_qualifying_order_amount: ?string,
+     *     reward_redemption_duration_days: int,
+     *     max_rewards_per_customer_month: ?int
+     * }
+     */
+    public function referralConfig(): array;
 }

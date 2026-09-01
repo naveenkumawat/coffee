@@ -19,12 +19,14 @@ export function RegisterPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const redirect = searchParams.get('redirect');
+  const referralFromQuery = searchParams.get('ref')?.trim() ?? '';
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
     password_confirmation: '',
+    referral_code: referralFromQuery,
   });
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function RegisterPage() {
       const result = await register({
         ...form,
         phone: form.phone.trim() || null,
+        referral_code: form.referral_code.trim() || null,
       });
       toastSuccess(result.mergedGuestCart ? 'Account created — your cart was saved' : 'Account created');
       navigate(normalizeRedirectPath(redirect), { replace: true });
@@ -108,6 +111,15 @@ export function RegisterPage() {
             value={form.phone}
             onChange={(event) => updateField('phone', event.target.value)}
             error={getFieldError(errors, 'phone')}
+          />
+          <FormField
+            label="Referral code (optional)"
+            name="referral_code"
+            autoComplete="off"
+            placeholder="Friend's code"
+            value={form.referral_code}
+            onChange={(event) => updateField('referral_code', event.target.value)}
+            error={getFieldError(errors, 'referral_code')}
           />
           <PasswordField
             label="Password"

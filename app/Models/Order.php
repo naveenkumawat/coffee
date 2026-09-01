@@ -128,6 +128,16 @@ class Order extends AbstractModel
         return $this->hasMany(OrderItem::class)->orderBy('id');
     }
 
+    public function promotions(): HasMany
+    {
+        return $this->hasMany(OrderPromotion::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function rewardRedemptions(): HasMany
+    {
+        return $this->hasMany(OrderRewardRedemption::class)->orderBy('id');
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at')->orderBy('id');

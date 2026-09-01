@@ -165,6 +165,20 @@ export function AccountPage() {
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
+          <Link to="/account/referral" className="account-link-row is-emphasis">
+            <span>
+              <i className="bi bi-people" aria-hidden="true"></i>
+              Refer a friend
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
+          <Link to="/account/rewards" className="account-link-row is-emphasis">
+            <span>
+              <i className="bi bi-gift" aria-hidden="true"></i>
+              Rewards
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
           <Link to="/menu" className="account-link-row is-emphasis">
             <span>
               <i className="bi bi-cup-hot" aria-hidden="true"></i>

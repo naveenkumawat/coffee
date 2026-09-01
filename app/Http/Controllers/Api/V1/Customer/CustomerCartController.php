@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\CartGuestMergeRequest;
 use App\Http\Requests\Cart\CartItemStoreRequest;
 use App\Http\Requests\Cart\CartItemUpdateRequest;
+use App\Http\Requests\Cart\CartPromoCodeRequest;
 use App\Http\Resources\Api\V1\CartResource;
 use App\Models\Cart;
 use App\Models\CartItem;
@@ -114,6 +115,47 @@ class CustomerCartController extends Controller
             200,
             [
                 'summary' => $this->cartService->summarize($cart),
+            ],
+        );
+    }
+
+    public function applyPromoCode(CartPromoCodeRequest $request): JsonResponse
+    {
+        $cart = $this->cartService->getForCustomer($request->user());
+        $this->authorize('view', $cart);
+
+        $validated = $request->validated();
+        $cart = $this->cartService->applyPromoCode(
+            $request->user(),
+            (string) $validated['promo_code'],
+            $validated['fulfilment_method'] ?? null,
+        );
+
+        return $this->respondWithResource(
+            new CartResource($cart),
+            'Promo code applied.',
+            200,
+            [
+                'summary' => $this->cartService->summarize($cart, $validated['fulfilment_method'] ?? null),
+            ],
+        );
+    }
+
+    public function clearPromoCode(Request $request): JsonResponse
+    {
+        $cart = $this->cartService->getForCustomer($request->user());
+        $this->authorize('view', $cart);
+
+        $cart = $this->cartService->clearPromoCode($request->user());
+        $fulfilmentMethod = $request->query('fulfilment_method');
+        $fulfilmentMethod = is_string($fulfilmentMethod) && $fulfilmentMethod !== '' ? $fulfilmentMethod : null;
+
+        return $this->respondWithResource(
+            new CartResource($cart),
+            'Promo code removed.',
+            200,
+            [
+                'summary' => $this->cartService->summarize($cart, $fulfilmentMethod),
             ],
         );
     }

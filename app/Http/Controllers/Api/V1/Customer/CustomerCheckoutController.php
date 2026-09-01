@@ -32,7 +32,9 @@ class CustomerCheckoutController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $context = $this->checkoutService->getCheckoutContext($request->user());
+        $fulfilmentMethod = $request->query('fulfilment_method');
+        $fulfilmentMethod = is_string($fulfilmentMethod) && $fulfilmentMethod !== '' ? $fulfilmentMethod : null;
+        $context = $this->checkoutService->getCheckoutContext($request->user(), $fulfilmentMethod);
         $checkoutToken = $this->rememberCheckoutToken($request->user()->getKey());
 
         return $this->respondWithResource(
@@ -72,7 +74,7 @@ class CustomerCheckoutController extends Controller
 
         if ($existingOrder && (int) $existingOrder->customer_id === (int) $request->user()->getKey()) {
             return $this->respondWithResource(
-                new OrderResource($existingOrder->loadMissing(['items', 'statusHistory'])),
+                new OrderResource($existingOrder->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
                 'Order already exists for this checkout token.',
                 200,
                 [
@@ -98,7 +100,7 @@ class CustomerCheckoutController extends Controller
         Cache::forget($this->checkoutCacheKey($request->user()->getKey()));
 
         return $this->respondWithResource(
-            new OrderResource($order->loadMissing(['items', 'statusHistory'])),
+            new OrderResource($order->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
             $order->isCashPayment()
                 ? 'Order placed successfully.'
                 : 'Order placed successfully and is awaiting payment confirmation.',

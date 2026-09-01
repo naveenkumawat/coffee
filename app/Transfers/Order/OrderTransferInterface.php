@@ -68,6 +68,18 @@ interface OrderTransferInterface
 
     public function setPaymentMethod(?string $paymentMethod): void;
 
+    public function getPromoCode(): ?string;
+
+    public function setPromoCode(?string $promoCode): void;
+
+    public function getReferralFreeDrinkRewardId(): ?int;
+
+    public function setReferralFreeDrinkRewardId(?int $referralFreeDrinkRewardId): void;
+
+    public function getReferralCouponRewardId(): ?int;
+
+    public function setReferralCouponRewardId(?int $referralCouponRewardId): void;
+
     public function getItems(): array;
 
     public function setItems(array $items): void;

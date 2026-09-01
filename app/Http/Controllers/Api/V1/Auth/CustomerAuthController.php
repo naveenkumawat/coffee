@@ -15,6 +15,7 @@ use App\Http\Resources\Api\V1\CustomerResource;
 use App\Models\User;
 use App\Parsers\User\UserParserInterface;
 use App\Repositories\User\UserRepositoryInterface;
+use App\Services\Referral\ReferralServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,19 +31,31 @@ class CustomerAuthController extends Controller
     public function __construct(
         protected UserParserInterface $parser,
         protected UserRepositoryInterface $users,
+        protected ReferralServiceInterface $referrals,
     ) {}
 
     public function register(CustomerRegisterRequest $request): JsonResponse
     {
-        $data = $request->validated() + [
+        $validated = $request->validated();
+        $referralCode = $validated['referral_code'] ?? null;
+        unset($validated['referral_code']);
+
+        $data = $validated + [
             'role' => UserRole::Customer->value,
             'is_active' => true,
         ];
 
-        $user = DB::transaction(fn () => $this->users->create(
-            $this->parser->getTransferFromArrayData($data)->toArray()
-            + ['email_verified_at' => now(), 'last_login_at' => now()],
-        ));
+        $user = DB::transaction(function () use ($data, $referralCode) {
+            $user = $this->users->create(
+                $this->parser->getTransferFromArrayData($data)->toArray()
+                + ['email_verified_at' => now(), 'last_login_at' => now()],
+            );
+
+            $this->referrals->ensureCustomerReferralCode($user);
+            $this->referrals->attachReferralOnRegistration($user, $referralCode);
+
+            return $user->fresh();
+        });
 
         CustomerRegistered::dispatch($user);
 

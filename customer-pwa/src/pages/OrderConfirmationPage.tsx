@@ -12,6 +12,7 @@ import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { CheckoutPaymentInstructions } from '../types/checkout';
 import { Order, OrderPaymentInstructions } from '../types/order';
+import { orderDiscountLines } from '../utils/discounts';
 import { formatCurrency, joinLabels } from '../utils/format';
 import {
   fulfilmentChipLabel,
@@ -339,6 +340,8 @@ export function OrderConfirmationPage() {
           subtotal={order.subtotal}
           total={order.total_amount}
           tax={order.tax}
+          discounts={orderDiscountLines(order)}
+          discountTotal={order.discount_total}
           totalLabel="Cafe total"
         />
       </section>

@@ -182,6 +182,75 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         ];
     }
 
+    public function referralConfig(): array
+    {
+        $values = $this->settings->keyedValues();
+        $enabled = in_array(
+            strtolower(trim((string) ($values->get(WebsiteSettingKey::ReferralEnabled->value) ?? ''))),
+            ['1', 'true', 'yes', 'on'],
+            true,
+        );
+
+        $rewardType = trim((string) ($values->get(WebsiteSettingKey::ReferralRewardType->value) ?? 'free_drink'));
+        if (! in_array($rewardType, ['free_drink', 'coupon'], true)) {
+            $rewardType = 'free_drink';
+        }
+
+        $couponType = trim((string) ($values->get(WebsiteSettingKey::ReferralCouponDiscountType->value) ?? 'fixed'));
+        if (! in_array($couponType, ['fixed', 'percentage'], true)) {
+            $couponType = 'fixed';
+        }
+
+        $duration = $this->toIntSetting($values->get(WebsiteSettingKey::ReferralRewardRedemptionDurationDays->value), 30, 1, 3650);
+        $maxMonthRaw = $values->get(WebsiteSettingKey::ReferralMaxRewardsPerCustomerMonth->value);
+
+        return [
+            'enabled' => $enabled,
+            'reward_type' => $rewardType,
+            'reward_product_id' => $this->nullablePositiveInt($values->get(WebsiteSettingKey::ReferralRewardProductId->value)),
+            'reward_variant_id' => $this->nullablePositiveInt($values->get(WebsiteSettingKey::ReferralRewardVariantId->value)),
+            'reward_quantity' => $this->toIntSetting($values->get(WebsiteSettingKey::ReferralRewardQuantity->value), 1, 1, 20),
+            'coupon_discount_type' => $couponType,
+            'coupon_discount_value' => $this->moneySetting($values->get(WebsiteSettingKey::ReferralCouponDiscountValue->value), '0.00'),
+            'coupon_max_discount' => $this->nullableMoneySetting($values->get(WebsiteSettingKey::ReferralCouponMaxDiscount->value)),
+            'coupon_minimum_subtotal' => $this->nullableMoneySetting($values->get(WebsiteSettingKey::ReferralCouponMinimumSubtotal->value)),
+            'minimum_qualifying_order_amount' => $this->nullableMoneySetting($values->get(WebsiteSettingKey::ReferralMinimumQualifyingOrderAmount->value)),
+            'reward_redemption_duration_days' => $duration,
+            'max_rewards_per_customer_month' => ($maxMonthRaw === null || $maxMonthRaw === '')
+                ? null
+                : $this->toIntSetting($maxMonthRaw, 10, 1, 1000),
+        ];
+    }
+
+    protected function nullablePositiveInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
+
+        $int = (int) $value;
+
+        return $int > 0 ? $int : null;
+    }
+
+    protected function moneySetting(mixed $value, string $default): string
+    {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return $default;
+        }
+
+        return number_format((float) $value, 2, '.', '');
+    }
+
+    protected function nullableMoneySetting(mixed $value): ?string
+    {
+        if ($value === null || $value === '' || ! is_numeric($value)) {
+            return null;
+        }
+
+        return number_format((float) $value, 2, '.', '');
+    }
+
     protected function normalizeStoredValue(mixed $value): ?string
     {
         if ($value === null) {

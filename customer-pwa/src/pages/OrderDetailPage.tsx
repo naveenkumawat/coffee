@@ -15,6 +15,7 @@ import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
+import { orderDiscountLines } from '../utils/discounts';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
 import { isCashPayment, isPendingPayment, statusTone } from '../utils/orders';
 
@@ -236,6 +237,8 @@ export function OrderDetailPage() {
           subtotal={order.subtotal}
           total={order.total_amount}
           tax={order.tax}
+          discounts={orderDiscountLines(order)}
+          discountTotal={order.discount_total}
           totalLabel="Total"
         />
       </section>

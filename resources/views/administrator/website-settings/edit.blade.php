@@ -18,6 +18,7 @@
             'fulfilment' => 'Fulfilment',
             'tax' => 'Tax / GST',
             'order_security' => 'Order Security',
+            'referral' => 'Customer referrals',
             'pages' => 'Static pages',
         ];
         $mediaKeys = [
@@ -110,6 +111,91 @@
                                         Upload JPEG / PNG / WebP (max {{ \App\Support\PublicMedia::maxKilobytes() }} KB), or set an absolute URL when no file is stored.
                                         @if ($key === \App\Enums\WebsiteSettingKey::PaymentQrImagePath)
                                             Empty falls back to config/env.
+                                        @endif
+                                    </div>
+                                @elseif ($key === \App\Enums\WebsiteSettingKey::ReferralRewardType)
+                                    @php
+                                        $rewardType = old($key->value, $values[$key->value] ?? 'free_drink');
+                                    @endphp
+                                    <select
+                                        id="{{ $key->value }}"
+                                        name="{{ $key->value }}"
+                                        class="form-select @error($key->value) is-invalid @enderror"
+                                        data-referral-reward-type
+                                    >
+                                        <option value="free_drink" @selected($rewardType === 'free_drink')>Free Drink</option>
+                                        <option value="coupon" @selected($rewardType === 'coupon')>Coupon</option>
+                                    </select>
+                                    @error($key->value)
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    @if ($key->helpText())
+                                        <div class="form-text">{{ $key->helpText() }}</div>
+                                    @endif
+                                @elseif ($key === \App\Enums\WebsiteSettingKey::ReferralCouponDiscountType)
+                                    @php
+                                        $couponType = old($key->value, $values[$key->value] ?? 'fixed');
+                                    @endphp
+                                    <div data-referral-coupon-field>
+                                        <select
+                                            id="{{ $key->value }}"
+                                            name="{{ $key->value }}"
+                                            class="form-select @error($key->value) is-invalid @enderror"
+                                        >
+                                            <option value="fixed" @selected($couponType === 'fixed')>Fixed amount</option>
+                                            <option value="percentage" @selected($couponType === 'percentage')>Percentage</option>
+                                        </select>
+                                        @error($key->value)
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        @if ($key->helpText())
+                                            <div class="form-text">{{ $key->helpText() }}</div>
+                                        @endif
+                                    </div>
+                                @elseif (in_array($key, [
+                                    \App\Enums\WebsiteSettingKey::ReferralRewardProductId,
+                                    \App\Enums\WebsiteSettingKey::ReferralRewardVariantId,
+                                    \App\Enums\WebsiteSettingKey::ReferralRewardQuantity,
+                                ], true))
+                                    <div data-referral-free-drink-field>
+                                        <input
+                                            id="{{ $key->value }}"
+                                            name="{{ $key->value }}"
+                                            type="number"
+                                            value="{{ old($key->value, $values[$key->value] ?? '') }}"
+                                            class="form-control @error($key->value) is-invalid @enderror"
+                                            min="1"
+                                            step="1"
+                                            inputmode="numeric"
+                                        />
+                                        @error($key->value)
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        @if ($key->helpText())
+                                            <div class="form-text">{{ $key->helpText() }}</div>
+                                        @endif
+                                    </div>
+                                @elseif (in_array($key, [
+                                    \App\Enums\WebsiteSettingKey::ReferralCouponDiscountValue,
+                                    \App\Enums\WebsiteSettingKey::ReferralCouponMaxDiscount,
+                                    \App\Enums\WebsiteSettingKey::ReferralCouponMinimumSubtotal,
+                                ], true))
+                                    <div data-referral-coupon-field>
+                                        <input
+                                            id="{{ $key->value }}"
+                                            name="{{ $key->value }}"
+                                            type="number"
+                                            value="{{ old($key->value, $values[$key->value] ?? '') }}"
+                                            class="form-control @error($key->value) is-invalid @enderror"
+                                            min="0"
+                                            step="0.01"
+                                            inputmode="decimal"
+                                        />
+                                        @error($key->value)
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        @if ($key->helpText())
+                                            <div class="form-text">{{ $key->helpText() }}</div>
                                         @endif
                                     </div>
                                 @elseif ($key === \App\Enums\WebsiteSettingKey::TaxInclusive)
@@ -251,3 +337,27 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const typeSelect = document.querySelector('[data-referral-reward-type]');
+    if (!typeSelect) {
+        return;
+    }
+
+    const sync = () => {
+        const isFreeDrink = typeSelect.value === 'free_drink';
+        document.querySelectorAll('[data-referral-free-drink-field]').forEach((el) => {
+            el.closest('.col-12')?.classList.toggle('d-none', !isFreeDrink);
+        });
+        document.querySelectorAll('[data-referral-coupon-field]').forEach((el) => {
+            el.closest('.col-12')?.classList.toggle('d-none', isFreeDrink);
+        });
+    };
+
+    typeSelect.addEventListener('change', sync);
+    sync();
+})();
+</script>
+@endpush

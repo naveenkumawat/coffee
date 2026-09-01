@@ -76,7 +76,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['customer', 'assignedBarista', 'paymentReceivedBy', 'items.recipe.lines.ingredient.brand', 'statusHistory.changedBy']);
+        $order->load(['customer', 'assignedBarista', 'paymentReceivedBy', 'items.recipe.lines.ingredient.brand', 'promotions', 'rewardRedemptions', 'statusHistory.changedBy']);
 
         $openUnpaidOrders = $order->customer
             ? $this->orderSecurity->countOpenUnpaidOrders($order->customer)

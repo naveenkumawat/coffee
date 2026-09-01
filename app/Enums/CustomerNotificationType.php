@@ -17,6 +17,7 @@ enum CustomerNotificationType: string
     case OrderCompleted = 'order_completed';
     case OrderCancelled = 'order_cancelled';
     case OrderRejected = 'order_rejected';
+    case ReferralRewardEarned = 'referral_reward_earned';
 
     public function label(): string
     {
@@ -34,6 +35,7 @@ enum CustomerNotificationType: string
             self::OrderCompleted => 'Order completed',
             self::OrderCancelled => 'Order cancelled',
             self::OrderRejected => 'Order rejected',
+            self::ReferralRewardEarned => 'Referral reward earned',
         };
     }
 }

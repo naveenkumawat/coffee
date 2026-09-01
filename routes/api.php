@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
+use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
+use App\Http\Controllers\Api\V1\Customer\CustomerRewardController;
 use App\Http\Controllers\Api\V1\Home\HomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +57,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/me', [CustomerAccountController::class, 'show'])->name('me');
             Route::put('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');
             Route::put('/password', [CustomerAccountController::class, 'updatePassword'])->name('password.update');
+            Route::get('/referral', [CustomerReferralController::class, 'show'])->name('referral.show');
+            Route::get('/rewards', [CustomerRewardController::class, 'index'])->name('rewards.index');
         });
 
         Route::prefix('cart')->name('cart.')->group(function (): void {
@@ -64,6 +68,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('/items', [CustomerCartController::class, 'store'])->name('items.store');
             Route::put('/items/{cartItem}', [CustomerCartController::class, 'update'])->name('items.update');
             Route::delete('/items/{cartItem}', [CustomerCartController::class, 'destroy'])->name('items.destroy');
+            Route::post('/promo-code', [CustomerCartController::class, 'applyPromoCode'])->name('promo-code.apply');
+            Route::delete('/promo-code', [CustomerCartController::class, 'clearPromoCode'])->name('promo-code.clear');
+            Route::post('/referral-rewards/free-drink', [CustomerRewardController::class, 'addFreeDrinkToCart'])->name('referral-rewards.free-drink');
+            Route::post('/referral-rewards/coupon', [CustomerRewardController::class, 'applyCoupon'])->name('referral-rewards.coupon.apply');
+            Route::delete('/referral-rewards', [CustomerRewardController::class, 'clear'])->name('referral-rewards.clear');
             Route::delete('/', [CustomerCartController::class, 'clear'])->name('clear');
         });
 

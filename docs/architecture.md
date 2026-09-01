@@ -253,6 +253,54 @@ Checkout protection is layered server-side (CAPTCHA / Turnstile intentionally de
 
 Limits live in Website Settings → Order Security. Trusted cash (`cash_takeaway_allowed`) is independent and never bypasses these controls.
 
+## Promotions / discounts
+
+`PromotionService` is the sole discount engine. Cart, checkout, order creation, invoices, and the PWA must consume its results — never recompute discounts in React or Blade.
+
+Canonical pricing sequence (merchandise only; delivery fee is never discounted in the initial scope):
+
+1. Eligible merchandise line subtotals
+2. Promotion discounts (automatic + optional coupon)
+3. Taxable amount → `TaxCalculator` (inclusive or exclusive GST from Website Settings)
+4. Delivery fee (undiscounted when present)
+5. Payable / café total
+
+### Stacking policy
+
+- Duplicate application of the same promotion is never allowed.
+- If every selected candidate is `stackable = true`, all apply (priority, then amount).
+- Otherwise the customer receives a single best discount by amount (then priority). Coupons compete in the same candidate set as automatic offers.
+- Default for new promotions: `stackable = false`.
+
+### Eligibility & usage
+
+Eligibility uses café/business timezone (`CafeAvailabilityService` / `business_timezone`), not the browser. Coupons normalize to uppercase exact match. Usage counts `order_promotions` joined to orders excluding cancelled/rejected; checkout locks promotions when enforcing limits. Historical amounts live on `orders.discount_total` and `order_promotions` snapshots — editing or deleting a promotion never rewrites past orders.
+
+Administrator manages offers under **Offers & Promotions**. Barista may see customer-facing discount lines on orders/invoices but cannot manage promotions.
+
+## Customer referrals / rewards
+
+`ReferralService` owns referral codes, qualification, and reward snapshots. Website Settings → **Customer referrals** configures the program (`referral_*` keys). Changing reward settings only affects **newly earned** rewards — existing `customer_rewards` rows keep product/coupon snapshots.
+
+Lifecycle:
+
+1. Customer receives a unique `users.referral_code` (generated on register / account summary).
+2. Friend registers with `?ref=` / `referral_code` → `customer_referrals` + `referred_by_user_id` (immutable).
+3. Friend’s first qualifying paid order (`OrderStatusChanged` → `PaymentConfirmed`, including cash-received) → referrer earns one `customer_rewards` row (idempotent).
+4. Cart applies at most **one** referral reward (free drink **or** coupon).
+5. Checkout redeems atomically into `order_reward_redemptions` and marks the reward redeemed. Failed checkout leaves the reward available.
+
+Rewards snapshot `expires_at = earned_at + referral_reward_redemption_duration_days` at earn time (settings changes do not rewrite existing expiry). Active customer Rewards lists only `available` and unexpired rewards — server revalidates on add-to-cart and checkout (no cron required). Expired rewards in a cart are cleared without consuming them.
+
+### Free drink GST rule
+
+- GST basis = merchandise after normal promotions **and** referral coupons (not reduced by free drink).
+- Payable merchandise = GST basis − free drink benefit.
+- Exclusive: café total = payable + tax(on GST basis). Inclusive: free drink benefit = line − inclusive tax component; café total = payable.
+- `discount_total` on the order includes promo + referral coupon only; free drink benefit is a separate redemption line (GST still payable).
+
+Administrator **Referrals** index is read-only (`canManageWebsiteSettings`). Barista cannot manage referrals.
+
 ## Café availability / operating hours
 
 `CafeAvailabilityService` is the single source of truth for whether **new** orders may be placed.

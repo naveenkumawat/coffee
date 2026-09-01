@@ -36,6 +36,8 @@ const OrderDetailPage = lazyPage(() =>
   import('../pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
 );
 const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
+const ReferralPage = lazyPage(() => import('../pages/ReferralPage').then((module) => ({ default: module.ReferralPage })));
+const RewardsPage = lazyPage(() => import('../pages/RewardsPage').then((module) => ({ default: module.RewardsPage })));
 const NotFoundPage = lazyPage(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 
 export const router = createBrowserRouter([
@@ -127,6 +129,14 @@ export const router = createBrowserRouter([
           {
             path: 'account',
             element: <AccountPage />,
+          },
+          {
+            path: 'account/referral',
+            element: <ReferralPage />,
+          },
+          {
+            path: 'account/rewards',
+            element: <RewardsPage />,
           },
         ],
       },

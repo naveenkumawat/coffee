@@ -26,5 +26,32 @@ interface CartServiceInterface
 
     public function count(User $customer): int;
 
-    public function summarize(Cart $cart): array;
+    /**
+     * @return array{
+     *     item_count: int,
+     *     subtotal: string,
+     *     discount_total: string,
+     *     discounts: list<array{promotion_id: int, name: string, code: ?string, discount_type: string, discount_value: string, amount: string}>,
+     *     promo_code: ?string,
+     *     promo_error: ?string,
+     *     free_drink_benefit: string,
+     *     referral_coupon_discount: string,
+     *     referral_rewards: list<array<string, mixed>>,
+     *     reward_error: ?string,
+     *     total: string,
+     *     tax: array<string, mixed>,
+     *     has_unavailable_items: bool
+     * }
+     */
+    public function summarize(Cart $cart, ?string $fulfilmentMethod = null): array;
+
+    public function applyPromoCode(User $customer, string $code, ?string $fulfilmentMethod = null): Cart;
+
+    public function clearPromoCode(User $customer): Cart;
+
+    public function addFreeDrinkRewardToCart(User $customer, int $rewardId, ?string $fulfilmentMethod = null): Cart;
+
+    public function applyReferralCouponReward(User $customer, string $code, ?string $fulfilmentMethod = null): Cart;
+
+    public function clearReferralRewards(User $customer): Cart;
 }

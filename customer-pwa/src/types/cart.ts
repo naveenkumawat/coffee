@@ -25,9 +25,34 @@ export interface CartItem {
   variant: CartVariantSummary | null;
 }
 
+export interface CartDiscount {
+  promotion_id?: number;
+  name: string;
+  code?: string | null;
+  discount_type?: string;
+  discount_value?: string;
+  amount: string;
+}
+
 export interface CartSummary {
   item_count: number;
   subtotal: string;
+  discount_total?: string;
+  discounts?: CartDiscount[];
+  promo_code?: string | null;
+  promo_error?: string | null;
+  free_drink_benefit?: string;
+  referral_coupon_discount?: string;
+  referral_rewards?: Array<{
+    reward_id: number;
+    reward_type: string;
+    title: string;
+    benefit_amount: string;
+    original_amount?: string;
+    preserves_gst_basis?: boolean;
+    code?: string | null;
+  }>;
+  reward_error?: string | null;
   total: string;
   has_unavailable_items: boolean;
   tax?: {

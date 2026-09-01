@@ -44,6 +44,13 @@
                     <input id="password_confirmation" name="password_confirmation" type="password" required class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-amber-300/50" />
                 </div>
                 <div class="md:col-span-2">
+                    <label for="referral_code" class="mb-2 block text-sm font-medium text-stone-200">Referral code (optional)</label>
+                    <input id="referral_code" name="referral_code" type="text" value="{{ old('referral_code', $referralCode ?? request('ref')) }}" class="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-amber-300/50" />
+                    @error('referral_code')
+                        <p class="mt-2 text-sm text-rose-300">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
                     <button type="submit" class="w-full rounded-full bg-amber-400 px-6 py-3 font-medium text-stone-950 transition hover:bg-amber-300">
                         Register
                     </button>

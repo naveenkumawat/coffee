@@ -46,7 +46,7 @@ class CustomerOrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['items', 'statusHistory']);
+        $order->load(['items', 'statusHistory', 'promotions', 'rewardRedemptions']);
         $this->attachRatingContext($order);
 
         return $this->respondWithResource(
@@ -70,7 +70,7 @@ class CustomerOrderController extends Controller
         );
 
         return $this->respondWithResource(
-            new OrderResource($order->loadMissing(['items', 'statusHistory'])),
+            new OrderResource($order->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
             'Payment proof uploaded successfully.',
             200,
             [

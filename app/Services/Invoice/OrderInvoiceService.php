@@ -40,7 +40,7 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
 
     public function build(Order $order): OrderInvoiceData
     {
-        $order->loadMissing(['items']);
+        $order->loadMissing(['items', 'rewardRedemptions']);
 
         $content = $this->websiteSettings->customerContent();
         $business = $content['business'] ?? [];
@@ -75,6 +75,13 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             ? (string) $business['about_short']
             : null;
 
+        $freeDrinkBenefit = $order->rewardRedemptions
+            ->filter(fn ($redemption): bool => $redemption->reward_type?->value === 'free_drink')
+            ->reduce(
+                fn (string $carry, $redemption): string => bcadd($carry, (string) $redemption->benefit_amount, 2),
+                '0.00',
+            );
+
         return new OrderInvoiceData(
             invoiceNumber: $invoiceNumber,
             orderNumber: $invoiceNumber,
@@ -107,6 +114,7 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             lines: $lines,
             subtotal: number_format((float) $order->subtotal, 2, '.', ''),
             discountTotal: number_format((float) $order->discount_total, 2, '.', ''),
+            freeDrinkBenefit: number_format((float) $freeDrinkBenefit, 2, '.', ''),
             taxEnabled: $tax->enabled,
             taxLabel: $tax->label,
             taxPercent: $tax->percent,

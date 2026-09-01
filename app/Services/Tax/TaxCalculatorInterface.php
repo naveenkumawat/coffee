@@ -26,6 +26,16 @@ interface TaxCalculatorInterface
     public function calculateForTaxableAmount(string $taxableAmount): TaxCalculation;
 
     /**
+     * GST may be calculated on a higher basis than payable merchandise (referral free drink).
+     */
+    public function calculateForPayableAndGstBasis(string $payableMerchandise, string $gstBasisMerchandise): TaxCalculation;
+
+    /**
+     * Extract the GST component from an inclusive price using live tax settings.
+     */
+    public function extractInclusiveTaxComponent(string $inclusiveAmount): string;
+
+    /**
      * Rebuild a calculation view from an order's stored tax snapshot.
      */
     public function fromOrderSnapshot(Order $order): TaxCalculation;

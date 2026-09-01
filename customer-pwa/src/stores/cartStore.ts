@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import {
   addCartItem,
+  applyCartPromoCode,
+  applyFreeDrinkReward,
+  applyReferralCouponReward,
   clearCart,
+  clearCartPromoCode,
+  clearReferralRewards,
   fetchCart,
   fetchCartCount,
   mergeGuestCart,
@@ -10,6 +15,7 @@ import {
 } from '../api/cart';
 import { ApiEnvelope, ApiError } from '../api/client';
 import { Cart, CartEnvelopeMeta, CartItemMutationPayload, CartSummary } from '../types/cart';
+import { CheckoutFulfilmentMethod } from '../types/checkout';
 import { isSessionAuthenticated } from '../utils/authSession';
 import {
   CART_MAX_QUANTITY,
@@ -49,6 +55,20 @@ interface CartState {
   ) => Promise<void>;
   isVariantPending: (productVariantId: number) => boolean;
   mergeGuestCart: () => Promise<boolean>;
+  applyPromoCode: (
+    promoCode: string,
+    fulfilmentMethod?: CheckoutFulfilmentMethod | null,
+  ) => Promise<void>;
+  clearPromoCode: () => Promise<void>;
+  applyFreeDrinkReward: (
+    rewardId: number,
+    fulfilmentMethod?: CheckoutFulfilmentMethod | null,
+  ) => Promise<void>;
+  applyReferralCoupon: (
+    code: string,
+    fulfilmentMethod?: CheckoutFulfilmentMethod | null,
+  ) => Promise<void>;
+  clearReferralRewards: (fulfilmentMethod?: CheckoutFulfilmentMethod | null) => Promise<void>;
   reset: () => void;
   clear: () => Promise<void>;
 }
@@ -111,6 +131,10 @@ function rebuildSummaryFromCart(cart: Cart): CartSummary {
   return {
     item_count: itemCount,
     subtotal: money,
+    discount_total: '0.00',
+    discounts: [],
+    promo_code: null,
+    promo_error: null,
     total: money,
     has_unavailable_items: cart.items.some((item) => !item.is_available),
   };
@@ -412,6 +436,55 @@ export const useCartStore = create<CartState>((set, get) => ({
     applyCartState(set, response);
 
     return true;
+  },
+  applyPromoCode: async (promoCode, fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to apply a promo code.', 401);
+    }
+
+    const response = await applyCartPromoCode({
+      promo_code: promoCode,
+      ...(fulfilmentMethod ? { fulfilment_method: fulfilmentMethod } : {}),
+    });
+    applyCartState(set, response);
+  },
+  clearPromoCode: async () => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to manage promo codes.', 401);
+    }
+
+    const response = await clearCartPromoCode();
+    applyCartState(set, response);
+  },
+  applyFreeDrinkReward: async (rewardId, fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to apply rewards.', 401);
+    }
+
+    const response = await applyFreeDrinkReward({
+      reward_id: rewardId,
+      ...(fulfilmentMethod ? { fulfilment_method: fulfilmentMethod } : {}),
+    });
+    applyCartState(set, response);
+  },
+  applyReferralCoupon: async (code, fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to apply rewards.', 401);
+    }
+
+    const response = await applyReferralCouponReward({
+      referral_coupon: code,
+      ...(fulfilmentMethod ? { fulfilment_method: fulfilmentMethod } : {}),
+    });
+    applyCartState(set, response);
+  },
+  clearReferralRewards: async (fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to manage rewards.', 401);
+    }
+
+    const response = await clearReferralRewards(fulfilmentMethod);
+    applyCartState(set, response);
   },
   reset: () => {
     set({ count: 0, cart: null, summary: null, isLoading: false, pendingVariantIds: [] });

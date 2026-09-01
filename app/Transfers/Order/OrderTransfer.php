@@ -38,6 +38,12 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
 
     protected ?string $paymentMethod = null;
 
+    protected ?string $promoCode = null;
+
+    protected ?int $referralFreeDrinkRewardId = null;
+
+    protected ?int $referralCouponRewardId = null;
+
     protected array $items = [];
 
     public function getCustomerId(): ?int
@@ -200,6 +206,36 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
         $this->paymentMethod = $paymentMethod;
     }
 
+    public function getPromoCode(): ?string
+    {
+        return $this->promoCode;
+    }
+
+    public function setPromoCode(?string $promoCode): void
+    {
+        $this->promoCode = $promoCode;
+    }
+
+    public function getReferralFreeDrinkRewardId(): ?int
+    {
+        return $this->referralFreeDrinkRewardId;
+    }
+
+    public function setReferralFreeDrinkRewardId(?int $referralFreeDrinkRewardId): void
+    {
+        $this->referralFreeDrinkRewardId = $referralFreeDrinkRewardId;
+    }
+
+    public function getReferralCouponRewardId(): ?int
+    {
+        return $this->referralCouponRewardId;
+    }
+
+    public function setReferralCouponRewardId(?int $referralCouponRewardId): void
+    {
+        $this->referralCouponRewardId = $referralCouponRewardId;
+    }
+
     public function getItems(): array
     {
         return $this->items;
@@ -229,6 +265,9 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
             'delivery_notes' => $this->deliveryNotes,
             'cafe_table_id' => $this->cafeTableId,
             'payment_method' => $this->paymentMethod,
+            'promo_code' => $this->promoCode,
+            'referral_free_drink_reward_id' => $this->referralFreeDrinkRewardId,
+            'referral_coupon_reward_id' => $this->referralCouponRewardId,
             'items' => $this->items,
         ];
     }

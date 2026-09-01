@@ -17,7 +17,9 @@ use App\Http\Controllers\Administrator\ProductController;
 use App\Http\Controllers\Administrator\ProductFlavourController;
 use App\Http\Controllers\Administrator\ProductRatingController;
 use App\Http\Controllers\Administrator\ProductTagController;
+use App\Http\Controllers\Administrator\PromotionController;
 use App\Http\Controllers\Administrator\RecipeController;
+use App\Http\Controllers\Administrator\ReferralController;
 use App\Http\Controllers\Administrator\SocialLinkController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Administrator\WebsiteSettingController;
@@ -162,6 +164,15 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::patch('cafe-tables/{cafe_table}/toggle', [CafeTableController::class, 'toggle'])->name('cafe-tables.toggle');
     Route::patch('cafe-tables/{cafe_table}/move-up', [CafeTableController::class, 'moveUp'])->name('cafe-tables.move-up');
     Route::patch('cafe-tables/{cafe_table}/move-down', [CafeTableController::class, 'moveDown'])->name('cafe-tables.move-down');
+
+    Route::get('promotions', [PromotionController::class, 'index'])->name('promotions.index');
+    Route::get('promotions/create', [PromotionController::class, 'create'])->name('promotions.create');
+    Route::post('promotions', [PromotionController::class, 'store'])->name('promotions.store');
+    Route::get('promotions/{promotion}/edit', [PromotionController::class, 'edit'])->name('promotions.edit');
+    Route::put('promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
+    Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
+    Route::patch('promotions/{promotion}/toggle', [PromotionController::class, 'toggle'])->name('promotions.toggle');
+    Route::get('referrals', [ReferralController::class, 'index'])->name('referrals.index');
 
     Route::get('cafe-schedule', [CafeScheduleController::class, 'index'])->name('cafe-schedule.index');
     Route::get('cafe-schedule/hours', [CafeScheduleController::class, 'editHours'])->name('cafe-schedule.hours.edit');

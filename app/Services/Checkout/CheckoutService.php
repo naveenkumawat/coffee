@@ -28,10 +28,10 @@ class CheckoutService implements CheckoutServiceInterface
         protected CafeAvailabilityServiceInterface $cafeAvailability,
     ) {}
 
-    public function getCheckoutContext(User $customer): array
+    public function getCheckoutContext(User $customer, ?string $fulfilmentMethod = null): array
     {
         $cart = $this->cartService->getForCustomer($customer);
-        $summary = $this->cartService->summarize($cart);
+        $summary = $this->cartService->summarize($cart, $fulfilmentMethod);
 
         $this->ensureCartIsCheckoutReady($cart, $summary);
 
@@ -82,7 +82,7 @@ class CheckoutService implements CheckoutServiceInterface
             $this->orderSecurity->assertOpenUnpaidLimit($lockedCustomer);
             $this->orderSecurity->assertOrderCreateRateLimit($lockedCustomer);
 
-            $context = $this->getCheckoutContext($lockedCustomer);
+            $context = $this->getCheckoutContext($lockedCustomer, $data->getFulfilmentMethod());
             /** @var Cart $cart */
             $cart = $context['cart'];
 
@@ -111,6 +111,13 @@ class CheckoutService implements CheckoutServiceInterface
             $orderTransfer->setDeliveryNotes($data->getDeliveryNotes());
             $orderTransfer->setCafeTableId($data->getCafeTableId());
             $orderTransfer->setPaymentMethod($data->getPaymentMethod());
+            $orderTransfer->setPromoCode($cart->promo_code);
+            $orderTransfer->setReferralFreeDrinkRewardId(
+                $cart->referral_free_drink_reward_id !== null ? (int) $cart->referral_free_drink_reward_id : null,
+            );
+            $orderTransfer->setReferralCouponRewardId(
+                $cart->referral_coupon_reward_id !== null ? (int) $cart->referral_coupon_reward_id : null,
+            );
             $orderTransfer->setItems(
                 $cart->items
                     ->map(fn (CartItem $item): array => [

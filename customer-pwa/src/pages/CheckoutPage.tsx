@@ -25,6 +25,7 @@ import {
   CheckoutSummaryMeta,
 } from '../types/checkout';
 import { Order } from '../types/order';
+import { cartDiscounts } from '../utils/discounts';
 import { formatCurrency, joinLabels } from '../utils/format';
 import { getFieldError } from '../utils/forms';
 
@@ -66,12 +67,20 @@ export function CheckoutPage() {
   const availability = useContentStore((state) => selectAvailability(state.content));
   const orderingClosed = Boolean(availability && !availability.available);
 
-  async function loadSummary(preserveForm = false): Promise<void> {
-    setIsLoading(true);
+  async function loadSummary(
+    preserveForm = false,
+    method: CheckoutFulfilmentMethod = fulfilmentMethod,
+  ): Promise<void> {
+    const showFullLoading = !didHydrateDefaults.current;
+
+    if (showFullLoading) {
+      setIsLoading(true);
+    }
+
     setMessage(null);
 
     try {
-      const response = await fetchCheckoutSummary();
+      const response = await fetchCheckoutSummary(method);
       setCart(response.data);
       setSummaryMeta(response.meta);
       syncCart(response.data, response.meta.summary);
@@ -104,13 +113,16 @@ export function CheckoutPage() {
         setDisplayState('error');
       }
     } finally {
-      setIsLoading(false);
+      if (showFullLoading) {
+        setIsLoading(false);
+      }
     }
   }
 
   useEffect(() => {
-    void loadSummary();
-  }, []);
+    const preserveForm = didHydrateDefaults.current;
+    void loadSummary(preserveForm, fulfilmentMethod);
+  }, [fulfilmentMethod]);
 
   useEffect(() => {
     const dineInOffered = summaryMeta?.fulfilment?.methods?.some((method) => method.value === 'dine_in');
@@ -677,6 +689,8 @@ export function CheckoutPage() {
             subtotal={summaryMeta.summary.subtotal}
             total={summaryMeta.summary.total}
             tax={summaryMeta.summary.tax}
+            discounts={cartDiscounts(summaryMeta.summary)}
+            discountTotal={summaryMeta.summary.discount_total}
             totalLabel="Cafe total"
           />
         </section>

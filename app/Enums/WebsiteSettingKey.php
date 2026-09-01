@@ -38,6 +38,18 @@ enum WebsiteSettingKey: string
     case OrderingManualClosed = 'ordering_manual_closed';
     case OrderingManualClosedUntil = 'ordering_manual_closed_until';
     case OrderingManualClosedMessage = 'ordering_manual_closed_message';
+    case ReferralEnabled = 'referral_enabled';
+    case ReferralRewardType = 'referral_reward_type';
+    case ReferralRewardProductId = 'referral_reward_product_id';
+    case ReferralRewardVariantId = 'referral_reward_variant_id';
+    case ReferralRewardQuantity = 'referral_reward_quantity';
+    case ReferralCouponDiscountType = 'referral_coupon_discount_type';
+    case ReferralCouponDiscountValue = 'referral_coupon_discount_value';
+    case ReferralCouponMaxDiscount = 'referral_coupon_max_discount';
+    case ReferralCouponMinimumSubtotal = 'referral_coupon_minimum_subtotal';
+    case ReferralMinimumQualifyingOrderAmount = 'referral_minimum_qualifying_order_amount';
+    case ReferralRewardRedemptionDurationDays = 'referral_reward_redemption_duration_days';
+    case ReferralMaxRewardsPerCustomerMonth = 'referral_max_rewards_per_customer_month';
     case PagesAbout = 'pages_about';
     case PagesContact = 'pages_contact';
     case PagesFaq = 'pages_faq';
@@ -61,6 +73,18 @@ enum WebsiteSettingKey: string
             self::OrderingManualClosed,
             self::OrderingManualClosedUntil,
             self::OrderingManualClosedMessage => 'cafe_ordering',
+            self::ReferralEnabled,
+            self::ReferralRewardType,
+            self::ReferralRewardProductId,
+            self::ReferralRewardVariantId,
+            self::ReferralRewardQuantity,
+            self::ReferralCouponDiscountType,
+            self::ReferralCouponDiscountValue,
+            self::ReferralCouponMaxDiscount,
+            self::ReferralCouponMinimumSubtotal,
+            self::ReferralMinimumQualifyingOrderAmount,
+            self::ReferralRewardRedemptionDurationDays,
+            self::ReferralMaxRewardsPerCustomerMonth => 'referral',
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 'pages',
         };
     }
@@ -74,12 +98,17 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 'boolean',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 'boolean',
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
             self::OrderSecurityPaymentProofAttemptsPer15Minutes,
-            self::OrderSecurityDuplicateOrderWindowMinutes => 'integer',
+            self::OrderSecurityDuplicateOrderWindowMinutes,
+            self::ReferralRewardProductId,
+            self::ReferralRewardVariantId,
+            self::ReferralRewardQuantity,
+            self::ReferralRewardRedemptionDurationDays,
+            self::ReferralMaxRewardsPerCustomerMonth => 'integer',
             default => 'string',
         };
     }
@@ -121,6 +150,18 @@ enum WebsiteSettingKey: string
             self::OrderingManualClosed => 'Ordering manually closed',
             self::OrderingManualClosedUntil => 'Manual closed until',
             self::OrderingManualClosedMessage => 'Manual closed customer message',
+            self::ReferralEnabled => 'Enable customer referrals',
+            self::ReferralRewardType => 'Referral reward type',
+            self::ReferralRewardProductId => 'Free drink product ID',
+            self::ReferralRewardVariantId => 'Free drink variant ID (optional)',
+            self::ReferralRewardQuantity => 'Free drink quantity',
+            self::ReferralCouponDiscountType => 'Coupon discount type',
+            self::ReferralCouponDiscountValue => 'Coupon discount value',
+            self::ReferralCouponMaxDiscount => 'Coupon max discount (optional)',
+            self::ReferralCouponMinimumSubtotal => 'Coupon minimum subtotal (optional)',
+            self::ReferralMinimumQualifyingOrderAmount => 'Minimum qualifying order amount (optional)',
+            self::ReferralRewardRedemptionDurationDays => 'Reward redemption duration (days)',
+            self::ReferralMaxRewardsPerCustomerMonth => 'Max rewards per customer / month (optional)',
             self::PagesAbout => 'About page',
             self::PagesContact => 'Contact / Visit page',
             self::PagesFaq => 'FAQ page',
@@ -133,18 +174,23 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle, self::BusinessName, self::PaymentDisplayName, self::TaxLegalBusinessName => 120,
-            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin, self::BusinessTimezone, self::OrderingManualClosedUntil => 255,
+            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin, self::BusinessTimezone, self::OrderingManualClosedUntil, self::ReferralRewardType, self::ReferralCouponDiscountType => 255,
             self::TaxLabel => 40,
-            self::TaxPercent => 8,
+            self::TaxPercent, self::ReferralCouponDiscountValue, self::ReferralCouponMaxDiscount, self::ReferralCouponMinimumSubtotal, self::ReferralMinimumQualifyingOrderAmount => 8,
             self::OrderingManualClosedMessage => 500,
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
             self::OrderSecurityPaymentProofAttemptsPer15Minutes,
-            self::OrderSecurityDuplicateOrderWindowMinutes => 3,
+            self::OrderSecurityDuplicateOrderWindowMinutes,
+            self::ReferralRewardProductId,
+            self::ReferralRewardVariantId,
+            self::ReferralRewardQuantity,
+            self::ReferralRewardRedemptionDurationDays,
+            self::ReferralMaxRewardsPerCustomerMonth => 10,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 1,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -154,13 +200,23 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed => 'checkbox',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 'checkbox',
             self::TaxPercent,
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
             self::OrderSecurityPaymentProofAttemptsPer15Minutes,
-            self::OrderSecurityDuplicateOrderWindowMinutes => 'number',
+            self::OrderSecurityDuplicateOrderWindowMinutes,
+            self::ReferralRewardProductId,
+            self::ReferralRewardVariantId,
+            self::ReferralRewardQuantity,
+            self::ReferralRewardRedemptionDurationDays,
+            self::ReferralMaxRewardsPerCustomerMonth,
+            self::ReferralCouponDiscountValue,
+            self::ReferralCouponMaxDiscount,
+            self::ReferralCouponMinimumSubtotal,
+            self::ReferralMinimumQualifyingOrderAmount => 'number',
+            self::ReferralRewardType, self::ReferralCouponDiscountType => 'select',
             default => 'text',
         };
     }
@@ -182,6 +238,18 @@ enum WebsiteSettingKey: string
             self::OrderSecurityCheckoutAttemptsPer10Minutes => 'Checkout submission attempts per customer per 10 minutes (1–60).',
             self::OrderSecurityPaymentProofAttemptsPer15Minutes => 'Payment proof uploads per customer/order per 15 minutes (1–60).',
             self::OrderSecurityDuplicateOrderWindowMinutes => 'Reuse identical cart/fulfilment/payment intent within this window instead of creating duplicates (1–30).',
+            self::ReferralEnabled => 'When enabled, customers receive a shareable referral code. A reward is earned when a referred friend places a qualifying paid order.',
+            self::ReferralRewardType => 'Choose Free Drink or Coupon. Changing this only affects newly earned rewards — existing rewards keep their snapshot.',
+            self::ReferralRewardProductId => 'Free Drink rewards waive the configured item\'s price. Applicable GST remains payable by the customer.',
+            self::ReferralRewardVariantId => 'Optional. Leave blank to match any variant of the free-drink product.',
+            self::ReferralRewardQuantity => 'How many units of the free-drink item are waived per reward (usually 1).',
+            self::ReferralCouponDiscountType => 'fixed = rupee amount off; percentage = percent off merchandise after free-drink waiver.',
+            self::ReferralCouponDiscountValue => 'Fixed rupees or percentage depending on discount type.',
+            self::ReferralCouponMaxDiscount => 'Optional cap when using percentage coupons.',
+            self::ReferralCouponMinimumSubtotal => 'Optional minimum merchandise (after free drink) required to redeem a coupon reward.',
+            self::ReferralMinimumQualifyingOrderAmount => 'Optional. Referred customer\'s paid order total must meet this amount before the referrer earns a reward.',
+            self::ReferralRewardRedemptionDurationDays => 'Referral rewards expire this many days after they are earned.',
+            self::ReferralMaxRewardsPerCustomerMonth => 'Optional monthly cap on rewards a single referrer can earn. Leave blank for unlimited.',
             default => null,
         };
     }

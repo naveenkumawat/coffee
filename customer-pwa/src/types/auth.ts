@@ -22,6 +22,7 @@ export interface RegisterPayload {
   phone?: string | null;
   password: string;
   password_confirmation: string;
+  referral_code?: string | null;
 }
 
 export interface ForgotPasswordPayload {

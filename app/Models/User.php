@@ -10,6 +10,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -18,7 +19,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'phone', 'role', 'password', 'is_active', 'cash_takeaway_allowed', 'last_login_at'])]
+#[Fillable(['name', 'email', 'phone', 'role', 'password', 'is_active', 'cash_takeaway_allowed', 'last_login_at', 'referral_code', 'referred_by_user_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -75,5 +76,25 @@ class User extends Authenticatable
     public function productRatings(): HasMany
     {
         return $this->hasMany(ProductRating::class, 'customer_id');
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by_user_id');
+    }
+
+    public function referralsMade(): HasMany
+    {
+        return $this->hasMany(CustomerReferral::class, 'referrer_user_id');
+    }
+
+    public function referralAsReferred(): HasOne
+    {
+        return $this->hasOne(CustomerReferral::class, 'referred_user_id');
+    }
+
+    public function rewards(): HasMany
+    {
+        return $this->hasMany(CustomerReward::class);
     }
 }

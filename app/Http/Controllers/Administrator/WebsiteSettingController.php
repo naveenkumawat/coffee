@@ -89,6 +89,9 @@ class WebsiteSettingController extends Controller
         $payload[WebsiteSettingKey::OrderSecurityEnabled->value] = $request->boolean(
             WebsiteSettingKey::OrderSecurityEnabled->value,
         ) ? '1' : '0';
+        $payload[WebsiteSettingKey::ReferralEnabled->value] = $request->boolean(
+            WebsiteSettingKey::ReferralEnabled->value,
+        ) ? '1' : '0';
 
         $this->websiteSettings->update($payload);
 

@@ -48,11 +48,34 @@
                     <td class="text-end">Rs {{ number_format((float) $order->subtotal, 2) }}</td>
                 </tr>
                 @if ((float) $order->discount_total > 0)
-                    <tr>
-                        <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">Discount</td>
-                        <td class="text-end">Rs {{ number_format((float) $order->discount_total, 2) }}</td>
-                    </tr>
+                    @forelse ($order->promotions as $orderPromotion)
+                        <tr>
+                            <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">
+                                {{ $orderPromotion->name_snapshot }}
+                                @if (filled($orderPromotion->code_snapshot))
+                                    <span class="text-gray-500">({{ $orderPromotion->code_snapshot }})</span>
+                                @endif
+                            </td>
+                            <td class="text-end">− Rs {{ number_format((float) $orderPromotion->discount_amount, 2) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">Discount</td>
+                            <td class="text-end">− Rs {{ number_format((float) $order->discount_total, 2) }}</td>
+                        </tr>
+                    @endforelse
                 @endif
+                @foreach ($order->rewardRedemptions as $redemption)
+                    <tr>
+                        <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">
+                            {{ $redemption->description_snapshot ?: 'Referral reward' }}
+                            @if ($redemption->reward_type?->value === 'free_drink')
+                                <span class="text-gray-500">(GST still applies)</span>
+                            @endif
+                        </td>
+                        <td class="text-end">− Rs {{ number_format((float) $redemption->benefit_amount, 2) }}</td>
+                    </tr>
+                @endforeach
                 @if ($order->tax_enabled_snapshot)
                     <tr>
                         <td colspan="{{ $colspan - 1 }}" class="text-end text-muted">

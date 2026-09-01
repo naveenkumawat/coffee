@@ -68,6 +68,84 @@ class TaxCalculator implements TaxCalculatorInterface
         );
     }
 
+    /**
+     * Calculate tax where GST basis may exceed payable merchandise (referral free-drink).
+     *
+     * Exclusive: tax on gst_basis_merchandise; cafe total = payable_merchandise + tax.
+     * Inclusive: tax extracted from gst_basis_merchandise; cafe total = payable_merchandise
+     * (payable already retains the GST component of waived free-drink items).
+     */
+    public function calculateForPayableAndGstBasis(string $payableMerchandise, string $gstBasisMerchandise): TaxCalculation
+    {
+        $config = $this->currentConfig();
+        $payable = $this->normalizeMoney($payableMerchandise);
+        $gstBasis = $this->normalizeMoney($gstBasisMerchandise);
+
+        if (bccomp($gstBasis, $payable, 2) < 0) {
+            $gstBasis = $payable;
+        }
+
+        if (! $config['enabled'] || bccomp($config['percent'], '0', 2) <= 0) {
+            return new TaxCalculation(
+                enabled: false,
+                label: $config['label'],
+                percent: $this->normalizePercent($config['percent']),
+                inclusive: $config['inclusive'],
+                taxableAmount: $gstBasis,
+                taxAmount: '0.00',
+                cafeTotal: $payable,
+            );
+        }
+
+        $percent = $this->normalizePercent($config['percent']);
+
+        if ($config['inclusive']) {
+            $divisor = bcadd('100', $percent, 6);
+            $rawTax = bcdiv(bcmul($gstBasis, $percent, 6), $divisor, 6);
+            $taxAmount = $this->roundMoney($rawTax);
+
+            return new TaxCalculation(
+                enabled: true,
+                label: $config['label'],
+                percent: $percent,
+                inclusive: true,
+                taxableAmount: $gstBasis,
+                taxAmount: $taxAmount,
+                cafeTotal: $payable,
+            );
+        }
+
+        $rawTax = bcdiv(bcmul($gstBasis, $percent, 6), '100', 6);
+        $taxAmount = $this->roundMoney($rawTax);
+        $cafeTotal = bcadd($payable, $taxAmount, 2);
+
+        return new TaxCalculation(
+            enabled: true,
+            label: $config['label'],
+            percent: $percent,
+            inclusive: false,
+            taxableAmount: $gstBasis,
+            taxAmount: $taxAmount,
+            cafeTotal: $cafeTotal,
+        );
+    }
+
+    public function extractInclusiveTaxComponent(string $inclusiveAmount): string
+    {
+        $config = $this->currentConfig();
+        $amount = $this->normalizeMoney($inclusiveAmount);
+
+        if (! $config['enabled'] || ! $config['inclusive'] || bccomp($config['percent'], '0', 2) <= 0) {
+            return '0.00';
+        }
+
+        $percent = $this->normalizePercent($config['percent']);
+        $divisor = bcadd('100', $percent, 6);
+        $rawTax = bcdiv(bcmul($amount, $percent, 6), $divisor, 6);
+
+        return $this->roundMoney($rawTax);
+    }
+
     public function fromOrderSnapshot(Order $order): TaxCalculation
     {
         $enabled = (bool) $order->tax_enabled_snapshot;

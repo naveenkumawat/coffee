@@ -280,7 +280,7 @@ Implementation note:
 - [x] Hero banner management implemented
 - [x] Bestseller section implemented (as a seeded dynamic homepage section)
 - [x] New products section implemented (as a seeded dynamic homepage section)
-- [ ] Offers/promotions section implemented
+- [x] Offers/promotions section implemented
 - [x] Business information section completed
 - [x] WhatsApp contact button implemented
 
@@ -304,6 +304,8 @@ Implementation note:
 
 - [x] Favourite products implemented
 - [x] Cart domain/business flow implemented
+- [x] Centralized promotions/discounts engine (automatic + coupons; order snapshots; admin Offers & Promotions; PWA offers UX)
+- [x] Customer referral rewards (codes, qualify on payment confirmed, free drink GST preservation, coupon rewards, admin referrals list, PWA account/cart UX)
 - [x] Customer PWA cart count and cart page foundation implemented
 - [x] Temporary customer Blade checkout page implemented
 - [x] Temporary customer Blade order confirmation/payment-instruction page implemented

@@ -14,6 +14,9 @@ class Cart extends AbstractModel
 
     protected $fillable = [
         'customer_id',
+        'promo_code',
+        'referral_free_drink_reward_id',
+        'referral_coupon_reward_id',
     ];
 
     public function customer(): BelongsTo
@@ -24,5 +27,15 @@ class Cart extends AbstractModel
     public function items(): HasMany
     {
         return $this->hasMany(CartItem::class)->orderBy('id');
+    }
+
+    public function referralFreeDrinkReward(): BelongsTo
+    {
+        return $this->belongsTo(CustomerReward::class, 'referral_free_drink_reward_id');
+    }
+
+    public function referralCouponReward(): BelongsTo
+    {
+        return $this->belongsTo(CustomerReward::class, 'referral_coupon_reward_id');
     }
 }
