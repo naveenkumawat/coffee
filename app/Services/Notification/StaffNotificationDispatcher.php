@@ -59,8 +59,14 @@ class StaffNotificationDispatcher implements StaffNotificationDispatcherInterfac
                 UserRole::Owner->value,
                 UserRole::Manager->value,
             ],
+            StaffNotificationAudience::Operators => [
+                UserRole::Operator->value,
+            ],
             StaffNotificationAudience::Baristas => [
                 UserRole::Barista->value,
+            ],
+            StaffNotificationAudience::Chefs => [
+                UserRole::Chef->value,
             ],
             StaffNotificationAudience::Waiters => [
                 UserRole::Waiter->value,

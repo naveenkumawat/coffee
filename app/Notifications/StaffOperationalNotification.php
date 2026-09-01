@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Route;
 
 class StaffOperationalNotification extends Notification implements ShouldQueue
 {
@@ -57,11 +58,10 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
             'message' => $content['message'],
             'severity' => $severity->value,
             'url' => $this->actionUrl($notifiable),
-            'audience' => $notifiable instanceof User && $notifiable->canAccessWaiterPanel()
-                ? 'waiter'
-                : ($isAdmin ? 'administrator' : 'barista'),
+            'audience' => $this->audienceLabel($notifiable, $isAdmin),
             'order_id' => $this->context->order?->getKey(),
             'order_number' => $this->context->order?->order_number,
+            'preparation_station' => $this->context->preparation?->station?->value,
             'ingredient_id' => $this->context->ingredient?->getKey(),
             'ingredient_name' => $this->context->ingredient?->name,
             'inventory_refill_request_id' => $this->context->refillRequest?->getKey(),
@@ -171,6 +171,21 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
                 'message' => 'The order was accepted and can move to preparing.',
                 'actionText' => 'Open order',
             ],
+            StaffNotificationType::OrderPreparationPending => [
+                'title' => $this->preparationPendingTitle($number),
+                'message' => 'New station work is waiting to be prepared.',
+                'actionText' => 'Open queue',
+            ],
+            StaffNotificationType::OrderPreparationReady => [
+                'title' => $this->preparationReadyTitle($number),
+                'message' => 'A preparation station marked its work ready.',
+                'actionText' => 'Open order',
+            ],
+            StaffNotificationType::DiningReadyToServe => [
+                'title' => 'Order #'.$number.' is ready to serve',
+                'message' => 'All stations are ready for this dining round.',
+                'actionText' => 'Open session',
+            ],
             StaffNotificationType::OrderCancelled => [
                 'title' => 'Order #'.$number.' cancelled',
                 'message' => $forAdministrator
@@ -250,13 +265,32 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
 
         if ($this->context->order) {
             $order = $this->context->order;
+
             if ($notifiable instanceof User && $notifiable->canAccessWaiterPanel() && $order->dining_session_id) {
                 return route('waiter.sessions.show', $order->dining_session_id);
             }
 
+            if ($notifiable instanceof User && $notifiable->canAccessOperatorPanel()) {
+                return Route::has('operator.orders.show')
+                    ? route('operator.orders.show', $order)
+                    : url('/');
+            }
+
+            if ($notifiable instanceof User && $notifiable->canAccessChefPanel()) {
+                return Route::has('chef.preparations.index')
+                    ? route('chef.preparations.index')
+                    : url('/');
+            }
+
+            if ($notifiable instanceof User && $notifiable->canAccessBaristaPanel()) {
+                return Route::has('barista.preparations.index')
+                    ? route('barista.preparations.index')
+                    : (Route::has('barista.orders.show') ? route('barista.orders.show', $order) : url('/'));
+            }
+
             return $isAdmin
                 ? route('administrator.orders.show', $order)
-                : route('barista.orders.show', $order);
+                : url('/');
         }
 
         if ($this->context->refillRequest) {
@@ -276,6 +310,45 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
         return $isAdmin
             ? route('administrator.inventory.index', $params)
             : route('barista.inventory.index', $params);
+    }
+
+    protected function audienceLabel(object $notifiable, bool $isAdmin): string
+    {
+        if (! $notifiable instanceof User) {
+            return 'barista';
+        }
+
+        if ($notifiable->canAccessWaiterPanel()) {
+            return 'waiter';
+        }
+
+        if ($isAdmin) {
+            return 'administrator';
+        }
+
+        if ($notifiable->canAccessOperatorPanel()) {
+            return 'operator';
+        }
+
+        if ($notifiable->canAccessChefPanel()) {
+            return 'chef';
+        }
+
+        return 'barista';
+    }
+
+    protected function preparationPendingTitle(string $number): string
+    {
+        $station = $this->context->preparation?->station?->label() ?? 'Station';
+
+        return $station.' ticket pending for #'.$number;
+    }
+
+    protected function preparationReadyTitle(string $number): string
+    {
+        $station = $this->context->preparation?->station?->label() ?? 'Station';
+
+        return $station.' ready for #'.$number;
     }
 
     protected function fulfilmentLabel(): string

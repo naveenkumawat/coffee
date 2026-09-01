@@ -21,6 +21,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
@@ -46,6 +47,7 @@ class OrderService implements OrderServiceInterface
         protected OrderSecurityServiceInterface $orderSecurity,
         protected PromotionServiceInterface $promotions,
         protected ReferralServiceInterface $referrals,
+        protected OrderPreparationServiceInterface $preparations,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -262,6 +264,7 @@ class OrderService implements OrderServiceInterface
                 'product_id' => $item['product_id'] ?? null,
                 'product_variant_id' => $item['product_variant_id'] ?? null,
                 'recipe_id' => $item['recipe_id'] ?? null,
+                'preparation_station' => $item['preparation_station'] ?? null,
                 'product_name' => $item['product_name'],
                 'variant_name' => $item['variant_name'],
                 'customer_ingredient_summary' => $item['customer_ingredient_summary'] ?? null,
@@ -364,11 +367,20 @@ class OrderService implements OrderServiceInterface
                 'notes' => $data->getNotes(),
             ]);
 
+            if ($nextStatus === OrderStatus::Accepted) {
+                $this->preparations->createTicketsForOrder($order->fresh(['items', 'preparations']));
+            }
+
+            if (in_array($nextStatus, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+                $this->preparations->cancelTicketsForOrder($order->fresh(['preparations']), $actor);
+            }
+
             $order = $order->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
+                'preparations',
             ]);
 
             OrderStatusChanged::dispatch(
@@ -587,11 +599,11 @@ class OrderService implements OrderServiceInterface
             return collect($workflow)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
         }
 
-        if (! $actor->hasRole(UserRole::Barista)) {
+        if (! $actor->canOperateOrders()) {
             return [];
         }
 
-        $baristaAllowed = array_filter(
+        $operatorAllowed = array_filter(
             $workflow,
             fn (OrderStatus $status): bool => in_array(
                 $status,
@@ -600,7 +612,7 @@ class OrderService implements OrderServiceInterface
             ),
         );
 
-        return collect($baristaAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+        return collect($operatorAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
     }
 
     /**
@@ -693,6 +705,7 @@ class OrderService implements OrderServiceInterface
                 'product_id' => $item['product_id'] ?? null,
                 'product_variant_id' => $item['product_variant_id'] ?? null,
                 'recipe_id' => $item['recipe_id'] ?? null,
+                'preparation_station' => $item['preparation_station'] ?? null,
                 'product_name' => $item['product_name'],
                 'variant_name' => $item['variant_name'],
                 'customer_ingredient_summary' => $item['customer_ingredient_summary'] ?? null,
@@ -716,6 +729,20 @@ class OrderService implements OrderServiceInterface
                 'rewardRedemptions',
                 'statusHistory.changedBy',
                 'diningSession',
+                'preparations',
+            ]);
+
+            $this->preparations->createTicketsForOrder($order);
+
+            $order = $order->fresh([
+                'customer',
+                'assignedBarista',
+                'items.recipe.lines.ingredient.brand',
+                'promotions',
+                'rewardRedemptions',
+                'statusHistory.changedBy',
+                'diningSession',
+                'preparations',
             ]);
 
             OrderPlaced::dispatch($order);
@@ -746,17 +773,27 @@ class OrderService implements OrderServiceInterface
             $variant = $this->validateVariant($variantId, $index);
             $variantIds[] = $variantId;
 
+            $product = $variant->product;
+            $station = $product?->preparation_station;
+
+            if ($product?->is_active && $station === null) {
+                throw ValidationException::withMessages([
+                    "items.$index.product_variant_id" => 'This product must have a preparation station before it can be ordered.',
+                ]);
+            }
+
             $unitPrice = $this->normalizeMoney((string) $variant->price);
             $lineSubtotal = bcmul($unitPrice, (string) $quantity, 2);
 
             $prepared[] = [
-                'product_id' => $variant->product?->getKey(),
-                'product_category_id' => $variant->product?->product_category_id,
+                'product_id' => $product?->getKey(),
+                'product_category_id' => $product?->product_category_id,
                 'product_variant_id' => $variant->getKey(),
                 'recipe_id' => $variant->recipe?->getKey(),
-                'product_name' => $variant->product?->name ?? 'Product',
+                'preparation_station' => $station?->value,
+                'product_name' => $product?->name ?? 'Product',
                 'variant_name' => $variant->name,
-                'customer_ingredient_summary' => $variant->product?->customer_ingredient_summary,
+                'customer_ingredient_summary' => $product?->customer_ingredient_summary,
                 'unit_price' => $unitPrice,
                 'quantity' => $quantity,
                 'line_subtotal' => $lineSubtotal,

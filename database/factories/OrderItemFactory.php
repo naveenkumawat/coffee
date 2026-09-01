@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PreparationStation;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -24,6 +25,7 @@ class OrderItemFactory extends Factory
             'product_id' => Product::factory()->for(ProductCategory::factory(), 'category'),
             'product_variant_id' => ProductVariant::factory(),
             'recipe_id' => Recipe::factory(),
+            'preparation_station' => PreparationStation::Bar,
             'product_name' => 'Cafe Latte',
             'variant_name' => 'Regular',
             'customer_ingredient_summary' => 'Espresso, milk',

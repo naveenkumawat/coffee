@@ -187,10 +187,10 @@ class OrderManagementTest extends TestCase
         $this->assertSame(OrderStatus::PendingPayment, $order->fresh()->status);
     }
 
-    public function test_admin_and_barista_order_detail_share_shell_with_role_specific_financial_controls(): void
+    public function test_admin_and_operator_order_detail_share_shell_with_role_specific_financial_controls(): void
     {
         $manager = User::factory()->manager()->create();
-        $barista = User::factory()->barista()->create();
+        $operator = User::factory()->operator()->create();
         $order = $this->createPendingOrder();
         $order->update([
             'status' => OrderStatus::PaymentConfirmed->value,
@@ -208,29 +208,29 @@ class OrderManagementTest extends TestCase
             ->assertSee('Invoice', false)
             ->assertSee(route('administrator.orders.invoice.print', $order), false);
 
-        $this->actingAs($barista, 'admin')
-            ->get(route('barista.orders.show', $order))
+        $this->actingAs($operator, 'admin')
+            ->get(route('operator.orders.show', $order))
             ->assertOk()
             ->assertSee('Order detail', false)
             ->assertSee('Preparation Detail', false)
             ->assertSee('Status History', false)
-            ->assertDontSee('Subtotal', false)
+            ->assertSee('Subtotal', false)
             ->assertSee('Invoice', false)
-            ->assertSee(route('barista.orders.invoice.print', $order), false)
+            ->assertSee(route('operator.orders.invoice.print', $order), false)
             ->assertDontSee(route('administrator.orders.invoice.print', $order), false);
 
-        $this->actingAs($barista, 'admin')
+        $this->actingAs($operator, 'admin')
             ->get(route('administrator.orders.show', $order))
             ->assertForbidden();
 
-        $this->actingAs($barista, 'admin')
+        $this->actingAs($operator, 'admin')
             ->get(route('administrator.orders.invoice.pdf', $order))
             ->assertForbidden();
     }
 
-    public function test_barista_can_view_and_update_only_operational_statuses_without_financial_recipe_data(): void
+    public function test_operator_can_view_and_update_only_operational_statuses(): void
     {
-        $barista = User::factory()->barista()->create(['name' => 'Shift Barista']);
+        $operator = User::factory()->operator()->create(['name' => 'Shift Operator']);
         $order = $this->createPendingOrder();
         $order->update([
             'status' => OrderStatus::PaymentConfirmed->value,
@@ -242,8 +242,8 @@ class OrderManagementTest extends TestCase
             'changed_by' => User::factory()->manager()->create()->id,
         ]);
 
-        $this->actingAs($barista, 'admin')
-            ->get(route('barista.orders.show', $order))
+        $this->actingAs($operator, 'admin')
+            ->get(route('operator.orders.show', $order))
             ->assertOk()
             ->assertSee($order->order_number)
             ->assertSee($order->items()->firstOrFail()->product_name)
@@ -251,34 +251,32 @@ class OrderManagementTest extends TestCase
             ->assertSee('Order detail')
             ->assertSee('Status History')
             ->assertSee('Customer')
-            ->assertDontSee('Subtotal')
-            ->assertDontSee('Line total')
+            ->assertSee('Subtotal')
             ->assertSee('Invoice')
             ->assertSee('Download PDF')
             ->assertSee('Print A4')
-            ->assertDontSee('Production Cost')
-            ->assertDontSee('Margin');
+            ->assertDontSee('Ask customer to re-upload');
 
-        $this->actingAs($barista, 'admin')->patch(route('barista.orders.status.update', $order), [
+        $this->actingAs($operator, 'admin')->patch(route('operator.orders.status.update', $order), [
             'status' => OrderStatus::Accepted->value,
-        ])->assertRedirect(route('barista.orders.show', $order));
+        ])->assertRedirect(route('operator.orders.show', $order));
 
         $this->assertSame(OrderStatus::Accepted, $order->fresh()->status);
-        $this->assertSame($barista->id, $order->fresh()->assigned_barista_id);
 
-        $this->actingAs($barista, 'admin')
-            ->from(route('barista.orders.show', $order))
-            ->patch(route('barista.orders.status.update', $order), [
+        $this->actingAs($operator, 'admin')
+            ->from(route('operator.orders.show', $order))
+            ->patch(route('operator.orders.status.update', $order), [
                 'status' => OrderStatus::Cancelled->value,
             ])
-            ->assertRedirect(route('barista.orders.show', $order))
+            ->assertRedirect(route('operator.orders.show', $order))
             ->assertSessionHasErrors('status');
     }
 
-    public function test_order_filters_and_barista_visibility_work_as_expected(): void
+    public function test_order_filters_and_operator_visibility_work_as_expected(): void
     {
         $manager = User::factory()->manager()->create();
-        $barista = User::factory()->barista()->create(['name' => 'Asha']);
+        $operator = User::factory()->operator()->create(['name' => 'Asha']);
+        $barista = User::factory()->barista()->create(['name' => 'Bar Asha']);
         $customer = User::factory()->customer()->create(['name' => 'Nina Customer']);
 
         $matchingOrder = $this->createPendingOrder(customer: $customer, productName: 'Iced Vanilla Latte');
@@ -310,17 +308,17 @@ class OrderManagementTest extends TestCase
             $adminIndex->getContent(),
         );
 
-        $baristaIndex = $this->actingAs($barista, 'admin')
-            ->get(route('barista.orders.index'))
+        $operatorIndex = $this->actingAs($operator, 'admin')
+            ->get(route('operator.orders.index'))
             ->assertOk();
 
         $this->assertMatchesRegularExpression(
             '/<tbody[^>]*>.*'.preg_quote($matchingOrder->order_number, '/').'.*<\/tbody>/s',
-            $baristaIndex->getContent(),
+            $operatorIndex->getContent(),
         );
-        $this->assertDoesNotMatchRegularExpression(
+        $this->assertMatchesRegularExpression(
             '/<tbody[^>]*>.*'.preg_quote($hiddenOrder->order_number, '/').'.*<\/tbody>/s',
-            $baristaIndex->getContent(),
+            $operatorIndex->getContent(),
         );
     }
 
@@ -335,11 +333,11 @@ class OrderManagementTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($customer, 'admin')
-            ->get(route('barista.orders.index'))
+            ->get(route('operator.orders.index'))
             ->assertForbidden();
 
         $this->actingAs($manager, 'admin')
-            ->get(route('barista.orders.show', $order))
+            ->get(route('operator.orders.show', $order))
             ->assertForbidden();
     }
 

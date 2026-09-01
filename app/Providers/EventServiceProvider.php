@@ -15,6 +15,7 @@ use App\Events\Order\OrderCashReceived;
 use App\Events\Order\OrderPaymentProofReceived;
 use App\Events\Order\OrderPaymentProofRejected;
 use App\Events\Order\OrderPlaced;
+use App\Events\Order\OrderPreparationStatusChanged;
 use App\Events\Order\OrderStatusChanged;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
@@ -30,6 +31,7 @@ use App\Listeners\Order\SendOrderStatusChangedNotification;
 use App\Listeners\Staff\NotifyStaffIngredientStockStatusChanged;
 use App\Listeners\Staff\NotifyStaffInventoryRefillRequest;
 use App\Listeners\Staff\NotifyStaffOrderPlaced;
+use App\Listeners\Staff\NotifyStaffOrderPreparationStatusChanged;
 use App\Listeners\Staff\NotifyStaffOrderStatusChanged;
 use App\Listeners\Staff\NotifyStaffPaymentProofReceived;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -64,6 +66,9 @@ class EventServiceProvider extends ServiceProvider
             SendOrderStatusChangedNotification::class,
             NotifyStaffOrderStatusChanged::class,
             QualifyReferralOnPaymentConfirmed::class,
+        ],
+        OrderPreparationStatusChanged::class => [
+            NotifyStaffOrderPreparationStatusChanged::class,
         ],
         DiningBillReady::class => [
             SendDiningBillReadyNotification::class,

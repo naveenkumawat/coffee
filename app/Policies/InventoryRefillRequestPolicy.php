@@ -16,12 +16,13 @@ class InventoryRefillRequestPolicy
     public function view(User $user, InventoryRefillRequest $inventoryRefillRequest): bool
     {
         return $user->canManageIngredients()
+            || $user->canOperateOrders()
             || $inventoryRefillRequest->requested_by === $user->getKey();
     }
 
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Barista);
+        return $user->hasRole(UserRole::Barista, UserRole::Operator);
     }
 
     public function review(User $user, InventoryRefillRequest $inventoryRefillRequest): bool

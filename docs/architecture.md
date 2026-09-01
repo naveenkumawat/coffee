@@ -5,7 +5,9 @@
 Internal surfaces:
 
 - Administrator = Laravel Blade
+- Operator = Laravel Blade
 - Barista = Laravel Blade
+- Chef = Laravel Blade
 - Waiter = Laravel Blade
 
 Customer surface:
@@ -31,11 +33,23 @@ React + Vite + TypeScript PWA
 Internal panels:
 
 ```text
-Administrator / Barista / Waiter Blade
+Administrator / Operator / Barista / Chef / Waiter Blade
   -> controllers
   -> existing Services
   -> Repositories
   -> Models / Database
+```
+
+Role flow (operations):
+
+```text
+Customer places order
+  -> Administrator reviews payment / config
+  -> Operator accepts order + payment ops + dining oversight
+  -> Preparation tickets open by station
+       -> Barista works BAR queue
+       -> Chef works KITCHEN queue
+  -> Operator / Waiter complete handoff / dining close-out
 ```
 
 Transition rules:
@@ -78,7 +92,7 @@ Theme usage rules:
 - Role-based controllers, routes, and views, with shared business logic living outside role folders.
 - Events and listeners used for side effects instead of pushing those concerns into controllers.
 - Customer transactional notifications: domain Event (`ShouldDispatchAfterCommit`) → Listener → `CustomerNotificationDispatcher` → Email (`ShouldQueue` notification) and/or WhatsApp (`SendCustomerWhatsAppMessage` job via `WhatsAppNotificationProvider` / `MetaWhatsAppCloudProvider`). Idempotent per `customer_notification_logs` unique key **and channel** (`email` / `whatsapp`). WhatsApp uses Meta Cloud API templates only (`config/services.php` + `WHATSAPP_*` env); public café WhatsApp stays in Website Settings. Channel failures must not roll back business operations or block the other channel. CTAs use `CUSTOMER_APP_URL` / `COFFEE_PWA_URL` (`config('coffee.pwa.url')`).
-- Staff operational notifications: domain events (`ShouldDispatchAfterCommit`) → dedicated `StaffNotificationDispatcher` (not coupled to customer dispatcher) → Laravel database notifications + selective staff email. Covers order ops and inventory/refill ops via `StaffNotificationContext`. Idempotent via `staff_notification_logs` (`unique_key` + `user_id` + `channel`). Stock alerts fire only on `InventoryStockStatus` transitions (not every ledger write); episode keys include inventory transaction id so healthy→low can alert again later. Audience by active `owner`/`manager` or `barista` roles. In-app bell in shared internal header with severity metadata; staff WhatsApp channel enum reserved but not enabled. Delivery failure must not roll back order/payment/inventory workflows.
+- Staff operational notifications: domain events (`ShouldDispatchAfterCommit`) → dedicated `StaffNotificationDispatcher` (not coupled to customer dispatcher) → Laravel database notifications + selective staff email. Covers order ops and inventory/refill ops via `StaffNotificationContext`. Idempotent via `staff_notification_logs` (`unique_key` + `user_id` + `channel`). Stock alerts fire only on `InventoryStockStatus` transitions (not every ledger write); episode keys include inventory transaction id so healthy→low can alert again later. Audience by active role cohorts (`owner`/`manager`, `operator`, `barista`, `chef`, `waiter`). In-app bell in shared internal header with severity metadata; staff WhatsApp channel enum reserved but not enabled. Delivery failure must not roll back order/payment/inventory workflows.
 
 ## How Coffee follows them
 
@@ -224,12 +238,12 @@ For current menu writes:
 
 ## Internal panel UI system
 
-Administrator, Barista, and Waiter share one internal design system and shell (`internal.layouts.default`, shared header/sidebar/components, and `public/internal` assets). Role wrappers (`administrator.layouts.default`, `barista.layouts.default`, `waiter.layouts.default`) only set the panel context.
+Administrator, Operator, Barista, Chef, and Waiter share one internal design system and shell (`internal.layouts.default`, shared header/sidebar/components, and `public/internal` assets). Role wrappers (`administrator.layouts.default`, `operator.layouts.default`, `barista.layouts.default`, `chef.layouts.default`, `waiter.layouts.default`) only set the panel context.
 
 **Invariant:** same feature + same role-allowed data ⇒ same UI component/layout/interaction. Role differences come from permissions, navigation, allowed data, and allowed actions — not duplicate visual implementations.
 
-- Shared primitives: page header, breadcrumbs, metric cards, filter bars, buttons/button groups, status badges, action/invoice dropdowns, empty states, notification bell, order detail shell (`resources/views/internal/orders/partials/`), dining primitives (`resources/views/internal/dining/partials/`).
-- Role-specific: nav entries; Administrator financial/config/user/promotion/referral controls; Barista preparation/inventory ops without cost/margin analytics or admin payment-proof approval; Waiter dining ops (tables/sessions/bill/cash/invoice) without admin config surfaces.
+- Shared primitives: page header, breadcrumbs, metric cards, filter bars, buttons/button groups, status badges, action/invoice dropdowns, empty states, notification bell, order detail shell (`resources/views/internal/orders/partials/`), dining primitives (`resources/views/internal/dining/partials/`), preparation queue cards (`resources/views/internal/preparation/`).
+- Role-specific: nav entries; Administrator financial/config/user/promotion/referral controls; Operator order/dining/payment ops + preparation overview; Barista BAR preparation queue (+ optional catalog/inventory visibility); Chef KITCHEN preparation queue; Waiter dining ops (tables/sessions/bill/cash/invoice) without admin config surfaces.
 - Never treat UI hiding as the security boundary; middleware and policies remain authoritative.
 
 ## Naming Conventions
@@ -344,5 +358,5 @@ Separate from takeaway/delivery checkout:
 3. Kitchen/bar starts on **Accepted** rounds without requiring payment first.
 4. At the end: request bill → session payment (cash or UPI proof) → close session (frees table).
 
-Roles: **Waiter** panel for tables/sessions; administrators can reopen/close; baristas still prepare round orders.
+Roles: **Waiter** panel for tables/sessions; **Operator** for order accept/payment/dining oversight; **Barista**/**Chef** prepare station tickets; administrators can reopen/close and manage catalog/config.
 Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).

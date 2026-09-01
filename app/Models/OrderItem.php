@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PreparationStation;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,7 @@ class OrderItem extends AbstractModel
         'product_id',
         'product_variant_id',
         'recipe_id',
+        'preparation_station',
         'product_name',
         'variant_name',
         'customer_ingredient_summary',
@@ -27,6 +29,7 @@ class OrderItem extends AbstractModel
     protected function casts(): array
     {
         return [
+            'preparation_station' => PreparationStation::class,
             'unit_price' => 'decimal:2',
             'quantity' => 'integer',
             'line_subtotal' => 'decimal:2',

@@ -33,7 +33,13 @@ class DiningSessionController extends Controller
     public function show(DiningSession $session): View
     {
         $this->authorize('view', $session);
-        $session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items']);
+        $session->load([
+            'cafeTable',
+            'customer',
+            'drafts.productVariant.product',
+            'orders.items',
+            'orders.preparations',
+        ]);
         $bill = $this->dining->runningBill($session);
         $variants = ProductVariant::query()
             ->with('product')

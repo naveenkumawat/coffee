@@ -24,7 +24,7 @@ class NotifyStaffOrderStatusChanged
             $this->dispatcher->notify(
                 StaffNotificationType::PaymentConfirmed,
                 'staff:order_status:'.$order->getKey().':'.$event->toStatus->value,
-                StaffNotificationAudience::Baristas,
+                StaffNotificationAudience::Operators,
                 $context,
                 sendEmail: true,
             );
@@ -36,7 +36,7 @@ class NotifyStaffOrderStatusChanged
             $this->dispatcher->notify(
                 StaffNotificationType::OrderAccepted,
                 'staff:order_status:'.$order->getKey().':'.$event->toStatus->value,
-                StaffNotificationAudience::Baristas,
+                StaffNotificationAudience::Operators,
                 $context,
                 sendEmail: false,
             );
@@ -66,7 +66,7 @@ class NotifyStaffOrderStatusChanged
             $this->dispatcher->notify(
                 $type,
                 $uniqueKey,
-                StaffNotificationAudience::Baristas,
+                StaffNotificationAudience::Operators,
                 $context,
                 sendEmail: false,
             );

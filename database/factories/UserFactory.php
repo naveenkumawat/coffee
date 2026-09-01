@@ -66,6 +66,21 @@ class UserFactory extends Factory
         return $this->state(fn () => ['role' => UserRole::Barista]);
     }
 
+    public function operator(): static
+    {
+        return $this->state(fn () => ['role' => UserRole::Operator]);
+    }
+
+    public function chef(): static
+    {
+        return $this->state(fn () => ['role' => UserRole::Chef]);
+    }
+
+    public function waiter(): static
+    {
+        return $this->state(fn () => ['role' => UserRole::Waiter]);
+    }
+
     public function customer(): static
     {
         return $this->state(fn () => ['role' => UserRole::Customer]);

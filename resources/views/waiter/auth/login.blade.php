@@ -1,0 +1,1 @@
+@extends('waiter.layouts.auth')

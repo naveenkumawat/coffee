@@ -118,12 +118,10 @@ class OrderPaymentProofTest extends TestCase
         $this->assertSame('Screenshot is cropped. Please re-upload.', $order->payment_proof_rejection_notes);
 
         $this->actingAs($barista, 'admin')
-            ->from(route('barista.orders.show', $order))
-            ->patch(route('barista.orders.status.update', $order), [
+            ->patch(route('administrator.orders.status.update', $order), [
                 'status' => OrderStatus::PaymentConfirmed->value,
             ])
-            ->assertRedirect(route('barista.orders.show', $order))
-            ->assertSessionHasErrors('status');
+            ->assertForbidden();
 
         $this->assertSame(OrderStatus::PendingPayment, $order->fresh()->status);
 

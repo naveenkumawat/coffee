@@ -2,6 +2,8 @@
     $user = auth('admin')->user();
     $dashboardRoute = match ($panel) {
         'administrator' => route('administrator.dashboard'),
+        'operator' => route('operator.dashboard'),
+        'chef' => route('chef.dashboard'),
         'waiter' => route('waiter.dashboard'),
         default => route('barista.dashboard'),
     };
@@ -81,6 +83,29 @@
                 ])),
             ],
         ],
+        'operator' => [
+            [
+                'heading' => 'Dashboard',
+                'items' => [
+                    ['label' => 'Overview', 'route' => 'operator.dashboard', 'pattern' => 'operator.dashboard*', 'icon' => 'ki-chart-line'],
+                ],
+            ],
+            [
+                'heading' => 'Operations',
+                'items' => [
+                    ['label' => 'Orders', 'route' => 'operator.orders.index', 'pattern' => 'operator.orders.*', 'icon' => 'ki-delivery-2'],
+                    ['label' => 'Dining Sessions', 'route' => 'operator.dining-sessions.index', 'pattern' => 'operator.dining-sessions.*', 'icon' => 'ki-coffee'],
+                    ['label' => 'Preparation', 'route' => 'operator.preparations.index', 'pattern' => 'operator.preparations.*', 'icon' => 'ki-chef'],
+                ],
+            ],
+            [
+                'heading' => 'Inventory',
+                'items' => [
+                    ['label' => 'Overview', 'route' => 'operator.inventory.index', 'pattern' => 'operator.inventory.*', 'icon' => 'ki-abstract-41'],
+                    ['label' => 'Refill Requests', 'route' => 'operator.refill-requests.index', 'pattern' => 'operator.refill-requests.*', 'icon' => 'ki-delivery-3'],
+                ],
+            ],
+        ],
         'waiter' => [
             [
                 'heading' => 'Dashboard',
@@ -96,6 +121,20 @@
                 ],
             ],
         ],
+        'chef' => [
+            [
+                'heading' => 'Dashboard',
+                'items' => [
+                    ['label' => 'Overview', 'route' => 'chef.dashboard', 'pattern' => 'chef.dashboard*', 'icon' => 'ki-chart-line'],
+                ],
+            ],
+            [
+                'heading' => 'Kitchen',
+                'items' => [
+                    ['label' => 'Preparation Queue', 'route' => 'chef.preparations.index', 'pattern' => 'chef.preparations.*', 'icon' => 'ki-chef'],
+                ],
+            ],
+        ],
         'barista' => [
             [
                 'heading' => 'Dashboard',
@@ -104,9 +143,9 @@
                 ],
             ],
             [
-                'heading' => 'Orders',
+                'heading' => 'Bar',
                 'items' => [
-                    ['label' => 'Orders', 'route' => 'barista.orders.index', 'pattern' => 'barista.orders.*', 'icon' => 'ki-delivery-2'],
+                    ['label' => 'Preparation Queue', 'route' => 'barista.preparations.index', 'pattern' => 'barista.preparations.*', 'icon' => 'ki-coffee'],
                 ],
             ],
             [
@@ -124,12 +163,23 @@
                 ],
             ],
         ],
+        default => [],
     };
 
     $logoutRoute = match ($panel) {
         'administrator' => route('administrator.logout'),
+        'operator' => route('operator.logout'),
+        'chef' => route('chef.logout'),
         'waiter' => route('waiter.logout'),
         default => route('barista.logout'),
+    };
+
+    $panelLabel = match ($panel) {
+        'administrator' => 'Administrator',
+        'operator' => 'Operator',
+        'chef' => 'Chef',
+        'waiter' => 'Waiter',
+        default => 'Barista',
     };
 @endphp
 
@@ -137,7 +187,7 @@
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
         <a href="{{ $dashboardRoute }}" class="text-decoration-none d-flex flex-column">
             <span class="fs-3 fw-bold text-white">{{ config('app.name') }}</span>
-            <span class="text-gray-400 fs-8 text-uppercase">{{ match($panel) { 'administrator' => 'Administrator', 'waiter' => 'Waiter', default => 'Barista' } }}</span>
+            <span class="text-gray-400 fs-8 text-uppercase">{{ $panelLabel }}</span>
         </a>
 
         <div id="kt_app_sidebar_toggle" class="app-sidebar-toggle btn btn-icon btn-shadow btn-sm btn-color-muted btn-active-color-primary body-bg h-30px w-30px position-absolute top-50 start-100 translate-middle rotate" data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body" data-kt-toggle-name="app-sidebar-minimize">

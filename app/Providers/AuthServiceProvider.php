@@ -17,6 +17,7 @@ use App\Models\InventoryTransaction;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Order;
+use App\Models\OrderPreparation;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFavourite;
@@ -43,6 +44,7 @@ use App\Policies\InventoryTransactionPolicy;
 use App\Policies\MenuCategoryPolicy;
 use App\Policies\MenuItemPolicy;
 use App\Policies\OrderPolicy;
+use App\Policies\OrderPreparationPolicy;
 use App\Policies\ProductCategoryPolicy;
 use App\Policies\ProductFavouritePolicy;
 use App\Policies\ProductFlavourPolicy;
@@ -75,6 +77,7 @@ class AuthServiceProvider extends ServiceProvider
         MenuCategory::class => MenuCategoryPolicy::class,
         MenuItem::class => MenuItemPolicy::class,
         Order::class => OrderPolicy::class,
+        OrderPreparation::class => OrderPreparationPolicy::class,
         Product::class => ProductPolicy::class,
         ProductCategory::class => ProductCategoryPolicy::class,
         ProductFavourite::class => ProductFavouritePolicy::class,

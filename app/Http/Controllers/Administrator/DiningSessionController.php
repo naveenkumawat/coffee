@@ -54,6 +54,7 @@ class DiningSessionController extends Controller
             'openedBy',
             'paymentReceivedBy',
             'orders.items',
+            'orders.preparations',
             'drafts.productVariant.product',
         ]);
 

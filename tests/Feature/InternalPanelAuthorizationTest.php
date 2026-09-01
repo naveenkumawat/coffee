@@ -41,8 +41,10 @@ class InternalPanelAuthorizationTest extends TestCase
         $this->get(route('administrator.website-settings.edit'))->assertForbidden();
         $this->get(route('administrator.promotions.index'))->assertForbidden();
         $this->get(route('barista.dashboard'))->assertForbidden();
-        $this->get(route('barista.orders.index'))->assertForbidden();
+        $this->get(route('barista.preparations.index'))->assertForbidden();
         $this->get(route('barista.inventory.index'))->assertForbidden();
+        $this->get(route('operator.dashboard'))->assertForbidden();
+        $this->get(route('chef.dashboard'))->assertForbidden();
     }
 
     public function test_customer_cannot_open_internal_panels(): void
@@ -52,11 +54,13 @@ class InternalPanelAuthorizationTest extends TestCase
         $this->actingAs($customer, 'web');
 
         $this->get(route('administrator.dashboard'))->assertRedirect();
+        $this->get(route('operator.dashboard'))->assertRedirect();
         $this->get(route('barista.dashboard'))->assertRedirect();
+        $this->get(route('chef.dashboard'))->assertRedirect();
         $this->get(route('waiter.dashboard'))->assertRedirect();
     }
 
-    public function test_barista_order_show_keeps_shared_invoice_actions_without_financial_admin_fields(): void
+    public function test_barista_order_show_is_read_only_without_invoice_or_status_actions(): void
     {
         $barista = User::factory()->barista()->create();
         $order = $this->makePaidOrder();
@@ -64,11 +68,11 @@ class InternalPanelAuthorizationTest extends TestCase
         $this->actingAs($barista, 'admin')
             ->get(route('barista.orders.show', $order))
             ->assertOk()
-            ->assertSee('Invoice', false)
-            ->assertSee(route('barista.orders.invoice.print', $order), false)
+            ->assertDontSee('Invoice', false)
             ->assertDontSee('Production Cost', false)
             ->assertDontSee('Margin', false)
-            ->assertDontSee(route('administrator.orders.payment-proof.reject', $order), false);
+            ->assertDontSee(route('administrator.orders.payment-proof.reject', $order), false)
+            ->assertDontSee(route('operator.orders.invoice.print', $order), false);
     }
 
     protected function makePaidOrder(): Order

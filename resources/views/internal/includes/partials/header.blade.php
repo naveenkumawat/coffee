@@ -5,21 +5,29 @@
     $user = auth('admin')->user();
     $panelName = match ($panel) {
         'administrator' => 'Administrator',
+        'operator' => 'Operator',
+        'chef' => 'Chef',
         'waiter' => 'Waiter',
         default => 'Barista',
     };
     $dashboardRoute = match ($panel) {
         'administrator' => route('administrator.dashboard'),
+        'operator' => route('operator.dashboard'),
+        'chef' => route('chef.dashboard'),
         'waiter' => route('waiter.dashboard'),
         default => route('barista.dashboard'),
     };
     $logoutRoute = match ($panel) {
         'administrator' => route('administrator.logout'),
+        'operator' => route('operator.logout'),
+        'chef' => route('chef.logout'),
         'waiter' => route('waiter.logout'),
         default => route('barista.logout'),
     };
     $notificationsReadAllRoute = match ($panel) {
         'administrator' => route('administrator.notifications.read-all'),
+        'operator' => route('operator.notifications.read-all'),
+        'chef' => route('chef.notifications.read-all'),
         'waiter' => route('waiter.notifications.read-all'),
         default => route('barista.notifications.read-all'),
     };
@@ -111,6 +119,8 @@
                                         $url = (string) ($data['url'] ?? $dashboardRoute);
                                         $readRoute = match ($panel) {
                                             'administrator' => route('administrator.notifications.read', $notification),
+                                            'operator' => route('operator.notifications.read', $notification),
+                                            'chef' => route('chef.notifications.read', $notification),
                                             'waiter' => route('waiter.notifications.read', $notification),
                                             default => route('barista.notifications.read', $notification),
                                         };

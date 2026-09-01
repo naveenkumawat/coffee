@@ -1,17 +1,36 @@
 @php
-    $panelConfig = $panel === 'administrator'
-        ? [
+    $panelConfig = match ($panel) {
+        'administrator' => [
             'title' => 'Administrator sign in',
             'eyebrow' => 'Internal management panel',
             'description' => 'Owners and managers use this panel for catalog, configuration, and operations oversight.',
             'route' => route('administrator.login.store'),
-        ]
-        : [
+        ],
+        'operator' => [
+            'title' => 'Operator sign in',
+            'eyebrow' => 'Floor operations panel',
+            'description' => 'Operators manage order intake, payments, dining sessions, and station coordination.',
+            'route' => route('operator.login.store'),
+        ],
+        'chef' => [
+            'title' => 'Chef sign in',
+            'eyebrow' => 'Kitchen preparation panel',
+            'description' => 'Chefs work the kitchen preparation queue for food tickets only.',
+            'route' => route('chef.login.store'),
+        ],
+        'waiter' => [
+            'title' => 'Waiter sign in',
+            'eyebrow' => 'Dining floor panel',
+            'description' => 'Waiters manage tables, dining sessions, rounds, and bill handoff.',
+            'route' => route('waiter.login.store'),
+        ],
+        default => [
             'title' => 'Barista sign in',
-            'eyebrow' => 'Cafe station panel',
-            'description' => 'Baristas use this panel for station visibility and role-scoped operational tasks.',
+            'eyebrow' => 'Bar preparation panel',
+            'description' => 'Baristas work the bar preparation queue and station catalog visibility.',
             'route' => route('barista.login.store'),
-        ];
+        ],
+    };
 @endphp
 
 <form class="form w-100" method="POST" action="{{ $panelConfig['route'] }}">

@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\PreparationStation;
+use App\Enums\ProductType;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -34,6 +36,8 @@ class ProductFactory extends Factory
             'is_bestseller' => fake()->boolean(25),
             'is_vegetarian' => fake()->boolean(60),
             'is_customizable' => fake()->boolean(15),
+            'product_type' => ProductType::Beverage,
+            'preparation_station' => PreparationStation::Bar,
         ];
     }
 }

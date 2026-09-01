@@ -33,6 +33,13 @@ class DemoUserSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'email' => 'operator@coffee.local',
+                'name' => 'Coffee Operator',
+                'phone' => '9000000006',
+                'role' => UserRole::Operator,
+                'is_active' => true,
+            ],
+            [
                 'email' => 'barista@coffee.local',
                 'name' => 'Coffee Barista',
                 'phone' => '9000000003',
@@ -44,6 +51,20 @@ class DemoUserSeeder extends Seeder
                 'name' => 'Evening Barista',
                 'phone' => '9000000004',
                 'role' => UserRole::Barista,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'chef@coffee.local',
+                'name' => 'Coffee Chef',
+                'phone' => '9000000007',
+                'role' => UserRole::Chef,
+                'is_active' => true,
+            ],
+            [
+                'email' => 'chef2@coffee.local',
+                'name' => 'Evening Chef',
+                'phone' => '9000000008',
+                'role' => UserRole::Chef,
                 'is_active' => true,
             ],
             [

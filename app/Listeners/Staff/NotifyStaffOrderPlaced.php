@@ -22,7 +22,7 @@ class NotifyStaffOrderPlaced
             $this->dispatcher->notify(
                 StaffNotificationType::OrderPlaced,
                 'staff:dining_round_placed:'.$order->getKey(),
-                StaffNotificationAudience::Baristas,
+                StaffNotificationAudience::Operators,
                 StaffNotificationContext::forOrder($order),
                 sendEmail: false,
             );

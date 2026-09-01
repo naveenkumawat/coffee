@@ -5,6 +5,7 @@ use App\Http\Controllers\Barista\DashboardController;
 use App\Http\Controllers\Barista\InventoryController;
 use App\Http\Controllers\Barista\InventoryRefillRequestController;
 use App\Http\Controllers\Barista\OrderController;
+use App\Http\Controllers\Barista\PreparationController;
 use App\Http\Controllers\Barista\ProductController;
 use App\Http\Controllers\Barista\RecipeController;
 use App\Http\Controllers\Internal\StaffNotificationController;
@@ -32,13 +33,14 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:barista'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/preparations', [PreparationController::class, 'index'])->name('preparations.index');
+    Route::post('/preparations/{orderPreparation}/accept', [PreparationController::class, 'accept'])
+        ->name('preparations.accept');
+    Route::post('/preparations/{orderPreparation}/preparing', [PreparationController::class, 'preparing'])
+        ->name('preparations.preparing');
+    Route::post('/preparations/{orderPreparation}/ready', [PreparationController::class, 'ready'])
+        ->name('preparations.ready');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
-    Route::post('/orders/{order}/cash/receive', [OrderController::class, 'markCashReceived'])->name('orders.cash.receive');
-    Route::get('/orders/{order}/invoice/pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice.pdf');
-    Route::get('/orders/{order}/invoice/print', [OrderController::class, 'printInvoice'])->name('orders.invoice.print');
-    Route::get('/orders/{order}/invoice/receipt', [OrderController::class, 'printReceipt'])->name('orders.invoice.receipt');
     Route::post('/notifications/read-all', [StaffNotificationController::class, 'markAllRead'])
         ->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [StaffNotificationController::class, 'markRead'])

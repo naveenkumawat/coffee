@@ -5,7 +5,7 @@
 @section('breadcrumbs')
     <x-internal.breadcrumbs :items="[
         ['label' => 'Barista Panel', 'url' => route('barista.dashboard')],
-        ['label' => 'Orders', 'url' => route('barista.orders.index')],
+        ['label' => 'Preparation', 'url' => route('barista.preparations.index')],
         ['label' => $order->order_number],
     ]" />
 @endsection
@@ -13,18 +13,8 @@
 @section('toolbar-actions')
     <div class="internal-order-toolbar-actions d-flex flex-wrap align-items-stretch align-items-md-center gap-2 justify-content-start justify-content-lg-end">
         <x-internal.button-group :items="[
-            ['label' => 'Back', 'url' => route('barista.orders.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
+            ['label' => 'Back to Queue', 'url' => route('barista.preparations.index'), 'variant' => 'dark', 'icon' => 'ki-left'],
         ]" />
-        @can('printInvoice', $order)
-            <x-internal.invoice-dropdown
-                :items="[
-                    ['label' => 'Print A4', 'url' => route('barista.orders.invoice.print', $order), 'icon' => 'ki-printer', 'target' => '_blank'],
-                    ['label' => 'Print 80mm Receipt', 'url' => route('barista.orders.invoice.receipt', ['order' => $order, 'width' => 80]), 'icon' => 'ki-printer', 'target' => '_blank'],
-                    ['label' => 'Print 58mm Receipt', 'url' => route('barista.orders.invoice.receipt', ['order' => $order, 'width' => 58]), 'icon' => 'ki-printer', 'target' => '_blank'],
-                    ['label' => 'Download PDF', 'url' => route('barista.orders.invoice.pdf', $order), 'icon' => 'ki-file-down'],
-                ]"
-            />
-        @endcan
     </div>
 @endsection
 
@@ -78,20 +68,6 @@
 
         <div class="col-xl-4">
             @include('internal.orders.partials.customer-card', ['order' => $order])
-
-            @include('internal.orders.partials.payment-proof', [
-                'order' => $order,
-                'showAdminActions' => false,
-                'showFinancialSummary' => false,
-                'markCashRoute' => route('barista.orders.cash.receive', $order),
-            ])
-
-            @include('internal.orders.partials.status-actions', [
-                'order' => $order,
-                'availableTransitions' => $availableTransitions,
-                'routeName' => 'barista.orders.status.update',
-            ])
-
             @include('internal.orders.partials.status-history', ['order' => $order])
         </div>
     </div>

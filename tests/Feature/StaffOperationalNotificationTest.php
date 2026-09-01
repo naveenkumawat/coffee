@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
 use App\Enums\StaffNotificationAudience;
 use App\Enums\StaffNotificationChannel;
@@ -120,13 +121,14 @@ class StaffOperationalNotificationTest extends TestCase
         );
     }
 
-    public function test_payment_confirmed_and_accepted_notify_active_baristas_without_financial_fields(): void
+    public function test_payment_confirmed_and_accepted_notify_active_operators_without_financial_fields(): void
     {
         Notification::fake();
 
         $admin = User::factory()->owner()->create();
+        $operator = User::factory()->operator()->create();
+        $inactiveOperator = User::factory()->operator()->inactive()->create();
         $barista = User::factory()->barista()->create();
-        $inactiveBarista = User::factory()->barista()->inactive()->create();
         $customer = User::factory()->customer()->create(['name' => 'Secret Customer']);
         $order = $this->makeOrder($customer, OrderFulfilmentMethod::Takeaway, [
             'total_amount' => '42.50',
@@ -135,15 +137,15 @@ class StaffOperationalNotificationTest extends TestCase
         OrderStatusChanged::dispatch($order, OrderStatus::PendingPayment, OrderStatus::PaymentConfirmed);
         OrderStatusChanged::dispatch($order, OrderStatus::PendingPayment, OrderStatus::PaymentConfirmed);
 
-        Notification::assertSentTo($barista, StaffOperationalNotification::class, function (StaffOperationalNotification $notification) use ($barista): bool {
+        Notification::assertSentTo($operator, StaffOperationalNotification::class, function (StaffOperationalNotification $notification) use ($operator): bool {
             if ($notification->type !== StaffNotificationType::PaymentConfirmed) {
                 return false;
             }
 
-            $data = $notification->toDatabase($barista);
-            $mail = $notification->toMail($barista)->render();
+            $data = $notification->toDatabase($operator);
+            $mail = $notification->toMail($operator)->render();
 
-            $this->assertSame(route('barista.orders.show', $notification->context->order), $data['url']);
+            $this->assertSame(route('operator.orders.show', $notification->context->order), $data['url']);
             $this->assertNull($data['total_amount']);
             $this->assertNull($data['customer_name']);
             $this->assertStringNotContainsString('42.50', $mail);
@@ -154,17 +156,19 @@ class StaffOperationalNotificationTest extends TestCase
             return true;
         });
         Notification::assertNotSentTo($admin, StaffOperationalNotification::class);
-        Notification::assertNotSentTo($inactiveBarista, StaffOperationalNotification::class);
+        Notification::assertNotSentTo($inactiveOperator, StaffOperationalNotification::class);
+        Notification::assertNotSentTo($barista, StaffOperationalNotification::class);
 
         Notification::fake();
 
         OrderStatusChanged::dispatch($order, OrderStatus::PaymentConfirmed, OrderStatus::Accepted);
 
         Notification::assertSentTo(
-            $barista,
+            $operator,
             StaffOperationalNotification::class,
             fn (StaffOperationalNotification $notification): bool => $notification->type === StaffNotificationType::OrderAccepted,
         );
+        Notification::assertNotSentTo($barista, StaffOperationalNotification::class);
 
         $this->assertSame(
             0,
@@ -175,11 +179,12 @@ class StaffOperationalNotificationTest extends TestCase
         );
     }
 
-    public function test_cancellation_after_acceptance_notifies_baristas_and_admins(): void
+    public function test_cancellation_after_acceptance_notifies_operators_and_admins(): void
     {
         Notification::fake();
 
         $admin = User::factory()->manager()->create();
+        $operator = User::factory()->operator()->create();
         $barista = User::factory()->barista()->create();
         $customer = User::factory()->customer()->create();
         $order = $this->makeOrder($customer, OrderFulfilmentMethod::Takeaway);
@@ -192,25 +197,26 @@ class StaffOperationalNotificationTest extends TestCase
             fn (StaffOperationalNotification $notification): bool => $notification->type === StaffNotificationType::OrderCancelled,
         );
         Notification::assertSentTo(
-            $barista,
+            $operator,
             StaffOperationalNotification::class,
             fn (StaffOperationalNotification $notification): bool => $notification->type === StaffNotificationType::OrderCancelled,
         );
+        Notification::assertNotSentTo($barista, StaffOperationalNotification::class);
     }
 
-    public function test_cancellation_before_acceptance_does_not_notify_baristas(): void
+    public function test_cancellation_before_acceptance_does_not_notify_operators(): void
     {
         Notification::fake();
 
         $admin = User::factory()->owner()->create();
-        $barista = User::factory()->barista()->create();
+        $operator = User::factory()->operator()->create();
         $customer = User::factory()->customer()->create();
         $order = $this->makeOrder($customer, OrderFulfilmentMethod::Takeaway);
 
         OrderStatusChanged::dispatch($order, OrderStatus::PendingPayment, OrderStatus::Cancelled);
 
         Notification::assertSentTo($admin, StaffOperationalNotification::class);
-        Notification::assertNotSentTo($barista, StaffOperationalNotification::class);
+        Notification::assertNotSentTo($operator, StaffOperationalNotification::class);
     }
 
     public function test_staff_can_mark_one_and_all_notifications_read(): void
@@ -323,6 +329,8 @@ class StaffOperationalNotificationTest extends TestCase
             'product_id' => $variant->product_id,
             'product_variant_id' => $variant->id,
             'recipe_id' => null,
+            'preparation_station' => $variant->product->preparation_station?->value
+                ?? PreparationStation::Bar->value,
             'product_name' => $variant->product->name,
             'variant_name' => $variant->name,
             'customer_ingredient_summary' => null,

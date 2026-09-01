@@ -1,0 +1,1 @@
+@extends('chef.layouts.auth')

@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Enums\PreparationStation;
 use App\Enums\UserRole;
 
 trait HasRoles
@@ -105,6 +106,34 @@ trait HasRoles
         return $role->canOperateDining();
     }
 
+    public function canPrepareStation(PreparationStation $station): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canPrepareStation($station);
+    }
+
+    public function canAccessOperatorPanel(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canAccessOperatorPanel();
+    }
+
+    public function canAccessBaristaPanel(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canAccessBaristaPanel();
+    }
+
+    public function canAccessChefPanel(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canAccessChefPanel();
+    }
+
     public function canAccessWaiterPanel(): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
@@ -118,7 +147,9 @@ trait HasRoles
 
         return match ($panel) {
             'administrator' => $role->canAccessAdministratorPanel(),
+            'operator' => $role->canAccessOperatorPanel(),
             'barista' => $role->canAccessBaristaPanel(),
+            'chef' => $role->canAccessChefPanel(),
             'waiter' => $role->canAccessWaiterPanel(),
             default => false,
         };

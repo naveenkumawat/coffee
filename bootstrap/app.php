@@ -46,8 +46,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('customer.login');
             }
 
+            if (str_starts_with($routeName, 'operator.')) {
+                return route('operator.login');
+            }
+
             if (str_starts_with($routeName, 'barista.')) {
                 return route('barista.login');
+            }
+
+            if (str_starts_with($routeName, 'chef.')) {
+                return route('chef.login');
             }
 
             if (str_starts_with($routeName, 'waiter.')) {

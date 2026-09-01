@@ -244,10 +244,10 @@ class CashPaymentTest extends TestCase
             ->assertJsonPath('data.payment_status', 'awaiting_review');
     }
 
-    public function test_mark_cash_received_by_admin_and_barista_with_duplicate_guard(): void
+    public function test_mark_cash_received_by_admin_and_operator_with_duplicate_guard(): void
     {
         $admin = User::factory()->manager()->create();
-        $barista = User::factory()->barista()->create();
+        $operator = User::factory()->operator()->create();
         $customer = User::factory()->customer()->create();
 
         $order = Order::factory()->cash()->dineIn()->create([
@@ -257,13 +257,13 @@ class CashPaymentTest extends TestCase
             'payment_confirmed_at' => null,
         ]);
 
-        $this->actingAs($barista, 'admin')
-            ->post(route('barista.orders.cash.receive', $order))
-            ->assertRedirect(route('barista.orders.show', $order));
+        $this->actingAs($operator, 'admin')
+            ->post(route('operator.orders.cash.receive', $order))
+            ->assertRedirect(route('operator.orders.show', $order));
 
         $order->refresh();
         $this->assertSame(PaymentStatus::Confirmed, $order->payment_status);
-        $this->assertSame($barista->id, $order->payment_received_by_id);
+        $this->assertSame($operator->id, $order->payment_received_by_id);
         $this->assertNotNull($order->payment_confirmed_at);
         $this->assertSame(OrderStatus::Accepted, $order->status);
 

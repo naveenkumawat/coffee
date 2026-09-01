@@ -7,6 +7,7 @@ use App\Enums\CustomerNotificationType;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
 use App\Enums\UserRole;
 use App\Events\Order\OrderPlaced;
@@ -532,6 +533,8 @@ class CustomerWhatsAppNotificationTest extends TestCase
             'product_id' => $variant->product_id,
             'product_variant_id' => $variant->id,
             'recipe_id' => null,
+            'preparation_station' => $variant->product->preparation_station?->value
+                ?? PreparationStation::Bar->value,
             'product_name' => $variant->product->name,
             'variant_name' => $variant->name,
             'customer_ingredient_summary' => null,
