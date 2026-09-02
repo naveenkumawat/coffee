@@ -6172,3 +6172,77 @@ body.product-overlay-open .bottom-navigation {
 .waiter-header-actions .btn-text {
   padding-inline: 0.35rem;
 }
+
+.waiter-table-context {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.92rem;
+  color: var(--coffee-muted);
+}
+
+.waiter-ready-banner {
+  margin-bottom: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.1rem;
+  background: rgba(46, 125, 50, 0.12);
+  border: 1px solid rgba(46, 125, 50, 0.28);
+  color: #1b5e20;
+}
+
+.waiter-ready-banner strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.waiter-ready-banner p {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+}
+
+.waiter-close-blocked {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.9rem;
+  background: rgba(166, 72, 49, 0.1);
+  color: #7a2f1d;
+  font-size: 0.9rem;
+}
+
+.waiter-stale-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.auth-session-recovery {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.5rem 0;
+  padding: 1.1rem 1rem;
+  border-radius: 1.1rem;
+  background: rgba(124, 90, 59, 0.08);
+  text-align: center;
+}
+
+.auth-session-recovery p {
+  margin: 0;
+  color: var(--coffee-primary-dark);
+}
+
+.auth-session-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+.waiter-table-card.is-paid,
+.waiter-state-chip.is-paid {
+  border-color: rgba(46, 125, 50, 0.35);
+  background: rgba(46, 125, 50, 0.1);
+  color: #1b5e20;
+}
+
+.waiter-round-card.is-ready .status-badge {
+  background: rgba(46, 125, 50, 0.16);
+  color: #1b5e20;
+}

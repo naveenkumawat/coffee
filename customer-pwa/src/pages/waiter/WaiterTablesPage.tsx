@@ -22,6 +22,7 @@ const STATE_ORDER: WaiterTableDisplayState[] = [
   'active',
   'bill_requested',
   'payment_pending',
+  'paid',
   'available',
   'inactive',
 ];
@@ -37,6 +38,8 @@ function displayStateClass(state: WaiterTableDisplayState): string {
     case 'bill_requested':
     case 'payment_pending':
       return 'is-billing';
+    case 'paid':
+      return 'is-paid';
     case 'inactive':
       return 'is-inactive';
     default:

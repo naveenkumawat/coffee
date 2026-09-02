@@ -7,7 +7,8 @@ import { Order, OrderPaymentInstructions } from '../../types/order';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { formatCurrency } from '../../utils/format';
 import { resolveCatalogMediaUrl } from '../../utils/images';
-import { isCashPayment, isDineInOrder, isPendingPayment } from '../../utils/orders';
+import { isCashPayment, isDineInOrder } from '../../utils/orders';
+import { paymentStatePresentation } from '../../utils/paymentState';
 import { useToastStore } from '../../stores/toastStore';
 import { OrderStatusBadge } from '../orders/OrderStatusBadge';
 
@@ -42,32 +43,6 @@ function successToastForField(field: CopyField): string {
   }
 }
 
-function cashStatusCopy(order: Order): { badge: string; title: string; body: string } {
-  const cashReceived = order.payment_status === 'confirmed' || Boolean(order.cash_received_at);
-
-  if (cashReceived) {
-    return {
-      badge: 'Paid · Cash',
-      title: 'Cash received',
-      body: 'The cafe has marked your cash payment as received.',
-    };
-  }
-
-  if (isDineInOrder(order)) {
-    return {
-      badge: 'Cash',
-      title: 'Pay at the cafe',
-      body: `Pay ${formatCurrency(order.total_amount)} in cash at your table / the cafe. No payment screenshot is needed.`,
-    };
-  }
-
-  return {
-    badge: 'Cash at Pickup',
-    title: 'Pay when collecting',
-    body: `Your order has been placed. Pay ${formatCurrency(order.total_amount)} in cash when you collect it.`,
-  };
-}
-
 export function PaymentInstructionsCard({
   order,
   payment,
@@ -90,24 +65,11 @@ export function PaymentInstructionsCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const proof = order.payment_proof;
-  const awaitingReview = order.payment_status === 'awaiting_review' && Boolean(proof?.uploaded);
-  const rejected = order.payment_status === 'rejected';
-  const paymentConfirmed =
-    order.payment_status === 'confirmed' ||
-    (order.status !== null &&
-      !isPendingPayment(order.status) &&
-      order.payment_status !== 'awaiting_review' &&
-      order.payment_status !== 'rejected' &&
-      order.payment_status !== 'pending');
-  const canUploadPending =
-    !isCashPayment(order) &&
-    !paymentConfirmed &&
-    !awaitingReview &&
-    !rejected &&
-    Boolean(proof?.can_upload ?? isPendingPayment(order.status));
-  const canReplaceAwaiting = awaitingReview && proof?.can_upload === true;
-  const canReplaceRejected = rejected && !paymentConfirmed && Boolean(proof?.can_upload ?? true);
-  const canUpload = canUploadPending || canReplaceAwaiting || canReplaceRejected;
+  const presentation = paymentStatePresentation(order);
+  const awaitingReview = presentation.state === 'upi_awaiting_review';
+  const rejected = presentation.state === 'upi_rejected';
+  const paymentConfirmed = presentation.state === 'upi_confirmed' || presentation.state === 'cash_confirmed';
+  const canUpload = presentation.canUploadProof;
 
   async function handleCopy(field: CopyField, value: string): Promise<void> {
     if (!value.trim()) {
@@ -153,13 +115,11 @@ export function PaymentInstructionsCard({
   }
 
   if (isCashPayment(order)) {
-    const cashCopy = cashStatusCopy(order);
-
     return (
       <section
         className={[
           'payment-card motion-enter',
-          order.payment_status === 'confirmed' ? 'payment-card-confirmed' : '',
+          presentation.state === 'cash_confirmed' ? 'payment-card-confirmed' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -167,11 +127,11 @@ export function PaymentInstructionsCard({
       >
         <div className="payment-card-header">
           <OrderStatusBadge
-            status={order.payment_status === 'confirmed' ? 'payment_confirmed' : 'pending_payment'}
-            label={cashCopy.badge}
+            status={presentation.state === 'cash_confirmed' ? 'payment_confirmed' : 'pending_payment'}
+            label={presentation.badge}
           />
-          <h2>{cashCopy.title}</h2>
-          <p>{cashCopy.body}</p>
+          <h2>{presentation.title}</h2>
+          <p>{presentation.body}</p>
         </div>
         <div className="payment-meta-grid">
           <div>
@@ -205,9 +165,9 @@ export function PaymentInstructionsCard({
     return (
       <section className="payment-card payment-card-confirmed motion-enter" aria-live="polite">
         <div className="payment-card-header">
-          <OrderStatusBadge status="payment_confirmed" label="Payment confirmed" />
-          <h2>Payment confirmed</h2>
-          <p>The cafe has confirmed your payment. Track your order for preparation updates.</p>
+          <OrderStatusBadge status="payment_confirmed" label={presentation.badge} />
+          <h2>{presentation.title}</h2>
+          <p>{presentation.body}</p>
         </div>
         {showSecondaryAction ? (
           <div className="payment-actions">
@@ -225,16 +185,10 @@ export function PaymentInstructionsCard({
       <div className="payment-card-header">
         <OrderStatusBadge
           status="pending_payment"
-          label={awaitingReview ? 'Awaiting review' : rejected ? 'Verification Needed' : 'Pending Payment'}
+          label={presentation.badge}
         />
-        <h2>{rejected ? 'Verification Needed' : 'Payment details'}</h2>
-        <p>
-          {awaitingReview
-            ? 'Payment proof submitted. Waiting for cafe confirmation.'
-            : rejected
-              ? 'Please upload a clearer payment screenshot.'
-              : 'Pay after placing your order — then upload your screenshot.'}
-        </p>
+        <h2>{presentation.title}</h2>
+        <p>{presentation.body}</p>
       </div>
 
       <div className="payment-meta-grid">
@@ -369,7 +323,7 @@ export function PaymentInstructionsCard({
             >
               {isUploading
                 ? 'Uploading…'
-                : rejected || awaitingReview || proof?.uploaded
+                : presentation.primaryAction === 'replace_proof' || proof?.uploaded
                   ? 'Replace payment screenshot'
                   : 'Upload payment screenshot'}
             </button>
@@ -390,7 +344,7 @@ export function PaymentInstructionsCard({
           </Link>
         ) : null}
 
-        {whatsappNumber && canUploadPending ? (
+        {whatsappNumber && presentation.state === 'upi_pending' ? (
           <a
             href={toWhatsappHref(whatsappNumber, order.order_number)}
             target="_blank"

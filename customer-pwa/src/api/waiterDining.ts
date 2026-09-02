@@ -8,6 +8,7 @@ export type WaiterTableDisplayState =
   | 'ready_to_serve'
   | 'bill_requested'
   | 'payment_pending'
+  | 'paid'
   | 'inactive';
 
 export interface WaiterTableSessionSummary {
@@ -137,6 +138,8 @@ export interface WaiterDiningSession {
     can_close?: boolean;
     can_reopen?: boolean;
     can_confirm_upi?: boolean;
+    awaiting_operator_upi?: boolean;
+    close_blocked_reason?: string | null;
     has_unsent_draft?: boolean;
     draft_item_count?: number;
   };

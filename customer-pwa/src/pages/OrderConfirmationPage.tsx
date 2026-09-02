@@ -21,6 +21,7 @@ import {
   isDineInOrder,
   isPendingPayment,
 } from '../utils/orders';
+import { paymentStatePresentation } from '../utils/paymentState';
 
 interface ConfirmationLocationState {
   order?: Order;
@@ -50,39 +51,7 @@ function writeCachedPayment(orderId: string, payment: OrderPaymentInstructions):
 }
 
 function confirmationNextStep(order: Order): string {
-  if (isCashPayment(order)) {
-    if (order.payment_status === 'confirmed' || order.cash_received_at) {
-      return 'Cash received. Track your order for preparation updates.';
-    }
-
-    if (isDineInOrder(order)) {
-      return `Pay ${formatCurrency(order.total_amount)} in cash at the cafe / table. No payment screenshot needed.`;
-    }
-
-    return `Your order has been placed. Pay ${formatCurrency(order.total_amount)} in cash when you collect it.`;
-  }
-
-  if (order.payment_status === 'awaiting_review') {
-    return 'Payment proof submitted. Waiting for cafe confirmation.';
-  }
-
-  if (order.payment_status === 'confirmed' || !isPendingPayment(order.status)) {
-    return 'Payment confirmed. Track your order for preparation updates.';
-  }
-
-  if (order.payment_status === 'rejected') {
-    return 'Please upload a clearer payment screenshot so we can start preparing.';
-  }
-
-  if (isDineInOrder(order) && order.table_name?.trim()) {
-    return `Pay now and share your payment screenshot so we can start preparing for Table ${order.table_name.trim()}.`;
-  }
-
-  if (isDeliveryOrder(order)) {
-    return 'Pay now and share your payment screenshot so we can start preparing for delivery.';
-  }
-
-  return 'Pay now and share your payment screenshot so we can start preparing your order.';
+  return paymentStatePresentation(order).body;
 }
 
 function paymentChipLabel(order: Order): string | null {
@@ -90,15 +59,7 @@ function paymentChipLabel(order: Order): string | null {
     return null;
   }
 
-  if (order.payment_status === 'confirmed' || order.cash_received_at) {
-    return 'Paid · Cash';
-  }
-
-  if (isDineInOrder(order)) {
-    return 'Cash';
-  }
-
-  return 'Cash at Pickup';
+  return paymentStatePresentation(order).badge;
 }
 
 function fulfilmentContextLabel(order: Order): string | null {

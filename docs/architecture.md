@@ -379,6 +379,15 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Table dashboard `display_state` is derived from session status + preparation tickets (`available` / `active` / `preparing` / `ready_to_serve` / `bill_requested` / `payment_pending`); session status remains authority.
 * Independent per-session drafts; round placement supports idempotency keys; Waiter cannot confirm/reject UPI proof.
 
+## Mobile ordering journey hardening (C2)
+
+* Guest cart merge preserves add-on `configuration_hash` lines; login returns to intended checkout path.
+* Auth bootstrap treats only definitive 401 as logout; transient failures expose Retry / Sign in again.
+* Checkout clears fulfilment-scoped validation on method switch; place-order errors scroll to feedback and keep form state.
+* Canonical payment-state presentation (`paymentStatePresentation`) drives customer confirmation/payment card wording.
+* Waiter send-round keeps draft until confirmed success (or reconciled empty draft); bill request is idempotent when already awaiting payment; `close_blocked_reason` explains invalid close.
+* Ready to Serve remains derived from station tickets; no F3.3 analytics added here.
+
 
 ## Product add-ons (C1)
 

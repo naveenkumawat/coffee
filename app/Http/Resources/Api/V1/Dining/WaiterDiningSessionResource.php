@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1\Dining;
 use App\Enums\DiningSessionStatus;
 use App\Enums\OrderPreparationStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\User;
@@ -32,15 +33,46 @@ class WaiterDiningSessionResource extends JsonResource
                 ->all()
             : [];
 
+        $activeRoundCount = $session->relationLoaded('orders')
+            ? $session->orders
+                ->reject(static fn (Order $order): bool => in_array(
+                    $order->status,
+                    [OrderStatus::Cancelled, OrderStatus::Rejected],
+                    true,
+                ))
+                ->count()
+            : $session->orders()
+                ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+                ->count();
+
+        $billReadyStatuses = [
+            DiningSessionStatus::BillingRequested,
+            DiningSessionStatus::AwaitingPayment,
+        ];
+        $billReady = in_array($session->status, $billReadyStatuses, true);
+        $paymentConfirmed = $session->status === DiningSessionStatus::Paid
+            || $session->payment_status === PaymentStatus::Confirmed;
+        $canReopenStatus = in_array($session->status, $billReadyStatuses, true) && ! $paymentConfirmed;
+
         $base['capabilities'] = array_merge($base['capabilities'] ?? [], [
             'can_request_bill' => ($actor?->can('requestBill', $session) ?? false)
-                && $session->status === DiningSessionStatus::Open,
-            'can_change_payment_method' => $actor?->can('changePaymentMethod', $session) ?? false,
-            'can_mark_cash_received' => $actor?->can('markCashReceived', $session) ?? false,
-            'can_close' => $actor?->can('close', $session) ?? false,
-            'can_reopen' => $actor?->can('reopen', $session) ?? false,
+                && $session->status === DiningSessionStatus::Open
+                && $activeRoundCount > 0,
+            'can_change_payment_method' => ($actor?->can('changePaymentMethod', $session) ?? false)
+                && $billReady
+                && ! $paymentConfirmed,
+            'can_mark_cash_received' => ($actor?->can('markCashReceived', $session) ?? false)
+                && $billReady
+                && ! $paymentConfirmed,
+            'can_close' => ($actor?->can('close', $session) ?? false) && $paymentConfirmed,
+            'can_reopen' => ($actor?->can('reopen', $session) ?? false) && $canReopenStatus,
             'can_confirm_upi' => false,
             'can_reject_upi_proof' => false,
+            'awaiting_operator_upi' => $billReady
+                && ! $paymentConfirmed
+                && $session->payment_method?->value === 'manual'
+                && $session->payment_status === PaymentStatus::AwaitingReview,
+            'close_blocked_reason' => $this->closeBlockedReason($session, $actor),
             'draft_item_count' => $session->relationLoaded('drafts')
                 ? (int) $session->drafts->sum('quantity')
                 : (int) $session->drafts()->sum('quantity'),
@@ -128,5 +160,22 @@ class WaiterDiningSessionResource extends JsonResource
                 ];
             })->values()->all(),
         ];
+    }
+
+    protected function closeBlockedReason(DiningSession $session, ?User $actor): ?string
+    {
+        if ($actor?->can('close', $session) !== true) {
+            return 'You are not allowed to close this dining session.';
+        }
+
+        if ($session->status === DiningSessionStatus::Closed) {
+            return 'This session is already closed.';
+        }
+
+        if ($session->status === DiningSessionStatus::Paid || $session->payment_status === PaymentStatus::Confirmed) {
+            return null;
+        }
+
+        return 'Close the session only after payment is confirmed.';
     }
 }

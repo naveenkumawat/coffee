@@ -60,6 +60,7 @@ export function CheckoutPage() {
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [displayState, setDisplayState] = useState<'summary' | 'empty' | 'review-cart' | 'error'>('summary');
+  const isSubmittingRef = useRef(false);
   const didHydrateDefaults = useRef(false);
   const availability = useContentStore((state) => selectAvailability(state.content));
   const orderingClosed = Boolean(availability && !availability.available);
@@ -114,6 +115,27 @@ export function CheckoutPage() {
         setIsLoading(false);
       }
     }
+  }
+
+  function handleFulfilmentChange(method: CheckoutFulfilmentMethod): void {
+    if (method === fulfilmentMethod) {
+      return;
+    }
+
+    setErrors({});
+    setMessage(null);
+    setFulfilmentMethod(method);
+  }
+
+  function scrollToCheckoutFeedback(): void {
+    window.requestAnimationFrame(() => {
+      const target =
+        document.querySelector<HTMLElement>('.checkout-page .form-feedback') ??
+        document.querySelector<HTMLElement>('.checkout-page .form-error-text') ??
+        document.querySelector<HTMLElement>('.checkout-page [aria-invalid="true"]');
+
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   }
 
   useEffect(() => {
@@ -182,10 +204,11 @@ export function CheckoutPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
-    if (!summaryMeta?.checkout_token || isSubmitting) {
+    if (!summaryMeta?.checkout_token || isSubmitting || isSubmittingRef.current) {
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setErrors({});
     setMessage(null);
@@ -233,6 +256,7 @@ export function CheckoutPage() {
           error.errors.ordering?.[0]
           ?? error.errors.checkout?.[0]
           ?? error.errors.payment_proof?.[0]
+          ?? error.errors.cart?.[0]
           ?? error.message;
 
         if (
@@ -243,25 +267,38 @@ export function CheckoutPage() {
         ) {
           setErrors(error.errors);
           setMessage(securityMessage);
+          scrollToCheckoutFeedback();
           return;
         }
 
         if (error.status === 429) {
           setErrors(error.errors);
           setMessage(securityMessage || 'Too many order attempts. Please try again shortly.');
+          scrollToCheckoutFeedback();
+          return;
+        }
+
+        if (error.status === 401) {
+          setMessage('Your session expired. Sign in again to place this order — your cart is kept on the server.');
+          scrollToCheckoutFeedback();
           return;
         }
 
         setErrors(error.errors);
         setMessage(error.message);
+        scrollToCheckoutFeedback();
 
         if (error.status === 422) {
           await loadSummary(true);
         }
       } else {
-        setMessage('Unable to place your order right now.');
+        setMessage(
+          'Order was not confirmed. Check My Orders before retrying — if nothing appears, it is safe to place again.',
+        );
+        scrollToCheckoutFeedback();
       }
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -365,7 +402,7 @@ export function CheckoutPage() {
           <FulfilmentMethodSelector
             methods={fulfilmentMethods}
             value={fulfilmentMethod}
-            onChange={setFulfilmentMethod}
+            onChange={handleFulfilmentChange}
             error={getFieldError(errors, 'fulfilment_method')}
           />
         </section>

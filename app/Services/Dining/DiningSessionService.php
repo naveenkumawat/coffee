@@ -933,7 +933,8 @@ class DiningSessionService implements DiningSessionServiceInterface
 
         return match ($session->status) {
             DiningSessionStatus::BillingRequested => ['bill_requested', 'Bill Requested'],
-            DiningSessionStatus::AwaitingPayment, DiningSessionStatus::Paid => ['payment_pending', 'Payment Pending'],
+            DiningSessionStatus::AwaitingPayment => ['payment_pending', 'Payment Pending'],
+            DiningSessionStatus::Paid => ['paid', 'Paid'],
             DiningSessionStatus::Open => $this->openSessionDisplayState($session),
             default => ['active', 'Active'],
         };

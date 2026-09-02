@@ -170,8 +170,16 @@ export function WaiterMenuPage() {
 
   return (
     <div className="page-container waiter-page menu-page has-sticky-cta">
-      <PageHeader title="Add order" description={session?.table.label} showBack />
-
+      <PageHeader
+        title="Add order"
+        description={session ? `Table ${session.table.label}` : undefined}
+        showBack
+      />
+      {session ? (
+        <p className="waiter-table-context" aria-live="polite">
+          Ordering for <strong>{session.table.label}</strong>
+        </p>
+      ) : null}
       <div className="menu-discovery">
         <label className="menu-search-field">
           <span className="visually-hidden">Search products</span>

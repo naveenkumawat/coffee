@@ -7,12 +7,23 @@ import { isWaiter } from '../utils/roles';
 export function GuestRoute() {
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
+  const bootstrap = useAuthStore((state) => state.bootstrap);
+  const sessionCheckFailed = useAuthStore((state) => state.sessionCheckFailed);
   const [searchParams] = useSearchParams();
 
-  if (status === 'idle' || status === 'initializing') {
+  if (status === 'idle' || status === 'initializing' || status === 'session_unknown') {
     return (
       <div className="page-container">
-        <LoadingSkeleton cardCount={2} lines={4} />
+        {sessionCheckFailed ? (
+          <div className="auth-session-recovery motion-enter" role="alert">
+            <p>We couldn’t verify your session. Check your connection, then try again.</p>
+            <button type="button" className="btn btn-primary rounded-pill" onClick={() => void bootstrap()}>
+              Retry
+            </button>
+          </div>
+        ) : (
+          <LoadingSkeleton cardCount={2} lines={4} />
+        )}
       </div>
     );
   }

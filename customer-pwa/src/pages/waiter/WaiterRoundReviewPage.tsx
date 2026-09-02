@@ -114,17 +114,45 @@ export function WaiterRoundReviewPage() {
       idempotencyKeyRef.current = createIdempotencyKey();
     }
 
+    const key = idempotencyKeyRef.current;
     setIsSending(true);
 
     try {
       await placeWaiterRound(sessionId, {
-        idempotency_key: idempotencyKeyRef.current,
+        idempotency_key: key,
       });
       idempotencyKeyRef.current = null;
       toastSuccess('Order sent');
       navigate(`/waiter/sessions/${sessionId}`, { replace: true });
     } catch (error) {
-      toastError(error instanceof ApiError ? error.message : 'Unable to send order.');
+      // Ambiguous / retry path: reconcile server draft + rounds before clearing the key.
+      try {
+        const refreshed = await fetchWaiterSession(sessionId);
+        setSession(refreshed.data);
+
+        if ((refreshed.data.drafts?.length ?? 0) === 0) {
+          idempotencyKeyRef.current = null;
+          toastSuccess('Order sent');
+          navigate(`/waiter/sessions/${sessionId}`, { replace: true });
+
+          return;
+        }
+      } catch {
+        // Keep local draft view; allow retry with the same idempotency key.
+      }
+
+      if (error instanceof ApiError && (error.status === 404 || error.status === 410)) {
+        toastError('This session is no longer available.');
+        navigate('/waiter', { replace: true });
+
+        return;
+      }
+
+      toastError(
+        error instanceof ApiError
+          ? error.message
+          : 'Send not confirmed. Draft kept — check connection, then retry.',
+      );
     } finally {
       setIsSending(false);
     }
@@ -152,7 +180,7 @@ export function WaiterRoundReviewPage() {
     <div className="page-container waiter-page has-sticky-cta">
       <PageHeader
         title="Review order"
-        description={session.table.label}
+        description={`Table ${session.table.label}`}
         showBack
         rightSlot={
           <Link to={`/waiter/sessions/${sessionId}/menu`} className="link-button">
@@ -161,6 +189,9 @@ export function WaiterRoundReviewPage() {
         }
       />
 
+      <p className="waiter-table-context" aria-live="polite">
+        Sending to <strong>{session.table.label}</strong>
+      </p>
       {drafts.length === 0 ? (
         <EmptyState
           title="Draft is empty"

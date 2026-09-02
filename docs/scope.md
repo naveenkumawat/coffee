@@ -1617,3 +1617,4 @@ Customer API coverage should ultimately include:
 - Waiter ordering reuses canonical Table → Dining Session → Dining Draft → Round Order → Preparation Tickets (no waiter-specific order architecture).
 - Each Dining Session has an independent server-persisted draft; switching tables must not merge drafts.
 - C1 customization/add-ons are shared between Customer and Waiter; prices remain server-owned.
+- Phase C2 locks: guest cart survives login; ambiguous writes reconcile before retry; shared payment-state presentation is canonical; server owns commercial/operational truth.

@@ -40,8 +40,19 @@ export function WaiterSessionPage() {
       setSession(response.data);
       rememberWaiterSession(response.data.id);
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load session.');
+      const status = error instanceof ApiError ? error.status : 0;
+      setErrorMessage(
+        status === 404
+          ? 'This session is no longer available. It may have been closed elsewhere.'
+          : error instanceof ApiError
+            ? error.message
+            : 'Unable to load session.',
+      );
       setSession(null);
+
+      if (status === 404) {
+        clearRememberedWaiterSession();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -117,10 +128,17 @@ export function WaiterSessionPage() {
             void loadSession();
           }}
         />
+        <div className="waiter-stale-actions">
+          <Link to="/waiter" className="btn btn-primary rounded-pill">
+            Back to tables
+          </Link>
+        </div>
       </div>
     );
   }
 
+  const readyRounds = session.rounds.filter((round) => round.ready_to_serve);
+  const closeBlockedReason = caps.close_blocked_reason ?? null;
   return (
     <div className="page-container waiter-page has-sticky-cta">
       <PageHeader
@@ -128,6 +146,18 @@ export function WaiterSessionPage() {
         description={`${session.session_number} · ${session.status_label ?? session.status}`}
         showBack
       />
+
+      {readyRounds.length > 0 ? (
+        <section className="waiter-ready-banner motion-enter" role="status" aria-live="polite">
+          <strong>Ready to serve</strong>
+          <p>
+            {readyRounds
+              .map((round) => `Round ${round.round_number}`)
+              .join(' · ')}{' '}
+            on {session.table.label}
+          </p>
+        </section>
+      ) : null}
 
       <section className="waiter-session-summary">
         <div>
@@ -185,7 +215,7 @@ export function WaiterSessionPage() {
                   Round {round.round_number}
                   {round.order_number ? ` · ${round.order_number}` : ''}
                 </strong>
-                <span className="status-badge">
+                <span className={`status-badge${round.ready_to_serve ? ' is-ready' : ''}`}>
                   {round.ready_to_serve
                     ? 'Ready to serve'
                     : (round.status_label ?? round.status ?? 'Placed')}
@@ -253,6 +283,11 @@ export function WaiterSessionPage() {
                 </button>
               </>
             ) : null}
+            {caps.awaiting_operator_upi ? (
+              <p className="waiter-close-blocked" role="status">
+                UPI proof awaiting operator confirmation. Waiters cannot verify UPI.
+              </p>
+            ) : null}
             {caps.can_mark_cash_received ? (
               <button
                 type="button"
@@ -282,6 +317,15 @@ export function WaiterSessionPage() {
               >
                 Close table
               </button>
+            ) : closeBlockedReason &&
+              (session.status === 'awaiting_payment' ||
+                session.status === 'paid' ||
+                session.payment_status === 'pending' ||
+                session.payment_status === 'awaiting_review' ||
+                Boolean(session.final_bill)) ? (
+              <p className="waiter-close-blocked" role="status">
+                {closeBlockedReason}
+              </p>
             ) : null}
             {caps.can_reopen ? (
               <button

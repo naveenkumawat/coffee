@@ -448,3 +448,4 @@ Status: Pending
 
 - [x] Product add-ons (Phase C1): catalog assignment, cart configuration hash merge, server pricing, free-drink base-only waiver, inventory base+add-on consumption, admin CRUD, Dining drafts/rounds, PWA customization + payment-state UX, invoice nesting
 - [x] Waiter mobile PWA (Phase C1.1): SPA waiter auth, table dashboard display states, multi-table independent drafts, menu/add-on ordering into dining drafts, idempotent round send, bill/payment/close via existing permissions (Blade Waiter retained)
+- [x] Mobile ordering journey audit & hardening (Phase C2): guest-cart login merge with add-ons, auth session recovery, checkout fulfilment/error recovery, shared payment-state presentation, waiter draft/send/bill/close safety, Ready to Serve prominence

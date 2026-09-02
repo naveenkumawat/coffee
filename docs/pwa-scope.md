@@ -271,3 +271,13 @@ See `customer-pwa/README.md` for the deployment checklist.
 - **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
 - PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
 - Waiter role operates table service; food & beverage catalog uses product type + prep station.
+
+## Mobile ordering journey hardening (C2)
+
+- Server owns commercial/operational truth (prices, cart, dining drafts, payment status, session/table state, order status).
+- Guest cart survives login and merges by `configuration_hash` (variants + add-ons); checkout redirect is preserved.
+- Transient auth/API failures do not clear valid local state; definitive 401 shows Sign in again.
+- Ambiguous checkout/round writes must be reconciled (idempotency / refetch) before treating as failure or clearing drafts.
+- Shared `paymentStatePresentation` is the canonical customer payment-state wording (confirmation + payment card).
+- Dining Session drafts remain session-scoped; Waiter table switches must not merge drafts.
+- React PWA remains preferred Waiter mobile UI; Blade Waiter stays fallback.

@@ -186,7 +186,9 @@ class WaiterDiningController extends Controller
             $cacheKey = $this->roundIdempotencyCacheKey($session, $idempotencyKey);
             $cachedSessionId = Cache::get($cacheKey);
 
-            if ($cachedSessionId) {
+            // Only short-circuit when the prior place cleared drafts. A reused key with a
+            // new unsent draft must place that draft — never silently skip it.
+            if ($cachedSessionId && $session->drafts()->doesntExist()) {
                 return $this->respondWithResource(
                     new WaiterDiningSessionResource($this->loadSession($session->fresh())),
                     'Dining round already placed.',
