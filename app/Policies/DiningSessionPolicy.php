@@ -48,9 +48,35 @@ class DiningSessionPolicy
         return $this->view($user, $session);
     }
 
+    /**
+     * Confirm dining UPI (or staff payment confirmation) — Admin/Operator only.
+     */
     public function confirmPayment(User $user, DiningSession $session): bool
     {
-        return $user->canOperateDining() || $user->canManageOrders();
+        return $user->canManageOrders() || $user->canOperateOrders();
+    }
+
+    /**
+     * Dining cash receive — Waiter / Operator / Admin.
+     */
+    public function markCashReceived(User $user, DiningSession $session): bool
+    {
+        return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
+    }
+
+    public function changePaymentMethod(User $user, DiningSession $session): bool
+    {
+        return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
+    }
+
+    public function viewPaymentProof(User $user, DiningSession $session): bool
+    {
+        return ($user->canManageOrders() || $user->canOperateOrders()) && $session->hasPaymentProof();
+    }
+
+    public function rejectPaymentProof(User $user, DiningSession $session): bool
+    {
+        return $user->canManageOrders() || $user->canOperateOrders();
     }
 
     public function close(User $user, DiningSession $session): bool

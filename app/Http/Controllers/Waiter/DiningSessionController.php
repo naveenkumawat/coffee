@@ -40,7 +40,7 @@ class DiningSessionController extends Controller
             'orders.items',
             'orders.preparations',
         ]);
-        $bill = $this->dining->runningBill($session);
+        $bill = $this->dining->displayBill($session);
         $variants = ProductVariant::query()
             ->with('product')
             ->where('is_active', true)
@@ -100,10 +100,27 @@ class DiningSessionController extends Controller
 
     public function markCashReceived(Request $request, DiningSession $session): RedirectResponse
     {
-        $this->authorize('confirmPayment', $session);
+        $this->authorize('markCashReceived', $session);
         $this->dining->markCashReceived($session, $request->user('admin'));
 
         return back()->with('status', 'Cash marked as received.');
+    }
+
+    public function changePaymentMethod(Request $request, DiningSession $session): RedirectResponse
+    {
+        $this->authorize('changePaymentMethod', $session);
+
+        $data = $request->validate([
+            'payment_method' => ['required', 'string', 'in:cash,manual_upi'],
+        ]);
+
+        $this->dining->changePaymentMethod(
+            $session,
+            $data['payment_method'],
+            $request->user('admin'),
+        );
+
+        return back()->with('status', 'Payment method updated.');
     }
 
     public function close(Request $request, DiningSession $session): RedirectResponse

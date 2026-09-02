@@ -4,6 +4,7 @@ use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\DiningSessionController;
+use App\Http\Controllers\Administrator\FinancialReportController;
 use App\Http\Controllers\Administrator\HomeSectionController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
@@ -51,6 +52,9 @@ Route::middleware('guest:admin')->group(function (): void {
 Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
+    Route::get('reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial.index');
+    Route::get('reports/financial/export', [FinancialReportController::class, 'export'])->name('reports.financial.export');
+
     Route::get('home-sections', [HomeSectionController::class, 'index'])->name('home-sections.index');
     Route::get('home-sections/create', [HomeSectionController::class, 'create'])->name('home-sections.create');
     Route::post('home-sections', [HomeSectionController::class, 'store'])->name('home-sections.store');
@@ -78,6 +82,11 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::get('dining-sessions/{dining_session}', [DiningSessionController::class, 'show'])->name('dining-sessions.show');
     Route::post('dining-sessions/{dining_session}/close', [DiningSessionController::class, 'close'])->name('dining-sessions.close');
     Route::post('dining-sessions/{dining_session}/reopen', [DiningSessionController::class, 'reopen'])->name('dining-sessions.reopen');
+    Route::post('dining-sessions/{dining_session}/payment-method', [DiningSessionController::class, 'changePaymentMethod'])->name('dining-sessions.payment-method');
+    Route::post('dining-sessions/{dining_session}/payment/confirm', [DiningSessionController::class, 'confirmPayment'])->name('dining-sessions.payment.confirm');
+    Route::post('dining-sessions/{dining_session}/cash/receive', [DiningSessionController::class, 'markCashReceived'])->name('dining-sessions.cash.receive');
+    Route::post('dining-sessions/{dining_session}/payment-proof/reject', [DiningSessionController::class, 'rejectPaymentProof'])->name('dining-sessions.payment-proof.reject');
+    Route::get('dining-sessions/{dining_session}/payment-proof', [DiningSessionController::class, 'paymentProof'])->name('dining-sessions.payment-proof.show');
     Route::get('dining-sessions/{dining_session}/invoice', [DiningSessionController::class, 'invoice'])->name('dining-sessions.invoice');
 
     Route::get('orders', [OrderController::class, 'index'])->name('orders.index');

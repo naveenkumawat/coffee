@@ -107,6 +107,14 @@ enum UserRole: string
         };
     }
 
+    public function canViewFinancialReports(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Manager => true,
+            default => false,
+        };
+    }
+
     public function canViewOrders(): bool
     {
         return match ($this) {

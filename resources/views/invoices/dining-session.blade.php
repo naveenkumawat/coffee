@@ -17,7 +17,7 @@
     <div>{{ $cafePhone }}</div>
     <p>
         Session {{ $session->session_number }} · Table {{ $session->tableDisplayLabel() }}<br>
-        Status: {{ $session->status?->label() }}
+        Status: {{ $session->status?->label() }} · {{ $paymentLabel ?? 'PAYMENT PENDING' }}
     </p>
     <table>
         <thead>
@@ -30,14 +30,16 @@
         </thead>
         <tbody>
             @foreach ($session->orders as $order)
-                @foreach ($order->items as $item)
-                    <tr>
-                        <td>#{{ $order->dining_round_number }}</td>
-                        <td>{{ $item->product_name }} @if($item->variant_name) ({{ $item->variant_name }}) @endif</td>
-                        <td>{{ $item->quantity }}</td>
-                        <td>{{ number_format((float) $item->line_subtotal, 2) }}</td>
-                    </tr>
-                @endforeach
+                @if (! in_array($order->status?->value, ['cancelled', 'rejected'], true))
+                    @foreach ($order->items as $item)
+                        <tr>
+                            <td>#{{ $order->dining_round_number }}</td>
+                            <td>{{ $item->product_name }} @if($item->variant_name) ({{ $item->variant_name }}) @endif</td>
+                            <td>{{ $item->quantity }}</td>
+                            <td>{{ number_format((float) $item->line_subtotal, 2) }}</td>
+                        </tr>
+                    @endforeach
+                @endif
             @endforeach
         </tbody>
     </table>

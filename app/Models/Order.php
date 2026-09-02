@@ -146,6 +146,11 @@ class Order extends AbstractModel
         return $this->hasMany(OrderPreparation::class)->orderBy('station')->orderBy('id');
     }
 
+    public function inventoryConsumptions(): HasMany
+    {
+        return $this->hasMany(OrderInventoryConsumption::class)->orderBy('id');
+    }
+
     public function promotions(): HasMany
     {
         return $this->hasMany(OrderPromotion::class)->orderBy('sort_order')->orderBy('id');

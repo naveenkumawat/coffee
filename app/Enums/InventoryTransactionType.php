@@ -14,6 +14,8 @@ enum InventoryTransactionType: string
     case Damage = 'damage';
     case Expiry = 'expiry';
     case Correction = 'correction';
+    case SaleConsumption = 'sale_consumption';
+    case SaleReversal = 'sale_reversal';
 
     public function label(): string
     {
@@ -28,6 +30,8 @@ enum InventoryTransactionType: string
             self::Damage => 'Damage',
             self::Expiry => 'Expiry',
             self::Correction => 'Correction',
+            self::SaleConsumption => 'Sale Consumption',
+            self::SaleReversal => 'Sale Reversal',
         };
     }
 
@@ -42,7 +46,7 @@ enum InventoryTransactionType: string
     public function isIncrease(): bool
     {
         return match ($this) {
-            self::StockAdded, self::Purchase, self::ManualAddition => true,
+            self::StockAdded, self::Purchase, self::ManualAddition, self::SaleReversal => true,
             default => false,
         };
     }
@@ -50,7 +54,7 @@ enum InventoryTransactionType: string
     public function isDecrease(): bool
     {
         return match ($this) {
-            self::ManualReduction, self::Wastage, self::Damage, self::Expiry => true,
+            self::ManualReduction, self::Wastage, self::Damage, self::Expiry, self::SaleConsumption => true,
             default => false,
         };
     }
@@ -58,7 +62,11 @@ enum InventoryTransactionType: string
     public static function mutationOptions(): array
     {
         return collect(self::cases())
-            ->reject(fn (self $type): bool => $type === self::OpeningBalance)
+            ->reject(fn (self $type): bool => in_array($type, [
+                self::OpeningBalance,
+                self::SaleConsumption,
+                self::SaleReversal,
+            ], true))
             ->mapWithKeys(fn (self $type): array => [$type->value => $type->label()])
             ->all();
     }

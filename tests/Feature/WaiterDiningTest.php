@@ -184,7 +184,7 @@ class WaiterDiningTest extends TestCase
             'is_available' => true,
         ]);
 
-        return ProductVariant::factory()->create([
+        return ProductVariant::factory()->withConsumableRecipe()->create([
             'product_id' => $product->id,
             'price' => '7.50',
             'is_active' => true,

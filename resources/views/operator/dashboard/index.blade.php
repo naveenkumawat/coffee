@@ -44,5 +44,21 @@
         <div class="col-md-3">
             <x-internal.stat-card label="Bill Requested" :value="$billRequested" icon="ki-bill" color="info" description="Tables waiting for bill handling." />
         </div>
+        <div class="col-md-3">
+            <x-internal.stat-card label="Paid Today" :value="$reconciliation['paid_transactions_today']" icon="ki-check-circle" color="success" description="Confirmed retail + dining today." />
+        </div>
+        <div class="col-md-3">
+            <x-internal.stat-card label="Cash Pending" :value="$reconciliation['cash_pending']" icon="ki-wallet" color="warning" description="Cash awaiting receipt." />
+        </div>
+        <div class="col-md-3">
+            <x-internal.stat-card label="UPI Awaiting" :value="$reconciliation['upi_awaiting_review']" icon="ki-picture" color="info" description="Proofs awaiting review." />
+        </div>
+        <div class="col-md-3">
+            <x-internal.stat-card label="Needs Action" :value="$reconciliation['orders_needing_action'] + $reconciliation['dining_needing_action']" icon="ki-notification-bing" color="danger" description="Orders/sessions needing operator action." />
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <a href="{{ route('operator.reconciliation.index') }}" class="btn btn-sm btn-light-primary">Open today reconciliation</a>
     </div>
 @endsection

@@ -9,7 +9,10 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Models\WebsiteSetting;
 use App\Services\Dining\DiningSessionServiceInterface;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 
 class DemoDiningSeeder extends Seeder
@@ -20,6 +23,18 @@ class DemoDiningSeeder extends Seeder
             return;
         }
 
+        // Seed dining regardless of wall-clock cafe hours.
+        Carbon::setTestNow(CarbonImmutable::parse('2026-09-01 10:30:00', 'Asia/Kolkata'));
+
+        try {
+            $this->seedDiningDemo();
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    protected function seedDiningDemo(): void
+    {
         $key = WebsiteSettingKey::FulfilmentDineInEnabled;
         WebsiteSetting::query()->updateOrCreate(
             ['key' => $key->value],
@@ -41,6 +56,11 @@ class DemoDiningSeeder extends Seeder
                 'email_verified_at' => now(),
             ],
         );
+
+        $operator = User::query()->where('email', 'operator@coffee.local')->first()
+            ?? User::query()->where('role', UserRole::Operator)->first()
+            ?? User::query()->where('role', UserRole::Owner)->first()
+            ?? $waiter;
 
         $customer = User::query()->where('email', 'customer@coffee.local')->first();
         $altCustomer = User::query()->where('email', 'priya@coffee.local')->first()
@@ -76,13 +96,14 @@ class DemoDiningSeeder extends Seeder
         $cash = $dining->markCashReceived($cash, $waiter);
         $dining->closeSession($cash, $waiter);
 
-        // UPI paid (walk-in)
+        // UPI paid (walk-in) — Operator confirms after proof
         $upi = $dining->startSession($tables[3], null, $waiter, ['guest_count' => 2]);
         $dining->addDraftItem($upi, (int) $variant->getKey(), 1, $waiter);
         $dining->placeRound($upi, $waiter);
         $upi = $dining->requestBill($upi, $waiter);
         $upi = $dining->setPaymentMethod($upi, 'manual_upi');
-        $dining->confirmPayment($upi, $waiter);
+        $upi = $dining->uploadPaymentProof($upi, $waiter, UploadedFile::fake()->image('dining-upi.jpg'));
+        $dining->confirmPayment($upi, $operator);
 
         if ($tables->count() > 4) {
             $walkIn = $dining->startSession($tables[4], null, $waiter, ['guest_count' => 4]);

@@ -10,6 +10,7 @@ use App\Services\Invoice\DiningInvoiceServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 class DiningSessionController extends Controller
@@ -60,7 +61,7 @@ class DiningSessionController extends Controller
 
         return view('operator.dining-sessions.show', [
             'session' => $diningSession,
-            'bill' => $this->dining->runningBill($diningSession),
+            'bill' => $this->dining->displayBill($diningSession),
         ]);
     }
 
@@ -87,6 +88,68 @@ class DiningSessionController extends Controller
         );
 
         return back()->with('status', 'Dining session reopened.');
+    }
+
+    public function changePaymentMethod(Request $request, DiningSession $diningSession): RedirectResponse
+    {
+        $this->authorize('changePaymentMethod', $diningSession);
+
+        $data = $request->validate([
+            'payment_method' => ['required', 'string', 'in:cash,manual_upi'],
+        ]);
+
+        $this->dining->changePaymentMethod(
+            $diningSession,
+            $data['payment_method'],
+            $request->user('admin'),
+        );
+
+        return back()->with('status', 'Payment method updated.');
+    }
+
+    public function confirmPayment(Request $request, DiningSession $diningSession): RedirectResponse
+    {
+        $this->authorize('confirmPayment', $diningSession);
+        $this->dining->confirmPayment($diningSession, $request->user('admin'));
+
+        return back()->with('status', 'Dining UPI payment confirmed.');
+    }
+
+    public function markCashReceived(Request $request, DiningSession $diningSession): RedirectResponse
+    {
+        $this->authorize('markCashReceived', $diningSession);
+        $this->dining->markCashReceived($diningSession, $request->user('admin'));
+
+        return back()->with('status', 'Dining cash marked as received.');
+    }
+
+    public function rejectPaymentProof(Request $request, DiningSession $diningSession): RedirectResponse
+    {
+        $this->authorize('rejectPaymentProof', $diningSession);
+
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $this->dining->rejectPaymentProof(
+            $diningSession,
+            $request->user('admin'),
+            $data['notes'] ?? null,
+        );
+
+        return back()->with('status', 'Payment proof replacement requested.');
+    }
+
+    public function paymentProof(DiningSession $diningSession): Response
+    {
+        $this->authorize('viewPaymentProof', $diningSession);
+
+        $disk = $diningSession->payment_proof_disk ?: 'local';
+        $path = (string) $diningSession->payment_proof_path;
+
+        return response()->file(Storage::disk($disk)->path($path), [
+            'Content-Type' => $diningSession->payment_proof_mime ?: 'application/octet-stream',
+        ]);
     }
 
     public function invoice(DiningSession $diningSession): Response

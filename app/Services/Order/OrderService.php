@@ -21,6 +21,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
@@ -48,6 +49,7 @@ class OrderService implements OrderServiceInterface
         protected PromotionServiceInterface $promotions,
         protected ReferralServiceInterface $referrals,
         protected OrderPreparationServiceInterface $preparations,
+        protected OrderInventoryConsumptionServiceInterface $inventoryConsumption,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -305,7 +307,10 @@ class OrderService implements OrderServiceInterface
     public function transition(Order $order, User $actor, OrderStatusTransitionTransferInterface $data): Order
     {
         return DB::transaction(function () use ($order, $actor, $data): Order {
-            $currentStatus = $order->status;
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            $currentStatus = $locked->status;
             $nextStatus = OrderStatus::from((string) $data->getStatus());
 
             if (! $currentStatus instanceof OrderStatus) {
@@ -320,7 +325,7 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
-            $allowedStatuses = $this->availableTransitions($order, $actor);
+            $allowedStatuses = $this->availableTransitions($locked, $actor);
 
             if (! array_key_exists($nextStatus->value, $allowedStatuses)) {
                 throw ValidationException::withMessages([
@@ -328,25 +333,44 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
+            if (
+                $nextStatus === OrderStatus::PaymentConfirmed
+                && ! $locked->isCashPayment()
+                && ! $locked->hasPaymentProof()
+            ) {
+                throw ValidationException::withMessages([
+                    'status' => 'UPI payment confirmation requires an uploaded payment proof.',
+                ]);
+            }
+
+            if (
+                $nextStatus === OrderStatus::PaymentConfirmed
+                && $locked->payment_status === PaymentStatus::Confirmed
+            ) {
+                throw ValidationException::withMessages([
+                    'status' => 'Payment is already confirmed for this order.',
+                ]);
+            }
+
             $attributes = ['status' => $nextStatus->value];
 
             match ($nextStatus) {
-                OrderStatus::PaymentConfirmed => $attributes['payment_confirmed_at'] = $order->payment_confirmed_at ?: now(),
-                OrderStatus::Accepted => $attributes['accepted_at'] = $order->accepted_at ?: now(),
-                OrderStatus::Preparing => $attributes['preparing_at'] = $order->preparing_at ?: now(),
-                OrderStatus::ReadyForPickup => $attributes['ready_for_pickup_at'] = $order->ready_for_pickup_at ?: now(),
-                OrderStatus::Completed => $attributes['completed_at'] = $order->completed_at ?: now(),
-                OrderStatus::Cancelled => $attributes['cancelled_at'] = $order->cancelled_at ?: now(),
-                OrderStatus::Rejected => $attributes['rejected_at'] = $order->rejected_at ?: now(),
+                OrderStatus::PaymentConfirmed => $attributes['payment_confirmed_at'] = $locked->payment_confirmed_at ?: now(),
+                OrderStatus::Accepted => $attributes['accepted_at'] = $locked->accepted_at ?: now(),
+                OrderStatus::Preparing => $attributes['preparing_at'] = $locked->preparing_at ?: now(),
+                OrderStatus::ReadyForPickup => $attributes['ready_for_pickup_at'] = $locked->ready_for_pickup_at ?: now(),
+                OrderStatus::Completed => $attributes['completed_at'] = $locked->completed_at ?: now(),
+                OrderStatus::Cancelled => $attributes['cancelled_at'] = $locked->cancelled_at ?: now(),
+                OrderStatus::Rejected => $attributes['rejected_at'] = $locked->rejected_at ?: now(),
                 default => null,
             };
 
             if ($nextStatus === OrderStatus::PaymentConfirmed) {
                 $attributes['payment_status'] = PaymentStatus::Confirmed->value;
                 $attributes['payment_proof_rejection_notes'] = null;
-                $attributes['payment_confirmed_at'] = $order->payment_confirmed_at ?: now();
+                $attributes['payment_confirmed_at'] = $locked->payment_confirmed_at ?: now();
 
-                if ($order->isCashPayment() && $order->payment_received_by_id === null) {
+                if ($locked->isCashPayment() && $locked->payment_received_by_id === null) {
                     $attributes['payment_received_by_id'] = $actor->getKey();
                 }
             }
@@ -354,13 +378,15 @@ class OrderService implements OrderServiceInterface
             if (
                 $actor->hasRole(UserRole::Barista)
                 && in_array($nextStatus, [OrderStatus::Accepted, OrderStatus::Preparing, OrderStatus::ReadyForPickup, OrderStatus::Completed], true)
-                && ! $order->assigned_barista_id
+                && ! $locked->assigned_barista_id
             ) {
                 $attributes['assigned_barista_id'] = $actor->getKey();
             }
 
-            $order = $this->orders->update($order, $attributes);
-            $this->orders->createStatusHistory($order, [
+            $wasUnpaid = $locked->payment_status !== PaymentStatus::Confirmed;
+
+            $locked = $this->orders->update($locked, $attributes);
+            $this->orders->createStatusHistory($locked, [
                 'from_status' => $currentStatus->value,
                 'to_status' => $nextStatus->value,
                 'changed_by' => $actor->getKey(),
@@ -368,29 +394,43 @@ class OrderService implements OrderServiceInterface
             ]);
 
             if ($nextStatus === OrderStatus::Accepted) {
-                $this->preparations->createTicketsForOrder($order->fresh(['items', 'preparations']));
+                $accepted = $locked->fresh(['items.recipe.lines.ingredient', 'preparations']);
+                $this->inventoryConsumption->consumeForAcceptedOrder($accepted, $actor);
+                $this->preparations->createTicketsForOrder($accepted->fresh(['items', 'preparations']));
             }
 
             if (in_array($nextStatus, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
-                $this->preparations->cancelTicketsForOrder($order->fresh(['preparations']), $actor);
+                $terminal = $locked->fresh(['preparations', 'items']);
+                // Capture prep progress before tickets are force-cancelled.
+                $mayReverseInventory = ! $this->inventoryConsumption->hasMaterialPreparationStarted($terminal);
+                $this->preparations->cancelTicketsForOrder($terminal, $actor);
+
+                if ($mayReverseInventory) {
+                    $this->inventoryConsumption->reverseForCancelledOrder($terminal, $actor);
+                }
+
+                if ($wasUnpaid) {
+                    $this->restoreRewardsForUnpaidTerminalOrder($locked);
+                }
             }
 
-            $order = $order->fresh([
+            $locked = $locked->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
                 'preparations',
+                'rewardRedemptions',
             ]);
 
             OrderStatusChanged::dispatch(
-                $order,
+                $locked,
                 $currentStatus,
                 $nextStatus,
                 $data->getNotes(),
             );
 
-            return $order;
+            return $locked;
         });
     }
 
@@ -454,9 +494,9 @@ class OrderService implements OrderServiceInterface
 
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order
     {
-        if (! $actor->canManageOrders()) {
+        if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Only administrators can request a payment proof replacement.',
+                'payment_proof' => 'Only administrators or operators can request a payment proof replacement.',
             ]);
         }
 
@@ -473,32 +513,47 @@ class OrderService implements OrderServiceInterface
         }
 
         return DB::transaction(function () use ($order, $actor, $notes): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== OrderStatus::PendingPayment) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'Payment proof can only be rejected while the order is pending payment.',
+                ]);
+            }
+
+            if (! $locked->hasPaymentProof()) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'This order does not have an uploaded payment proof.',
+                ]);
+            }
+
             $customerFacingReason = filled($notes)
                 ? trim($notes)
                 : 'Please upload a clearer payment screenshot.';
 
-            $order = $this->orders->update($order, [
+            $locked = $this->orders->update($locked, [
                 'payment_status' => PaymentStatus::Rejected->value,
                 'payment_proof_rejection_notes' => $customerFacingReason,
             ]);
 
-            $this->orders->createStatusHistory($order, [
+            $this->orders->createStatusHistory($locked, [
                 'from_status' => OrderStatus::PendingPayment->value,
                 'to_status' => OrderStatus::PendingPayment->value,
                 'changed_by' => $actor->getKey(),
                 'notes' => 'Payment proof replacement requested.'.(filled($notes) ? ' '.$notes : ''),
             ]);
 
-            $order = $order->fresh([
+            $locked = $locked->fresh([
                 'customer',
                 'assignedBarista',
                 'items.recipe.lines.ingredient.brand',
                 'statusHistory.changedBy',
             ]);
 
-            OrderPaymentProofRejected::dispatch($order, $customerFacingReason);
+            OrderPaymentProofRejected::dispatch($locked, $customerFacingReason);
 
-            return $order;
+            return $locked;
         });
     }
 
@@ -510,29 +565,32 @@ class OrderService implements OrderServiceInterface
             ]);
         }
 
-        if (! $order->isCashPayment()) {
-            throw ValidationException::withMessages([
-                'payment' => 'Only cash orders can be marked as cash received.',
-            ]);
-        }
-
-        if ($order->payment_status === PaymentStatus::Confirmed) {
-            throw ValidationException::withMessages([
-                'payment' => 'Cash has already been marked as received for this order.',
-            ]);
-        }
-
-        if (in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
-            throw ValidationException::withMessages([
-                'payment' => 'Cash cannot be marked received on a cancelled or rejected order.',
-            ]);
-        }
-
         return DB::transaction(function () use ($order, $actor): Order {
-            $currentStatus = $order->status;
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $locked->isCashPayment()) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Only cash orders can be marked as cash received.',
+                ]);
+            }
+
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Cash has already been marked as received for this order.',
+                ]);
+            }
+
+            if (in_array($locked->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Cash cannot be marked received on a cancelled or rejected order.',
+                ]);
+            }
+
+            $currentStatus = $locked->status;
             $attributes = [
                 'payment_status' => PaymentStatus::Confirmed->value,
-                'payment_confirmed_at' => $order->payment_confirmed_at ?: now(),
+                'payment_confirmed_at' => $locked->payment_confirmed_at ?: now(),
                 'payment_received_by_id' => $actor->getKey(),
             ];
 
@@ -540,10 +598,10 @@ class OrderService implements OrderServiceInterface
                 $attributes['status'] = OrderStatus::PaymentConfirmed->value;
             }
 
-            $order = $this->orders->update($order, $attributes);
+            $locked = $this->orders->update($locked, $attributes);
 
             if ($currentStatus === OrderStatus::PendingPayment) {
-                $this->orders->createStatusHistory($order, [
+                $this->orders->createStatusHistory($locked, [
                     'from_status' => OrderStatus::PendingPayment->value,
                     'to_status' => OrderStatus::PaymentConfirmed->value,
                     'changed_by' => $actor->getKey(),
@@ -551,7 +609,7 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
-            $order = $order->fresh([
+            $locked = $locked->fresh([
                 'customer',
                 'assignedBarista',
                 'paymentReceivedBy',
@@ -561,16 +619,16 @@ class OrderService implements OrderServiceInterface
 
             if ($currentStatus === OrderStatus::PendingPayment) {
                 OrderStatusChanged::dispatch(
-                    $order,
+                    $locked,
                     OrderStatus::PendingPayment,
                     OrderStatus::PaymentConfirmed,
                     'Cash received.',
                 );
             } else {
-                OrderCashReceived::dispatch($order, $actor);
+                OrderCashReceived::dispatch($locked, $actor);
             }
 
-            return $order;
+            return $locked;
         });
     }
 
@@ -630,29 +688,13 @@ class OrderService implements OrderServiceInterface
             }
 
             $subtotal = $this->sumLineSubtotals($preparedItems);
-            $pricedItems = array_map(static fn (array $item): array => [
-                'product_id' => isset($item['product_id']) ? (int) $item['product_id'] : null,
-                'product_variant_id' => isset($item['product_variant_id']) ? (int) $item['product_variant_id'] : null,
-                'product_category_id' => isset($item['product_category_id']) ? (int) $item['product_category_id'] : null,
-                'quantity' => (int) $item['quantity'],
-                'unit_price' => (string) $item['unit_price'],
-                'line_subtotal' => (string) $item['line_subtotal'],
-            ], $preparedItems);
 
             $customer = $session->customer;
-            $promotionResult = $this->promotions->assertAndEvaluateForCheckout([
-                'customer' => $customer,
-                'fulfilment' => OrderFulfilmentMethod::DineIn,
-                'promo_code' => null,
-                'items' => $pricedItems,
-            ]);
 
-            $discountTotal = (string) $promotionResult['discount_total'];
-            $gstBasis = bcsub($subtotal, $discountTotal, 2);
-            if (bccomp($gstBasis, '0', 2) < 0) {
-                $gstBasis = '0.00';
-            }
-
+            // Dining rounds are operational units only: snapshot merchandise prices/tax for
+            // kitchen prep display. Session-level promotions apply once at final bill.
+            $discountTotal = '0.00';
+            $gstBasis = $subtotal;
             $tax = $this->taxCalculator->calculateForPayableAndGstBasis($gstBasis, $gstBasis);
             $totalAmount = $this->taxCalculator->payableTotal($tax);
             $placedAt = now();
@@ -696,6 +738,7 @@ class OrderService implements OrderServiceInterface
                 'delivery_fee_amount' => null,
                 'delivery_tracking_reference' => null,
                 'payment_method' => PaymentMethod::Manual->value,
+                // Subordinate / non-revenue: dining payment lives on the session only.
                 'payment_status' => PaymentStatus::Pending->value,
                 'placed_at' => $placedAt,
                 'accepted_at' => $placedAt,
@@ -713,7 +756,6 @@ class OrderService implements OrderServiceInterface
                 'quantity' => $item['quantity'],
                 'line_subtotal' => $item['line_subtotal'],
             ], $preparedItems));
-            $this->persistOrderPromotions($order, $promotionResult['discounts']);
             $this->orders->createStatusHistory($order, [
                 'from_status' => null,
                 'to_status' => OrderStatus::Accepted->value,
@@ -732,7 +774,8 @@ class OrderService implements OrderServiceInterface
                 'preparations',
             ]);
 
-            $this->preparations->createTicketsForOrder($order);
+            $this->inventoryConsumption->consumeForAcceptedOrder($order, $actor);
+            $this->preparations->createTicketsForOrder($order->fresh(['items', 'preparations']));
 
             $order = $order->fresh([
                 'customer',
@@ -872,6 +915,54 @@ class OrderService implements OrderServiceInterface
                 'status' => CustomerRewardStatus::Redeemed,
                 'redeemed_order_id' => $order->getKey(),
                 'redeemed_at' => now(),
+            ])->save();
+        }
+    }
+
+    /**
+     * Restore redeemed rewards when an unpaid order is cancelled/rejected.
+     * Idempotent: already-available/expired rewards are left alone.
+     */
+    protected function restoreRewardsForUnpaidTerminalOrder(Order $order): void
+    {
+        $order->loadMissing('rewardRedemptions.reward');
+
+        foreach ($order->rewardRedemptions as $redemption) {
+            $reward = $redemption->reward;
+
+            if ($reward === null) {
+                continue;
+            }
+
+            /** @var CustomerReward $lockedReward */
+            $lockedReward = CustomerReward::query()->whereKey($reward->getKey())->lockForUpdate()->first();
+
+            if ($lockedReward === null) {
+                continue;
+            }
+
+            if ($lockedReward->status !== CustomerRewardStatus::Redeemed) {
+                continue;
+            }
+
+            if ((int) $lockedReward->redeemed_order_id !== (int) $order->getKey()) {
+                continue;
+            }
+
+            if ($lockedReward->isExpiredAt(now())) {
+                $lockedReward->forceFill([
+                    'status' => CustomerRewardStatus::Expired,
+                    'redeemed_order_id' => null,
+                    'redeemed_at' => null,
+                ])->save();
+
+                continue;
+            }
+
+            $lockedReward->forceFill([
+                'status' => CustomerRewardStatus::Available,
+                'redeemed_order_id' => null,
+                'redeemed_at' => null,
             ])->save();
         }
     }

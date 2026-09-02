@@ -4,6 +4,7 @@ namespace App\Services\Referral;
 
 use App\Models\CustomerReferral;
 use App\Models\CustomerReward;
+use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -29,6 +30,11 @@ interface ReferralServiceInterface
      * Idempotent: create at most one reward when referred customer's order qualifies.
      */
     public function qualifyOrderIfEligible(Order $order): ?CustomerReward;
+
+    /**
+     * Idempotent: create at most one reward when a paid dining session qualifies.
+     */
+    public function qualifyDiningSessionIfEligible(DiningSession $session): ?CustomerReward;
 
     /**
      * @return array<string, mixed>

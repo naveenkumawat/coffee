@@ -138,8 +138,13 @@
                                 <td>{{ number_format((float) $transaction->stock_after, 3) }} {{ $transaction->base_measurement_unit->value }}</td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span>{{ $transaction->reference_type ?: 'Manual entry' }}</span>
-                                        <span class="text-gray-500 fs-7">{{ $transaction->reference_id ? '#'.$transaction->reference_id : ($transaction->notes ?: 'No notes') }}</span>
+                                        @if (in_array($transaction->transaction_type->value, ['sale_consumption', 'sale_reversal'], true))
+                                            <span class="text-gray-900">{{ $transaction->transaction_type->label() }}</span>
+                                            <span class="text-gray-500 fs-7">{{ $transaction->notes ?: 'Order item #'.$transaction->reference_id }}</span>
+                                        @else
+                                            <span>{{ $transaction->reference_type ?: 'Manual entry' }}</span>
+                                            <span class="text-gray-500 fs-7">{{ $transaction->reference_id ? '#'.$transaction->reference_id : ($transaction->notes ?: 'No notes') }}</span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>{{ $transaction->createdBy?->name ?: 'System' }}</td>

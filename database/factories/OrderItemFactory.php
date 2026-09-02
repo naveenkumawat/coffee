@@ -24,7 +24,7 @@ class OrderItemFactory extends Factory
             'order_id' => Order::factory(),
             'product_id' => Product::factory()->for(ProductCategory::factory(), 'category'),
             'product_variant_id' => ProductVariant::factory(),
-            'recipe_id' => Recipe::factory(),
+            'recipe_id' => Recipe::factory()->withDefaultLine(),
             'preparation_station' => PreparationStation::Bar,
             'product_name' => 'Cafe Latte',
             'variant_name' => 'Regular',

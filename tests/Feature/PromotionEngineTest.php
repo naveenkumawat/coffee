@@ -696,9 +696,10 @@ class PromotionEngineTest extends TestCase
             ->assertJsonPath('meta.summary.discount_total', '0.00');
     }
 
-    public function test_dine_in_dining_round_persists_automatic_promotion_on_order(): void
+    public function test_dine_in_dining_round_does_not_apply_automatic_promotion_until_final_bill(): void
     {
         $this->enableDineIn();
+        $this->setTaxSettings(enabled: false, percent: '0.00');
         $table = CafeTable::factory()->create(['is_active' => true, 'code' => 'P1']);
 
         Promotion::factory()->automatic()->dineIn()->percentage(10)->create([
@@ -715,11 +716,18 @@ class PromotionEngineTest extends TestCase
         $dining->addDraftItem($session, (int) $variant->getKey(), 1, $customer);
         $order = $dining->placeRound($session, $customer);
 
-        $this->assertSame('10.00', (string) $order->discount_total);
-        $this->assertDatabaseHas('order_promotions', [
+        $this->assertSame('0.00', (string) $order->discount_total);
+        $this->assertDatabaseMissing('order_promotions', [
             'order_id' => $order->getKey(),
         ]);
-        $this->assertSame('90.00', (string) $order->total_amount);
+        $this->assertSame('100.00', (string) $order->total_amount);
+
+        $session = $dining->generateFinalBill($session, $customer);
+        $this->assertSame('10.00', (string) $session->discount_amount);
+        $this->assertSame('90.00', (string) $session->total_amount);
+        $this->assertDatabaseHas('dining_session_promotions', [
+            'dining_session_id' => $session->getKey(),
+        ]);
     }
 
     protected function setTaxSettings(
@@ -785,7 +793,7 @@ class PromotionEngineTest extends TestCase
             'is_available' => true,
         ]);
 
-        return ProductVariant::factory()->create([
+        return ProductVariant::factory()->withConsumableRecipe()->create([
             'product_id' => $product->id,
             'name' => 'Regular',
             'serving_size_value' => '300.000',

@@ -27,6 +27,9 @@ class DiningSession extends AbstractModel
         'paid_at',
         'closed_at',
         'payment_method',
+        'payment_method_previous',
+        'payment_method_changed_at',
+        'payment_method_changed_by_id',
         'payment_status',
         'subtotal_amount',
         'discount_amount',
@@ -58,6 +61,8 @@ class DiningSession extends AbstractModel
             'paid_at' => 'datetime',
             'closed_at' => 'datetime',
             'payment_method' => PaymentMethod::class,
+            'payment_method_previous' => PaymentMethod::class,
+            'payment_method_changed_at' => 'datetime',
             'payment_status' => PaymentStatus::class,
             'subtotal_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
@@ -92,14 +97,33 @@ class DiningSession extends AbstractModel
         return $this->belongsTo(User::class, 'payment_received_by_id')->withTrashed();
     }
 
+    public function paymentMethodChangedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payment_method_changed_by_id')->withTrashed();
+    }
+
+    /**
+     * Dining rounds are operational/preparation units only.
+     * Session money columns are the sole billing/payment/revenue authority.
+     */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class)->orderBy('dining_round_number')->orderBy('id');
     }
 
+    public function promotions(): HasMany
+    {
+        return $this->hasMany(DiningSessionPromotion::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function drafts(): HasMany
     {
         return $this->hasMany(DiningRoundDraft::class)->orderBy('id');
+    }
+
+    public function hasFinalizedBill(): bool
+    {
+        return $this->bill_generated_at !== null && $this->total_amount !== null;
     }
 
     public function allowsNewRounds(): bool

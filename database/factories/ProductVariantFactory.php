@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\ProductServingUnit;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Recipe;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,5 +25,22 @@ class ProductVariantFactory extends Factory
             'is_active' => true,
             'is_available' => true,
         ];
+    }
+
+    /**
+     * Ensure the variant has an active recipe with stocked lines (Phase F2 consumption).
+     */
+    public function withConsumableRecipe(): static
+    {
+        return $this->afterCreating(function (ProductVariant $variant): void {
+            if ($variant->recipe()->exists()) {
+                return;
+            }
+
+            Recipe::factory()->withDefaultLine()->create([
+                'product_variant_id' => $variant->getKey(),
+                'is_active' => true,
+            ]);
+        });
     }
 }

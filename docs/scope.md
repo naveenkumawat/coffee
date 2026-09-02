@@ -1120,31 +1120,27 @@ This reduces the need for customers to repeatedly contact café staff regarding 
 
 # 36. Inventory Consumption from Orders
 
-A future-ready inventory system should link recipe ingredients with order preparation.
+Orders and dining rounds are the inventory consumption authority. Preparation tickets are operational routing only and never deduct stock.
 
-Example:
+**When (Phase F2):**
 
-Customer orders:
+* Takeaway / Delivery: consume when the order reaches **Accepted** (preparation commitment), before tickets are created.
+* Dining: each **round** consumes when the round is created/accepted for preparation (pay-at-end does not change stock timing).
+* Final dining bill, payment, and session close do **not** consume again.
 
-**2 × Cold Coffee Classic**
+**How:**
 
-Recipe requires per drink:
+* For each order item: `ordered qty × recipe line quantity` using the variant recipe snapshotted on the item (`recipe_id`) and existing `IngredientUnit` normalization.
+* Ledger types: `sale_consumption` (decrease) and `sale_reversal` (increase). Durable identity in `order_inventory_consumptions` (unique per order item + ingredient).
+* Promotions, referral coupons, free drinks, and GST never change physical consumption — free drink still consumes the full recipe.
 
-* Coffee: 2 g
-* Milk: 110 ml
-* Ice Cream: 130 g
+**Cancellation:**
 
-Required inventory:
+* If **no** preparation ticket is `preparing` or `ready`: create compensating `sale_reversal` rows from **original** consumption quantities (never recalc from current recipe). Keep original consumption rows.
+* If **any** ticket is already preparing/ready (including mixed BAR/KITCHEN): do **not** auto-restore — staff may adjust wastage manually.
+* Restoration depends on preparation state, not payment/refund state.
 
-* Coffee: 4 g
-* Milk: 220 ml
-* Ice Cream: 260 g
-
-The system can deduct inventory automatically when the order reaches a predefined status such as:
-
-**Preparing** or **Completed**.
-
-The exact deduction point should be configurable to prevent inaccurate inventory from cancelled orders.
+**Deployment:** prospective only after release — no automatic backfill of historical orders onto live stock.
 
 ---
 
@@ -1168,24 +1164,26 @@ This feature can be implemented progressively.
 
 # 38. Reports
 
-Administrator reports should provide business and operational information.
+Administrator reports provide business and operational information from **transactional snapshots only**.
+
+### Financial reporting authority (Phase F3.1)
+
+* **Retail revenue** = confirmed Takeaway/Delivery orders (`payment_status = confirmed` and status not Cancelled/Rejected), using `payment_confirmed_at` and stored `orders.*` money/tax/discount snapshots.
+* **Dining revenue** = confirmed Dining Session snapshots only (`dining_sessions.payment_status = confirmed`, `paid_at`, session totals). Dining **round orders** are operational/preparation records and must never be double-counted as revenue.
+* Pending/unpaid is not revenue. Historical reports never recalculate from current Website Settings (prices, GST, promotions, rewards).
+* Canonical service: `FinancialReportingService` (Admin financial report + CSV export; Operator today reconciliation only — no cost/margin/long-range analytics).
 
 ### Sales Reports
 
-* Daily sales
-* Weekly sales
-* Monthly sales
-* Date-range sales
-* Product-wise sales
-* Category-wise sales
+* Daily / weekly / monthly / custom date-range paid sales (business timezone)
+* Channel breakdown: Takeaway, Delivery, Dining
+* Payment reconciliation: cash collected, UPI confirmed, pending, rejected proofs
 
 ### Order Reports
 
-* Total orders
-* Completed orders
-* Cancelled orders
-* Pending orders
-* Average order value
+* Paid transaction counts and average value
+* Cancelled / rejected operational counts (excluded from paid revenue)
+* Paid cancellation exceptions surfaced separately (no invented refund accounting)
 
 ### Product Reports
 

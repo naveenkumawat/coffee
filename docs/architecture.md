@@ -303,7 +303,7 @@ Lifecycle:
 
 1. Customer receives a unique `users.referral_code` (generated on register / account summary).
 2. Friend registers with `?ref=` / `referral_code` → `customer_referrals` + `referred_by_user_id` (immutable).
-3. Friend’s first qualifying paid order (`OrderStatusChanged` → `PaymentConfirmed`, including cash-received) → referrer earns one `customer_rewards` row (idempotent).
+3. Friend’s first qualifying paid purchase (`OrderStatusChanged` → `PaymentConfirmed`, `OrderCashReceived` when payment becomes confirmed after Accept, or paid `DiningSession`) → referrer earns one `customer_rewards` row (idempotent). Dining qualifies **once per session**, never per round. Anonymous/walk-in dining does not qualify.
 4. Cart applies at most **one** referral reward (free drink **or** coupon).
 5. Checkout redeems atomically into `order_reward_redemptions` and marks the reward redeemed. Failed checkout leaves the reward available.
 
@@ -358,5 +358,11 @@ Separate from takeaway/delivery checkout:
 3. Kitchen/bar starts on **Accepted** rounds without requiring payment first.
 4. At the end: request bill → session payment (cash or UPI proof) → close session (frees table).
 
-Roles: **Waiter** panel for tables/sessions; **Operator** for order accept/payment/dining oversight; **Barista**/**Chef** prepare station tickets; administrators can reopen/close and manage catalog/config.
+**Financial authority (Phase F1):** Dining **rounds** are preparation/operational units only (item price snapshots, station tickets). The **dining session** is the sole billing, payment, and revenue unit (`dining_sessions.*_amount`, `payment_status`). Dining automatic promotions apply **once** at final bill (`dining_session_promotions`), never per round. After `bill_generated_at`, displays/invoices/payment use session snapshots — `runningBill()` is open-session preview only. Round `payment_status` is subordinate/non-revenue; do not treat rounds as independent paid sales.
+
+**Inventory authority (Phase F2):** Order / dining **round** acceptance consumes recipe ingredients exactly once (`OrderInventoryConsumptionService` → `sale_consumption` ledger + `order_inventory_consumptions`). Preparation tickets never consume or restore stock. Early cancel/reject before any ticket is Preparing/Ready writes `sale_reversal` from original quantities; mixed-station partial prep blocks auto-restore. Dining bill/payment/close do not affect inventory. Historical orders are not backfilled.
+
+**Reporting authority (Phase F3.1):** Retail revenue = confirmed Takeaway/Delivery orders (not Cancelled/Rejected). Dining revenue = confirmed Dining Session snapshots only. Dining rounds never contribute to revenue totals. All money/GST/discount figures come from stored transactional snapshots — never current Website Settings. `FinancialReportingService` is the single reporting domain; Admin gets financial reports + CSV export; Operator gets today operational reconciliation only (no cost/margin/long-range analytics). Date ranges resolve in `business_timezone` via `CafeAvailabilityService`.
+
+Roles: **Waiter** panel for tables/sessions and dining cash; **Operator**/administrators confirm/reject dining UPI proof; **Barista**/**Chef** prepare station tickets; administrators manage catalog/config.
 Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).

@@ -2,7 +2,11 @@
     $showAdminMeta = $showAdminMeta ?? false;
     $invoiceRoute = $invoiceRoute ?? null;
     $showInvoice = $showInvoice ?? filled($invoiceRoute);
-    $billTotal = $bill['total'] ?? ($session->total_amount ?: '0.00');
+    $billFinalized = $bill['finalized'] ?? $session->hasFinalizedBill();
+    $billTotal = $billFinalized
+        ? number_format((float) $session->total_amount, 2, '.', '')
+        : ($bill['total'] ?? '0.00');
+    $billLabel = $billFinalized ? 'Final bill total' : 'Running bill (preview)';
 @endphp
 
 <div class="card card-flush internal-card mb-7">
@@ -35,7 +39,7 @@
                 </div>
             @endif
             <div class="col-md-3">
-                <div class="text-muted fs-8">Running / bill total</div>
+                <div class="text-muted fs-8">{{ $billLabel }}</div>
                 <div class="fw-bold">{{ $billTotal }}</div>
             </div>
             <div class="col-md-3">

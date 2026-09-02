@@ -168,27 +168,43 @@ class PromotionService implements PromotionServiceInterface
 
     public function usageCount(Promotion $promotion): int
     {
-        return (int) DB::table('order_promotions')
+        $orderUsage = (int) DB::table('order_promotions')
             ->join('orders', 'orders.id', '=', 'order_promotions.order_id')
             ->where('order_promotions.promotion_id', $promotion->getKey())
+            ->whereNull('orders.dining_session_id')
             ->whereNotIn('orders.status', [
                 OrderStatus::Cancelled->value,
                 OrderStatus::Rejected->value,
             ])
             ->count();
+
+        $sessionUsage = (int) DB::table('dining_session_promotions')
+            ->where('promotion_id', $promotion->getKey())
+            ->count();
+
+        return $orderUsage + $sessionUsage;
     }
 
     public function usageCountForCustomer(Promotion $promotion, User $customer): int
     {
-        return (int) DB::table('order_promotions')
+        $orderUsage = (int) DB::table('order_promotions')
             ->join('orders', 'orders.id', '=', 'order_promotions.order_id')
             ->where('order_promotions.promotion_id', $promotion->getKey())
+            ->whereNull('orders.dining_session_id')
             ->where('orders.customer_id', $customer->getKey())
             ->whereNotIn('orders.status', [
                 OrderStatus::Cancelled->value,
                 OrderStatus::Rejected->value,
             ])
             ->count();
+
+        $sessionUsage = (int) DB::table('dining_session_promotions')
+            ->join('dining_sessions', 'dining_sessions.id', '=', 'dining_session_promotions.dining_session_id')
+            ->where('dining_session_promotions.promotion_id', $promotion->getKey())
+            ->where('dining_sessions.customer_id', $customer->getKey())
+            ->count();
+
+        return $orderUsage + $sessionUsage;
     }
 
     /**

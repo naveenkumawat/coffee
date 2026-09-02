@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\IngredientUnit;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\ProductServingUnit;
 use App\Models\Ingredient;
 use App\Models\IngredientCategory;
@@ -132,6 +133,14 @@ class OrderManagementTest extends TestCase
     {
         $manager = User::factory()->manager()->create();
         $order = $this->createPendingOrder();
+        $order->forceFill([
+            'payment_proof_path' => 'payment-proofs/'.$order->id.'/demo.jpg',
+            'payment_proof_disk' => 'local',
+            'payment_proof_mime' => 'image/jpeg',
+            'payment_proof_size' => 1024,
+            'payment_proof_uploaded_at' => now(),
+            'payment_status' => PaymentStatus::AwaitingReview->value,
+        ])->save();
 
         $this->actingAs($manager, 'admin')->patch(route('administrator.orders.status.update', $order), [
             'status' => OrderStatus::PaymentConfirmed->value,

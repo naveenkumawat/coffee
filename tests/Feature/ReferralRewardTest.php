@@ -87,10 +87,10 @@ class ReferralRewardTest extends TestCase
         $code = app(ReferralServiceInterface::class)->ensureCustomerReferralCode($referrer);
         app(ReferralServiceInterface::class)->attachReferralOnRegistration($friend, $code);
 
-        $order = Order::factory()->create([
+        $order = Order::factory()->withPaymentProof()->create([
             'customer_id' => $friend->id,
             'status' => OrderStatus::PendingPayment,
-            'payment_status' => PaymentStatus::Pending,
+            'payment_status' => PaymentStatus::AwaitingReview,
             'total_amount' => '150.00',
         ]);
 

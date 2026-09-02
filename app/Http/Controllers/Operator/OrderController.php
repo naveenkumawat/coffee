@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operator;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\OrderIndexRequest;
+use App\Http\Requests\Order\OrderPaymentProofRejectRequest;
 use App\Http\Requests\Order\OrderStatusUpdateRequest;
 use App\Models\Order;
 use App\Parsers\Order\OrderParserInterface;
@@ -15,7 +16,9 @@ use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -94,6 +97,42 @@ class OrderController extends Controller
         return redirect()
             ->route('operator.orders.show', $order)
             ->with('status', 'Cash marked as received.');
+    }
+
+    public function rejectPaymentProof(OrderPaymentProofRejectRequest $request, Order $order): RedirectResponse
+    {
+        $this->authorize('rejectPaymentProof', $order);
+
+        $this->service->rejectPaymentProof(
+            $order,
+            $request->user('admin'),
+            $request->validated('notes'),
+        );
+
+        return redirect()
+            ->route('operator.orders.show', $order)
+            ->with('status', 'Payment proof replacement requested.');
+    }
+
+    public function paymentProof(Order $order): StreamedResponse
+    {
+        $this->authorize('viewPaymentProof', $order);
+
+        abort_unless($order->hasPaymentProof(), 404);
+
+        $disk = $order->payment_proof_disk ?: 'local';
+        $path = (string) $order->payment_proof_path;
+
+        abort_unless(Storage::disk($disk)->exists($path), 404);
+
+        return Storage::disk($disk)->response(
+            $path,
+            basename($path),
+            [
+                'Content-Type' => $order->payment_proof_mime ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+            ],
+        );
     }
 
     public function downloadInvoice(Order $order): Response

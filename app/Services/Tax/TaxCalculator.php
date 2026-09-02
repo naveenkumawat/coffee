@@ -155,6 +155,10 @@ class TaxCalculator implements TaxCalculatorInterface
         $inclusive = (bool) $order->tax_inclusive_snapshot;
         $label = filled($order->tax_label_snapshot) ? (string) $order->tax_label_snapshot : 'GST';
 
+        // Canonical café total is the persisted order total (includes free-drink GST rules).
+        // Do not recompute exclusive cafeTotal from taxable+tax — that breaks free-drink history.
+        $cafeTotal = $this->normalizeMoney((string) $order->total_amount);
+
         if (! $enabled) {
             return new TaxCalculation(
                 enabled: false,
@@ -163,13 +167,9 @@ class TaxCalculator implements TaxCalculatorInterface
                 inclusive: $inclusive,
                 taxableAmount: $taxable,
                 taxAmount: '0.00',
-                cafeTotal: $this->normalizeMoney((string) $order->total_amount),
+                cafeTotal: $cafeTotal,
             );
         }
-
-        $cafeTotal = $inclusive
-            ? $taxable
-            : bcadd($taxable, $taxAmount, 2);
 
         return new TaxCalculation(
             enabled: true,

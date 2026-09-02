@@ -555,7 +555,7 @@ class CustomerWhatsAppNotificationTest extends TestCase
             'is_available' => true,
         ]);
 
-        return ProductVariant::factory()->create([
+        return ProductVariant::factory()->withConsumableRecipe()->create([
             'product_id' => $product->id,
             'name' => 'Regular',
             'price' => $price,

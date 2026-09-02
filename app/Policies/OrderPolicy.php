@@ -42,7 +42,7 @@ class OrderPolicy
 
     public function rejectPaymentProof(User $user, Order $order): bool
     {
-        return $user->canManageOrders();
+        return $user->canManageOrders() || $user->canOperateOrders();
     }
 
     public function markCashReceived(User $user, Order $order): bool
@@ -53,7 +53,7 @@ class OrderPolicy
 
     public function viewPaymentProof(User $user, Order $order): bool
     {
-        return ($user->canManageOrders() && $order->hasPaymentProof())
+        return (($user->canManageOrders() || $user->canOperateOrders()) && $order->hasPaymentProof())
             || ($user->hasRole('customer')
                 && (int) $order->customer_id === (int) $user->getKey()
                 && $order->hasPaymentProof());

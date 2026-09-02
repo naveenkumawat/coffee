@@ -218,15 +218,14 @@ class DiningSessionService implements DiningSessionServiceInterface
 
         $rounds = [];
         $subtotal = '0.00';
-        $discount = '0.00';
 
         foreach ($session->orders as $order) {
             if (in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
                 continue;
             }
 
+            // Merchandise only — dining promotions apply once at final bill.
             $subtotal = bcadd($subtotal, (string) $order->subtotal, 2);
-            $discount = bcadd($discount, (string) $order->discount_total, 2);
             $rounds[] = [
                 'order_id' => (int) $order->getKey(),
                 'round_number' => (int) ($order->dining_round_number ?? 0),
@@ -236,17 +235,13 @@ class DiningSessionService implements DiningSessionServiceInterface
             ];
         }
 
-        $afterDiscount = bcsub($subtotal, $discount, 2);
-        if (bccomp($afterDiscount, '0', 2) < 0) {
-            $afterDiscount = '0.00';
-        }
-
-        $tax = $this->taxCalculator->calculateForTaxableAmount($afterDiscount);
+        $discount = '0.00';
+        $tax = $this->taxCalculator->calculateForTaxableAmount($subtotal);
         $total = $this->taxCalculator->payableTotal($tax);
 
         return [
             'subtotal' => number_format((float) $subtotal, 2, '.', ''),
-            'discount' => number_format((float) $discount, 2, '.', ''),
+            'discount' => $discount,
             'taxable' => $tax->taxableAmount,
             'tax' => $tax->taxAmount,
             'total' => $total,
@@ -255,6 +250,79 @@ class DiningSessionService implements DiningSessionServiceInterface
             'tax_percent' => $tax->enabled ? $tax->percent : null,
             'tax_inclusive' => $tax->enabled ? $tax->inclusive : false,
             'rounds' => $rounds,
+        ];
+    }
+
+    /**
+     * Prefer finalized session money snapshots after bill generation; otherwise live preview.
+     *
+     * @return array{
+     *     subtotal: string,
+     *     discount: string,
+     *     taxable: string,
+     *     tax: string,
+     *     total: string,
+     *     tax_enabled: bool,
+     *     tax_label: ?string,
+     *     tax_percent: ?string,
+     *     tax_inclusive: bool,
+     *     rounds: list<array{order_id: int, round_number: int, status: string, subtotal: string, total: string}>,
+     *     finalized: bool
+     * }
+     */
+    public function displayBill(DiningSession $session): array
+    {
+        if ($session->hasFinalizedBill()) {
+            return $this->finalizedBill($session);
+        }
+
+        return [
+            ...$this->runningBill($session),
+            'finalized' => false,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     subtotal: string,
+     *     discount: string,
+     *     taxable: string,
+     *     tax: string,
+     *     total: string,
+     *     tax_enabled: bool,
+     *     tax_label: ?string,
+     *     tax_percent: ?string,
+     *     tax_inclusive: bool,
+     *     rounds: list<array{order_id: int, round_number: int, status: string, subtotal: string, total: string}>,
+     *     finalized: bool
+     * }
+     */
+    public function finalizedBill(DiningSession $session): array
+    {
+        if (! $session->hasFinalizedBill()) {
+            throw ValidationException::withMessages([
+                'bill' => 'This dining session does not have a finalized bill yet.',
+            ]);
+        }
+
+        $preview = $this->runningBill($session);
+
+        return [
+            'subtotal' => number_format((float) $session->subtotal_amount, 2, '.', ''),
+            'discount' => number_format((float) ($session->discount_amount ?? 0), 2, '.', ''),
+            'taxable' => number_format((float) ($session->taxable_amount ?? 0), 2, '.', ''),
+            'tax' => number_format((float) ($session->tax_amount ?? 0), 2, '.', ''),
+            'total' => number_format((float) $session->total_amount, 2, '.', ''),
+            'tax_enabled' => (bool) $session->tax_enabled_snapshot,
+            'tax_label' => $session->tax_enabled_snapshot ? ($session->tax_label_snapshot ?: null) : null,
+            'tax_percent' => $session->tax_enabled_snapshot
+                ? number_format((float) ($session->tax_percent_snapshot ?? 0), 2, '.', '')
+                : null,
+            'tax_inclusive' => (bool) $session->tax_inclusive_snapshot,
+            'rounds' => $preview['rounds'],
+            'finalized' => true,
+            'payment_status' => $session->payment_status?->value,
+            'payment_status_label' => $session->payment_status?->label(),
         ];
     }
 
@@ -267,6 +335,10 @@ class DiningSessionService implements DiningSessionServiceInterface
     {
         return DB::transaction(function () use ($session, $actor): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->hasFinalizedBill() && $locked->payment_status !== PaymentStatus::Confirmed) {
+                return $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
+            }
 
             if (! in_array($locked->status, [DiningSessionStatus::Open, DiningSessionStatus::BillingRequested], true)) {
                 throw ValidationException::withMessages([
@@ -285,8 +357,9 @@ class DiningSessionService implements DiningSessionServiceInterface
             }
 
             DiningRoundDraft::query()->where('dining_session_id', $locked->getKey())->delete();
+            $locked->promotions()->delete();
 
-            $bill = $this->runningBill($locked);
+            $merchandise = $this->runningBill($locked);
             $promotionResult = $this->promotions->assertAndEvaluateForCheckout([
                 'customer' => $locked->customer,
                 'fulfilment' => OrderFulfilmentMethod::DineIn,
@@ -295,8 +368,7 @@ class DiningSessionService implements DiningSessionServiceInterface
             ]);
 
             $promoDiscount = (string) ($promotionResult['discount_total'] ?? '0.00');
-            $discount = bcadd($bill['discount'], $promoDiscount, 2);
-            $afterDiscount = bcsub($bill['subtotal'], $discount, 2);
+            $afterDiscount = bcsub($merchandise['subtotal'], $promoDiscount, 2);
             if (bccomp($afterDiscount, '0', 2) < 0) {
                 $afterDiscount = '0.00';
             }
@@ -309,8 +381,8 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'status' => DiningSessionStatus::AwaitingPayment,
                 'billing_requested_at' => $locked->billing_requested_at ?? $now,
                 'bill_generated_at' => $now,
-                'subtotal_amount' => $bill['subtotal'],
-                'discount_amount' => number_format((float) $discount, 2, '.', ''),
+                'subtotal_amount' => $merchandise['subtotal'],
+                'discount_amount' => number_format((float) $promoDiscount, 2, '.', ''),
                 'taxable_amount' => $tax->taxableAmount,
                 'tax_amount' => $tax->taxAmount,
                 'tax_enabled_snapshot' => $tax->enabled,
@@ -321,7 +393,19 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'payment_status' => PaymentStatus::Pending,
             ])->save();
 
-            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts']);
+            foreach (array_values($promotionResult['discounts']) as $index => $discount) {
+                $locked->promotions()->create([
+                    'promotion_id' => $discount['promotion_id'],
+                    'name_snapshot' => $discount['name'],
+                    'code_snapshot' => $discount['code'],
+                    'discount_type_snapshot' => $discount['discount_type'],
+                    'discount_value_snapshot' => $discount['discount_value'],
+                    'discount_amount' => $discount['amount'],
+                    'sort_order' => $index,
+                ]);
+            }
+
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
             event(new DiningBillReady($fresh, $actor));
 
             return $fresh;
@@ -330,29 +414,70 @@ class DiningSessionService implements DiningSessionServiceInterface
 
     public function setPaymentMethod(DiningSession $session, string $paymentMethodApiKey): DiningSession
     {
-        if (! in_array($session->status, [
-            DiningSessionStatus::BillingRequested,
-            DiningSessionStatus::AwaitingPayment,
-        ], true)) {
-            throw ValidationException::withMessages([
-                'payment_method' => 'Set a payment method after the bill is requested.',
-            ]);
-        }
+        return $this->changePaymentMethod($session, $paymentMethodApiKey, null);
+    }
 
-        $method = PaymentMethod::tryFromApiKey($paymentMethodApiKey);
-        if ($method === null) {
-            throw ValidationException::withMessages([
-                'payment_method' => 'Choose cash or UPI for dining payment.',
-            ]);
-        }
+    public function changePaymentMethod(
+        DiningSession $session,
+        string $paymentMethodApiKey,
+        ?User $actor = null,
+    ): DiningSession {
+        return DB::transaction(function () use ($session, $paymentMethodApiKey, $actor): DiningSession {
+            $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
 
-        $session->fill([
-            'payment_method' => $method,
-            'status' => DiningSessionStatus::AwaitingPayment,
-            'payment_status' => PaymentStatus::Pending,
-        ])->save();
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Payment method cannot change after payment is confirmed.',
+                ]);
+            }
 
-        return $session->fresh(['cafeTable', 'customer', 'orders.items']);
+            if (! in_array($locked->status, [
+                DiningSessionStatus::BillingRequested,
+                DiningSessionStatus::AwaitingPayment,
+            ], true)) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Set a payment method after the bill is requested.',
+                ]);
+            }
+
+            $method = PaymentMethod::tryFromApiKey($paymentMethodApiKey);
+            if ($method === null) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Choose cash or UPI for dining payment.',
+                ]);
+            }
+
+            $previous = $locked->payment_method;
+            $attributes = [
+                'payment_method' => $method,
+                'status' => DiningSessionStatus::AwaitingPayment,
+                'payment_status' => $locked->payment_status === PaymentStatus::AwaitingReview
+                    && $method === PaymentMethod::Manual
+                    ? PaymentStatus::AwaitingReview
+                    : PaymentStatus::Pending,
+            ];
+
+            if ($previous !== null && $previous !== $method) {
+                $attributes['payment_method_previous'] = $previous;
+                $attributes['payment_method_changed_at'] = now();
+                $attributes['payment_method_changed_by_id'] = $actor?->getKey();
+            }
+
+            if ($method === PaymentMethod::Cash) {
+                $locked->clearPaymentProofFiles();
+                $attributes['payment_proof_path'] = null;
+                $attributes['payment_proof_disk'] = null;
+                $attributes['payment_proof_mime'] = null;
+                $attributes['payment_proof_size'] = null;
+                $attributes['payment_proof_uploaded_at'] = null;
+                $attributes['payment_proof_rejection_notes'] = null;
+                $attributes['payment_status'] = PaymentStatus::Pending;
+            }
+
+            $locked->fill($attributes)->save();
+
+            return $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+        });
     }
 
     public function uploadPaymentProof(DiningSession $session, User $actor, UploadedFile $file): DiningSession
@@ -391,6 +516,7 @@ class DiningSessionService implements DiningSessionServiceInterface
             'payment_status' => PaymentStatus::AwaitingReview,
             'payment_proof_rejection_notes' => null,
             'status' => DiningSessionStatus::AwaitingPayment,
+            'payment_method' => $session->payment_method ?? PaymentMethod::Manual,
         ])->save();
 
         $relatedOrder = $session->orders()->latest('id')->first();
@@ -402,16 +528,58 @@ class DiningSessionService implements DiningSessionServiceInterface
                 StaffNotificationContext::forOrder($relatedOrder),
                 true,
             );
+            $this->staffNotifications->notify(
+                StaffNotificationType::PaymentProofReceived,
+                'staff:dining_payment_proof:ops:'.$session->getKey().':'.now()->timestamp,
+                StaffNotificationAudience::Operators,
+                StaffNotificationContext::forOrder($relatedOrder),
+                true,
+            );
         }
 
         return $session->fresh(['cafeTable', 'customer', 'orders.items']);
     }
 
+    public function rejectPaymentProof(DiningSession $session, User $actor, ?string $notes = null): DiningSession
+    {
+        if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Only administrators or operators can reject dining payment proof.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($session, $notes): DiningSession {
+            $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'Cannot reject proof after payment is confirmed.',
+                ]);
+            }
+
+            if (! $locked->hasPaymentProof()) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'This session does not have an uploaded payment proof.',
+                ]);
+            }
+
+            $reason = filled($notes) ? trim($notes) : 'Please upload a clearer payment screenshot.';
+
+            $locked->fill([
+                'payment_status' => PaymentStatus::Rejected,
+                'payment_proof_rejection_notes' => $reason,
+                'status' => DiningSessionStatus::AwaitingPayment,
+            ])->save();
+
+            return $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+        });
+    }
+
     public function confirmPayment(DiningSession $session, User $actor): DiningSession
     {
-        if (! $actor->canOperateDining() && ! $actor->canManageOrders()) {
+        if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
             throw ValidationException::withMessages([
-                'payment' => 'You are not allowed to confirm dining payment.',
+                'payment' => 'Only administrators or operators can confirm dining UPI payment.',
             ]);
         }
 
@@ -433,6 +601,12 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
+            if ($locked->payment_method === PaymentMethod::Manual && ! $locked->hasPaymentProof()) {
+                throw ValidationException::withMessages([
+                    'payment' => 'UPI payment confirmation requires an uploaded payment proof.',
+                ]);
+            }
+
             $locked->fill([
                 'status' => DiningSessionStatus::Paid,
                 'payment_status' => PaymentStatus::Confirmed,
@@ -450,11 +624,63 @@ class DiningSessionService implements DiningSessionServiceInterface
 
     public function markCashReceived(DiningSession $session, User $actor): DiningSession
     {
-        if ($session->payment_method !== PaymentMethod::Cash) {
-            $session = $this->setPaymentMethod($session, PaymentMethod::Cash->apiKey());
+        if (! $actor->canOperateDining() && ! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+            throw ValidationException::withMessages([
+                'payment' => 'You are not allowed to mark dining cash as received.',
+            ]);
         }
 
-        return $this->confirmPayment($session, $actor);
+        return DB::transaction(function () use ($session, $actor): DiningSession {
+            $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === DiningSessionStatus::Paid || $locked->payment_status === PaymentStatus::Confirmed) {
+                throw ValidationException::withMessages([
+                    'payment' => 'This dining session is already paid.',
+                ]);
+            }
+
+            if (! in_array($locked->status, [
+                DiningSessionStatus::BillingRequested,
+                DiningSessionStatus::AwaitingPayment,
+            ], true)) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Mark cash received only after the bill is ready.',
+                ]);
+            }
+
+            if ($locked->payment_method === PaymentMethod::Manual) {
+                throw ValidationException::withMessages([
+                    'payment' => 'This session is set to UPI. Change the payment method to cash before marking cash received.',
+                ]);
+            }
+
+            if ($locked->payment_method === null) {
+                $locked->fill([
+                    'payment_method' => PaymentMethod::Cash,
+                    'status' => DiningSessionStatus::AwaitingPayment,
+                    'payment_status' => PaymentStatus::Pending,
+                ])->save();
+            }
+
+            if ($locked->payment_method !== PaymentMethod::Cash) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Only cash dining sessions can be marked as cash received.',
+                ]);
+            }
+
+            $locked->fill([
+                'status' => DiningSessionStatus::Paid,
+                'payment_status' => PaymentStatus::Confirmed,
+                'paid_at' => now(),
+                'payment_received_by_id' => $actor->getKey(),
+                'payment_proof_rejection_notes' => null,
+            ])->save();
+
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'paymentReceivedBy']);
+            event(new DiningPaymentConfirmed($fresh, $actor));
+
+            return $fresh;
+        });
     }
 
     public function closeSession(DiningSession $session, User $actor): DiningSession
@@ -525,13 +751,18 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'tax_inclusive_snapshot' => null,
                 'total_amount' => null,
                 'payment_method' => null,
+                'payment_method_previous' => null,
+                'payment_method_changed_at' => null,
+                'payment_method_changed_by_id' => null,
                 'payment_status' => null,
                 'payment_reference' => $note !== null && $note !== ''
                     ? Str::limit('Reopened: '.$note, 240)
                     : $locked->payment_reference,
             ])->save();
 
-            return $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts']);
+            $locked->promotions()->delete();
+
+            return $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
         });
     }
 

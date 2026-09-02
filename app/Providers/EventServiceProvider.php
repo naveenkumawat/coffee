@@ -19,9 +19,11 @@ use App\Events\Order\OrderPreparationStatusChanged;
 use App\Events\Order\OrderStatusChanged;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
+use App\Listeners\Dining\QualifyReferralOnDiningPaymentConfirmed;
 use App\Listeners\Dining\SendDiningBillReadyNotification;
 use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
+use App\Listeners\Order\QualifyReferralOnCashReceived;
 use App\Listeners\Order\QualifyReferralOnPaymentConfirmed;
 use App\Listeners\Order\SendOrderCashReceivedNotification;
 use App\Listeners\Order\SendOrderPaymentProofReceivedNotification;
@@ -75,9 +77,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         DiningPaymentConfirmed::class => [
             SendDiningPaymentConfirmedNotification::class,
+            QualifyReferralOnDiningPaymentConfirmed::class,
         ],
         OrderCashReceived::class => [
             SendOrderCashReceivedNotification::class,
+            QualifyReferralOnCashReceived::class,
         ],
         IngredientStockStatusChanged::class => [
             NotifyStaffIngredientStockStatusChanged::class,

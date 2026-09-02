@@ -45,6 +45,8 @@ use App\Services\Notification\StaffNotificationDispatcher;
 use App\Services\Notification\StaffNotificationDispatcherInterface;
 use App\Services\Order\OrderService;
 use App\Services\Order\OrderServiceInterface;
+use App\Services\OrderInventory\OrderInventoryConsumptionService;
+use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationService;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityService;
@@ -75,6 +77,8 @@ use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
 use App\Services\Referral\ReferralService;
 use App\Services\Referral\ReferralServiceInterface;
+use App\Services\Reporting\FinancialReportingService;
+use App\Services\Reporting\FinancialReportingServiceInterface;
 use App\Services\Social\SocialLinkService;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\Tax\TaxCalculator;
@@ -113,6 +117,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(StaffNotificationDispatcherInterface::class, StaffNotificationDispatcher::class);
         $this->app->bind(WhatsAppNotificationProviderInterface::class, MetaWhatsAppCloudProvider::class);
         $this->app->bind(OrderServiceInterface::class, OrderService::class);
+        $this->app->bind(OrderInventoryConsumptionServiceInterface::class, OrderInventoryConsumptionService::class);
         $this->app->bind(OrderPreparationServiceInterface::class, OrderPreparationService::class);
         $this->app->bind(OrderSecurityServiceInterface::class, OrderSecurityService::class);
         $this->app->bind(ProductCatalogServiceInterface::class, ProductCatalogService::class);
@@ -131,5 +136,6 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(PromotionServiceInterface::class, PromotionService::class);
         $this->app->bind(PromotionCatalogServiceInterface::class, PromotionCatalogService::class);
         $this->app->bind(ReferralServiceInterface::class, ReferralService::class);
+        $this->app->bind(FinancialReportingServiceInterface::class, FinancialReportingService::class);
     }
 }

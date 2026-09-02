@@ -13,6 +13,7 @@ use App\Enums\ReferralStatus;
 use App\Enums\UserRole;
 use App\Models\CustomerReferral;
 use App\Models\CustomerReward;
+use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -159,6 +160,11 @@ class ReferralService implements ReferralServiceInterface
             return null;
         }
 
+        // Dining round orders are non-revenue; session payment qualifies instead.
+        if ($order->isDiningRound()) {
+            return null;
+        }
+
         if ($order->customer_id === null) {
             return null;
         }
@@ -176,10 +182,58 @@ class ReferralService implements ReferralServiceInterface
             return null;
         }
 
-        return DB::transaction(function () use ($order): ?CustomerReward {
+        return $this->qualifyCustomerPurchase(
+            (int) $order->customer_id,
+            $order,
+        );
+    }
+
+    /**
+     * Idempotent: qualify at most once when a paid dining session belongs to an authenticated customer.
+     */
+    public function qualifyDiningSessionIfEligible(DiningSession $session): ?CustomerReward
+    {
+        if (! (bool) ($this->settings()['enabled'] ?? false)) {
+            return null;
+        }
+
+        if ($session->customer_id === null) {
+            return null;
+        }
+
+        if ($session->payment_status !== PaymentStatus::Confirmed) {
+            return null;
+        }
+
+        $minimum = $this->settings()['minimum_qualifying_order_amount'] ?? null;
+        if ($minimum !== null && bccomp((string) $session->total_amount, (string) $minimum, 2) < 0) {
+            return null;
+        }
+
+        $anchorOrder = $session->orders()
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+            ->orderBy('dining_round_number')
+            ->orderBy('id')
+            ->first();
+
+        if ($anchorOrder === null) {
+            return null;
+        }
+
+        return $this->qualifyCustomerPurchase(
+            (int) $session->customer_id,
+            $anchorOrder,
+        );
+    }
+
+    protected function qualifyCustomerPurchase(
+        int $customerId,
+        Order $anchorOrder,
+    ): ?CustomerReward {
+        return DB::transaction(function () use ($customerId, $anchorOrder): ?CustomerReward {
             /** @var CustomerReferral|null $referral */
             $referral = CustomerReferral::query()
-                ->where('referred_user_id', $order->customer_id)
+                ->where('referred_user_id', $customerId)
                 ->lockForUpdate()
                 ->first();
 
@@ -204,7 +258,7 @@ class ReferralService implements ReferralServiceInterface
                 if ($referral->status !== ReferralStatus::Rewarded) {
                     $referral->forceFill([
                         'status' => ReferralStatus::Rewarded,
-                        'qualified_order_id' => $referral->qualified_order_id ?: $order->getKey(),
+                        'qualified_order_id' => $referral->qualified_order_id ?: $anchorOrder->getKey(),
                         'qualified_at' => $referral->qualified_at ?: now(),
                     ])->save();
                 }
@@ -226,11 +280,11 @@ class ReferralService implements ReferralServiceInterface
                 }
             }
 
-            $reward = $this->createRewardFromSettings($referral, $order);
+            $reward = $this->createRewardFromSettings($referral, $anchorOrder);
 
             $referral->forceFill([
                 'status' => ReferralStatus::Rewarded,
-                'qualified_order_id' => $order->getKey(),
+                'qualified_order_id' => $anchorOrder->getKey(),
                 'qualified_at' => now(),
             ])->save();
 

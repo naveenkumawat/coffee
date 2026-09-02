@@ -18,6 +18,7 @@ use App\Models\OrderPreparation;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
+use App\Models\Recipe;
 use App\Models\User;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
@@ -270,7 +271,7 @@ class OrderPreparationWorkflowTest extends TestCase
                 'order_id' => $order->id,
                 'product_id' => $variant->product_id,
                 'product_variant_id' => $variant->id,
-                'recipe_id' => null,
+                'recipe_id' => $variant->recipe?->id,
                 'preparation_station' => $item['station'],
                 'product_name' => $item['name'],
                 'variant_name' => 'Regular',
@@ -294,7 +295,7 @@ class OrderPreparationWorkflowTest extends TestCase
             'preparation_station' => $station,
         ]);
 
-        return ProductVariant::factory()->create([
+        $variant = ProductVariant::factory()->create([
             'product_id' => $product->id,
             'name' => 'Regular',
             'serving_size_value' => '300.000',
@@ -303,6 +304,12 @@ class OrderPreparationWorkflowTest extends TestCase
             'is_active' => true,
             'is_available' => true,
         ]);
+
+        Recipe::factory()->withDefaultLine()->create([
+            'product_variant_id' => $variant->id,
+        ]);
+
+        return $variant->fresh('recipe');
     }
 
     protected function statusTransfer(OrderStatus $status): OrderStatusTransitionTransfer

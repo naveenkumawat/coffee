@@ -57,13 +57,55 @@ interface DiningSessionServiceInterface
      */
     public function runningBill(DiningSession $session): array;
 
+    /**
+     * @return array{
+     *     subtotal: string,
+     *     discount: string,
+     *     taxable: string,
+     *     tax: string,
+     *     total: string,
+     *     tax_enabled: bool,
+     *     tax_label: ?string,
+     *     tax_percent: ?string,
+     *     tax_inclusive: bool,
+     *     rounds: list<array{order_id: int, round_number: int, status: string, subtotal: string, total: string}>,
+     *     finalized: bool
+     * }
+     */
+    public function displayBill(DiningSession $session): array;
+
+    /**
+     * @return array{
+     *     subtotal: string,
+     *     discount: string,
+     *     taxable: string,
+     *     tax: string,
+     *     total: string,
+     *     tax_enabled: bool,
+     *     tax_label: ?string,
+     *     tax_percent: ?string,
+     *     tax_inclusive: bool,
+     *     rounds: list<array{order_id: int, round_number: int, status: string, subtotal: string, total: string}>,
+     *     finalized: bool
+     * }
+     */
+    public function finalizedBill(DiningSession $session): array;
+
     public function requestBill(DiningSession $session, User $actor): DiningSession;
 
     public function generateFinalBill(DiningSession $session, User $actor): DiningSession;
 
     public function setPaymentMethod(DiningSession $session, string $paymentMethodApiKey): DiningSession;
 
+    public function changePaymentMethod(
+        DiningSession $session,
+        string $paymentMethodApiKey,
+        ?User $actor = null,
+    ): DiningSession;
+
     public function uploadPaymentProof(DiningSession $session, User $actor, UploadedFile $file): DiningSession;
+
+    public function rejectPaymentProof(DiningSession $session, User $actor, ?string $notes = null): DiningSession;
 
     public function confirmPayment(DiningSession $session, User $actor): DiningSession;
 

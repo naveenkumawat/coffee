@@ -347,22 +347,25 @@ Status: Partial
 - [x] Final PWA orders/history/tracking experience implemented
 
 ## Phase 9 - Inventory-to-Order Automation
-Status: Pending
+Status: Partial
 
-- [ ] Recipe-based inventory consumption from orders implemented
-- [ ] Configurable deduction point implemented
+- [x] Recipe-based inventory consumption from orders implemented (Phase F2: Accepted / dining round → `SALE_CONSUMPTION` once via `OrderInventoryConsumptionService`; prep tickets never deduct)
+- [x] Safe early-cancel reversal implemented (`SALE_REVERSAL` when no ticket is Preparing/Ready; never delete ledger history; never recompute from current recipe)
+- [ ] Configurable deduction point implemented (fixed at Accepted / dining round creation for F2)
 - [ ] Product availability based on inventory implemented
 - [ ] Barista inventory warnings on unavailable ingredients implemented
+
+**Deployment boundary:** consumption applies prospectively after deploy — do not backfill historical orders.
 
 ## Phase 10 - Reports, Notifications, and Content Management
 Status: Partial
 
 ### Reports
 
-- [ ] Sales reports implemented
-- [ ] Order reports implemented
-- [ ] Product reports implemented
-- [ ] Inventory reports implemented
+- [x] Canonical financial reporting + reconciliation implemented (Phase F3.1: `FinancialReportingService`; Admin financial report + CSV; Operator today reconciliation only)
+- [x] Snapshot-only revenue rules locked (confirmed Takeaway/Delivery orders; confirmed Dining Sessions; rounds never double-counted)
+- [ ] Product-wise / category-wise sales reports implemented
+- [ ] Inventory analytics reports implemented
 - [ ] Customer reports implemented
 - [ ] Profitability reports implemented
 

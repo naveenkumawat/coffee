@@ -85,6 +85,13 @@ trait HasRoles
         return $role->canManageOrders();
     }
 
+    public function canViewFinancialReports(): bool
+    {
+        $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);
+
+        return $role->canViewFinancialReports();
+    }
+
     public function canViewOrders(): bool
     {
         $role = $this->role instanceof UserRole ? $this->role : UserRole::from($this->role);

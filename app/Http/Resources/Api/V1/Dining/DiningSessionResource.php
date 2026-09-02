@@ -17,7 +17,7 @@ class DiningSessionResource extends JsonResource
     {
         /** @var DiningSession $session */
         $session = $this->resource;
-        $bill = app(DiningSessionServiceInterface::class)->runningBill($session);
+        $bill = app(DiningSessionServiceInterface::class)->displayBill($session);
 
         return [
             'id' => $session->getKey(),
@@ -42,12 +42,14 @@ class DiningSessionResource extends JsonResource
             'payment_method' => $session->payment_method?->apiKey(),
             'payment_status' => $session->payment_status?->value,
             'totals' => [
-                'subtotal' => $session->subtotal_amount ?? $bill['subtotal'],
-                'discount' => $session->discount_amount ?? $bill['discount'],
-                'tax' => $session->tax_amount ?? $bill['tax'],
-                'total' => $session->total_amount ?? $bill['total'],
+                'subtotal' => $bill['subtotal'],
+                'discount' => $bill['discount'],
+                'tax' => $bill['tax'],
+                'total' => $bill['total'],
+                'finalized' => (bool) ($bill['finalized'] ?? false),
             ],
-            'running_bill' => $bill,
+            'running_bill' => ($bill['finalized'] ?? false) ? null : $bill,
+            'final_bill' => ($bill['finalized'] ?? false) ? $bill : null,
             'drafts' => $session->relationLoaded('drafts')
                 ? $session->drafts->map(static fn ($draft): array => [
                     'id' => $draft->getKey(),

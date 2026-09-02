@@ -46,6 +46,11 @@
                 'items' => $user?->canViewOrders() ? [
                     ['label' => 'Orders', 'route' => 'administrator.orders.index', 'pattern' => 'administrator.orders.*', 'icon' => 'ki-delivery-2'],
                     ['label' => 'Dining Sessions', 'route' => 'administrator.dining-sessions.index', 'pattern' => 'administrator.dining-sessions.*', 'icon' => 'ki-coffee'],
+                    ...(
+                        $user?->canViewFinancialReports()
+                            ? [['label' => 'Financial Report', 'route' => 'administrator.reports.financial.index', 'pattern' => 'administrator.reports.financial.*', 'icon' => 'ki-chart-simple']]
+                            : []
+                    ),
                 ] : [],
             ],
             [
@@ -96,6 +101,7 @@
                     ['label' => 'Orders', 'route' => 'operator.orders.index', 'pattern' => 'operator.orders.*', 'icon' => 'ki-delivery-2'],
                     ['label' => 'Dining Sessions', 'route' => 'operator.dining-sessions.index', 'pattern' => 'operator.dining-sessions.*', 'icon' => 'ki-coffee'],
                     ['label' => 'Preparation', 'route' => 'operator.preparations.index', 'pattern' => 'operator.preparations.*', 'icon' => 'ki-chef'],
+                    ['label' => 'Today Reconciliation', 'route' => 'operator.reconciliation.index', 'pattern' => 'operator.reconciliation.*', 'icon' => 'ki-chart-simple'],
                 ],
             ],
             [

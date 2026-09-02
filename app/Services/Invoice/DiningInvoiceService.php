@@ -29,14 +29,23 @@ class DiningInvoiceService implements DiningInvoiceServiceInterface
 
     public function downloadPdf(DiningSession $session): Response
     {
-        $session->loadMissing(['orders.items', 'cafeTable', 'customer']);
-        $bill = $this->dining->runningBill($session);
+        $session->loadMissing(['orders.items', 'cafeTable', 'customer', 'promotions']);
+
+        if (! $session->hasFinalizedBill()) {
+            abort(422, 'Generate the dining bill before downloading the invoice.');
+        }
+
+        $bill = $this->dining->finalizedBill($session);
         $content = $this->websiteSettings->customerContent();
         $business = $content['business'] ?? [];
+        $paymentLabel = $session->payment_status === PaymentStatus::Confirmed
+            ? 'PAID'
+            : 'PAYMENT PENDING';
 
         $pdf = Pdf::loadView('invoices.dining-session', [
             'session' => $session,
             'bill' => $bill,
+            'paymentLabel' => $paymentLabel,
             'cafeName' => $business['name'] ?? config('app.name'),
             'cafeAddress' => $business['address'] ?? null,
             'cafePhone' => $business['phone'] ?? null,

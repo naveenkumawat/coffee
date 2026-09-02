@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
+use App\Services\Reporting\FinancialReportingServiceInterface;
 use Illuminate\Contracts\View\View;
 
 class DashboardController extends Controller
@@ -16,6 +17,7 @@ class DashboardController extends Controller
     public function __invoke(
         DiningSessionServiceInterface $dining,
         OrderPreparationServiceInterface $preparations,
+        FinancialReportingServiceInterface $reporting,
     ): View {
         $statusCounts = Order::query()
             ->selectRaw('status, COUNT(*) as aggregate')
@@ -31,6 +33,7 @@ class DashboardController extends Controller
         $barQueue = $preparations->queueForStation(PreparationStation::Bar);
         $kitchenQueue = $preparations->queueForStation(PreparationStation::Kitchen);
         $states = $dining->tableOperationalStates();
+        $reconciliation = $reporting->buildOperatorReconciliation();
 
         return view('operator.dashboard.index', [
             'newOrders' => (int) ($statusCounts[OrderStatus::PaymentConfirmed->value] ?? 0),
@@ -45,6 +48,7 @@ class DashboardController extends Controller
                 ->count(),
             'diningActive' => $states->whereIn('state', ['occupied', 'bill_requested', 'awaiting_payment'])->count(),
             'billRequested' => $states->where('state', 'bill_requested')->count(),
+            'reconciliation' => $reconciliation,
         ]);
     }
 }
