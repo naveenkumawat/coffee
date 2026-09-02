@@ -12,9 +12,12 @@ import {
   getVariantShortLabel,
   hasRecognizedSizeControls,
   isProductUnavailable,
+  needsProductCustomization,
+  startingPrice,
 } from '../../utils/productActions';
 import { QuantityStepper } from '../common/QuantityStepper';
 import { CupIcon } from './CupIcon';
+import { ProductCustomizationSheet } from './ProductCustomizationSheet';
 
 export type ProductOrderControlMode = 'compact' | 'full';
 
@@ -45,6 +48,17 @@ export function ProductOrderControl({
     );
   }
 
+  if (needsProductCustomization(product)) {
+    return (
+      <CustomizeOrderControl
+        product={product}
+        mode={mode}
+        className={className}
+        onAdded={onAdded}
+      />
+    );
+  }
+
   if (variants.length === 1) {
     return (
       <SingleVariantOrderControl
@@ -65,6 +79,63 @@ export function ProductOrderControl({
       className={className}
       onAdded={onAdded}
     />
+  );
+}
+
+interface CustomizeOrderControlProps {
+  product: Product;
+  mode: ProductOrderControlMode;
+  className?: string;
+  onAdded?: () => void;
+}
+
+function CustomizeOrderControl({
+  product,
+  mode,
+  className = '',
+  onAdded,
+}: CustomizeOrderControlProps) {
+  const [open, setOpen] = useState(false);
+  const isCompact = mode === 'compact';
+  const price = startingPrice(product);
+
+  return (
+    <>
+      <div
+        className={`product-order-control is-customize ${isCompact ? 'is-compact' : 'is-full'} ${className}`.trim()}
+      >
+        {isCompact && price ? (
+          <strong className="product-order-price">{formatCurrency(price)}</strong>
+        ) : null}
+        <button
+          type="button"
+          className={
+            isCompact
+              ? 'product-card-bag-add'
+              : 'btn btn-primary btn-lg rounded-pill product-card-action'
+          }
+          aria-label={`Customize ${product.name}`}
+          title={`Customize ${product.name}`}
+          onClick={() => setOpen(true)}
+        >
+          {isCompact ? (
+            <i className="bi bi-sliders" aria-hidden="true"></i>
+          ) : (
+            <>
+              <i className="bi bi-sliders" aria-hidden="true"></i>
+              <span>Customize</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      <ProductCustomizationSheet
+        product={product}
+        open={open}
+        onClose={() => setOpen(false)}
+        onSaved={onAdded}
+      />
+    </>
   );
 }
 

@@ -364,5 +364,20 @@ Separate from takeaway/delivery checkout:
 
 **Reporting authority (Phase F3.1):** Retail revenue = confirmed Takeaway/Delivery orders (not Cancelled/Rejected). Dining revenue = confirmed Dining Session snapshots only. Dining rounds never contribute to revenue totals. All money/GST/discount figures come from stored transactional snapshots — never current Website Settings. `FinancialReportingService` is the single reporting domain; Admin gets financial reports + CSV export; Operator gets today operational reconciliation only (no cost/margin/long-range analytics). Date ranges resolve in `business_timezone` via `CafeAvailabilityService`.
 
+**Inventory + product analytics (Phase F3.2):** Inventory analytics read the persisted inventory ledger only — never recompute history from current recipes. Product quantity analytics use canonical `order_items` (Dining round items are a valid physical/volume source). Paid product sales eligibility follows F3.1 (confirmed retail; confirmed Dining Session only). BAR/KITCHEN reporting here is volume only. `InventoryProductReportingService` is the single inventory/product reporting domain; Admin gets full analytics + CSV; Operator gets today operational subset (no cost/margin/valuation).
+
+**Operational performance analytics (Phase F3.3):** Timing analytics use persisted workflow timestamps only. BAR/KITCHEN performance comes from preparation tickets; mixed-order completion uses the latest required station `ready_at`; dining preparation is round-level; dining service/billing timing is session-level. Operational timing must not be mixed with financial authority. `OperationalPerformanceReportingService` is the single operational performance domain; Admin gets historical analytics + CSV; Operator gets today ops subset; Barista/Chef see live station queue age only; Waiter sees dining timing only (no financial leakage).
+
 Roles: **Waiter** panel for tables/sessions and dining cash; **Operator**/administrators confirm/reject dining UPI proof; **Barista**/**Chef** prepare station tickets; administrators manage catalog/config.
 Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).
+
+
+## Product add-ons (C1)
+
+* `AddOn` + `AddOnRecipeLine` + `product_add_on` pivot; cart/order snapshots via `cart_item_add_ons` / `order_item_add_ons`.
+* Line identity: `configuration_hash = sha256(product_variant_id + canonical add_ons)`.
+* Domain services: `AddOnService`, cart/order/checkout/inventory integrations; public catalog observer invalidates on add-on changes.
+* Free drink benefit uses `base_unit_price` / `base_line_subtotal` when present.
+* Preparation station for this phase inherits the parent OrderItem station (no cross-station add-ons).
+* Product-level promotions apply to merchandise including selected add-ons (same cart/order subtotal path).
+* Dining drafts use the same `configuration_hash` + `dining_round_draft_add_ons`; snapshots land on round OrderItems at accept.

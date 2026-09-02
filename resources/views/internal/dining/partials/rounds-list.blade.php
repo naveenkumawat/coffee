@@ -5,12 +5,26 @@
         </div>
     </div>
     <div class="card-body pt-4">
+        @php
+            $timingByOrderId = collect($diningTiming['rounds'] ?? [])->keyBy('order_id');
+            $fmt = function (?int $seconds): string {
+                if ($seconds === null) {
+                    return '—';
+                }
+                $seconds = abs($seconds);
+                $m = intdiv($seconds, 60);
+                $s = $seconds % 60;
+
+                return $m > 0 ? sprintf('%dm %02ds', $m, $s) : sprintf('%ds', $s);
+            };
+        @endphp
         @forelse ($session->orders as $order)
             @php
                 $tickets = $order->preparations ?? collect();
                 $activeTickets = $tickets->filter(fn ($ticket) => $ticket->status?->value !== 'cancelled');
                 $allReady = $activeTickets->isNotEmpty()
                     && $activeTickets->every(fn ($ticket) => $ticket->status?->value === 'ready');
+                $roundTiming = $timingByOrderId->get($order->id);
             @endphp
             <div class="mb-6 pb-5 border-bottom border-gray-200">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
@@ -20,6 +34,12 @@
                     <x-internal.order-status-badge :status="$order->status" :order="$order" />
                     @if ($allReady)
                         <span class="badge badge-light-success">Ready to Serve</span>
+                    @endif
+                    @if ($roundTiming)
+                        <span class="badge badge-light">Elapsed {{ $fmt($roundTiming['round_elapsed_seconds']) }}</span>
+                        @if ($roundTiming['ready_to_serve_age_seconds'] !== null)
+                            <span class="badge badge-light-info">Ready age {{ $fmt($roundTiming['ready_to_serve_age_seconds']) }}</span>
+                        @endif
                     @endif
                 </div>
 

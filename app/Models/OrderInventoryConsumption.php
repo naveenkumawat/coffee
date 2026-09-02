@@ -10,9 +10,13 @@ class OrderInventoryConsumption extends AbstractModel
     protected $fillable = [
         'order_id',
         'order_item_id',
+        'source_type',
+        'source_id',
         'ingredient_id',
         'recipe_id',
         'recipe_line_id',
+        'add_on_id',
+        'add_on_recipe_line_id',
         'quantity',
         'base_quantity',
         'measurement_unit',

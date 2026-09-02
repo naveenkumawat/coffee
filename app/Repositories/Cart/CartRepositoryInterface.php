@@ -13,7 +13,7 @@ interface CartRepositoryInterface
 
     public function firstOrCreateForCustomer(User $customer): Cart;
 
-    public function findCustomerItem(Cart $cart, int $productVariantId): ?CartItem;
+    public function findCustomerItem(Cart $cart, string $configurationHash): ?CartItem;
 
     public function findPurchasableVariant(int $productVariantId): ?ProductVariant;
 

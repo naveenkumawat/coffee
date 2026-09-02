@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
+use App\Support\AddOnConfiguration;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,5 +20,16 @@ class CartItemFactory extends Factory
             'product_variant_id' => ProductVariant::factory(),
             'quantity' => fake()->numberBetween(1, 4),
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (CartItem $item): void {
+            if (filled($item->configuration_hash) || ! $item->product_variant_id) {
+                return;
+            }
+
+            $item->configuration_hash = AddOnConfiguration::hash((int) $item->product_variant_id, []);
+        });
     }
 }

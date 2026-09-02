@@ -14,13 +14,19 @@ import {
   updateCartItem,
 } from '../api/cart';
 import { ApiEnvelope, ApiError } from '../api/client';
-import { Cart, CartEnvelopeMeta, CartItemMutationPayload, CartSummary } from '../types/cart';
+import {
+  Cart,
+  CartAddOnSelection,
+  CartEnvelopeMeta,
+  CartItemMutationPayload,
+  CartSummary,
+} from '../types/cart';
 import { CheckoutFulfilmentMethod } from '../types/checkout';
+import { addonUnitTotal, addOnsConfigurationKey, canonicalizeAddOns } from '../utils/addOns';
 import { isSessionAuthenticated } from '../utils/authSession';
 import {
   CART_MAX_QUANTITY,
-  findCartItemByVariantId,
-  totalCartQuantity,
+  findCartItemByConfiguration,
 } from '../utils/cartQuantity';
 import {
   buildGuestCartState,
@@ -30,10 +36,12 @@ import {
   guestItemsForMerge,
   readGuestCartItems,
   removeGuestCartItem,
+  replaceGuestCartItem,
   updateGuestCartItemQuantity,
   upsertGuestCartItem,
   writeGuestCartItems,
 } from '../utils/guestCartStorage';
+import { totalCartQuantity } from '../utils/cartQuantity';
 
 interface CartState {
   count: number;
@@ -47,11 +55,13 @@ interface CartState {
   loadCart: () => Promise<void>;
   addItem: (payload: CartItemMutationPayload) => Promise<ApiEnvelope<Cart>>;
   updateItemQuantity: (cartItemId: number, quantity: number) => Promise<void>;
+  replaceConfiguredItem: (cartItemId: number, payload: CartItemMutationPayload) => Promise<void>;
   removeItem: (cartItemId: number) => Promise<void>;
   setVariantQuantity: (
     productVariantId: number,
     quantity: number,
     display?: CartItemMutationPayload['display'],
+    addOns?: CartAddOnSelection[],
   ) => Promise<void>;
   isVariantPending: (productVariantId: number) => boolean;
   mergeGuestCart: () => Promise<boolean>;
@@ -97,7 +107,6 @@ function withPendingVariant(
   set: (
     partial: Partial<CartState> | ((state: CartState) => Partial<CartState>),
   ) => void,
-  get: () => CartState,
   productVariantId: number,
 ): () => void {
   set((state) => ({
@@ -124,7 +133,7 @@ function rebuildSummaryFromCart(cart: Cart): CartSummary {
       return carry;
     }
 
-    return carry + Number(item.unit_price ?? item.variant?.price ?? 0) * item.quantity;
+    return carry + Number(item.line_total ?? Number(item.unit_price ?? item.variant?.price ?? 0) * item.quantity);
   }, 0);
   const money = subtotal.toFixed(2);
 
@@ -145,35 +154,48 @@ function applyOptimisticQuantity(
   productVariantId: number,
   quantity: number,
   display?: CartItemMutationPayload['display'],
+  addOns: CartAddOnSelection[] = [],
 ): Cart {
-  const existing = findCartItemByVariantId(cart, productVariantId);
+  const key = addOnsConfigurationKey(productVariantId, addOns);
+  const existing = findCartItemByConfiguration(cart, productVariantId, addOns);
 
   if (quantity <= 0) {
     return {
       ...cart,
-      items: cart.items.filter((item) => item.variant?.id !== productVariantId),
+      items: cart.items.filter(
+        (item) =>
+          !(
+            item.variant?.id === productVariantId &&
+            addOnsConfigurationKey(productVariantId, item.add_ons) === key
+          ),
+      ),
     };
   }
 
-  if (existing) {
-    const unitPrice = existing.unit_price ?? existing.variant?.price ?? null;
+  const displayAddOns = display?.add_ons ?? existing?.add_ons ?? [];
+  const baseUnit = Number(display?.variant?.price ?? existing?.base_unit_price ?? existing?.variant?.price ?? 0);
+  const addonUnit = addonUnitTotal(displayAddOns);
+  const unitPrice = (baseUnit + addonUnit).toFixed(2);
 
+  if (existing) {
     return {
       ...cart,
       items: cart.items.map((item) =>
-        item.variant?.id === productVariantId
+        item.id === existing.id
           ? {
               ...item,
               quantity,
               unit_price: unitPrice,
-              line_total: unitPrice ? (Number(unitPrice) * quantity).toFixed(2) : item.line_total,
+              line_total: (Number(unitPrice) * quantity).toFixed(2),
+              base_unit_price: baseUnit.toFixed(2),
+              base_line_total: (baseUnit * quantity).toFixed(2),
+              addon_line_total: (addonUnit * quantity).toFixed(2),
+              add_ons: displayAddOns,
             }
           : item,
       ),
     };
   }
-
-  const unitPrice = display?.variant?.price ?? null;
 
   return {
     ...cart,
@@ -183,10 +205,20 @@ function applyOptimisticQuantity(
         id: -Math.abs(productVariantId),
         quantity,
         unit_price: unitPrice,
-        line_total: unitPrice ? (Number(unitPrice) * quantity).toFixed(2) : null,
+        line_total: (Number(unitPrice) * quantity).toFixed(2),
+        base_unit_price: baseUnit.toFixed(2),
+        base_line_total: (baseUnit * quantity).toFixed(2),
+        addon_line_total: (addonUnit * quantity).toFixed(2),
+        add_ons: displayAddOns,
         is_available: true,
         product: display?.product ?? null,
-        variant: display?.variant ?? { id: productVariantId, name: 'Selected size', serving_size_value: '', serving_size_unit: null, price: '0.00' },
+        variant: display?.variant ?? {
+          id: productVariantId,
+          name: 'Selected size',
+          serving_size_value: '',
+          serving_size_unit: null,
+          price: '0.00',
+        },
       },
     ],
   };
@@ -241,11 +273,15 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
   },
   addItem: async (payload) => {
-    const release = withPendingVariant(set, get, payload.product_variant_id);
+    const release = withPendingVariant(set, payload.product_variant_id);
+    const addOns = canonicalizeAddOns(payload.add_ons);
 
     try {
       if (!isSessionAuthenticated()) {
-        const nextItems = upsertGuestCartItem(readGuestCartItems(), payload);
+        const nextItems = upsertGuestCartItem(readGuestCartItems(), {
+          ...payload,
+          add_ons: addOns,
+        });
         writeGuestCartItems(nextItems);
         const state = buildGuestCartState(nextItems);
         set({
@@ -272,12 +308,14 @@ export const useCartStore = create<CartState>((set, get) => ({
         created_at: null,
         updated_at: null,
       };
-      const existingQty = findCartItemByVariantId(baseCart, payload.product_variant_id)?.quantity ?? 0;
+      const existingQty =
+        findCartItemByConfiguration(baseCart, payload.product_variant_id, addOns)?.quantity ?? 0;
       const optimisticCart = applyOptimisticQuantity(
         baseCart,
         payload.product_variant_id,
         clampQuantity(existingQty + payload.quantity),
         payload.display,
+        addOns,
       );
       const optimisticSummary = rebuildSummaryFromCart(optimisticCart);
       set({
@@ -287,7 +325,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       });
 
       try {
-        const response = await addCartItem(payload);
+        const response = await addCartItem({ ...payload, add_ons: addOns });
         applyCartState(set, response);
 
         return response;
@@ -302,7 +340,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   updateItemQuantity: async (cartItemId, quantity) => {
     const item = get().cart?.items.find((entry) => entry.id === cartItemId) ?? null;
     const variantId = item?.variant?.id;
-    const release = variantId ? withPendingVariant(set, get, variantId) : () => undefined;
+    const addOns = canonicalizeAddOns(item?.add_ons);
+    const release = variantId ? withPendingVariant(set, variantId) : () => undefined;
 
     try {
       if (!isSessionAuthenticated()) {
@@ -320,7 +359,13 @@ export const useCartStore = create<CartState>((set, get) => ({
       };
 
       if (snapshot.cart && variantId) {
-        const optimisticCart = applyOptimisticQuantity(snapshot.cart, variantId, clampQuantity(quantity));
+        const optimisticCart = applyOptimisticQuantity(
+          snapshot.cart,
+          variantId,
+          clampQuantity(quantity),
+          undefined,
+          addOns,
+        );
         const optimisticSummary = rebuildSummaryFromCart(optimisticCart);
         set({
           cart: optimisticCart,
@@ -340,10 +385,50 @@ export const useCartStore = create<CartState>((set, get) => ({
       release();
     }
   },
+  replaceConfiguredItem: async (cartItemId, payload) => {
+    const addOns = canonicalizeAddOns(payload.add_ons);
+    const release = withPendingVariant(set, payload.product_variant_id);
+
+    try {
+      if (!isSessionAuthenticated()) {
+        const nextItems = replaceGuestCartItem(readGuestCartItems(), cartItemId, {
+          ...payload,
+          add_ons: addOns,
+        });
+        writeGuestCartItems(nextItems);
+        applyGuestState(set);
+
+        return;
+      }
+
+      const snapshot = {
+        cart: get().cart,
+        summary: get().summary,
+        count: get().count,
+      };
+
+      try {
+        await removeCartItem(cartItemId);
+        const response = await addCartItem({
+          ...payload,
+          add_ons: addOns,
+          quantity: clampQuantity(payload.quantity),
+        });
+        applyCartState(set, response);
+      } catch (error) {
+        set(snapshot);
+        await get().loadCart();
+        throw error;
+      }
+    } finally {
+      release();
+    }
+  },
   removeItem: async (cartItemId) => {
     const item = get().cart?.items.find((entry) => entry.id === cartItemId) ?? null;
     const variantId = item?.variant?.id;
-    const release = variantId ? withPendingVariant(set, get, variantId) : () => undefined;
+    const addOns = canonicalizeAddOns(item?.add_ons);
+    const release = variantId ? withPendingVariant(set, variantId) : () => undefined;
 
     try {
       if (!isSessionAuthenticated()) {
@@ -361,7 +446,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       };
 
       if (snapshot.cart && variantId) {
-        const optimisticCart = applyOptimisticQuantity(snapshot.cart, variantId, 0);
+        const optimisticCart = applyOptimisticQuantity(snapshot.cart, variantId, 0, undefined, addOns);
         const optimisticSummary = rebuildSummaryFromCart(optimisticCart);
         set({
           cart: optimisticCart,
@@ -381,15 +466,16 @@ export const useCartStore = create<CartState>((set, get) => ({
       release();
     }
   },
-  setVariantQuantity: async (productVariantId, quantity, display) => {
+  setVariantQuantity: async (productVariantId, quantity, display, addOns = []) => {
     const nextQuantity = clampQuantity(quantity);
+    const selectedAddOns = canonicalizeAddOns(addOns);
     const state = get();
 
     if (state.pendingVariantIds.includes(productVariantId)) {
       return;
     }
 
-    const existing = findCartItemByVariantId(state.cart, productVariantId);
+    const existing = findCartItemByConfiguration(state.cart, productVariantId, selectedAddOns);
 
     if (nextQuantity <= 0) {
       if (!existing) {
@@ -405,6 +491,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       await get().addItem({
         product_variant_id: productVariantId,
         quantity: nextQuantity,
+        add_ons: selectedAddOns,
         display,
       });
 

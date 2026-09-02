@@ -28,6 +28,7 @@
                     ['label' => 'Categories', 'route' => 'administrator.products.categories.index', 'pattern' => 'administrator.products.categories.*', 'icon' => 'ki-category'],
                     ['label' => 'Flavours', 'route' => 'administrator.products.flavours.index', 'pattern' => 'administrator.products.flavours.*', 'icon' => 'ki-cup'],
                     ['label' => 'Tags', 'route' => 'administrator.products.tags.index', 'pattern' => 'administrator.products.tags.*', 'icon' => 'ki-price-tag'],
+                    ['label' => 'Add-ons', 'route' => 'administrator.add-ons.index', 'pattern' => 'administrator.add-ons.*', 'icon' => 'ki-plus-square'],
                     ['label' => 'Ratings', 'route' => 'administrator.products.ratings.index', 'pattern' => 'administrator.products.ratings.*', 'icon' => 'ki-star'],
                     ['label' => 'Products', 'route' => 'administrator.products.index', 'pattern' => ['administrator.products.index', 'administrator.products.create', 'administrator.products.store', 'administrator.products.show', 'administrator.products.edit', 'administrator.products.update'], 'icon' => 'ki-basket'],
                     ['label' => 'Recipes', 'route' => 'administrator.recipes.index', 'pattern' => 'administrator.recipes.*', 'icon' => 'ki-book'],
@@ -48,7 +49,11 @@
                     ['label' => 'Dining Sessions', 'route' => 'administrator.dining-sessions.index', 'pattern' => 'administrator.dining-sessions.*', 'icon' => 'ki-coffee'],
                     ...(
                         $user?->canViewFinancialReports()
-                            ? [['label' => 'Financial Report', 'route' => 'administrator.reports.financial.index', 'pattern' => 'administrator.reports.financial.*', 'icon' => 'ki-chart-simple']]
+                            ? [
+                                ['label' => 'Financial Report', 'route' => 'administrator.reports.financial.index', 'pattern' => 'administrator.reports.financial.*', 'icon' => 'ki-chart-simple'],
+                                ['label' => 'Inventory & Product Analytics', 'route' => 'administrator.reports.inventory-products.index', 'pattern' => 'administrator.reports.inventory-products.*', 'icon' => 'ki-chart-pie-simple'],
+                                ['label' => 'Operational Performance', 'route' => 'administrator.reports.operational-performance.index', 'pattern' => 'administrator.reports.operational-performance.*', 'icon' => 'ki-timer'],
+                            ]
                             : []
                     ),
                 ] : [],
@@ -102,6 +107,8 @@
                     ['label' => 'Dining Sessions', 'route' => 'operator.dining-sessions.index', 'pattern' => 'operator.dining-sessions.*', 'icon' => 'ki-coffee'],
                     ['label' => 'Preparation', 'route' => 'operator.preparations.index', 'pattern' => 'operator.preparations.*', 'icon' => 'ki-chef'],
                     ['label' => 'Today Reconciliation', 'route' => 'operator.reconciliation.index', 'pattern' => 'operator.reconciliation.*', 'icon' => 'ki-chart-simple'],
+                    ['label' => 'Inventory & Product Ops', 'route' => 'operator.reports.inventory-products.index', 'pattern' => 'operator.reports.inventory-products.*', 'icon' => 'ki-chart-pie-simple'],
+                    ['label' => 'Operational Performance', 'route' => 'operator.reports.operational-performance.index', 'pattern' => 'operator.reports.operational-performance.*', 'icon' => 'ki-timer'],
                 ],
             ],
             [

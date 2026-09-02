@@ -364,8 +364,9 @@ Status: Partial
 
 - [x] Canonical financial reporting + reconciliation implemented (Phase F3.1: `FinancialReportingService`; Admin financial report + CSV; Operator today reconciliation only)
 - [x] Snapshot-only revenue rules locked (confirmed Takeaway/Delivery orders; confirmed Dining Sessions; rounds never double-counted)
-- [ ] Product-wise / category-wise sales reports implemented
-- [ ] Inventory analytics reports implemented
+- [x] Inventory + product analytics implemented (Phase F3.2: `InventoryProductReportingService`; ledger-backed inventory; OrderItem product volume; Admin analytics + CSV; Operator today ops subset)
+- [x] Product-wise / category-wise sales volume reports implemented (Phase F3.2; paid eligibility follows F3.1)
+- [x] Operational performance analytics implemented (Phase F3.3: `OperationalPerformanceReportingService`; BAR/KITCHEN timing; mixed-order coordination; dining round/session ops; Admin + Operator + staff live context)
 - [ ] Customer reports implemented
 - [ ] Profitability reports implemented
 
@@ -444,3 +445,5 @@ Status: Pending
 - **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
 - PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
 - Waiter role operates table service; food & beverage catalog uses product type + prep station.
+
+- [x] Product add-ons (Phase C1): catalog assignment, cart configuration hash merge, server pricing, free-drink base-only waiver, inventory base+add-on consumption, admin CRUD, Dining drafts/rounds, PWA customization + payment-state UX, invoice nesting

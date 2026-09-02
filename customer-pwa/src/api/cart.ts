@@ -1,6 +1,13 @@
 import { ApiEnvelope, destroy, get, post, put } from './client';
-import { Cart, CartCountResponse, CartItemMutationPayload, CartMergePayload } from '../types/cart';
+import {
+  Cart,
+  CartAddOnSelection,
+  CartCountResponse,
+  CartItemMutationPayload,
+  CartMergePayload,
+} from '../types/cart';
 import { CheckoutFulfilmentMethod } from '../types/checkout';
+import { canonicalizeAddOns } from '../utils/addOns';
 
 export function fetchCart(): Promise<ApiEnvelope<Cart>> {
   return get<ApiEnvelope<Cart>>('/cart');
@@ -70,15 +77,35 @@ export function fetchCartCount(): Promise<ApiEnvelope<CartCountResponse>> {
   return get<ApiEnvelope<CartCountResponse>>('/cart/count');
 }
 
-export function addCartItem(payload: CartItemMutationPayload): Promise<ApiEnvelope<Cart>> {
-  return post<ApiEnvelope<Cart>, { product_variant_id: number; quantity: number }>('/cart/items', {
+function cartItemBody(payload: CartItemMutationPayload): {
+  product_variant_id: number;
+  quantity: number;
+  add_ons?: CartAddOnSelection[];
+} {
+  const addOns = canonicalizeAddOns(payload.add_ons);
+
+  return {
     product_variant_id: payload.product_variant_id,
     quantity: payload.quantity,
-  });
+    ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+  };
 }
 
-export function updateCartItem(cartItemId: number, payload: { quantity: number }): Promise<ApiEnvelope<Cart>> {
-  return put<ApiEnvelope<Cart>, { quantity: number }>(`/cart/items/${cartItemId}`, payload);
+export function addCartItem(payload: CartItemMutationPayload): Promise<ApiEnvelope<Cart>> {
+  return post<ApiEnvelope<Cart>, ReturnType<typeof cartItemBody>>('/cart/items', cartItemBody(payload));
+}
+
+export function updateCartItem(
+  cartItemId: number,
+  payload: { quantity: number; add_ons?: CartAddOnSelection[] },
+): Promise<ApiEnvelope<Cart>> {
+  const addOns = canonicalizeAddOns(payload.add_ons);
+  const body = {
+    quantity: payload.quantity,
+    ...(payload.add_ons !== undefined ? { add_ons: addOns } : {}),
+  };
+
+  return put<ApiEnvelope<Cart>, typeof body>(`/cart/items/${cartItemId}`, body);
 }
 
 export function removeCartItem(cartItemId: number): Promise<ApiEnvelope<Cart>> {
@@ -90,5 +117,16 @@ export function clearCart(): Promise<ApiEnvelope<Cart>> {
 }
 
 export function mergeGuestCart(payload: CartMergePayload): Promise<ApiEnvelope<Cart>> {
-  return post<ApiEnvelope<Cart>, CartMergePayload>('/cart/merge', payload);
+  return post<ApiEnvelope<Cart>, CartMergePayload>('/cart/merge', {
+    ...payload,
+    items: payload.items.map((item) => {
+      const addOns = canonicalizeAddOns(item.add_ons);
+
+      return {
+        product_variant_id: item.product_variant_id,
+        quantity: item.quantity,
+        ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+      };
+    }),
+  });
 }

@@ -72,7 +72,7 @@ class CustomerCheckoutController extends Controller
 
         if ($existingOrder && (int) $existingOrder->customer_id === (int) $request->user()->getKey()) {
             return $this->respondWithResource(
-                new OrderResource($existingOrder->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
+                new OrderResource($existingOrder->loadMissing(['items.addOns', 'statusHistory', 'promotions', 'rewardRedemptions'])),
                 'Order already exists for this checkout token.',
                 200,
                 [
@@ -98,7 +98,7 @@ class CustomerCheckoutController extends Controller
         Cache::forget($this->checkoutCacheKey($request->user()->getKey()));
 
         return $this->respondWithResource(
-            new OrderResource($order->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
+            new OrderResource($order->loadMissing(['items.addOns', 'statusHistory', 'promotions', 'rewardRedemptions'])),
             $order->isCashPayment()
                 ? 'Order placed successfully.'
                 : 'Order placed successfully and is awaiting payment confirmation.',

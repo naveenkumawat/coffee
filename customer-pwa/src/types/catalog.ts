@@ -44,6 +44,14 @@ export interface ProductTag {
   style?: 'primary' | 'accent' | 'soft' | 'warning' | 'muted' | string;
 }
 
+export interface ProductAddOn {
+  id: number;
+  name: string;
+  description: string | null;
+  price: string;
+  max_quantity: number;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -63,6 +71,7 @@ export interface Product {
   flavours: ProductFlavour[];
   default_variant: ProductVariant | null;
   variants: ProductVariant[];
+  add_ons?: ProductAddOn[];
   rating_summary?: {
     average: number | null;
     count: number;

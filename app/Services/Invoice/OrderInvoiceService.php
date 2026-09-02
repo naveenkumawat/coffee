@@ -52,14 +52,27 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             ? (string) $business['name']
             : (string) config('app.name', 'The88Coffees');
 
+        $order->loadMissing('items.addOns');
         $lines = $order->items
             ->map(function (OrderItem $item): array {
+                $baseLineTotal = bcmul((string) $item->unit_price, (string) $item->quantity, 2);
+
                 return [
                     'product_name' => (string) $item->product_name,
                     'variant_name' => filled($item->variant_name) ? (string) $item->variant_name : null,
                     'quantity' => (int) $item->quantity,
                     'unit_price' => number_format((float) $item->unit_price, 2, '.', ''),
-                    'line_total' => number_format((float) $item->line_subtotal, 2, '.', ''),
+                    'line_total' => number_format((float) $baseLineTotal, 2, '.', ''),
+                    'add_ons' => $item->addOns->map(function ($addOn) use ($item): array {
+                        $addonLineTotal = bcmul((string) $addOn->total_price, (string) $item->quantity, 2);
+
+                        return [
+                            'name' => (string) $addOn->name,
+                            'quantity' => (int) $addOn->quantity,
+                            'unit_price' => number_format((float) $addOn->unit_price, 2, '.', ''),
+                            'total_price' => number_format((float) $addonLineTotal, 2, '.', ''),
+                        ];
+                    })->values()->all(),
                 ];
             })
             ->values()

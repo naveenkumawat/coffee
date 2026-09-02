@@ -6,6 +6,7 @@ use App\Enums\PreparationStation;
 use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderItem extends AbstractModel
 {
@@ -54,5 +55,10 @@ class OrderItem extends AbstractModel
     public function recipe(): BelongsTo
     {
         return $this->belongsTo(Recipe::class)->withTrashed();
+    }
+
+    public function addOns(): HasMany
+    {
+        return $this->hasMany(OrderItemAddOn::class);
     }
 }

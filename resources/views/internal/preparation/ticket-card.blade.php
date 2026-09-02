@@ -37,6 +37,13 @@
                 @if ($item->variant_name)
                     <span class="text-muted">({{ $item->variant_name }})</span>
                 @endif
+                @if ($item->relationLoaded('addOns') ? $item->addOns->isNotEmpty() : $item->addOns()->exists())
+                    <div class="text-muted fs-8 ms-4">
+                        @foreach ($item->addOns as $addOn)
+                            + {{ $addOn->name }} ×{{ $addOn->quantity }} each
+                        @endforeach
+                    </div>
+                @endif
             </li>
         @empty
             <li class="fs-7 text-muted">No station items.</li>
@@ -48,7 +55,29 @@
     @endif
 
     <div class="fs-8 text-muted mb-3">
-        Created {{ $ticket->created_at?->diffForHumans() }}
+        @php
+            $queueAgeSeconds = $ticket->created_at ? $ticket->created_at->diffInSeconds(now()) : null;
+            $stageStart = match ($ticket->status?->value) {
+                'accepted' => $ticket->accepted_at ?? $ticket->created_at,
+                'preparing' => $ticket->preparing_at ?? $ticket->accepted_at ?? $ticket->created_at,
+                default => $ticket->created_at,
+            };
+            $stageElapsedSeconds = $stageStart ? $stageStart->diffInSeconds(now()) : null;
+            $fmtLive = function (?int $seconds): string {
+                if ($seconds === null) {
+                    return '—';
+                }
+                $m = intdiv($seconds, 60);
+                $s = $seconds % 60;
+
+                return $m > 0 ? sprintf('%dm %02ds', $m, $s) : sprintf('%ds', $s);
+            };
+        @endphp
+        Queue age {{ $fmtLive($queueAgeSeconds) }}
+        @if (! in_array($ticket->status?->value, ['ready', 'cancelled'], true))
+            · Stage {{ $fmtLive($stageElapsedSeconds) }}
+        @endif
+        · Created {{ $ticket->created_at?->diffForHumans() }}
         @if ($ticket->accepted_at)
             · Accepted {{ $ticket->accepted_at->diffForHumans() }}
         @endif

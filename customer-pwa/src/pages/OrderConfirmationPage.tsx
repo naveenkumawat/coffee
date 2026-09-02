@@ -328,6 +328,7 @@ export function OrderConfirmationPage() {
               key={item.id}
               name={item.product_name}
               subtitle={joinLabels([item.variant_name])}
+              addOns={item.add_ons}
               quantity={item.quantity}
               unitPrice={item.unit_price}
               amount={item.line_subtotal}

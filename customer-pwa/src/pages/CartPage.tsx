@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { CartItemCard } from '../components/cart/CartItemCard';
 import { CartOffersSection } from '../components/cart/CartOffersSection';
+import { ProductCustomizationSheet } from '../components/catalog/ProductCustomizationSheet';
 import { StickyActionBar } from '../components/common/StickyActionBar';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -13,9 +15,17 @@ import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { selectAvailability, useContentStore } from '../stores/contentStore';
 import { useToastStore } from '../stores/toastStore';
+import { CartItem } from '../types/cart';
+import { Product } from '../types/catalog';
+import { selectionFromCartItem } from '../utils/cartQuantity';
 import { cartDiscounts } from '../utils/discounts';
 import { formatCurrency } from '../utils/format';
 import { buildLoginRedirect } from '../utils/navigation';
+
+interface EditingCartItem {
+  item: CartItem;
+  product: Product;
+}
 
 export function CartPage() {
   const cart = useCartStore((state) => state.cart);
@@ -39,6 +49,7 @@ export function CartPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingItemId, setPendingItemId] = useState<number | null>(null);
   const [isClearing, setIsClearing] = useState(false);
+  const [editing, setEditing] = useState<EditingCartItem | null>(null);
 
   async function loadCartState(): Promise<void> {
     setErrorMessage(null);
@@ -83,6 +94,28 @@ export function CartPage() {
       setErrorMessage(message);
       toastError(message);
       await loadCartState();
+    } finally {
+      setPendingItemId(null);
+    }
+  }
+
+  async function handleEdit(item: CartItem): Promise<void> {
+    if (!item.product?.id) {
+      toastError('Unable to edit this item right now.');
+
+      return;
+    }
+
+    setPendingItemId(item.id);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchProduct(String(item.product.id));
+      setEditing({ item, product: response.data });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Unable to load product options.';
+      setErrorMessage(message);
+      toastError(message);
     } finally {
       setPendingItemId(null);
     }
@@ -152,6 +185,7 @@ export function CartPage() {
                 isBusy={pendingItemId === item.id}
                 onChangeQuantity={(quantity) => void handleQuantityChange(item.id, quantity)}
                 onRemove={() => void handleRemove(item.id)}
+                onEdit={() => void handleEdit(item)}
               />
             ))}
           </div>
@@ -245,6 +279,22 @@ export function CartPage() {
             </button>
           </StickyActionBar>
         </>
+      ) : null}
+
+      {editing ? (
+        <ProductCustomizationSheet
+          product={editing.product}
+          open
+          onClose={() => setEditing(null)}
+          cartItemId={editing.item.id}
+          initialVariantId={editing.item.variant?.id}
+          initialAddOns={selectionFromCartItem(editing.item)}
+          initialQuantity={editing.item.quantity}
+          onSaved={() => {
+            setEditing(null);
+            void loadCartState();
+          }}
+        />
       ) : null}
     </div>
   );

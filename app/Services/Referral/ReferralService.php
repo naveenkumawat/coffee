@@ -427,12 +427,16 @@ class ReferralService implements ReferralServiceInterface
             }
 
             $lineQty = (int) ($item['quantity'] ?? 0);
-            $lineSubtotal = $this->normalizeMoney((string) ($item['line_subtotal'] ?? '0'));
+            $lineSubtotal = $this->normalizeMoney((string) (
+                $item['base_line_subtotal'] ?? $item['line_subtotal'] ?? '0'
+            ));
             if ($lineQty <= 0 || bccomp($lineSubtotal, '0', 2) <= 0) {
                 continue;
             }
 
-            $unit = bcdiv($lineSubtotal, (string) $lineQty, 4);
+            $unit = isset($item['base_unit_price'])
+                ? $this->normalizeMoney((string) $item['base_unit_price'])
+                : bcdiv($lineSubtotal, (string) $lineQty, 4);
             $take = min($neededQty - $matchedQty, $lineQty);
             if ($take <= 0) {
                 break;

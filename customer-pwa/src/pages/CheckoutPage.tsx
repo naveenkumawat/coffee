@@ -580,6 +580,8 @@ export function CheckoutPage() {
                     ? `${item.variant.serving_size_value} ${item.variant.serving_size_unit ?? ''}`.trim()
                     : null,
                 ])}
+                addOns={item.add_ons}
+                editHref="/cart"
                 quantity={item.quantity}
                 unitPrice={item.unit_price ?? item.variant?.price}
                 amount={item.line_total}

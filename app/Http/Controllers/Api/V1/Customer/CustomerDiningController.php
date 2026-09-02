@@ -67,7 +67,7 @@ class CustomerDiningController extends Controller
         );
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Dining session started.',
             201,
         );
@@ -84,7 +84,7 @@ class CustomerDiningController extends Controller
         $this->authorize('view', $session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Active dining session retrieved.',
         );
     }
@@ -94,7 +94,7 @@ class CustomerDiningController extends Controller
         $this->authorize('view', $session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Dining session retrieved.',
         );
     }
@@ -106,6 +106,9 @@ class CustomerDiningController extends Controller
         $data = $request->validate([
             'product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')],
             'quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            'add_ons' => ['sometimes', 'array'],
+            'add_ons.*.add_on_id' => ['required', 'integer', 'distinct', Rule::exists('add_ons', 'id')->whereNull('deleted_at')],
+            'add_ons.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ]);
 
         $this->dining->addDraftItem(
@@ -113,10 +116,17 @@ class CustomerDiningController extends Controller
             (int) $data['product_variant_id'],
             (int) $data['quantity'],
             $request->user(),
+            $data['add_ons'] ?? [],
         );
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->fresh()->load([
+                'cafeTable',
+                'customer',
+                'drafts.productVariant.product',
+                'drafts.draftAddOns.addOn',
+                'orders.items.addOns',
+            ])),
             'Draft item added.',
         );
     }
@@ -132,7 +142,7 @@ class CustomerDiningController extends Controller
         $this->dining->updateDraftItem($session, $draft, (int) $data['quantity']);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Draft item updated.',
         );
     }
@@ -143,7 +153,7 @@ class CustomerDiningController extends Controller
         $this->dining->removeDraftItem($session, $draft);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Draft item removed.',
         );
     }
@@ -154,7 +164,7 @@ class CustomerDiningController extends Controller
         $this->dining->clearDrafts($session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Draft cleared.',
         );
     }
@@ -170,7 +180,7 @@ class CustomerDiningController extends Controller
         $this->dining->placeRound($session, $request->user(), $data['customer_notes'] ?? null);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Dining round placed.',
             201,
         );
@@ -182,7 +192,7 @@ class CustomerDiningController extends Controller
         $session = $this->dining->requestBill($session, $request->user());
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Bill requested.',
         );
     }
@@ -198,7 +208,7 @@ class CustomerDiningController extends Controller
         $session = $this->dining->setPaymentMethod($session, $data['payment_method']);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Payment method saved.',
             200,
             ['payment' => $this->websiteSettings->paymentInstructions()],
@@ -216,7 +226,7 @@ class CustomerDiningController extends Controller
         $session = $this->dining->uploadPaymentProof($session, $request->user(), $request->file('payment_proof'));
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'orders.items'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Payment proof uploaded.',
         );
     }

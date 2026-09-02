@@ -34,7 +34,12 @@
                     @foreach ($order->items as $item)
                         <tr>
                             <td>#{{ $order->dining_round_number }}</td>
-                            <td>{{ $item->product_name }} @if($item->variant_name) ({{ $item->variant_name }}) @endif</td>
+                            <td>
+                                {{ $item->product_name }} @if($item->variant_name) ({{ $item->variant_name }}) @endif
+                                @foreach ($item->relationLoaded('addOns') ? $item->addOns : $item->addOns()->get() as $addOn)
+                                    <div>+ {{ $addOn->name }}@if($addOn->quantity > 1) ×{{ $addOn->quantity }}@endif</div>
+                                @endforeach
+                            </td>
                             <td>{{ $item->quantity }}</td>
                             <td>{{ number_format((float) $item->line_subtotal, 2) }}</td>
                         </tr>

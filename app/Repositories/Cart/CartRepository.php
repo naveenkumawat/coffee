@@ -33,10 +33,10 @@ class CartRepository extends AbstractRepository implements CartRepositoryInterfa
         return $this->refreshCart($cart);
     }
 
-    public function findCustomerItem(Cart $cart, int $productVariantId): ?CartItem
+    public function findCustomerItem(Cart $cart, string $configurationHash): ?CartItem
     {
         return $cart->items()
-            ->where('product_variant_id', $productVariantId)
+            ->where('configuration_hash', $configurationHash)
             ->first();
     }
 
@@ -52,7 +52,7 @@ class CartRepository extends AbstractRepository implements CartRepositoryInterfa
         /** @var CartItem $cartItem */
         $cartItem = $cart->items()->create($attributes);
 
-        return $cartItem->fresh(['productVariant.product.category']);
+        return $cartItem->fresh(['productVariant.product.category', 'addOns.addOn']);
     }
 
     public function updateItem(CartItem $cartItem, array $attributes): CartItem
@@ -60,7 +60,7 @@ class CartRepository extends AbstractRepository implements CartRepositoryInterfa
         /** @var CartItem $cartItem */
         $cartItem = $this->persist($cartItem, $attributes);
 
-        return $cartItem->fresh(['productVariant.product.category']);
+        return $cartItem->fresh(['productVariant.product.category', 'addOns.addOn']);
     }
 
     public function deleteItem(CartItem $cartItem): void
@@ -78,6 +78,7 @@ class CartRepository extends AbstractRepository implements CartRepositoryInterfa
         return $cart->fresh([
             'customer',
             'items.productVariant.product.category',
+            'items.addOns.addOn',
         ]);
     }
 

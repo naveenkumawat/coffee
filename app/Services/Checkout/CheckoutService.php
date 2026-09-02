@@ -120,10 +120,23 @@ class CheckoutService implements CheckoutServiceInterface
             );
             $orderTransfer->setItems(
                 $cart->items
-                    ->map(fn (CartItem $item): array => [
-                        'product_variant_id' => (int) $item->product_variant_id,
-                        'quantity' => (int) $item->quantity,
-                    ])
+                    ->map(function (CartItem $item): array {
+                        $addOns = $item->relationLoaded('addOns')
+                            ? $item->addOns
+                            : $item->addOns()->get();
+
+                        return [
+                            'product_variant_id' => (int) $item->product_variant_id,
+                            'quantity' => (int) $item->quantity,
+                            'add_ons' => $addOns
+                                ->map(fn ($row): array => [
+                                    'add_on_id' => (int) $row->add_on_id,
+                                    'quantity' => (int) $row->quantity,
+                                ])
+                                ->values()
+                                ->all(),
+                        ];
+                    })
                     ->values()
                     ->all(),
             );

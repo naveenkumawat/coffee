@@ -21,6 +21,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
@@ -29,6 +30,7 @@ use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
+use App\Support\AddOnConfiguration;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
 use Illuminate\Http\UploadedFile;
@@ -50,6 +52,7 @@ class OrderService implements OrderServiceInterface
         protected ReferralServiceInterface $referrals,
         protected OrderPreparationServiceInterface $preparations,
         protected OrderInventoryConsumptionServiceInterface $inventoryConsumption,
+        protected AddOnServiceInterface $addOns,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -88,6 +91,9 @@ class OrderService implements OrderServiceInterface
                 'quantity' => (int) $item['quantity'],
                 'unit_price' => (string) $item['unit_price'],
                 'line_subtotal' => (string) $item['line_subtotal'],
+                'base_unit_price' => (string) ($item['base_unit_price'] ?? $item['unit_price']),
+                'base_line_subtotal' => (string) ($item['base_line_subtotal'] ?? $item['line_subtotal']),
+                'addon_line_subtotal' => (string) ($item['addon_line_subtotal'] ?? '0.00'),
             ], $preparedItems);
 
             $freeDrinkBenefit = '0.00';
@@ -273,6 +279,7 @@ class OrderService implements OrderServiceInterface
                 'unit_price' => $item['unit_price'],
                 'quantity' => $item['quantity'],
                 'line_subtotal' => $item['line_subtotal'],
+                'add_ons' => $item['add_ons'] ?? [],
             ], $preparedItems));
             $this->persistOrderPromotions($order, $promotionResult['discounts']);
             $this->persistAndRedeemRewards(
@@ -755,6 +762,7 @@ class OrderService implements OrderServiceInterface
                 'unit_price' => $item['unit_price'],
                 'quantity' => $item['quantity'],
                 'line_subtotal' => $item['line_subtotal'],
+                'add_ons' => $item['add_ons'] ?? [],
             ], $preparedItems));
             $this->orders->createStatusHistory($order, [
                 'from_status' => null,
@@ -797,7 +805,7 @@ class OrderService implements OrderServiceInterface
     protected function prepareItems(array $items): array
     {
         $prepared = [];
-        $variantIds = [];
+        $configurationKeys = [];
 
         foreach ($items as $index => $item) {
             $variantId = (int) ($item['product_variant_id'] ?? 0);
@@ -807,14 +815,17 @@ class OrderService implements OrderServiceInterface
                 continue;
             }
 
-            if (in_array($variantId, $variantIds, true)) {
+            $rawAddOns = is_array($item['add_ons'] ?? null) ? $item['add_ons'] : [];
+            $configurationKey = AddOnConfiguration::hash($variantId, $rawAddOns);
+
+            if (in_array($configurationKey, $configurationKeys, true)) {
                 throw ValidationException::withMessages([
-                    "items.$index.product_variant_id" => 'Duplicate product variants are not allowed in the same order.',
+                    "items.$index.product_variant_id" => 'Duplicate product configurations are not allowed in the same order.',
                 ]);
             }
 
             $variant = $this->validateVariant($variantId, $index);
-            $variantIds[] = $variantId;
+            $configurationKeys[] = $configurationKey;
 
             $product = $variant->product;
             $station = $product?->preparation_station;
@@ -825,8 +836,20 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
-            $unitPrice = $this->normalizeMoney((string) $variant->price);
-            $lineSubtotal = bcmul($unitPrice, (string) $quantity, 2);
+            $resolvedAddOns = $this->addOns->resolveSelectionForProduct($product, $rawAddOns);
+            $baseUnitPrice = $this->normalizeMoney((string) $variant->price);
+            $baseLineSubtotal = bcmul($baseUnitPrice, (string) $quantity, 2);
+            $addonLineSubtotal = '0.00';
+
+            foreach ($resolvedAddOns as $addOnRow) {
+                $addonLineSubtotal = bcadd(
+                    $addonLineSubtotal,
+                    bcmul((string) $addOnRow['line_total'], (string) $quantity, 2),
+                    2,
+                );
+            }
+
+            $lineSubtotal = bcadd($baseLineSubtotal, $addonLineSubtotal, 2);
 
             $prepared[] = [
                 'product_id' => $product?->getKey(),
@@ -837,9 +860,13 @@ class OrderService implements OrderServiceInterface
                 'product_name' => $product?->name ?? 'Product',
                 'variant_name' => $variant->name,
                 'customer_ingredient_summary' => $product?->customer_ingredient_summary,
-                'unit_price' => $unitPrice,
+                'unit_price' => $baseUnitPrice,
                 'quantity' => $quantity,
                 'line_subtotal' => $lineSubtotal,
+                'base_unit_price' => $baseUnitPrice,
+                'base_line_subtotal' => $baseLineSubtotal,
+                'addon_line_subtotal' => $addonLineSubtotal,
+                'add_ons' => $resolvedAddOns,
             ];
         }
 

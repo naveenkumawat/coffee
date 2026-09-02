@@ -2486,11 +2486,35 @@ textarea.coffee-input:focus {
   overflow-wrap: anywhere;
 }
 
+.cart-item-addons,
+.checkout-item-addons {
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.1rem;
+  color: var(--coffee-muted);
+  font-size: var(--text-meta);
+}
+
+.cart-item-addons li,
+.checkout-item-addons li {
+  overflow-wrap: anywhere;
+}
+
 .cart-item-footer {
   margin-top: var(--space-3);
   gap: var(--space-2);
 }
 
+.cart-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+}
+
+.cart-item-edit,
 .cart-item-remove {
   display: inline-flex;
   align-items: center;
@@ -2505,8 +2529,80 @@ textarea.coffee-input:focus {
   font-weight: 600;
 }
 
+.cart-item-edit:disabled,
 .cart-item-remove:disabled {
   opacity: 0.5;
+}
+
+.checkout-item-edit {
+  display: inline-flex;
+  margin-top: 0.35rem;
+  font-size: var(--text-meta);
+}
+
+.product-addon-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.product-addon-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  border: 1.5px solid rgba(28, 25, 23, 0.12);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.product-addon-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.product-addon-copy strong {
+  font-size: 0.95rem;
+}
+
+.product-addon-copy small {
+  color: var(--coffee-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.product-addon-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.product-addon-check input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.product-addon-meta {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+  color: var(--coffee-primary);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.product-customize-qty {
+  display: grid;
+  gap: 0.55rem;
+  justify-items: start;
+}
+
+.product-order-control.is-customize.is-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .availability-chip-soft {

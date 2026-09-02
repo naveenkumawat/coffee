@@ -17,4 +17,9 @@ interface ProductServiceInterface
     public function syncImage(Product $product, ?UploadedFile $image, bool $remove): Product;
 
     public function assertActiveProductIsLaunchReady(Product $product): void;
+
+    /**
+     * @param  list<array{add_on_id: int, price_override?: ?string, max_quantity?: ?int, sort_order?: int}>|null  $assignments
+     */
+    public function syncAddOnAssignments(Product $product, ?array $assignments): Product;
 }

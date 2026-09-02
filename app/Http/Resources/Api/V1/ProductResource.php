@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Product;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Support\PublicMedia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -51,6 +52,7 @@ class ProductResource extends JsonResource
                     return $rating ? (new MyProductRatingResource($rating))->resolve() : null;
                 },
             ),
+            'add_ons' => app(AddOnServiceInterface::class)->catalogAddOnsForProduct($product),
             'can_rate' => $this->when(
                 array_key_exists('can_rate', $product->getAttributes()),
                 fn () => (bool) $product->getAttribute('can_rate'),

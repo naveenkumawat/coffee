@@ -176,13 +176,21 @@ Before accepting checkout or order creation, the backend must continue validatin
 - cart ownership
 - product and variant availability
 - current selling price
+- selected add-on assignment, activity, quantity limits, and server prices
 - totals
 - order state
 - payment/manual confirmation rules
 
+Product customization (variants and optional paid add-ons) uses a shared bottom sheet; simple single-variant products without add-ons keep one-tap Add.
+
+Cart line identity is server-owned (`configuration_hash` of variant + canonical add-ons). The frontend never treats client prices or fingerprints as authoritative.
+
+Payment confirmation UX must follow server payment/proof state (Cash Pending, UPI Pending, Proof Submitted/Awaiting Review, Proof Rejected, Payment Confirmed) — not generic order status.
+
 The frontend must never:
 
 - trust client-calculated totals as authoritative
+- accept or display client-authored add-on prices as truth
 - expose recipes, ingredient quantities, costs, margins, internal notes, or staff-only data
 - imply payment has been confirmed before Administrator action
 

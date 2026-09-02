@@ -27,6 +27,22 @@
         'actions' => view('waiter.sessions.partials.actions', compact('session')),
     ])
 
+    @if (($diningTiming['bill_requested_elapsed_seconds'] ?? null) !== null)
+        <div class="alert alert-info d-flex align-items-center mb-7">
+            <span class="fs-7">
+                Bill requested elapsed:
+                <strong>
+                    @php
+                        $billElapsed = abs((int) $diningTiming['bill_requested_elapsed_seconds']);
+                        $bm = intdiv($billElapsed, 60);
+                        $bs = $billElapsed % 60;
+                    @endphp
+                    {{ $bm > 0 ? sprintf('%dm %02ds', $bm, $bs) : sprintf('%ds', $bs) }}
+                </strong>
+            </span>
+        </div>
+    @endif
+
     @if ($session->allowsNewRounds())
         <div class="card card-flush internal-card mb-7">
             <div class="card-header pt-6">
@@ -57,5 +73,5 @@
         </div>
     @endif
 
-    @include('internal.dining.partials.rounds-list', ['session' => $session])
+    @include('internal.dining.partials.rounds-list', ['session' => $session, 'diningTiming' => $diningTiming])
 @endsection

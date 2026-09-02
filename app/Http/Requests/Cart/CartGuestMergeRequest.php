@@ -26,6 +26,9 @@ class CartGuestMergeRequest extends AbstractRequest
                 Rule::exists('product_variants', 'id')->whereNull('deleted_at'),
             ],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            'items.*.add_ons' => ['sometimes', 'array'],
+            'items.*.add_ons.*.add_on_id' => ['required', 'integer', Rule::exists('add_ons', 'id')->whereNull('deleted_at')],
+            'items.*.add_ons.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'idempotency_key' => ['nullable', 'string', 'max:80'],
         ];
     }

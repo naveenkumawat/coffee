@@ -15,11 +15,28 @@ export interface CartVariantSummary {
   price: string;
 }
 
+export interface CartItemAddOn {
+  add_on_id: number;
+  name: string | null;
+  quantity: number;
+  unit_price: string;
+  line_total: string;
+}
+
+export interface CartAddOnSelection {
+  add_on_id: number;
+  quantity: number;
+}
+
 export interface CartItem {
   id: number;
   quantity: number;
   unit_price: string | null;
   line_total: string | null;
+  base_unit_price?: string | null;
+  base_line_total?: string | null;
+  addon_line_total?: string | null;
+  add_ons?: CartItemAddOn[];
   is_available: boolean;
   product: CartProductSummary | null;
   variant: CartVariantSummary | null;
@@ -85,9 +102,11 @@ export interface CartCountResponse {
 export interface CartItemMutationPayload {
   product_variant_id: number;
   quantity: number;
+  add_ons?: CartAddOnSelection[];
   display?: {
     product: CartProductSummary | null;
     variant: CartVariantSummary | null;
+    add_ons?: CartItemAddOn[];
   };
 }
 
@@ -95,6 +114,7 @@ export interface CartMergePayload {
   items: Array<{
     product_variant_id: number;
     quantity: number;
+    add_ons?: CartAddOnSelection[];
   }>;
   idempotency_key?: string | null;
 }

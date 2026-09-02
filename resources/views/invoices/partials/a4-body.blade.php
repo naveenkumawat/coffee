@@ -304,6 +304,22 @@
                     <td class="col-rate">Rs {{ $line['unit_price'] }}</td>
                     <td class="col-amount">Rs {{ $line['line_total'] }}</td>
                 </tr>
+                @foreach (($line['add_ons'] ?? []) as $addOn)
+                    <tr>
+                        <td class="col-item">
+                            <div class="variant">
+                                + {{ $addOn['name'] }}
+                                @if ((int) ($addOn['quantity'] ?? 1) > 1)
+                                    ×{{ $addOn['quantity'] }} each
+                                @endif
+                            </div>
+                        </td>
+                        <td class="col-variant">—</td>
+                        <td class="col-qty">{{ $line['quantity'] }}</td>
+                        <td class="col-rate">Rs {{ $addOn['unit_price'] }}</td>
+                        <td class="col-amount">Rs {{ $addOn['total_price'] }}</td>
+                    </tr>
+                @endforeach
             @endforeach
         </tbody>
     </table>

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Cart;
 
 use App\Http\Requests\AbstractRequest;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class CartItemUpdateRequest extends AbstractRequest
 {
@@ -19,6 +20,9 @@ class CartItemUpdateRequest extends AbstractRequest
     {
         return [
             'quantity' => ['required', 'integer', 'min:1'],
+            'add_ons' => ['sometimes', 'array'],
+            'add_ons.*.add_on_id' => ['required', 'integer', 'distinct', Rule::exists('add_ons', 'id')->whereNull('deleted_at')],
+            'add_ons.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ];
     }
 }

@@ -45,7 +45,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
     public function paginateForCategory(ProductCategory $productCategory, int $perPage = 12): LengthAwarePaginator
     {
         return $productCategory->products()
-            ->with(['defaultVariant', 'flavours'])
+            ->with(['defaultVariant', 'flavours', 'addOns' => fn ($q) => $q->where('add_ons.is_active', true)->orderByPivot('sort_order')])
             ->orderByDesc('is_available')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -70,7 +70,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
                 'products' => fn ($query) => $query
                     ->where('is_active', true)
                     ->where('is_available', true)
-                    ->with(['defaultVariant', 'flavours'])
+                    ->with(['defaultVariant', 'flavours', 'addOns' => fn ($q) => $q->where('add_ons.is_active', true)->orderByPivot('sort_order')])
                     ->orderByDesc('is_featured')
                     ->orderBy('sort_order')
                     ->orderBy('name'),
@@ -180,6 +180,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
+                'addOns' => fn ($query) => $query->where('add_ons.is_active', true)->orderByPivot('sort_order'),
                 'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
                 'defaultVariant.recipe.lines' => fn ($query) => $query
                     ->where('show_to_customer', true)
@@ -237,6 +238,7 @@ class ProductRepository extends AbstractRepository implements ProductRepositoryI
             ->with([
                 'category',
                 'flavours',
+                'addOns' => fn ($query) => $query->where('add_ons.is_active', true)->orderByPivot('sort_order'),
                 'tags' => fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'),
                 'defaultVariant.recipe.lines' => fn ($query) => $query
                     ->where('show_to_customer', true)

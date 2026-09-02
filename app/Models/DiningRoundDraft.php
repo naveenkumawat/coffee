@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DiningRoundDraft extends AbstractModel
 {
@@ -10,6 +11,7 @@ class DiningRoundDraft extends AbstractModel
         'dining_session_id',
         'customer_id',
         'product_variant_id',
+        'configuration_hash',
         'quantity',
     ];
 
@@ -33,5 +35,10 @@ class DiningRoundDraft extends AbstractModel
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function draftAddOns(): HasMany
+    {
+        return $this->hasMany(DiningRoundDraftAddOn::class);
     }
 }

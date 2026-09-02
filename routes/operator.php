@@ -5,7 +5,9 @@ use App\Http\Controllers\Internal\StaffNotificationController;
 use App\Http\Controllers\Operator\DashboardController;
 use App\Http\Controllers\Operator\DiningSessionController;
 use App\Http\Controllers\Operator\InventoryController;
+use App\Http\Controllers\Operator\InventoryProductOverviewController;
 use App\Http\Controllers\Operator\InventoryRefillRequestController;
+use App\Http\Controllers\Operator\OperationalPerformanceOverviewController;
 use App\Http\Controllers\Operator\OrderController;
 use App\Http\Controllers\Operator\PreparationController;
 use App\Http\Controllers\Operator\ReconciliationController;
@@ -34,6 +36,8 @@ Route::middleware('guest:admin')->group(function (): void {
 Route::middleware(['auth:admin', 'role:operator'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/reconciliation', ReconciliationController::class)->name('reconciliation.index');
+    Route::get('/reports/inventory-products', InventoryProductOverviewController::class)->name('reports.inventory-products.index');
+    Route::get('/reports/operational-performance', OperationalPerformanceOverviewController::class)->name('reports.operational-performance.index');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');

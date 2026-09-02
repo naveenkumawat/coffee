@@ -1,4 +1,5 @@
-import { Cart, CartItem, CartSummary } from '../types/cart';
+import { Cart, CartAddOnSelection, CartItem, CartItemAddOn, CartSummary } from '../types/cart';
+import { addOnsConfigurationKey, canonicalizeAddOns } from './addOns';
 
 export const CART_MAX_QUANTITY = 99;
 
@@ -11,11 +12,37 @@ export function totalCartQuantity(cart: Cart | null, summary: CartSummary | null
 }
 
 export function findCartItemByVariantId(cart: Cart | null, productVariantId: number): CartItem | null {
-  return cart?.items.find((item) => item.variant?.id === productVariantId) ?? null;
+  return findCartItemByConfiguration(cart, productVariantId, []);
 }
 
-export function quantityForVariant(cart: Cart | null, productVariantId: number): number {
-  return findCartItemByVariantId(cart, productVariantId)?.quantity ?? 0;
+export function findCartItemByConfiguration(
+  cart: Cart | null,
+  productVariantId: number,
+  addOns: Array<CartAddOnSelection | CartItemAddOn> | null | undefined = [],
+): CartItem | null {
+  const key = addOnsConfigurationKey(productVariantId, addOns);
+
+  return (
+    cart?.items.find((item) => {
+      if (item.variant?.id !== productVariantId) {
+        return false;
+      }
+
+      return addOnsConfigurationKey(productVariantId, item.add_ons) === key;
+    }) ?? null
+  );
+}
+
+export function quantityForVariant(
+  cart: Cart | null,
+  productVariantId: number,
+  addOns: Array<CartAddOnSelection | CartItemAddOn> | null | undefined = [],
+): number {
+  return findCartItemByConfiguration(cart, productVariantId, addOns)?.quantity ?? 0;
+}
+
+export function selectionFromCartItem(item: CartItem): CartAddOnSelection[] {
+  return canonicalizeAddOns(item.add_ons);
 }
 
 export function formatCartBadgeCount(count: number): string {

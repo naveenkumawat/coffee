@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\AddOn;
 use App\Models\CafeClosure;
 use App\Models\CafeTable;
 use App\Models\Cart;
@@ -29,6 +30,7 @@ use App\Models\Recipe;
 use App\Models\SocialLink;
 use App\Models\User;
 use App\Models\WebsiteSetting;
+use App\Policies\AddOnPolicy;
 use App\Policies\CafeClosurePolicy;
 use App\Policies\CafeTablePolicy;
 use App\Policies\CartItemPolicy;
@@ -83,6 +85,7 @@ class AuthServiceProvider extends ServiceProvider
         ProductFavourite::class => ProductFavouritePolicy::class,
         ProductFlavour::class => ProductFlavourPolicy::class,
         ProductRating::class => ProductRatingPolicy::class,
+        AddOn::class => AddOnPolicy::class,
         ProductTag::class => ProductTagPolicy::class,
         Promotion::class => PromotionPolicy::class,
         Recipe::class => RecipePolicy::class,

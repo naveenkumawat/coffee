@@ -60,7 +60,7 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
     {
         return $this->model->newQuery()
             ->where('customer_id', $customer->getKey())
-            ->with(['items', 'statusHistory'])
+            ->with(['items.addOns', 'statusHistory'])
             ->orderByDesc('placed_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -119,7 +119,7 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
         return $this->model->newQuery()
             ->with([
                 'customer',
-                'items',
+                'items.addOns',
                 'statusHistory',
             ])
             ->where('checkout_token', $checkoutToken)
@@ -144,7 +144,22 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
 
     public function createItems(Order $order, array $items): void
     {
-        $order->items()->createMany($items);
+        foreach ($items as $attributes) {
+            $addOns = $attributes['add_ons'] ?? [];
+            unset($attributes['add_ons']);
+
+            $orderItem = $order->items()->create($attributes);
+
+            foreach ($addOns as $addOn) {
+                $orderItem->addOns()->create([
+                    'add_on_id' => $addOn['add_on_id'] ?? null,
+                    'name' => $addOn['name'],
+                    'quantity' => $addOn['quantity'],
+                    'unit_price' => $addOn['unit_price'],
+                    'total_price' => $addOn['line_total'] ?? $addOn['total_price'] ?? bcmul((string) $addOn['unit_price'], (string) $addOn['quantity'], 2),
+                ]);
+            }
+        }
     }
 
     public function createStatusHistory(Order $order, array $attributes): void

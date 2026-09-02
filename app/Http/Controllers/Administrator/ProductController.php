@@ -69,6 +69,9 @@ class ProductController extends Controller
     {
         $payload = $request->safe()->except(['image', 'remove_image']);
         $product = $this->service->store($this->parser->getTransferFromArrayData($payload));
+        if (array_key_exists('add_ons', $payload)) {
+            $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
+        }
         $this->service->syncImage(
             $product,
             $request->file('image'),
@@ -113,6 +116,9 @@ class ProductController extends Controller
 
         $payload = $request->safe()->except(['image', 'remove_image']);
         $product = $this->service->update($product, $this->parser->getTransferFromArrayData($payload));
+        if (array_key_exists('add_ons', $payload)) {
+            $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
+        }
         $this->service->syncImage(
             $product,
             $request->file('image'),

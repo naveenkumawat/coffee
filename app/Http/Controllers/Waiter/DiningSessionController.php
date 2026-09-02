@@ -8,6 +8,7 @@ use App\Models\DiningSession;
 use App\Models\ProductVariant;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
+use App\Services\Reporting\OperationalPerformanceReportingServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class DiningSessionController extends Controller
     public function __construct(
         protected DiningSessionServiceInterface $dining,
         protected DiningInvoiceServiceInterface $invoices,
+        protected OperationalPerformanceReportingServiceInterface $operationalReporting,
     ) {}
 
     public function index(): View
@@ -48,8 +50,9 @@ class DiningSessionController extends Controller
             ->orderBy('id')
             ->limit(100)
             ->get();
+        $diningTiming = $this->operationalReporting->buildWaiterSessionTiming((int) $session->id);
 
-        return view('waiter.sessions.show', compact('session', 'bill', 'variants'));
+        return view('waiter.sessions.show', compact('session', 'bill', 'variants', 'diningTiming'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -82,9 +85,18 @@ class DiningSessionController extends Controller
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
             'quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'add_ons' => ['sometimes', 'array'],
+            'add_ons.*.add_on_id' => ['required', 'integer', 'distinct', 'exists:add_ons,id'],
+            'add_ons.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ]);
 
-        $this->dining->addDraftItem($session, (int) $data['product_variant_id'], (int) $data['quantity'], $request->user('admin'));
+        $this->dining->addDraftItem(
+            $session,
+            (int) $data['product_variant_id'],
+            (int) $data['quantity'],
+            $request->user('admin'),
+            $data['add_ons'] ?? [],
+        );
         $this->dining->placeRound($session, $request->user('admin'), $data['customer_notes'] ?? null);
 
         return back()->with('status', 'Round sent to kitchen/bar.');

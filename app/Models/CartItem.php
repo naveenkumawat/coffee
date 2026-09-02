@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\CartItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CartItem extends AbstractModel
 {
@@ -14,6 +15,7 @@ class CartItem extends AbstractModel
     protected $fillable = [
         'cart_id',
         'product_variant_id',
+        'configuration_hash',
         'quantity',
     ];
 
@@ -32,5 +34,10 @@ class CartItem extends AbstractModel
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id')->withTrashed();
+    }
+
+    public function addOns(): HasMany
+    {
+        return $this->hasMany(CartItemAddOn::class);
     }
 }

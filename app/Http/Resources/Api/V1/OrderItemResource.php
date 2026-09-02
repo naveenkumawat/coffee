@@ -28,6 +28,16 @@ class OrderItemResource extends JsonResource
             'unit_price' => $item->unit_price,
             'quantity' => (int) $item->quantity,
             'line_subtotal' => $item->line_subtotal,
+            'add_ons' => ($item->relationLoaded('addOns') ? $item->addOns : $item->addOns()->get())
+                ->map(static fn ($addOn): array => [
+                    'add_on_id' => (int) $addOn->add_on_id,
+                    'name' => $addOn->name,
+                    'quantity' => (int) $addOn->quantity,
+                    'unit_price' => $addOn->unit_price,
+                    'line_total' => $addOn->total_price,
+                ])
+                ->values()
+                ->all(),
             'my_rating' => $this->when(
                 $item->relationLoaded('myRating'),
                 function () use ($item) {

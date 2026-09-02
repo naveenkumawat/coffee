@@ -1,18 +1,24 @@
 import {
   Cart,
+  CartAddOnSelection,
   CartItem,
+  CartItemAddOn,
   CartItemMutationPayload,
   CartProductSummary,
   CartSummary,
   CartVariantSummary,
 } from '../types/cart';
+import { addonUnitTotal, addOnsConfigurationKey, canonicalizeAddOns } from './addOns';
 
 const STORAGE_KEY = 'coffee.guest-cart.v1';
 const MERGE_KEY_STORAGE = 'coffee.guest-cart.merge-key';
 
 export interface GuestCartStoredItem {
+  id: number;
   product_variant_id: number;
   quantity: number;
+  add_ons: CartAddOnSelection[];
+  add_ons_display: CartItemAddOn[];
   product: CartProductSummary | null;
   variant: CartVariantSummary | null;
 }
@@ -40,8 +46,37 @@ function money(value: string | number | null | undefined): string {
   return amount.toFixed(2);
 }
 
-function lineTotal(unitPrice: string | null | undefined, quantity: number): string {
-  return money(Number(unitPrice ?? 0) * quantity);
+function nextGuestItemId(items: GuestCartStoredItem[]): number {
+  const minId = items.reduce((min, item) => Math.min(min, item.id), 0);
+
+  return minId - 1;
+}
+
+function normalizeStoredItem(raw: Partial<GuestCartStoredItem> & { product_variant_id: number }): GuestCartStoredItem {
+  const addOns = canonicalizeAddOns(raw.add_ons);
+  const addOnsDisplay = Array.isArray(raw.add_ons_display) ? raw.add_ons_display : [];
+
+  return {
+    id: typeof raw.id === 'number' && raw.id < 0 ? raw.id : -Math.abs(raw.product_variant_id),
+    product_variant_id: raw.product_variant_id,
+    quantity: Math.min(99, Math.max(1, Number(raw.quantity) || 1)),
+    add_ons: addOns,
+    add_ons_display: addOnsDisplay,
+    product: raw.product ?? null,
+    variant: raw.variant ?? null,
+  };
+}
+
+function unitTotals(item: GuestCartStoredItem): {
+  baseUnit: number;
+  addonUnit: number;
+  unit: number;
+} {
+  const baseUnit = Number(item.variant?.price ?? 0);
+  const addonUnit = addonUnitTotal(item.add_ons_display);
+  const unit = baseUnit + addonUnit;
+
+  return { baseUnit, addonUnit, unit };
 }
 
 export function readGuestCartItems(): GuestCartStoredItem[] {
@@ -52,9 +87,15 @@ export function readGuestCartItems(): GuestCartStoredItem[] {
       return [];
     }
 
-    const parsed = JSON.parse(raw) as { items?: GuestCartStoredItem[] };
+    const parsed = JSON.parse(raw) as { items?: Array<Partial<GuestCartStoredItem> & { product_variant_id: number }> };
 
-    return Array.isArray(parsed.items) ? parsed.items : [];
+    if (!Array.isArray(parsed.items)) {
+      return [];
+    }
+
+    return parsed.items
+      .filter((item) => Number(item.product_variant_id) > 0)
+      .map((item) => normalizeStoredItem(item));
   } catch {
     return [];
   }
@@ -89,22 +130,24 @@ export function clearMergeIdempotencyKey(): void {
   window.sessionStorage.removeItem(MERGE_KEY_STORAGE);
 }
 
-export function guestItemId(productVariantId: number): number {
-  return -Math.abs(productVariantId);
-}
-
 export function buildGuestCartState(items: GuestCartStoredItem[]): {
   cart: Cart;
   summary: CartSummary;
 } {
   const cartItems: CartItem[] = items.map((item) => {
-    const unitPrice = item.variant?.price ?? null;
+    const { baseUnit, addonUnit, unit } = unitTotals(item);
+    const quantity = item.quantity;
+    const addOnsDisplay = item.add_ons_display;
 
     return {
-      id: guestItemId(item.product_variant_id),
-      quantity: item.quantity,
-      unit_price: unitPrice,
-      line_total: lineTotal(unitPrice, item.quantity),
+      id: item.id,
+      quantity,
+      unit_price: money(unit),
+      line_total: money(unit * quantity),
+      base_unit_price: money(baseUnit),
+      base_line_total: money(baseUnit * quantity),
+      addon_line_total: money(addonUnit * quantity),
+      add_ons: addOnsDisplay,
       is_available: true,
       product: item.product,
       variant: item.variant,
@@ -112,7 +155,7 @@ export function buildGuestCartState(items: GuestCartStoredItem[]): {
   });
 
   const itemCount = items.reduce((carry, item) => carry + item.quantity, 0);
-  const subtotal = items.reduce((carry, item) => carry + Number(item.variant?.price ?? 0) * item.quantity, 0);
+  const subtotal = cartItems.reduce((carry, item) => carry + Number(item.line_total ?? 0), 0);
   const summary: CartSummary = {
     item_count: itemCount,
     subtotal: money(subtotal),
@@ -139,13 +182,20 @@ export function upsertGuestCartItem(
   items: GuestCartStoredItem[],
   payload: CartItemMutationPayload,
 ): GuestCartStoredItem[] {
+  const addOns = canonicalizeAddOns(payload.add_ons);
+  const key = addOnsConfigurationKey(payload.product_variant_id, addOns);
   const next = [...items];
-  const existingIndex = next.findIndex((item) => item.product_variant_id === payload.product_variant_id);
+  const existingIndex = next.findIndex(
+    (item) => addOnsConfigurationKey(item.product_variant_id, item.add_ons) === key,
+  );
+  const displayAddOns = payload.display?.add_ons ?? next[existingIndex]?.add_ons_display ?? [];
 
   if (existingIndex >= 0) {
     next[existingIndex] = {
       ...next[existingIndex],
       quantity: Math.min(99, next[existingIndex].quantity + payload.quantity),
+      add_ons: addOns,
+      add_ons_display: displayAddOns,
       product: payload.display?.product ?? next[existingIndex].product,
       variant: payload.display?.variant ?? next[existingIndex].variant,
     };
@@ -154,8 +204,11 @@ export function upsertGuestCartItem(
   }
 
   next.push({
+    id: nextGuestItemId(next),
     product_variant_id: payload.product_variant_id,
     quantity: Math.min(99, payload.quantity),
+    add_ons: addOns,
+    add_ons_display: displayAddOns,
     product: payload.display?.product ?? null,
     variant: payload.display?.variant ?? null,
   });
@@ -163,33 +216,77 @@ export function upsertGuestCartItem(
   return next;
 }
 
+export function replaceGuestCartItem(
+  items: GuestCartStoredItem[],
+  cartItemId: number,
+  payload: CartItemMutationPayload,
+): GuestCartStoredItem[] {
+  const without = items.filter((item) => item.id !== cartItemId);
+  const addOns = canonicalizeAddOns(payload.add_ons);
+  const key = addOnsConfigurationKey(payload.product_variant_id, addOns);
+  const existingIndex = without.findIndex(
+    (item) => addOnsConfigurationKey(item.product_variant_id, item.add_ons) === key,
+  );
+  const displayAddOns = payload.display?.add_ons ?? [];
+
+  if (existingIndex >= 0) {
+    const next = [...without];
+    next[existingIndex] = {
+      ...next[existingIndex],
+      quantity: Math.min(99, next[existingIndex].quantity + payload.quantity),
+      add_ons: addOns,
+      add_ons_display: displayAddOns.length > 0 ? displayAddOns : next[existingIndex].add_ons_display,
+      product: payload.display?.product ?? next[existingIndex].product,
+      variant: payload.display?.variant ?? next[existingIndex].variant,
+    };
+
+    return next;
+  }
+
+  return [
+    ...without,
+    {
+      id: cartItemId < 0 ? cartItemId : nextGuestItemId(without),
+      product_variant_id: payload.product_variant_id,
+      quantity: Math.min(99, payload.quantity),
+      add_ons: addOns,
+      add_ons_display: displayAddOns,
+      product: payload.display?.product ?? null,
+      variant: payload.display?.variant ?? null,
+    },
+  ];
+}
+
 export function updateGuestCartItemQuantity(
   items: GuestCartStoredItem[],
   cartItemId: number,
   quantity: number,
 ): GuestCartStoredItem[] {
-  const variantId = Math.abs(cartItemId);
-
   return items
     .map((item) =>
-      item.product_variant_id === variantId
+      item.id === cartItemId
         ? { ...item, quantity: Math.min(99, Math.max(1, quantity)) }
         : item,
-    );
+    )
+    .filter((item) => item.quantity > 0);
 }
 
 export function removeGuestCartItem(items: GuestCartStoredItem[], cartItemId: number): GuestCartStoredItem[] {
-  const variantId = Math.abs(cartItemId);
-
-  return items.filter((item) => item.product_variant_id !== variantId);
+  return items.filter((item) => item.id !== cartItemId);
 }
 
 export function guestItemsForMerge(items: GuestCartStoredItem[]): Array<{
   product_variant_id: number;
   quantity: number;
+  add_ons?: CartAddOnSelection[];
 }> {
-  return items.map((item) => ({
-    product_variant_id: item.product_variant_id,
-    quantity: item.quantity,
-  }));
+  return items.map((item) => {
+    const addOns = canonicalizeAddOns(item.add_ons);
+
+    return {
+      product_variant_id: item.product_variant_id,
+      quantity: item.quantity,
+      ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+    };
+  });
 }

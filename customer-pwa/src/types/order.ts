@@ -1,6 +1,14 @@
 import { ApiEnvelope } from '../api/client';
 import { CheckoutFulfilmentMethod, CheckoutPaymentInstructions } from './checkout';
 
+export interface OrderItemAddOn {
+  add_on_id: number;
+  name: string | null;
+  quantity: number;
+  unit_price: string | null;
+  line_total: string | null;
+}
+
 export interface OrderItem {
   id: number;
   product_id: number | null;
@@ -11,6 +19,7 @@ export interface OrderItem {
   unit_price: string | null;
   quantity: number;
   line_subtotal: string | null;
+  add_ons?: OrderItemAddOn[];
   my_rating?: {
     id: number;
     rating: number;

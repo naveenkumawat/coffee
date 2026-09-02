@@ -51,14 +51,44 @@ class DiningSessionResource extends JsonResource
             'running_bill' => ($bill['finalized'] ?? false) ? null : $bill,
             'final_bill' => ($bill['finalized'] ?? false) ? $bill : null,
             'drafts' => $session->relationLoaded('drafts')
-                ? $session->drafts->map(static fn ($draft): array => [
-                    'id' => $draft->getKey(),
-                    'product_variant_id' => $draft->product_variant_id,
-                    'quantity' => $draft->quantity,
-                    'product_name' => $draft->productVariant?->product?->name,
-                    'variant_name' => $draft->productVariant?->name,
-                    'unit_price' => $draft->productVariant?->price,
-                ])->values()->all()
+                ? $session->drafts->map(static function ($draft): array {
+                    $addOns = $draft->relationLoaded('draftAddOns')
+                        ? $draft->draftAddOns
+                        : $draft->draftAddOns()->with('addOn')->get();
+
+                    $addonLine = '0.00';
+                    $addOnPayload = [];
+                    foreach ($addOns as $draftAddOn) {
+                        $unit = bcdiv((string) $draftAddOn->unit_price, '1', 2);
+                        $line = bcmul($unit, (string) ((int) $draftAddOn->quantity * (int) $draft->quantity), 2);
+                        $addonLine = bcadd($addonLine, $line, 2);
+                        $addOnPayload[] = [
+                            'add_on_id' => (int) $draftAddOn->add_on_id,
+                            'name' => $draftAddOn->addOn?->name,
+                            'quantity' => (int) $draftAddOn->quantity,
+                            'unit_price' => $unit,
+                        ];
+                    }
+
+                    $baseUnit = $draft->productVariant?->price;
+                    $baseLine = $baseUnit !== null
+                        ? bcmul((string) $baseUnit, (string) $draft->quantity, 2)
+                        : null;
+                    $lineTotal = $baseLine !== null ? bcadd($baseLine, $addonLine, 2) : null;
+
+                    return [
+                        'id' => $draft->getKey(),
+                        'product_variant_id' => $draft->product_variant_id,
+                        'quantity' => $draft->quantity,
+                        'product_name' => $draft->productVariant?->product?->name,
+                        'variant_name' => $draft->productVariant?->name,
+                        'unit_price' => $baseUnit,
+                        'base_line_total' => $baseLine,
+                        'addon_line_total' => $addonLine,
+                        'line_total' => $lineTotal,
+                        'add_ons' => $addOnPayload,
+                    ];
+                })->values()->all()
                 : [],
             'rounds' => $session->relationLoaded('orders')
                 ? OrderResource::collection($session->orders)

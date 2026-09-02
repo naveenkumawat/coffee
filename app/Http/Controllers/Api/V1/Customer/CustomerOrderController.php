@@ -70,7 +70,7 @@ class CustomerOrderController extends Controller
         );
 
         return $this->respondWithResource(
-            new OrderResource($order->loadMissing(['items', 'statusHistory', 'promotions', 'rewardRedemptions'])),
+            new OrderResource($order->loadMissing(['items.addOns', 'statusHistory', 'promotions', 'rewardRedemptions'])),
             'Payment proof uploaded successfully.',
             200,
             [

@@ -5,13 +5,16 @@ namespace App\Services\Cart;
 use App\Enums\CustomerRewardType;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\CartItemAddOn;
 use App\Models\CustomerReward;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Cart\CartRepositoryInterface;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
+use App\Support\AddOnConfiguration;
 use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
 use Illuminate\Support\Facades\Cache;
@@ -25,6 +28,7 @@ class CartService implements CartServiceInterface
         protected TaxCalculatorInterface $taxCalculator,
         protected PromotionServiceInterface $promotions,
         protected ReferralServiceInterface $referrals,
+        protected AddOnServiceInterface $addOns,
     ) {}
 
     public function getForCustomer(User $customer): Cart
@@ -37,17 +41,36 @@ class CartService implements CartServiceInterface
         return DB::transaction(function () use ($customer, $data): Cart {
             $cart = $this->carts->firstOrCreateForCustomer($customer);
             $variant = $this->validateVariant($data->getProductVariantId());
-            $existingItem = $this->carts->findCustomerItem($cart, (int) $variant->getKey());
+            $product = $variant->product;
+            $resolvedAddOns = $this->addOns->resolveSelectionForProduct($product, $data->getAddOns());
+            $configurationHash = AddOnConfiguration::hash((int) $variant->getKey(), $resolvedAddOns);
+            $existingItem = $this->carts->findCustomerItem($cart, $configurationHash);
+
+            if ($existingItem === null && $resolvedAddOns === []) {
+                $existingItem = $cart->items()
+                    ->where('product_variant_id', $variant->getKey())
+                    ->where(function ($query) use ($configurationHash): void {
+                        $query->whereNull('configuration_hash')
+                            ->orWhere('configuration_hash', $configurationHash);
+                    })
+                    ->first();
+
+                if ($existingItem && $existingItem->configuration_hash === null) {
+                    $existingItem->forceFill(['configuration_hash' => $configurationHash])->save();
+                }
+            }
 
             if ($existingItem) {
                 $this->carts->updateItem($existingItem, [
                     'quantity' => $existingItem->quantity + $data->getQuantity(),
                 ]);
             } else {
-                $this->carts->createItem($cart, [
+                $cartItem = $this->carts->createItem($cart, [
                     'product_variant_id' => $variant->getKey(),
+                    'configuration_hash' => $configurationHash,
                     'quantity' => $data->getQuantity(),
                 ]);
+                $this->syncCartItemAddOns($cartItem, $resolvedAddOns);
             }
 
             return $this->carts->refreshCart($cart);
@@ -65,11 +88,36 @@ class CartService implements CartServiceInterface
                 ]);
             }
 
-            $this->validateVariant((int) $cartItem->product_variant_id);
+            $variant = $this->validateVariant((int) $cartItem->product_variant_id);
+
+            if (! $data->hasAddOnsPayload()) {
+                $this->carts->updateItem($cartItem, [
+                    'quantity' => $data->getQuantity(),
+                ]);
+
+                return $this->carts->refreshCart($cart);
+            }
+
+            $product = $variant->product;
+            $resolvedAddOns = $this->addOns->resolveSelectionForProduct($product, $data->getAddOns());
+            $configurationHash = AddOnConfiguration::hash((int) $variant->getKey(), $resolvedAddOns);
+
+            $duplicate = $this->carts->findCustomerItem($cart, $configurationHash);
+
+            if ($duplicate && (int) $duplicate->getKey() !== (int) $cartItem->getKey()) {
+                $this->carts->updateItem($duplicate, [
+                    'quantity' => $duplicate->quantity + $data->getQuantity(),
+                ]);
+                $this->carts->deleteItem($cartItem);
+
+                return $this->carts->refreshCart($cart);
+            }
 
             $this->carts->updateItem($cartItem, [
                 'quantity' => $data->getQuantity(),
+                'configuration_hash' => $configurationHash,
             ]);
+            $this->syncCartItemAddOns($cartItem->fresh(), $resolvedAddOns);
 
             return $this->carts->refreshCart($cart);
         });
@@ -119,18 +167,28 @@ class CartService implements CartServiceInterface
             }
         }
 
-        $quantitiesByVariant = [];
+        $grouped = [];
 
         foreach ($items as $item) {
             $variantId = (int) $item['product_variant_id'];
-            $quantitiesByVariant[$variantId] = ($quantitiesByVariant[$variantId] ?? 0) + (int) $item['quantity'];
+            $addOns = is_array($item['add_ons'] ?? null) ? $item['add_ons'] : [];
+            $hash = AddOnConfiguration::hash($variantId, $addOns);
+            if (! isset($grouped[$hash])) {
+                $grouped[$hash] = [
+                    'product_variant_id' => $variantId,
+                    'quantity' => 0,
+                    'add_ons' => $addOns,
+                ];
+            }
+            $grouped[$hash]['quantity'] += (int) $item['quantity'];
         }
 
-        $cart = DB::transaction(function () use ($customer, $quantitiesByVariant): Cart {
-            foreach ($quantitiesByVariant as $variantId => $quantity) {
+        $cart = DB::transaction(function () use ($customer, $grouped): Cart {
+            foreach ($grouped as $row) {
                 $transfer = new CartItemTransfer;
-                $transfer->setProductVariantId($variantId);
-                $transfer->setQuantity($quantity);
+                $transfer->setProductVariantId((int) $row['product_variant_id']);
+                $transfer->setQuantity((int) $row['quantity']);
+                $transfer->setAddOns($row['add_ons']);
                 $this->addItem($customer, $transfer);
             }
 
@@ -173,8 +231,23 @@ class CartService implements CartServiceInterface
                 continue;
             }
 
-            $unitPrice = $this->normalizeMoney((string) $item->productVariant->price);
-            $lineSubtotal = bcmul($unitPrice, (string) $item->quantity, 2);
+            $baseUnitPrice = $this->normalizeMoney((string) $item->productVariant->price);
+            $baseLineSubtotal = bcmul($baseUnitPrice, (string) $item->quantity, 2);
+            $addonLineSubtotal = '0.00';
+
+            foreach ($item->addOns as $cartAddOn) {
+                $addonUnit = $this->normalizeMoney((string) $cartAddOn->unit_price);
+                $addonLineSubtotal = bcadd(
+                    $addonLineSubtotal,
+                    bcmul($addonUnit, (string) ((int) $cartAddOn->quantity * (int) $item->quantity), 2),
+                    2,
+                );
+            }
+
+            $lineSubtotal = bcadd($baseLineSubtotal, $addonLineSubtotal, 2);
+            $unitPrice = bccomp((string) $item->quantity, '0', 0) > 0
+                ? bcdiv($lineSubtotal, (string) $item->quantity, 2)
+                : $baseUnitPrice;
             $subtotal = bcadd($subtotal, $lineSubtotal, 2);
             $product = $item->productVariant->product;
 
@@ -185,6 +258,9 @@ class CartService implements CartServiceInterface
                 'quantity' => (int) $item->quantity,
                 'unit_price' => $unitPrice,
                 'line_subtotal' => $lineSubtotal,
+                'base_unit_price' => $baseUnitPrice,
+                'base_line_subtotal' => $baseLineSubtotal,
+                'addon_line_subtotal' => $addonLineSubtotal,
             ];
         }
 
@@ -497,6 +573,23 @@ class CartService implements CartServiceInterface
         }
 
         return $adjusted;
+    }
+
+    /**
+     * @param  list<array{add_on_id: int, name: string, quantity: int, unit_price: string, line_total: string}>  $resolvedAddOns
+     */
+    protected function syncCartItemAddOns(CartItem $cartItem, array $resolvedAddOns): void
+    {
+        $cartItem->addOns()->delete();
+
+        foreach ($resolvedAddOns as $row) {
+            CartItemAddOn::query()->create([
+                'cart_item_id' => $cartItem->getKey(),
+                'add_on_id' => $row['add_on_id'],
+                'quantity' => $row['quantity'],
+                'unit_price' => $row['unit_price'],
+            ]);
+        }
     }
 
     protected function validateVariant(?int $productVariantId): ProductVariant

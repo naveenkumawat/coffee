@@ -21,6 +21,9 @@ class CartItemStoreRequest extends AbstractRequest
         return [
             'product_variant_id' => ['required', 'integer', Rule::exists('product_variants', 'id')->whereNull('deleted_at')],
             'quantity' => ['required', 'integer', 'min:1'],
+            'add_ons' => ['sometimes', 'array'],
+            'add_ons.*.add_on_id' => ['required', 'integer', 'distinct', Rule::exists('add_ons', 'id')->whereNull('deleted_at')],
+            'add_ons.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ];
     }
 }

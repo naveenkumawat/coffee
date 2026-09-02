@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Administrator\AddOnController;
 use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\DashboardController;
@@ -10,9 +11,11 @@ use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
 use App\Http\Controllers\Administrator\IngredientController;
 use App\Http\Controllers\Administrator\InventoryController;
+use App\Http\Controllers\Administrator\InventoryProductReportController;
 use App\Http\Controllers\Administrator\InventoryRefillRequestController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
+use App\Http\Controllers\Administrator\OperationalPerformanceReportController;
 use App\Http\Controllers\Administrator\OrderController;
 use App\Http\Controllers\Administrator\ProductCategoryController;
 use App\Http\Controllers\Administrator\ProductController;
@@ -54,6 +57,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
 
     Route::get('reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial.index');
     Route::get('reports/financial/export', [FinancialReportController::class, 'export'])->name('reports.financial.export');
+    Route::get('reports/inventory-products', [InventoryProductReportController::class, 'index'])->name('reports.inventory-products.index');
+    Route::get('reports/inventory-products/export/ingredient-movements', [InventoryProductReportController::class, 'exportIngredientMovements'])->name('reports.inventory-products.export.ingredient-movements');
+    Route::get('reports/inventory-products/export/product-sales', [InventoryProductReportController::class, 'exportProductSales'])->name('reports.inventory-products.export.product-sales');
+    Route::get('reports/operational-performance', [OperationalPerformanceReportController::class, 'index'])->name('reports.operational-performance.index');
+    Route::get('reports/operational-performance/export/preparations', [OperationalPerformanceReportController::class, 'exportPreparations'])->name('reports.operational-performance.export.preparations');
+    Route::get('reports/operational-performance/export/dining', [OperationalPerformanceReportController::class, 'exportDining'])->name('reports.operational-performance.export.dining');
 
     Route::get('home-sections', [HomeSectionController::class, 'index'])->name('home-sections.index');
     Route::get('home-sections/create', [HomeSectionController::class, 'create'])->name('home-sections.create');
@@ -130,6 +139,11 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
         ->except(['show'])
         ->parameters(['tags' => 'product_tag'])
         ->names('products.tags');
+
+    Route::resource('add-ons', AddOnController::class)
+        ->except(['show'])
+        ->parameters(['add-ons' => 'add_on'])
+        ->names('add-ons');
 
     Route::get('products/ratings', [ProductRatingController::class, 'index'])->name('products.ratings.index');
     Route::get('products/ratings/{productRating}', [ProductRatingController::class, 'show'])->name('products.ratings.show');

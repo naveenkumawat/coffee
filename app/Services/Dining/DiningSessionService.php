@@ -14,10 +14,12 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningRoundPlaced;
 use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
+use App\Models\DiningRoundDraftAddOn;
 use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\Notification\StaffNotificationContext;
 use App\Services\Notification\StaffNotificationDispatcherInterface;
@@ -25,6 +27,7 @@ use App\Services\Order\OrderServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
+use App\Support\AddOnConfiguration;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +43,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         protected PromotionServiceInterface $promotions,
         protected OrderServiceInterface $orders,
         protected StaffNotificationDispatcherInterface $staffNotifications,
+        protected AddOnServiceInterface $addOns,
     ) {}
 
     public function startSession(
@@ -104,11 +108,15 @@ class DiningSessionService implements DiningSessionServiceInterface
         });
     }
 
+    /**
+     * @param  list<array{add_on_id: int, quantity: int}>  $addOns
+     */
     public function addDraftItem(
         DiningSession $session,
         int $productVariantId,
         int $quantity,
         ?User $customer = null,
+        array $addOns = [],
     ): DiningRoundDraft {
         $this->assertAllowsNewRounds($session);
 
@@ -119,13 +127,31 @@ class DiningSessionService implements DiningSessionServiceInterface
         }
 
         $variant = $this->assertOrderableVariant($productVariantId);
+        $resolvedAddOns = $this->addOns->resolveSelectionForProduct($variant->product, $addOns);
+        $configurationHash = AddOnConfiguration::hash((int) $variant->getKey(), $resolvedAddOns);
 
-        return DB::transaction(function () use ($session, $variant, $quantity, $customer): DiningRoundDraft {
+        return DB::transaction(function () use ($session, $variant, $quantity, $customer, $resolvedAddOns, $configurationHash): DiningRoundDraft {
             $draft = DiningRoundDraft::query()
                 ->where('dining_session_id', $session->getKey())
-                ->where('product_variant_id', $variant->getKey())
+                ->where('configuration_hash', $configurationHash)
                 ->lockForUpdate()
                 ->first();
+
+            if ($draft === null && $resolvedAddOns === []) {
+                $draft = DiningRoundDraft::query()
+                    ->where('dining_session_id', $session->getKey())
+                    ->where('product_variant_id', $variant->getKey())
+                    ->where(function ($query) use ($configurationHash): void {
+                        $query->whereNull('configuration_hash')
+                            ->orWhere('configuration_hash', $configurationHash);
+                    })
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($draft && $draft->configuration_hash === null) {
+                    $draft->forceFill(['configuration_hash' => $configurationHash])->save();
+                }
+            }
 
             if ($draft) {
                 $draft->update(['quantity' => $draft->quantity + $quantity]);
@@ -134,11 +160,13 @@ class DiningSessionService implements DiningSessionServiceInterface
                     'dining_session_id' => $session->getKey(),
                     'customer_id' => $customer?->getKey() ?? $session->customer_id,
                     'product_variant_id' => $variant->getKey(),
+                    'configuration_hash' => $configurationHash,
                     'quantity' => $quantity,
                 ]);
+                $this->syncDraftAddOns($draft, $resolvedAddOns);
             }
 
-            return $draft->fresh(['productVariant.product']);
+            return $draft->fresh(['productVariant.product', 'draftAddOns.addOn']);
         });
     }
 
@@ -159,7 +187,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         $this->assertOrderableVariant((int) $draft->product_variant_id);
         $draft->update(['quantity' => $quantity]);
 
-        return $draft->fresh(['productVariant.product']);
+        return $draft->fresh(['productVariant.product', 'draftAddOns.addOn']);
     }
 
     public function removeDraftItem(DiningSession $session, DiningRoundDraft $draft): void
@@ -185,6 +213,7 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             $drafts = DiningRoundDraft::query()
                 ->where('dining_session_id', $locked->getKey())
+                ->with('draftAddOns')
                 ->lockForUpdate()
                 ->get();
 
@@ -195,10 +224,19 @@ class DiningSessionService implements DiningSessionServiceInterface
             }
 
             $items = $drafts
-                ->map(static fn (DiningRoundDraft $draft): array => [
-                    'product_variant_id' => (int) $draft->product_variant_id,
-                    'quantity' => (int) $draft->quantity,
-                ])
+                ->map(static function (DiningRoundDraft $draft): array {
+                    return [
+                        'product_variant_id' => (int) $draft->product_variant_id,
+                        'quantity' => (int) $draft->quantity,
+                        'add_ons' => $draft->draftAddOns
+                            ->map(static fn (DiningRoundDraftAddOn $row): array => [
+                                'add_on_id' => (int) $row->add_on_id,
+                                'quantity' => (int) $row->quantity,
+                            ])
+                            ->values()
+                            ->all(),
+                    ];
+                })
                 ->values()
                 ->all();
 
@@ -841,6 +879,23 @@ class DiningSessionService implements DiningSessionServiceInterface
             ->count() + 1;
 
         return sprintf('DS-%s-%s', $date, str_pad((string) $sequence, 4, '0', STR_PAD_LEFT));
+    }
+
+    /**
+     * @param  list<array{add_on_id: int, name: string, quantity: int, unit_price: string, line_total: string}>  $resolvedAddOns
+     */
+    protected function syncDraftAddOns(DiningRoundDraft $draft, array $resolvedAddOns): void
+    {
+        $draft->draftAddOns()->delete();
+
+        foreach ($resolvedAddOns as $row) {
+            DiningRoundDraftAddOn::query()->create([
+                'dining_round_draft_id' => $draft->getKey(),
+                'add_on_id' => $row['add_on_id'],
+                'quantity' => $row['quantity'],
+                'unit_price' => $row['unit_price'],
+            ]);
+        }
     }
 
     protected function assertAllowsNewRounds(DiningSession $session): void

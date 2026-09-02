@@ -22,11 +22,15 @@ interface DiningSessionServiceInterface
         array $options = [],
     ): DiningSession;
 
+    /**
+     * @param  list<array{add_on_id: int, quantity: int}>  $addOns
+     */
     public function addDraftItem(
         DiningSession $session,
         int $productVariantId,
         int $quantity,
         ?User $customer = null,
+        array $addOns = [],
     ): DiningRoundDraft;
 
     public function updateDraftItem(

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\AddOn;
+use App\Models\AddOnRecipeLine;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
@@ -87,6 +89,8 @@ class AppServiceProvider extends ServiceProvider
         ProductTag::observe($observer);
         ProductRating::observe($observer);
         Recipe::observe($observer);
+        AddOn::observe($observer);
+        AddOnRecipeLine::observe($observer);
     }
 
     protected function configureRateLimiting(): void

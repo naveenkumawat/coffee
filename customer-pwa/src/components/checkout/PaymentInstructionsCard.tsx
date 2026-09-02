@@ -99,10 +99,15 @@ export function PaymentInstructionsCard({
       order.payment_status !== 'awaiting_review' &&
       order.payment_status !== 'rejected' &&
       order.payment_status !== 'pending');
-  const canUpload =
+  const canUploadPending =
     !isCashPayment(order) &&
-    Boolean(proof?.can_upload ?? isPendingPayment(order.status)) &&
-    !paymentConfirmed;
+    !paymentConfirmed &&
+    !awaitingReview &&
+    !rejected &&
+    Boolean(proof?.can_upload ?? isPendingPayment(order.status));
+  const canReplaceAwaiting = awaitingReview && proof?.can_upload === true;
+  const canReplaceRejected = rejected && !paymentConfirmed && Boolean(proof?.can_upload ?? true);
+  const canUpload = canUploadPending || canReplaceAwaiting || canReplaceRejected;
 
   async function handleCopy(field: CopyField, value: string): Promise<void> {
     if (!value.trim()) {
@@ -220,9 +225,9 @@ export function PaymentInstructionsCard({
       <div className="payment-card-header">
         <OrderStatusBadge
           status="pending_payment"
-          label={awaitingReview ? 'Awaiting review' : rejected ? 'Replacement needed' : 'Pending Payment'}
+          label={awaitingReview ? 'Awaiting review' : rejected ? 'Verification Needed' : 'Pending Payment'}
         />
-        <h2>Payment details</h2>
+        <h2>{rejected ? 'Verification Needed' : 'Payment details'}</h2>
         <p>
           {awaitingReview
             ? 'Payment proof submitted. Waiting for cafe confirmation.'
@@ -385,7 +390,7 @@ export function PaymentInstructionsCard({
           </Link>
         ) : null}
 
-        {whatsappNumber && canUpload && !awaitingReview ? (
+        {whatsappNumber && canUploadPending ? (
           <a
             href={toWhatsappHref(whatsappNumber, order.order_number)}
             target="_blank"

@@ -210,6 +210,7 @@ export function OrderDetailPage() {
                 <CheckoutItemCard
                   name={item.product_name}
                   subtitle={joinLabels([item.variant_name, item.customer_ingredient_summary])}
+                  addOns={item.add_ons}
                   quantity={item.quantity}
                   amount={item.line_subtotal}
                 />

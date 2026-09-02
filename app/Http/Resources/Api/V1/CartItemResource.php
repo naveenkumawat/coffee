@@ -20,16 +20,36 @@ class CartItemResource extends JsonResource
         $item = $this->resource;
         $variant = $item->productVariant;
         $product = $variant?->product;
-        $unitPrice = $variant?->price;
-        $lineTotal = $variant
-            ? bcmul((string) $variant->price, (string) $item->quantity, 2)
-            : null;
+        $baseUnitPrice = $variant?->price;
+        $addonLine = '0.00';
+        $addOnPayload = [];
+        foreach ($item->relationLoaded('addOns') ? $item->addOns : $item->addOns()->with('addOn')->get() as $cartAddOn) {
+            $unit = bcdiv((string) $cartAddOn->unit_price, '1', 2);
+            $line = bcmul($unit, (string) ((int) $cartAddOn->quantity * (int) $item->quantity), 2);
+            $addonLine = bcadd($addonLine, $line, 2);
+            $addOnPayload[] = [
+                'add_on_id' => (int) $cartAddOn->add_on_id,
+                'name' => $cartAddOn->addOn?->name,
+                'quantity' => (int) $cartAddOn->quantity,
+                'unit_price' => $unit,
+                'line_total' => bcmul($unit, (string) $cartAddOn->quantity, 2),
+            ];
+        }
+        $baseLine = $variant ? bcmul((string) $variant->price, (string) $item->quantity, 2) : null;
+        $lineTotal = $baseLine !== null ? bcadd($baseLine, $addonLine, 2) : null;
+        $unitPrice = $lineTotal !== null && (int) $item->quantity > 0
+            ? bcdiv($lineTotal, (string) $item->quantity, 2)
+            : $baseUnitPrice;
 
         return [
             'id' => $item->getKey(),
             'quantity' => (int) $item->quantity,
             'unit_price' => $unitPrice,
             'line_total' => $lineTotal,
+            'base_unit_price' => $baseUnitPrice,
+            'base_line_total' => $baseLine,
+            'addon_line_total' => $addonLine,
+            'add_ons' => $addOnPayload,
             'is_available' => (bool) (
                 $variant?->is_active
                 && $variant?->is_available

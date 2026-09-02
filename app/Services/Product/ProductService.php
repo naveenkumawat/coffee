@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
 use App\Repositories\Product\ProductRepositoryInterface;
 use App\Repositories\Product\ProductTagRepositoryInterface;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Support\ProductMarketingTags;
 use App\Support\PublicMedia;
 use App\Transfers\Product\ProductTransferInterface;
@@ -22,6 +23,7 @@ class ProductService implements ProductServiceInterface
         protected ProductTagRepositoryInterface $tags,
         protected ProductCatalogServiceInterface $catalog,
         protected ProductReadinessServiceInterface $readiness,
+        protected AddOnServiceInterface $addOns,
     ) {}
 
     public function store(ProductTransferInterface $data): Product
@@ -62,6 +64,20 @@ class ProductService implements ProductServiceInterface
         $this->catalog->flushPublicCache();
 
         return $product;
+    }
+
+    /**
+     * @param  list<array{add_on_id: int, price_override?: ?string, max_quantity?: ?int, sort_order?: int}>|null  $assignments
+     */
+    public function syncAddOnAssignments(Product $product, ?array $assignments): Product
+    {
+        if ($assignments === null) {
+            return $product;
+        }
+
+        $this->addOns->syncProductAssignments($product, $assignments);
+
+        return $product->fresh(['addOns']);
     }
 
     public function assertActiveProductIsLaunchReady(Product $product): void

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Contracts\WhatsApp\WhatsAppNotificationProviderInterface;
+use App\Services\AddOn\AddOnService;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Auth\RoleService;
 use App\Services\Auth\RoleServiceInterface;
 use App\Services\CafeAvailability\CafeAvailabilityService;
@@ -79,6 +81,10 @@ use App\Services\Referral\ReferralService;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Reporting\FinancialReportingService;
 use App\Services\Reporting\FinancialReportingServiceInterface;
+use App\Services\Reporting\InventoryProductReportingService;
+use App\Services\Reporting\InventoryProductReportingServiceInterface;
+use App\Services\Reporting\OperationalPerformanceReportingService;
+use App\Services\Reporting\OperationalPerformanceReportingServiceInterface;
 use App\Services\Social\SocialLinkService;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\Tax\TaxCalculator;
@@ -94,6 +100,7 @@ class DomainServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(AddOnServiceInterface::class, AddOnService::class);
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);
@@ -137,5 +144,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(PromotionCatalogServiceInterface::class, PromotionCatalogService::class);
         $this->app->bind(ReferralServiceInterface::class, ReferralService::class);
         $this->app->bind(FinancialReportingServiceInterface::class, FinancialReportingService::class);
+        $this->app->bind(InventoryProductReportingServiceInterface::class, InventoryProductReportingService::class);
+        $this->app->bind(OperationalPerformanceReportingServiceInterface::class, OperationalPerformanceReportingService::class);
     }
 }

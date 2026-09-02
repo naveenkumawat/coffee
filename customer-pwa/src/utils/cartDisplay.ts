@@ -1,9 +1,16 @@
 import { Product, ProductVariant } from '../types/catalog';
-import { CartItemMutationPayload, CartProductSummary, CartVariantSummary } from '../types/cart';
+import {
+  CartAddOnSelection,
+  CartItemMutationPayload,
+  CartProductSummary,
+  CartVariantSummary,
+} from '../types/cart';
+import { buildCartAddOnDisplay } from './addOns';
 
 export function buildCartDisplayFromProduct(
   product: Product,
   variant: ProductVariant,
+  addOns: CartAddOnSelection[] = [],
 ): NonNullable<CartItemMutationPayload['display']> {
   const productSummary: CartProductSummary = {
     id: product.id,
@@ -25,5 +32,6 @@ export function buildCartDisplayFromProduct(
   return {
     product: productSummary,
     variant: variantSummary,
+    add_ons: buildCartAddOnDisplay(product.add_ons ?? [], addOns),
   };
 }

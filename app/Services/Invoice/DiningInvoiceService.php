@@ -29,7 +29,7 @@ class DiningInvoiceService implements DiningInvoiceServiceInterface
 
     public function downloadPdf(DiningSession $session): Response
     {
-        $session->loadMissing(['orders.items', 'cafeTable', 'customer', 'promotions']);
+        $session->loadMissing(['orders.items.addOns', 'cafeTable', 'customer', 'promotions']);
 
         if (! $session->hasFinalizedBill()) {
             abort(422, 'Generate the dining bill before downloading the invoice.');

@@ -189,6 +189,17 @@
                     <td class="num">Rs {{ $line['line_total'] }}</td>
                 </tr>
             @endif
+            @foreach (($line['add_ons'] ?? []) as $addOn)
+                <tr>
+                    <td class="variant">
+                        + {{ $addOn['name'] }}
+                        @if ((int) ($addOn['quantity'] ?? 1) > 1)
+                            ×{{ $addOn['quantity'] }}
+                        @endif
+                    </td>
+                    <td class="num">Rs {{ $addOn['total_price'] }}</td>
+                </tr>
+            @endforeach
         </table>
     @endforeach
 

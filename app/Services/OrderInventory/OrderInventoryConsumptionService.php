@@ -25,6 +25,7 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
     {
         $order->loadMissing([
             'items.recipe.lines.ingredient',
+            'items.addOns.addOn.recipeLines.ingredient',
         ]);
 
         if (OrderInventoryConsumption::query()->where('order_id', $order->getKey())->exists()) {
@@ -84,9 +85,13 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
             OrderInventoryConsumption::query()->create([
                 'order_id' => $order->getKey(),
                 'order_item_id' => $row['order_item_id'],
+                'source_type' => $row['source_type'] ?? 'base_recipe',
+                'source_id' => $row['source_id'] ?? $row['recipe_line_id'] ?? null,
                 'ingredient_id' => $row['ingredient_id'],
-                'recipe_id' => $row['recipe_id'],
-                'recipe_line_id' => $row['recipe_line_id'],
+                'recipe_id' => $row['recipe_id'] ?? null,
+                'recipe_line_id' => $row['recipe_line_id'] ?? null,
+                'add_on_id' => $row['add_on_id'] ?? null,
+                'add_on_recipe_line_id' => $row['add_on_recipe_line_id'] ?? null,
                 'quantity' => $row['quantity'],
                 'base_quantity' => $transaction->base_quantity,
                 'measurement_unit' => $row['measurement_unit'],
@@ -242,6 +247,10 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
                     'ingredient_name' => (string) $ingredient->name,
                     'recipe_id' => (int) $recipe->getKey(),
                     'recipe_line_id' => (int) $line->getKey(),
+                    'source_type' => 'base_recipe',
+                    'source_id' => (int) $line->getKey(),
+                    'add_on_id' => null,
+                    'add_on_recipe_line_id' => null,
                     'quantity' => $required,
                     'measurement_unit' => $unit,
                     'base_measurement_unit' => $baseUnit,
@@ -252,6 +261,59 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
                         $qty,
                     ),
                 ];
+            }
+
+            foreach ($item->addOns as $orderAddOn) {
+                $addOn = $orderAddOn->addOn;
+                if ($addOn === null) {
+                    continue;
+                }
+
+                $addOn->loadMissing('recipeLines.ingredient');
+
+                foreach ($addOn->recipeLines as $addOnLine) {
+                    $ingredient = $addOnLine->ingredient;
+                    if ($ingredient === null) {
+                        continue;
+                    }
+
+                    $lineQty = (string) $addOnLine->quantity;
+                    $perItem = bcmul($lineQty, (string) max(1, (int) $orderAddOn->quantity), 3);
+                    $required = bcmul($perItem, (string) $qty, 3);
+
+                    if (bccomp($required, '0', 3) <= 0) {
+                        continue;
+                    }
+
+                    $unit = $addOnLine->measurement_unit instanceof \BackedEnum
+                        ? $addOnLine->measurement_unit->value
+                        : (string) $addOnLine->measurement_unit;
+                    $baseUnit = $addOnLine->base_measurement_unit instanceof \BackedEnum
+                        ? $addOnLine->base_measurement_unit->value
+                        : (string) ($addOnLine->base_measurement_unit ?? $ingredient->base_measurement_unit?->value);
+
+                    $planned[] = [
+                        'order_item_id' => (int) $item->getKey(),
+                        'ingredient_id' => (int) $ingredient->getKey(),
+                        'ingredient_name' => (string) $ingredient->name,
+                        'recipe_id' => null,
+                        'recipe_line_id' => null,
+                        'source_type' => 'add_on',
+                        'source_id' => (int) $addOnLine->getKey(),
+                        'add_on_id' => (int) $addOn->getKey(),
+                        'add_on_recipe_line_id' => (int) $addOnLine->getKey(),
+                        'quantity' => $required,
+                        'measurement_unit' => $unit,
+                        'base_measurement_unit' => $baseUnit,
+                        'notes' => sprintf(
+                            'Add-on consumption for order #%s · %s + %s × %d',
+                            $order->order_number,
+                            $item->product_name,
+                            $orderAddOn->name,
+                            $qty,
+                        ),
+                    ];
+                }
             }
         }
 

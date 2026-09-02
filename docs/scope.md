@@ -1017,6 +1017,18 @@ or
 
 Future enhancements can support detailed product customizations.
 
+### Product add-ons (Phase C1 locks)
+
+* Add-ons are first-class catalog entities with optional recipe lines and per-product assignment (price override + max quantity).
+* Cart/order identity is `configuration_hash` (variant + canonical add-on selection), so the same variant can exist as separate lines when add-ons differ.
+* Prices are server-authoritative; client-sent add-on prices are ignored.
+* Free-drink referral rewards waive **base drink price only**; add-on charges remain payable.
+* Inventory consumption counts base recipe lines and add-on recipe lines separately (`source_type` = `base_recipe` | `add_on`).
+* Preparation station inherits the parent item for this phase (BAR add-ons stay BAR; KITCHEN stay KITCHEN).
+* Promotions use the merchandise subtotal that already includes selected add-ons unless a future scope explicitly excludes them.
+* OrderItem add-ons are immutable commercial snapshots; invoices/API never recalculate from live catalog.
+
+
 ---
 
 # 32. Customer Authentication
@@ -1172,6 +1184,23 @@ Administrator reports provide business and operational information from **transa
 * **Dining revenue** = confirmed Dining Session snapshots only (`dining_sessions.payment_status = confirmed`, `paid_at`, session totals). Dining **round orders** are operational/preparation records and must never be double-counted as revenue.
 * Pending/unpaid is not revenue. Historical reports never recalculate from current Website Settings (prices, GST, promotions, rewards).
 * Canonical service: `FinancialReportingService` (Admin financial report + CSV export; Operator today reconciliation only — no cost/margin/long-range analytics).
+
+### Inventory + product analytics authority (Phase F3.2)
+
+* **Inventory analytics** = persisted inventory ledger (`inventory_transactions`) only. Never recompute historical consumption from current recipes, orders, or live stock assumptions.
+* Supported movement types already on the ledger (e.g. `sale_consumption`, `sale_reversal`, restock/refill additions, adjustments, wastage) — do not invent unsupported transaction types.
+* **Product quantity analytics** = canonical `order_items` snapshots. Physical units are independent of promotions/referrals/free drinks (1 prepared item = 1 unit; inventory still full recipe).
+* **Paid product sales / attributable revenue** reuse F3.1 eligibility: confirmed Takeaway/Delivery (not Cancelled/Rejected); Dining only when the Dining Session is payment-confirmed. Dining rounds never contribute revenue; unpaid Dining consumption remains visible for inventory/physical volume.
+* BAR vs KITCHEN in F3.2 is **volume only** (snapshotted `preparation_station`). Prep-time / delay / staff SLA analytics belong to F3.3.
+* Canonical service: `InventoryProductReportingService` (Admin Inventory & Product Analytics + CSV exports; Operator today operational subset only — no cost/margin/valuation).
+
+### Operational performance analytics authority (Phase F3.3)
+
+* **Operational analytics** = persisted workflow timestamps only (`order_preparations.*_at`, order lifecycle timestamps, dining session opened/bill/paid/closed). Never infer durations from current status alone when timestamps exist; never recalculate history from mutable SLA settings.
+* **BAR/KITCHEN performance** = preparation tickets. Queue wait = created→accepted; start delay = accepted→preparing; prep = preparing→ready; total = created→ready. Missing timestamps are excluded (not zero-filled).
+* **Mixed order completion** = latest required station `ready_at`. Station gap = latest − earliest station ready. One station ready does not complete the order.
+* **Dining preparation** = round-level. **Dining service/billing performance** = session-level. Do not mix operational timing with financial authority (F3.1).
+* No invented business SLA values. Relative live backlog metrics only. Canonical service: `OperationalPerformanceReportingService` (Admin historical report + CSV; Operator today ops subset; Barista/Chef live queue age only; Waiter dining timing only).
 
 ### Sales Reports
 
