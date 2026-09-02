@@ -124,6 +124,18 @@ interface DiningSessionServiceInterface
      */
     public function tableOperationalStates(): Collection;
 
+    /**
+     * @return Collection<int, array{
+     *     table: CafeTable,
+     *     state: string,
+     *     display_state: string,
+     *     display_state_label: string,
+     *     session: ?DiningSession,
+     *     session_summary: ?array<string, mixed>
+     * }>
+     */
+    public function tableOperationalStatesForWaiter(): Collection;
+
     public function findActiveForCustomer(User $customer): ?DiningSession;
 
     public function findActiveForTable(CafeTable $table): ?DiningSession;

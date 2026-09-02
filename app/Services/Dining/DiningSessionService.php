@@ -4,6 +4,7 @@ namespace App\Services\Dining;
 
 use App\Enums\DiningSessionStatus;
 use App\Enums\OrderFulfilmentMethod;
+use App\Enums\OrderPreparationStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
@@ -839,6 +840,175 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'session' => $session,
             ];
         });
+    }
+
+    /**
+     * Waiter mobile dashboard enrichment — display_state is derived from
+     * session status + preparation tickets; session status remains authoritative.
+     *
+     * @return Collection<int, array{
+     *     table: CafeTable,
+     *     state: string,
+     *     display_state: string,
+     *     display_state_label: string,
+     *     session: ?DiningSession,
+     *     session_summary: ?array<string, mixed>
+     * }>
+     */
+    public function tableOperationalStatesForWaiter(): Collection
+    {
+        $tables = CafeTable::query()
+            ->orderBy('sort_order')
+            ->orderBy('code')
+            ->get();
+
+        $activeSessions = DiningSession::query()
+            ->with([
+                'customer',
+                'drafts',
+                'orders.items',
+                'orders.preparations',
+            ])
+            ->whereIn('status', [
+                DiningSessionStatus::Open->value,
+                DiningSessionStatus::BillingRequested->value,
+                DiningSessionStatus::AwaitingPayment->value,
+                DiningSessionStatus::Paid->value,
+            ])
+            ->get()
+            ->keyBy('cafe_table_id');
+
+        return $tables->map(function (CafeTable $table) use ($activeSessions): array {
+            /** @var DiningSession|null $session */
+            $session = $activeSessions->get($table->getKey());
+            $state = $session?->status instanceof DiningSessionStatus
+                ? $session->status->tableOperationalState()
+                : 'available';
+
+            if (! $table->is_active && $state === 'available') {
+                $state = 'inactive';
+            }
+
+            [$displayState, $displayLabel] = $this->waiterDisplayState($table, $session, $state);
+            $bill = $session ? $this->displayBill($session) : null;
+
+            return [
+                'table' => $table,
+                'state' => $state,
+                'display_state' => $displayState,
+                'display_state_label' => $displayLabel,
+                'session' => $session,
+                'session_summary' => $session ? [
+                    'id' => $session->getKey(),
+                    'session_number' => $session->session_number,
+                    'status' => $session->status?->value,
+                    'status_label' => $session->status?->label(),
+                    'guest_count' => $session->guest_count,
+                    'round_count' => $session->orders
+                        ->reject(static fn ($order): bool => in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true))
+                        ->count(),
+                    'has_unsent_draft' => $session->drafts->isNotEmpty(),
+                    'draft_item_count' => (int) $session->drafts->sum('quantity'),
+                    'running_total' => $bill['total'] ?? null,
+                    'ready_to_serve' => $displayState === 'ready_to_serve',
+                    'is_preparing' => $displayState === 'preparing',
+                    'station_summary' => $this->waiterStationSummary($session),
+                ] : null,
+            ];
+        });
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function waiterDisplayState(CafeTable $table, ?DiningSession $session, string $baseState): array
+    {
+        if ($baseState === 'inactive') {
+            return ['inactive', 'Inactive'];
+        }
+
+        if ($session === null || $baseState === 'available') {
+            return ['available', 'Available'];
+        }
+
+        return match ($session->status) {
+            DiningSessionStatus::BillingRequested => ['bill_requested', 'Bill Requested'],
+            DiningSessionStatus::AwaitingPayment, DiningSessionStatus::Paid => ['payment_pending', 'Payment Pending'],
+            DiningSessionStatus::Open => $this->openSessionDisplayState($session),
+            default => ['active', 'Active'],
+        };
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function openSessionDisplayState(DiningSession $session): array
+    {
+        $activeOrders = $session->orders->reject(
+            static fn ($order): bool => in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true),
+        );
+
+        $hasReady = false;
+        $hasPreparing = false;
+
+        foreach ($activeOrders as $order) {
+            $tickets = $order->preparations->filter(
+                static fn ($ticket): bool => $ticket->status !== OrderPreparationStatus::Cancelled,
+            );
+
+            if ($tickets->isEmpty()) {
+                continue;
+            }
+
+            if ($tickets->every(static fn ($ticket): bool => $ticket->status === OrderPreparationStatus::Ready)) {
+                $hasReady = true;
+
+                continue;
+            }
+
+            if ($tickets->contains(static fn ($ticket): bool => in_array(
+                $ticket->status,
+                [OrderPreparationStatus::Accepted, OrderPreparationStatus::Preparing, OrderPreparationStatus::Pending],
+                true,
+            ))) {
+                $hasPreparing = true;
+            }
+        }
+
+        if ($hasReady) {
+            return ['ready_to_serve', 'Ready to Serve'];
+        }
+
+        if ($hasPreparing) {
+            return ['preparing', 'Preparing'];
+        }
+
+        return ['active', 'Active'];
+    }
+
+    /**
+     * @return list<array{station: string, status: string, status_label: string}>
+     */
+    protected function waiterStationSummary(DiningSession $session): array
+    {
+        $latest = $session->orders
+            ->reject(static fn ($order): bool => in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true))
+            ->sortByDesc('dining_round_number')
+            ->first();
+
+        if (! $latest) {
+            return [];
+        }
+
+        return $latest->preparations
+            ->filter(static fn ($ticket): bool => $ticket->status !== OrderPreparationStatus::Cancelled)
+            ->map(static fn ($ticket): array => [
+                'station' => (string) $ticket->station?->value,
+                'status' => (string) $ticket->status?->value,
+                'status_label' => (string) $ticket->status?->label(),
+            ])
+            ->values()
+            ->all();
     }
 
     public function findActiveForCustomer(User $customer): ?DiningSession

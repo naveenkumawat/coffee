@@ -3,6 +3,7 @@ import { fetchCurrentCustomer, loginCustomer, logoutCustomer, registerCustomer }
 import { ApiError, setUnauthorizedHandler } from '../api/client';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
 import { setSessionAuthenticated, isSessionAuthenticated } from '../utils/authSession';
+import { isWaiter } from '../utils/roles';
 import { useCartStore } from './cartStore';
 import { useFavouriteStore } from './favouriteStore';
 
@@ -30,8 +31,12 @@ function resetCustomerSession(set: (value: Partial<AuthState>) => void): void {
   useFavouriteStore.getState().reset();
 }
 
-async function hydrateAuthenticatedSession(): Promise<boolean> {
+async function hydrateAuthenticatedSession(customer: Customer): Promise<boolean> {
   setSessionAuthenticated(true);
+
+  if (isWaiter(customer)) {
+    return false;
+  }
 
   let mergedGuestCart = false;
 
@@ -79,7 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const response = await fetchCurrentCustomer();
         set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-        await hydrateAuthenticatedSession();
+        await hydrateAuthenticatedSession(response.data);
 
         return true;
       } catch (error) {
@@ -104,40 +109,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (payload) => {
     const response = await loginCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    setSessionAuthenticated(true);
-
-    let mergedGuestCart = false;
-
-    try {
-      mergedGuestCart = await useCartStore.getState().mergeGuestCart();
-    } catch {
-      mergedGuestCart = false;
-    }
-
-    await Promise.all([
-      useCartStore.getState().loadCart(),
-      useFavouriteStore.getState().refreshIds(),
-    ]);
+    const mergedGuestCart = await hydrateAuthenticatedSession(response.data);
 
     return { customer: response.data, mergedGuestCart };
   },
   register: async (payload) => {
     const response = await registerCustomer(payload);
     set({ status: 'authenticated', customer: response.data, hasBootstrapped: true });
-    setSessionAuthenticated(true);
-
-    let mergedGuestCart = false;
-
-    try {
-      mergedGuestCart = await useCartStore.getState().mergeGuestCart();
-    } catch {
-      mergedGuestCart = false;
-    }
-
-    await Promise.all([
-      useCartStore.getState().loadCart(),
-      useFavouriteStore.getState().refreshIds(),
-    ]);
+    const mergedGuestCart = await hydrateAuthenticatedSession(response.data);
 
     return { customer: response.data, mergedGuestCart };
   },

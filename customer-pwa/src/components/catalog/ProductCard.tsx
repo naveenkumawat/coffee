@@ -4,7 +4,7 @@ import { isProductUnavailable } from '../../utils/productActions';
 import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
 import { ProductDetailSheet } from './ProductDetailSheet';
-import { ProductOrderControl } from './ProductOrderControl';
+import { ProductOrderControl, ProductOrderHandler } from './ProductOrderControl';
 import { ProductRatingSummary } from './ProductRatingSummary';
 import { ProductTags } from './ProductTags';
 
@@ -12,12 +12,16 @@ interface ProductCardProps {
   product: Product;
   showFavouriteToggle?: boolean;
   layout?: 'grid' | 'rail';
+  orderHandler?: ProductOrderHandler;
+  sheetCtaLabel?: string;
 }
 
 export function ProductCard({
   product,
   showFavouriteToggle = true,
   layout = 'grid',
+  orderHandler,
+  sheetCtaLabel,
 }: ProductCardProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const unavailable = isProductUnavailable(product);
@@ -64,7 +68,12 @@ export function ProductCard({
           </div>
 
           <div className="product-card-action-zone">
-            <ProductOrderControl product={product} mode="compact" />
+            <ProductOrderControl
+              product={product}
+              mode="compact"
+              orderHandler={orderHandler}
+              sheetCtaLabel={sheetCtaLabel}
+            />
           </div>
         </div>
       </article>
@@ -74,6 +83,8 @@ export function ProductCard({
         open={detailOpen}
         onClose={closeDetails}
         showFavouriteToggle={showFavouriteToggle}
+        orderHandler={orderHandler}
+        sheetCtaLabel={sheetCtaLabel}
       />
     </>
   );

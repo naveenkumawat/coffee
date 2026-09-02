@@ -12,6 +12,12 @@ import { formatCurrency } from '../../utils/format';
 import { getPreferredVariant, getProductVariants } from '../../utils/productActions';
 import { QuantityStepper } from '../common/QuantityStepper';
 
+export type ProductConfiguredPayload = {
+  product_variant_id: number;
+  quantity: number;
+  add_ons: CartAddOnSelection[];
+};
+
 interface ProductCustomizationSheetProps {
   product: Product;
   open: boolean;
@@ -21,6 +27,9 @@ interface ProductCustomizationSheetProps {
   initialQuantity?: number;
   cartItemId?: number | null;
   onSaved?: () => void;
+  submitMode?: 'cart' | 'callback';
+  onSubmitConfigured?: (payload: ProductConfiguredPayload) => Promise<void>;
+  ctaLabel?: string;
 }
 
 type AddOnQtyMap = Record<number, number>;
@@ -54,12 +63,16 @@ export function ProductCustomizationSheet({
   initialQuantity = 1,
   cartItemId = null,
   onSaved,
+  submitMode = 'cart',
+  onSubmitConfigured,
+  ctaLabel,
 }: ProductCustomizationSheetProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const variants = getProductVariants(product);
   const catalogAddOns = product.add_ons ?? [];
   const isEditing = cartItemId != null;
+  const isCallbackMode = submitMode === 'callback';
   const addItem = useCartStore((state) => state.addItem);
   const replaceConfiguredItem = useCartStore((state) => state.replaceConfiguredItem);
   const isVariantPending = useCartStore((state) => state.isVariantPending);
@@ -104,7 +117,13 @@ export function ProductCustomizationSheet({
     Number(selectedVariant?.price ?? 0) +
     addonUnitTotal(buildCartAddOnDisplay(catalogAddOns, selectedAddOns));
   const previewTotal = previewUnit * quantity;
-  const pending = selectedVariant ? isVariantPending(selectedVariant.id) || isSaving : isSaving;
+  const pending = selectedVariant
+    ? (!isCallbackMode && isVariantPending(selectedVariant.id)) || isSaving
+    : isSaving;
+
+  const primaryLabel =
+    ctaLabel ??
+    (isEditing ? 'Update cart' : isCallbackMode ? 'Add to order' : 'Add to cart');
 
   async function handleSubmit(): Promise<void> {
     if (!selectedVariant || !selectedVariant.is_available || pending) {
@@ -114,26 +133,45 @@ export function ProductCustomizationSheet({
     setIsSaving(true);
 
     try {
-      const display = buildCartDisplayFromProduct(product, selectedVariant, selectedAddOns);
-      const payload = {
+      const payload: ProductConfiguredPayload = {
         product_variant_id: selectedVariant.id,
         quantity,
         add_ons: selectedAddOns,
-        display,
       };
 
-      if (isEditing && cartItemId != null) {
-        await replaceConfiguredItem(cartItemId, payload);
-        toastSuccess('Cart updated');
+      if (isCallbackMode) {
+        if (!onSubmitConfigured) {
+          throw new Error('Missing onSubmitConfigured handler.');
+        }
+
+        await onSubmitConfigured(payload);
+        toastSuccess('Added to order');
       } else {
-        await addItem(payload);
-        toastSuccess('Added to cart');
+        const display = buildCartDisplayFromProduct(product, selectedVariant, selectedAddOns);
+        const cartPayload = {
+          ...payload,
+          display,
+        };
+
+        if (isEditing && cartItemId != null) {
+          await replaceConfiguredItem(cartItemId, cartPayload);
+          toastSuccess('Cart updated');
+        } else {
+          await addItem(cartPayload);
+          toastSuccess('Added to cart');
+        }
       }
 
       onSaved?.();
       onClose();
     } catch (error) {
-      toastError(error instanceof ApiError ? error.message : 'Unable to update your cart.');
+      toastError(
+        error instanceof ApiError
+          ? error.message
+          : isCallbackMode
+            ? 'Unable to add to order.'
+            : 'Unable to update your cart.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -301,9 +339,7 @@ export function ProductCustomizationSheet({
               ? isEditing
                 ? 'Updating…'
                 : 'Adding…'
-              : isEditing
-                ? 'Update cart'
-                : 'Add to cart'}
+              : primaryLabel}
           </button>
         </div>
       </div>

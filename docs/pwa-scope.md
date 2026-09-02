@@ -100,6 +100,7 @@ The PWA foundation must support these flows over time:
 - Order tracking and order history
 - Verified-purchase product ratings and reviews (submit/edit/delete from completed orders; summaries on cards; reviews on detail)
 - Reorder later when implemented
+- Waiter Mode (role-aware): mobile table dashboard, multi-table dining drafts, round send, bill/payment/close using `/api/v1/waiter/*` (customers never enter Waiter Mode)
 
 ## API Dependencies
 
@@ -107,13 +108,14 @@ The current customer API target is `/api/v1`.
 
 PWA features depend on:
 
-- auth/account endpoints
+- auth/account endpoints (customer + waiter SPA login; role from server)
 - catalog endpoints for categories, flavours, products, featured products, product detail, variants, product ratings
 - homepage sections endpoint (`GET /api/v1/home`) for dynamic merchandising rails
 - cart endpoints for show, add, update quantity, remove, clear, count/totals
 - checkout endpoints for summary and submit
 - orders endpoints for own list and own detail
 - authenticated product rating create/update/delete
+- waiter dining endpoints (`/api/v1/waiter/tables`, sessions, drafts, rounds, bill, cash, close)
 
 Future API additions expected:
 

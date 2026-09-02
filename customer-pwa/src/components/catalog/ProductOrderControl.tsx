@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../../api/client';
 import { useCartStore } from '../../stores/cartStore';
 import { useToastStore } from '../../stores/toastStore';
+import { CartAddOnSelection } from '../../types/cart';
 import { Product, ProductVariant } from '../../types/catalog';
 import { buildCartDisplayFromProduct } from '../../utils/cartDisplay';
 import { quantityForVariant } from '../../utils/cartQuantity';
@@ -17,9 +18,15 @@ import {
 } from '../../utils/productActions';
 import { QuantityStepper } from '../common/QuantityStepper';
 import { CupIcon } from './CupIcon';
-import { ProductCustomizationSheet } from './ProductCustomizationSheet';
+import { ProductConfiguredPayload, ProductCustomizationSheet } from './ProductCustomizationSheet';
 
 export type ProductOrderControlMode = 'compact' | 'full';
+
+export type ProductOrderPayload = ProductConfiguredPayload;
+
+export type ProductOrderHandler = {
+  add: (payload: ProductOrderPayload) => Promise<void>;
+};
 
 interface ProductOrderControlProps {
   product: Product;
@@ -27,6 +34,9 @@ interface ProductOrderControlProps {
   className?: string;
   /** Fired after a successful first add (0 → positive quantity). */
   onAdded?: () => void;
+  /** When set, skips cartStore and routes adds through this handler. */
+  orderHandler?: ProductOrderHandler;
+  sheetCtaLabel?: string;
 }
 
 /**
@@ -38,6 +48,8 @@ export function ProductOrderControl({
   mode = 'compact',
   className = '',
   onAdded,
+  orderHandler,
+  sheetCtaLabel,
 }: ProductOrderControlProps) {
   const variants = getProductVariants(product);
   const unavailable = isProductUnavailable(product);
@@ -55,6 +67,8 @@ export function ProductOrderControl({
         mode={mode}
         className={className}
         onAdded={onAdded}
+        orderHandler={orderHandler}
+        sheetCtaLabel={sheetCtaLabel}
       />
     );
   }
@@ -67,6 +81,7 @@ export function ProductOrderControl({
         mode={mode}
         className={className}
         onAdded={onAdded}
+        orderHandler={orderHandler}
       />
     );
   }
@@ -78,6 +93,7 @@ export function ProductOrderControl({
       mode={mode}
       className={className}
       onAdded={onAdded}
+      orderHandler={orderHandler}
     />
   );
 }
@@ -87,6 +103,8 @@ interface CustomizeOrderControlProps {
   mode: ProductOrderControlMode;
   className?: string;
   onAdded?: () => void;
+  orderHandler?: ProductOrderHandler;
+  sheetCtaLabel?: string;
 }
 
 function CustomizeOrderControl({
@@ -94,6 +112,8 @@ function CustomizeOrderControl({
   mode,
   className = '',
   onAdded,
+  orderHandler,
+  sheetCtaLabel,
 }: CustomizeOrderControlProps) {
   const [open, setOpen] = useState(false);
   const isCompact = mode === 'compact';
@@ -134,6 +154,9 @@ function CustomizeOrderControl({
         open={open}
         onClose={() => setOpen(false)}
         onSaved={onAdded}
+        submitMode={orderHandler ? 'callback' : 'cart'}
+        onSubmitConfigured={orderHandler?.add}
+        ctaLabel={sheetCtaLabel ?? (orderHandler ? 'Add to order' : undefined)}
       />
     </>
   );
@@ -145,6 +168,7 @@ interface SingleVariantOrderControlProps {
   mode: ProductOrderControlMode;
   className?: string;
   onAdded?: () => void;
+  orderHandler?: ProductOrderHandler;
 }
 
 function SingleVariantOrderControl({
@@ -153,18 +177,40 @@ function SingleVariantOrderControl({
   mode,
   className = '',
   onAdded,
+  orderHandler,
 }: SingleVariantOrderControlProps) {
   const cart = useCartStore((state) => state.cart);
   const pendingVariantIds = useCartStore((state) => state.pendingVariantIds);
   const setVariantQuantity = useCartStore((state) => state.setVariantQuantity);
   const toastSuccess = useToastStore((state) => state.success);
   const toastError = useToastStore((state) => state.error);
-  const quantity = quantityForVariant(cart, variant.id);
-  const isPending = pendingVariantIds.includes(variant.id);
+  const [handlerPending, setHandlerPending] = useState(false);
+  const quantity = orderHandler ? 0 : quantityForVariant(cart, variant.id);
+  const isPending = orderHandler ? handlerPending : pendingVariantIds.includes(variant.id);
   const isCompact = mode === 'compact';
 
   async function mutate(nextQuantity: number): Promise<void> {
     if (!variant.is_available) {
+      return;
+    }
+
+    if (orderHandler) {
+      setHandlerPending(true);
+
+      try {
+        await orderHandler.add({
+          product_variant_id: variant.id,
+          quantity: Math.max(1, nextQuantity),
+          add_ons: [] as CartAddOnSelection[],
+        });
+        toastSuccess('Added to order');
+        onAdded?.();
+      } catch (error) {
+        toastError(error instanceof ApiError ? error.message : 'Unable to add to order.');
+      } finally {
+        setHandlerPending(false);
+      }
+
       return;
     }
 
@@ -192,7 +238,7 @@ function SingleVariantOrderControl({
     );
   }
 
-  if (quantity <= 0) {
+  if (quantity <= 0 || orderHandler) {
     if (isCompact) {
       return (
         <div className={`product-order-control is-single is-compact ${className}`.trim()}>
@@ -202,8 +248,8 @@ function SingleVariantOrderControl({
             className="product-card-bag-add"
             disabled={isPending}
             aria-busy={isPending}
-            aria-label={`Add ${product.name} to cart`}
-            title={`Add ${product.name} to cart`}
+            aria-label={`Add ${product.name} to ${orderHandler ? 'order' : 'cart'}`}
+            title={`Add ${product.name}`}
             onClick={() => void mutate(1)}
           >
             <i className="bi bi-bag-plus" aria-hidden="true"></i>
@@ -252,6 +298,7 @@ interface MultiVariantOrderControlProps {
   mode: ProductOrderControlMode;
   className?: string;
   onAdded?: () => void;
+  orderHandler?: ProductOrderHandler;
 }
 
 function MultiVariantOrderControl({
@@ -260,9 +307,11 @@ function MultiVariantOrderControl({
   mode,
   className = '',
   onAdded,
+  orderHandler,
 }: MultiVariantOrderControlProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [expandedVariantId, setExpandedVariantId] = useState<number | null>(null);
+  const [handlerPendingId, setHandlerPendingId] = useState<number | null>(null);
   const cart = useCartStore((state) => state.cart);
   const pendingVariantIds = useCartStore((state) => state.pendingVariantIds);
   const setVariantQuantity = useCartStore((state) => state.setVariantQuantity);
@@ -272,7 +321,7 @@ function MultiVariantOrderControl({
   const isCompact = mode === 'compact';
 
   useEffect(() => {
-    if (expandedVariantId === null) {
+    if (expandedVariantId === null || orderHandler) {
       return;
     }
 
@@ -289,11 +338,33 @@ function MultiVariantOrderControl({
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
     };
-  }, [expandedVariantId]);
+  }, [expandedVariantId, orderHandler]);
 
   async function mutate(variant: ProductVariant, nextQuantity: number): Promise<boolean> {
     if (!variant.is_available) {
       return false;
+    }
+
+    if (orderHandler) {
+      setHandlerPendingId(variant.id);
+
+      try {
+        await orderHandler.add({
+          product_variant_id: variant.id,
+          quantity: Math.max(1, nextQuantity),
+          add_ons: [] as CartAddOnSelection[],
+        });
+        toastSuccess('Added to order');
+        onAdded?.();
+
+        return true;
+      } catch (error) {
+        toastError(error instanceof ApiError ? error.message : 'Unable to add to order.');
+
+        return false;
+      } finally {
+        setHandlerPendingId(null);
+      }
     }
 
     const previousQuantity = quantityForVariant(cart, variant.id);
@@ -339,9 +410,11 @@ function MultiVariantOrderControl({
       style={{ ['--size-count' as string]: String(Math.max(variants.length, 1)) }}
     >
       {variants.map((variant) => {
-        const quantity = quantityForVariant(cart, variant.id);
-        const isExpanded = expandedVariantId === variant.id;
-        const isPending = pendingVariantIds.includes(variant.id);
+        const quantity = orderHandler ? 0 : quantityForVariant(cart, variant.id);
+        const isExpanded = !orderHandler && expandedVariantId === variant.id;
+        const isPending = orderHandler
+          ? handlerPendingId === variant.id
+          : pendingVariantIds.includes(variant.id);
         const cupKind = getVariantCupKind(variant) ?? 'small';
         const shortLabel = getVariantShortLabel(variant);
         const disabled = !variant.is_available;
@@ -393,10 +466,10 @@ function MultiVariantOrderControl({
               }
 
               void (async () => {
-                if (quantity <= 0) {
+                if (orderHandler || quantity <= 0) {
                   const ok = await mutate(variant, 1);
 
-                  if (ok) {
+                  if (ok && !orderHandler) {
                     setExpandedVariantId(variant.id);
                   }
 

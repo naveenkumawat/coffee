@@ -9,6 +9,13 @@ export interface DiningTableOption {
   available: boolean;
 }
 
+export interface DiningDraftAddOn {
+  add_on_id: number;
+  name?: string | null;
+  quantity: number;
+  unit_price?: string | null;
+}
+
 export interface DiningDraftItem {
   id: number;
   product_variant_id: number;
@@ -16,6 +23,10 @@ export interface DiningDraftItem {
   product_name?: string | null;
   variant_name?: string | null;
   unit_price?: string | null;
+  base_line_total?: string | null;
+  addon_line_total?: string | null;
+  line_total?: string | null;
+  add_ons?: DiningDraftAddOn[];
 }
 
 export interface DiningSession {

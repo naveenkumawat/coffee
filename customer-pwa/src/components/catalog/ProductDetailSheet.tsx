@@ -8,7 +8,7 @@ import { Product } from '../../types/catalog';
 import { PublicProductReview, RatingSummary } from '../../types/rating';
 import { ProductImage } from '../common/ProductImage';
 import { FavouriteToggle } from './FavouriteToggle';
-import { ProductOrderControl } from './ProductOrderControl';
+import { ProductOrderControl, ProductOrderHandler } from './ProductOrderControl';
 import { ProductReviewsBlock } from './ProductReviewsBlock';
 import { ProductTags } from './ProductTags';
 
@@ -17,6 +17,8 @@ interface ProductDetailSheetProps {
   open: boolean;
   onClose: () => void;
   showFavouriteToggle?: boolean;
+  orderHandler?: ProductOrderHandler;
+  sheetCtaLabel?: string;
 }
 
 export function ProductDetailSheet({
@@ -24,6 +26,8 @@ export function ProductDetailSheet({
   open,
   onClose,
   showFavouriteToggle = true,
+  orderHandler,
+  sheetCtaLabel,
 }: ProductDetailSheetProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -207,7 +211,13 @@ export function ProductDetailSheet({
 
         <div className="product-overlay-footer-order">
           <span className="product-overlay-label">Add to order</span>
-          <ProductOrderControl product={product} mode="full" className="product-overlay-order-control" />
+          <ProductOrderControl
+            product={product}
+            mode="full"
+            className="product-overlay-order-control"
+            orderHandler={orderHandler}
+            sheetCtaLabel={sheetCtaLabel}
+          />
         </div>
       </div>
     </div>,

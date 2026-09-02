@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -8,8 +8,10 @@ import { ToastHost } from '../components/common/ToastHost';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
+import { useAuthStore } from '../stores/authStore';
 import { selectBrandName, selectAvailability, useContentStore } from '../stores/contentStore';
 import { clearChunkRecoveryFlag } from '../utils/chunkRecovery';
+import { isWaiter } from '../utils/roles';
 
 export function AppLayout() {
   const networkStatus = useNetworkStatus();
@@ -17,6 +19,8 @@ export function AppLayout() {
   const brandName = useContentStore((state) => selectBrandName(state.content));
   const availability = useContentStore((state) => selectAvailability(state.content));
   const location = useLocation();
+  const authStatus = useAuthStore((state) => state.status);
+  const customer = useAuthStore((state) => state.customer);
   const [hasStickyCta, setHasStickyCta] = useState(false);
 
   useAppBootstrap();
@@ -41,6 +45,15 @@ export function AppLayout() {
 
     return () => window.cancelAnimationFrame(frame);
   }, [location.pathname, location.search]);
+
+  const waiterAwayFromDesk =
+    authStatus === 'authenticated' &&
+    isWaiter(customer) &&
+    !location.pathname.startsWith('/waiter');
+
+  if (waiterAwayFromDesk) {
+    return <Navigate to="/waiter" replace />;
+  }
 
   return (
     <div className="app-shell">

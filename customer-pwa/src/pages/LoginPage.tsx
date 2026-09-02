@@ -10,6 +10,7 @@ import { useToastStore } from '../stores/toastStore';
 import { withRedirectQuery } from '../utils/contentPages';
 import { getFieldError } from '../utils/forms';
 import { normalizeRedirectPath } from '../utils/navigation';
+import { isWaiter } from '../utils/roles';
 
 export function LoginPage() {
   const login = useAuthStore((state) => state.login);
@@ -32,6 +33,12 @@ export function LoginPage() {
 
     try {
       const result = await login({ login: loginValue.trim(), password, remember });
+      if (isWaiter(result.customer)) {
+        toastSuccess('Signed in');
+        navigate('/waiter', { replace: true });
+        return;
+      }
+
       toastSuccess(result.mergedGuestCart ? 'Signed in — your cart was updated' : 'Signed in');
       navigate(normalizeRedirectPath(redirect), { replace: true });
     } catch (error) {

@@ -1613,3 +1613,7 @@ Customer API coverage should ultimately include:
 - **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
 - PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
 - Waiter role operates table service; food & beverage catalog uses product type + prep station.
+- React PWA is the preferred mobile Waiter interface (`/waiter`); Blade Waiter remains fallback until production PWA verification.
+- Waiter ordering reuses canonical Table → Dining Session → Dining Draft → Round Order → Preparation Tickets (no waiter-specific order architecture).
+- Each Dining Session has an independent server-persisted draft; switching tables must not merge drafts.
+- C1 customization/add-ons are shared between Customer and Waiter; prices remain server-owned.

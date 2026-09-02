@@ -8,9 +8,9 @@ use App\Events\Customer\CustomerRegistered;
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\CustomerForgotPasswordRequest;
-use App\Http\Requests\Auth\CustomerLoginRequest;
 use App\Http\Requests\Auth\CustomerRegisterRequest;
 use App\Http\Requests\Auth\CustomerResetPasswordRequest;
+use App\Http\Requests\Auth\SpaLoginRequest;
 use App\Http\Resources\Api\V1\CustomerResource;
 use App\Models\User;
 use App\Parsers\User\UserParserInterface;
@@ -72,7 +72,7 @@ class CustomerAuthController extends Controller
         );
     }
 
-    public function login(CustomerLoginRequest $request): JsonResponse
+    public function login(SpaLoginRequest $request): JsonResponse
     {
         $request->authenticate();
 
@@ -86,9 +86,13 @@ class CustomerAuthController extends Controller
             'last_login_at' => now(),
         ])->save();
 
+        $message = $user->hasRole(UserRole::Waiter)
+            ? 'Waiter login successful.'
+            : 'Customer login successful.';
+
         return $this->respondWithResource(
             new CustomerResource($user),
-            'Customer login successful.',
+            $message,
             200,
         );
     }
@@ -97,7 +101,7 @@ class CustomerAuthController extends Controller
     {
         return $this->respondWithResource(
             new CustomerResource($request->user()),
-            'Authenticated customer retrieved.',
+            'Authenticated user retrieved.',
         );
     }
 
@@ -116,7 +120,10 @@ class CustomerAuthController extends Controller
             $request->session()->regenerateToken();
         }
 
-        return $this->respondWithData(null, 'Customer logout successful.');
+        return $this->respondWithData(
+            null,
+            $request->user()?->hasRole(UserRole::Waiter) ? 'Logout successful.' : 'Customer logout successful.',
+        );
     }
 
     public function forgotPassword(CustomerForgotPasswordRequest $request): JsonResponse

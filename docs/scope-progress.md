@@ -447,3 +447,4 @@ Status: Pending
 - Waiter role operates table service; food & beverage catalog uses product type + prep station.
 
 - [x] Product add-ons (Phase C1): catalog assignment, cart configuration hash merge, server pricing, free-drink base-only waiver, inventory base+add-on consumption, admin CRUD, Dining drafts/rounds, PWA customization + payment-state UX, invoice nesting
+- [x] Waiter mobile PWA (Phase C1.1): SPA waiter auth, table dashboard display states, multi-table independent drafts, menu/add-on ordering into dining drafts, idempotent round send, bill/payment/close via existing permissions (Blade Waiter retained)

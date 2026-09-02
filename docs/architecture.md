@@ -371,6 +371,14 @@ Separate from takeaway/delivery checkout:
 Roles: **Waiter** panel for tables/sessions and dining cash; **Operator**/administrators confirm/reject dining UPI proof; **Barista**/**Chef** prepare station tickets; administrators manage catalog/config.
 Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).
 
+## Waiter mobile PWA (C1.1)
+
+* React PWA is the preferred mobile Waiter interface; Blade Waiter remains available as fallback.
+* SPA auth (`/api/v1/auth/login`) allows **customer** or **waiter** only; role is server-owned (`/auth/me`). Other staff roles stay on Blade panels.
+* Waiter API (`/api/v1/waiter/*`) reuses `DiningSessionService` + policies — no parallel order model.
+* Table dashboard `display_state` is derived from session status + preparation tickets (`available` / `active` / `preparing` / `ready_to_serve` / `bill_requested` / `payment_pending`); session status remains authority.
+* Independent per-session drafts; round placement supports idempotency keys; Waiter cannot confirm/reject UPI proof.
+
 
 ## Product add-ons (C1)
 

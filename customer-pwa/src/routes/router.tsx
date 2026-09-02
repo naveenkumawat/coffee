@@ -4,6 +4,7 @@ import { RouteErrorPage } from '../pages/RouteErrorPage';
 import { lazyPage } from '../utils/lazyPage';
 import { GuestRoute } from './GuestRoute';
 import { ProtectedRoute } from './ProtectedRoute';
+import { WaiterRoute } from './WaiterRoute';
 
 const HomePage = lazyPage(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
 const MenuPage = lazyPage(() => import('../pages/MenuPage').then((module) => ({ default: module.MenuPage })));
@@ -44,6 +45,20 @@ const DiningSessionPage = lazyPage(() =>
 );
 const DiningBillPage = lazyPage(() =>
   import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningBillPage })),
+);
+const WaiterTablesPage = lazyPage(() =>
+  import('../pages/waiter/WaiterTablesPage').then((module) => ({ default: module.WaiterTablesPage })),
+);
+const WaiterSessionPage = lazyPage(() =>
+  import('../pages/waiter/WaiterSessionPage').then((module) => ({ default: module.WaiterSessionPage })),
+);
+const WaiterMenuPage = lazyPage(() =>
+  import('../pages/waiter/WaiterMenuPage').then((module) => ({ default: module.WaiterMenuPage })),
+);
+const WaiterRoundReviewPage = lazyPage(() =>
+  import('../pages/waiter/WaiterRoundReviewPage').then((module) => ({
+    default: module.WaiterRoundReviewPage,
+  })),
 );
 const NotFoundPage = lazyPage(() => import('../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 
@@ -109,6 +124,27 @@ export const router = createBrowserRouter([
       {
         path: 'cart',
         element: <CartPage />,
+      },
+      {
+        element: <WaiterRoute />,
+        children: [
+          {
+            path: 'waiter',
+            element: <WaiterTablesPage />,
+          },
+          {
+            path: 'waiter/sessions/:sessionId',
+            element: <WaiterSessionPage />,
+          },
+          {
+            path: 'waiter/sessions/:sessionId/menu',
+            element: <WaiterMenuPage />,
+          },
+          {
+            path: 'waiter/sessions/:sessionId/review',
+            element: <WaiterRoundReviewPage />,
+          },
+        ],
       },
       {
         element: <ProtectedRoute />,

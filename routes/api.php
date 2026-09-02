@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
 use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRewardController;
 use App\Http\Controllers\Api\V1\Home\HomeController;
+use App\Http\Controllers\Api\V1\Waiter\WaiterDiningController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -48,12 +49,31 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/home', [HomeController::class, 'show'])->name('home.show');
     Route::get('/cafe-tables', [CafeTableController::class, 'index'])->name('cafe-tables.index');
 
-    Route::middleware(['auth:sanctum', 'role:customer'])->group(function (): void {
+    Route::middleware(['auth:sanctum'])->group(function (): void {
         Route::prefix('auth')->name('auth.')->group(function (): void {
             Route::get('/me', [CustomerAuthController::class, 'me'])->name('me');
             Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
         });
+    });
 
+    Route::middleware(['auth:sanctum', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function (): void {
+        Route::get('/tables', [WaiterDiningController::class, 'tables'])->name('tables.index');
+        Route::post('/sessions', [WaiterDiningController::class, 'storeSession'])->name('sessions.store');
+        Route::get('/sessions/{session}', [WaiterDiningController::class, 'showSession'])->name('sessions.show');
+        Route::post('/sessions/{session}/drafts', [WaiterDiningController::class, 'storeDraft'])->name('sessions.drafts.store');
+        Route::put('/sessions/{session}/drafts/{draft}', [WaiterDiningController::class, 'updateDraft'])->name('sessions.drafts.update');
+        Route::delete('/sessions/{session}/drafts/{draft}', [WaiterDiningController::class, 'destroyDraft'])->name('sessions.drafts.destroy');
+        Route::delete('/sessions/{session}/drafts', [WaiterDiningController::class, 'clearDrafts'])->name('sessions.drafts.clear');
+        Route::post('/sessions/{session}/rounds', [WaiterDiningController::class, 'placeRound'])->name('sessions.rounds.store');
+        Route::post('/sessions/{session}/request-bill', [WaiterDiningController::class, 'requestBill'])->name('sessions.request-bill');
+        Route::post('/sessions/{session}/payment-method', [WaiterDiningController::class, 'setPaymentMethod'])->name('sessions.payment-method');
+        Route::post('/sessions/{session}/cash', [WaiterDiningController::class, 'markCashReceived'])->name('sessions.cash.receive');
+        Route::post('/sessions/{session}/close', [WaiterDiningController::class, 'close'])->name('sessions.close');
+        Route::post('/sessions/{session}/reopen', [WaiterDiningController::class, 'reopen'])->name('sessions.reopen');
+        Route::get('/sessions/{session}/invoice', [WaiterDiningController::class, 'invoice'])->name('sessions.invoice');
+    });
+
+    Route::middleware(['auth:sanctum', 'role:customer'])->group(function (): void {
         Route::prefix('customer')->name('customer.')->group(function (): void {
             Route::get('/me', [CustomerAccountController::class, 'show'])->name('me');
             Route::put('/profile', [CustomerAccountController::class, 'updateProfile'])->name('profile.update');

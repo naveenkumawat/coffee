@@ -1,9 +1,11 @@
+export type CustomerRole = 'customer' | 'waiter';
+
 export interface Customer {
   id: number;
   name: string;
   email: string;
   phone: string | null;
-  role: string;
+  role: CustomerRole;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string | null;
