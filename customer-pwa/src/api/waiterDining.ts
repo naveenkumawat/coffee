@@ -93,6 +93,10 @@ export interface WaiterRound {
   served?: boolean;
   served_at?: string | null;
   can_mark_served?: boolean;
+  can_cancel?: boolean;
+  cancel_requires_reason?: boolean;
+  can_void?: boolean;
+  cancellation_blocked_reason?: string | null;
   is_preparing: boolean;
   stations: Array<{
     station?: string | null;
@@ -247,6 +251,17 @@ export function markWaiterRoundServed(
   return post<ApiEnvelope<WaiterDiningSession>, Record<string, never>>(
     `/waiter/sessions/${sessionId}/rounds/${orderId}/served`,
     {},
+  );
+}
+
+export function cancelWaiterRound(
+  sessionId: number | string,
+  orderId: number | string,
+  payload: { reason?: string; notes?: string } = {},
+): Promise<ApiEnvelope<WaiterDiningSession>> {
+  return post<ApiEnvelope<WaiterDiningSession>, { reason?: string; notes?: string }>(
+    `/waiter/sessions/${sessionId}/rounds/${orderId}/cancel`,
+    payload,
   );
 }
 

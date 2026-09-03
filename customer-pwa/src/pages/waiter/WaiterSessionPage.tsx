@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import {
   WaiterDiningSession,
+  cancelWaiterRound,
   closeWaiterSession,
   fetchWaiterSession,
   markWaiterCashReceived,
@@ -286,6 +287,34 @@ export function WaiterSessionPage() {
                 >
                   Mark Served
                 </button>
+              ) : null}
+              {round.can_cancel && !round.cancel_requires_reason ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary rounded-pill"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(
+                      async () => (await cancelWaiterRound(sessionId, round.id)).data,
+                      `Round ${round.round_number} cancelled`,
+                    )
+                  }
+                >
+                  Cancel Round
+                </button>
+              ) : null}
+              {round.can_cancel && round.cancel_requires_reason ? (
+                <p className="muted waiter-round-hint">
+                  Operator/Admin cancellation with reason required after prep started.
+                </p>
+              ) : null}
+              {!round.can_cancel && round.served ? (
+                <p className="muted waiter-round-hint">
+                  This round has already been served and cannot be cancelled normally.
+                </p>
+              ) : null}
+              {!round.can_cancel && !round.served && round.cancellation_blocked_reason ? (
+                <p className="muted waiter-round-hint">{round.cancellation_blocked_reason}</p>
               ) : null}
             </article>
           ))}

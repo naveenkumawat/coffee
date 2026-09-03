@@ -6195,6 +6195,12 @@ body.product-overlay-open .bottom-navigation {
   margin-top: 0.25rem;
 }
 
+.waiter-round-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .status-badge.is-served {
   background: rgba(34, 120, 80, 0.12);
   color: rgb(22, 90, 60);

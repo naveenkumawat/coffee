@@ -121,6 +121,18 @@ interface DiningSessionServiceInterface
      */
     public function markRoundServed(DiningSession $session, Order $order, User $actor): Order;
 
+    /**
+     * Cancel a dining round under the L1.2 matrix. Idempotent when already Cancelled.
+     * Does not clear served_at; Served rounds are blocked (void/comp deferred).
+     */
+    public function cancelRound(
+        DiningSession $session,
+        Order $order,
+        User $actor,
+        ?string $reason = null,
+        ?string $notes = null,
+    ): Order;
+
     public function closeSession(DiningSession $session, User $actor): DiningSession;
 
     public function reopenSession(DiningSession $session, User $actor, ?string $note = null): DiningSession;

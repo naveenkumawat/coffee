@@ -9,6 +9,7 @@ use App\Enums\PaymentStatus;
 use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\Dining\DiningRoundCancellationPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -139,6 +140,8 @@ class WaiterDiningSessionResource extends JsonResource
             ? max(0, $overallReadyAt->diffInSeconds(now()))
             : null;
 
+        $cancellation = app(DiningRoundCancellationPolicy::class)->evaluate($session, $order, $actor);
+
         $items = $order->relationLoaded('items')
             ? $order->items
             : $order->items()->with('addOns')->get();
@@ -157,6 +160,10 @@ class WaiterDiningSessionResource extends JsonResource
             'served' => $order->served_at !== null,
             'served_at' => $order->served_at?->toIso8601String(),
             'can_mark_served' => ($actor?->can('markServed', $session) ?? false) && $readyToServe,
+            'can_cancel' => $cancellation['can_cancel'],
+            'cancel_requires_reason' => $cancellation['cancel_requires_reason'],
+            'can_void' => $cancellation['can_void'],
+            'cancellation_blocked_reason' => $cancellation['cancellation_blocked_reason'],
             'is_preparing' => $isPreparing,
             'stations' => $stations,
             'items' => $items->map(static function ($item): array {

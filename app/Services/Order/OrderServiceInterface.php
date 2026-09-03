@@ -20,6 +20,12 @@ interface OrderServiceInterface
 
     public function transition(Order $order, User $actor, OrderStatusTransitionTransferInterface $data): Order;
 
+    /**
+     * Terminal cancel for a dining round (L1.2). Idempotent when already Cancelled.
+     * Bypasses retail availableTransitions so Ready dining rounds can be cancelled under policy.
+     */
+    public function cancelDiningRound(Order $order, User $actor, ?string $notes = null): Order;
+
     public function uploadPaymentProof(Order $order, User $customer, UploadedFile $file): Order;
 
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order;

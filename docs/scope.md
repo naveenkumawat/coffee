@@ -1709,4 +1709,17 @@ Customer API coverage should ultimately include:
 - C1 customization/add-ons are shared between Customer and Waiter; prices remain server-owned.
 - Phase C2 locks: guest cart survives login; ambiguous writes reconcile before retry; shared payment-state presentation is canonical; server owns commercial/operational truth.
 - **L1.1 Served / Delivered-to-table:** Per dining **round** (canonical Order), after all active prep tickets are Ready. `POST /api/v1/waiter/sessions/{session}/rounds/{order}/served` (+ Blade Waiter/Operator/Admin). Idempotent. Resolves Ready-to-Serve alerts. Customer may see “Delivered to table”; customer does not confirm. Served does not imply payment or session close.
-- **Cancellation gap (deferred):** Post-Served cancellation still follows existing order/dining cancellation authorization — no new L1 exception matrix in this phase.
+- **L1.2 Dining cancellation / exception matrix:** Server-owned `DiningRoundCancellationPolicy`. History is never deleted.
+
+| Round / session state | Cancel? | Who | Reason | Inventory (F2) |
+| --- | --- | --- | --- | --- |
+| Accepted, no Preparing/Ready timestamps | Yes (normal) | Waiter / Operator / Admin | Optional note | `sale_reversal` allowed |
+| Accepted/Preparing with material prep started | Yes (privileged) | Operator / Admin | **Required** structured reason | **No** auto-restore |
+| Ready, not Served | Yes (privileged) | Operator / Admin | **Required** | **No** auto-restore |
+| Served (`served_at` set) | **Blocked** | — | — | Never auto-restore; do not clear served metadata |
+| Bill requested / finalized / awaiting payment | **Blocked** | — | — | — |
+| Payment confirmed / session closed | **Blocked** | — | — | Refunds deferred |
+
+Capabilities on Waiter session rounds: `can_cancel`, `cancel_requires_reason`, `can_void` (always false until void/comp), `cancellation_blocked_reason`. Endpoint: `POST .../rounds/{order}/cancel`.
+
+**Deferred (not L1.2):** void / adjustment / comp, refunds, wastage ledger automation, post-payment financial correction.

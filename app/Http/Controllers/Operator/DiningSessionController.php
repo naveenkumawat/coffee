@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operator;
 
 use App\Enums\DiningSessionStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dining\DiningRoundCancelRequest;
 use App\Models\DiningSession;
 use App\Models\Order;
 use App\Services\Dining\DiningSessionServiceInterface;
@@ -130,6 +131,23 @@ class DiningSessionController extends Controller
         $this->dining->markRoundServed($diningSession, $order, $request->user('admin'));
 
         return back()->with('status', 'Round marked as served.');
+    }
+
+    public function cancelRound(
+        DiningRoundCancelRequest $request,
+        DiningSession $diningSession,
+        Order $order,
+    ): RedirectResponse {
+        $data = $request->validated();
+        $this->dining->cancelRound(
+            $diningSession,
+            $order,
+            $request->user('admin'),
+            $data['reason'] ?? null,
+            $data['notes'] ?? null,
+        );
+
+        return back()->with('status', 'Round cancelled.');
     }
 
     public function rejectPaymentProof(Request $request, DiningSession $diningSession): RedirectResponse

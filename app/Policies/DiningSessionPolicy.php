@@ -72,6 +72,14 @@ class DiningSessionPolicy
         return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
     }
 
+    /**
+     * Attempt dining round cancellation (L1.2). Fine-grained eligibility is server-evaluated.
+     */
+    public function cancelRound(User $user, DiningSession $session): bool
+    {
+        return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
+    }
+
     public function changePaymentMethod(User $user, DiningSession $session): bool
     {
         return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();

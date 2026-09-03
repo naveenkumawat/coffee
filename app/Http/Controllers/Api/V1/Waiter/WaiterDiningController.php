@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Waiter;
 
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dining\DiningRoundCancelRequest;
 use App\Http\Resources\Api\V1\Dining\WaiterDiningSessionResource;
 use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
@@ -284,6 +285,26 @@ class WaiterDiningController extends Controller
         return $this->respondWithResource(
             new WaiterDiningSessionResource($this->loadSession($session)),
             'Round marked as served.',
+        );
+    }
+
+    public function cancelRound(
+        DiningRoundCancelRequest $request,
+        DiningSession $session,
+        Order $order,
+    ): JsonResponse {
+        $data = $request->validated();
+        $this->dining->cancelRound(
+            $session,
+            $order,
+            $request->user(),
+            $data['reason'] ?? null,
+            $data['notes'] ?? null,
+        );
+
+        return $this->respondWithResource(
+            new WaiterDiningSessionResource($this->loadSession($session)),
+            'Round cancelled.',
         );
     }
 

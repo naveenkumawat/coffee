@@ -2,6 +2,7 @@
 
 namespace App\Services\Dining;
 
+use App\Enums\DiningRoundCancellationReason;
 use App\Enums\DiningSessionStatus;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderPreparationStatus;
@@ -52,6 +53,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         protected OrderServiceInterface $orders,
         protected StaffNotificationDispatcherInterface $staffNotifications,
         protected AddOnServiceInterface $addOns,
+        protected DiningRoundCancellationPolicy $roundCancellation,
     ) {}
 
     public function startSession(
@@ -826,6 +828,50 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             return $fresh;
         });
+    }
+
+    public function cancelRound(
+        DiningSession $session,
+        Order $order,
+        User $actor,
+        ?string $reason = null,
+        ?string $notes = null,
+    ): Order {
+        $decision = $this->roundCancellation->assertMayCancel($session, $order, $actor, $reason, $notes);
+
+        if ($decision['mode'] === 'idempotent') {
+            return $order->fresh(['preparations', 'items', 'statusHistory.changedBy', 'servedBy', 'diningSession'])
+                ?? $order;
+        }
+
+        $historyNotes = $this->formatCancellationNotes($reason, $notes);
+
+        return $this->orders->cancelDiningRound($order, $actor, $historyNotes);
+    }
+
+    protected function formatCancellationNotes(?string $reason, ?string $notes): ?string
+    {
+        $reasonEnum = null;
+        if (filled($reason)) {
+            $reasonEnum = DiningRoundCancellationReason::tryFrom((string) $reason);
+        }
+
+        $parts = [];
+        if ($reasonEnum !== null) {
+            $parts[] = '['.$reasonEnum->value.'] '.$reasonEnum->label();
+        } elseif (filled($reason)) {
+            $parts[] = '['.$reason.']';
+        }
+
+        if (filled($notes)) {
+            $parts[] = trim((string) $notes);
+        }
+
+        if ($parts === []) {
+            return null;
+        }
+
+        return implode(' — ', $parts);
     }
 
     public function closeSession(DiningSession $session, User $actor): DiningSession

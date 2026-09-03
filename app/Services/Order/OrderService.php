@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\AddOn\AddOnServiceInterface;
+use App\Services\Dining\DiningRoundCancellationPolicy;
 use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
@@ -53,6 +54,7 @@ class OrderService implements OrderServiceInterface
         protected OrderPreparationServiceInterface $preparations,
         protected OrderInventoryConsumptionServiceInterface $inventoryConsumption,
         protected AddOnServiceInterface $addOns,
+        protected DiningRoundCancellationPolicy $diningCancellation,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -332,6 +334,33 @@ class OrderService implements OrderServiceInterface
                 ]);
             }
 
+            if (
+                $locked->isDiningRound()
+                && in_array($nextStatus, [OrderStatus::Cancelled, OrderStatus::Rejected], true)
+            ) {
+                $locked->loadMissing('diningSession');
+                $session = $locked->diningSession;
+                if (! $session instanceof DiningSession) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Dining round cancellation requires an active dining session.',
+                    ]);
+                }
+
+                if ($nextStatus === OrderStatus::Rejected) {
+                    throw ValidationException::withMessages([
+                        'status' => 'Dining rounds cannot be rejected; cancel the round instead.',
+                    ]);
+                }
+
+                $this->diningCancellation->assertMayCancel(
+                    $session,
+                    $locked,
+                    $actor,
+                    reason: null,
+                    notes: $data->getNotes(),
+                );
+            }
+
             $allowedStatuses = $this->availableTransitions($locked, $actor);
 
             if (! array_key_exists($nextStatus->value, $allowedStatuses)) {
@@ -435,6 +464,88 @@ class OrderService implements OrderServiceInterface
                 $currentStatus,
                 $nextStatus,
                 $data->getNotes(),
+            );
+
+            return $locked;
+        });
+    }
+
+    public function cancelDiningRound(Order $order, User $actor, ?string $notes = null): Order
+    {
+        return DB::transaction(function () use ($order, $actor, $notes): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! $locked->isDiningRound()) {
+                throw ValidationException::withMessages([
+                    'order' => 'Only dining rounds can use dining cancellation.',
+                ]);
+            }
+
+            if ($locked->status === OrderStatus::Cancelled) {
+                return $locked->fresh([
+                    'preparations',
+                    'items',
+                    'statusHistory.changedBy',
+                    'diningSession',
+                ]) ?? $locked;
+            }
+
+            if ($locked->status instanceof OrderStatus && $locked->status->isTerminal()) {
+                throw ValidationException::withMessages([
+                    'order' => 'This round is already closed and cannot be cancelled.',
+                ]);
+            }
+
+            $currentStatus = $locked->status;
+            if (! $currentStatus instanceof OrderStatus) {
+                throw ValidationException::withMessages([
+                    'status' => 'The current order status is invalid.',
+                ]);
+            }
+
+            $wasUnpaid = $locked->payment_status !== PaymentStatus::Confirmed;
+
+            $locked = $this->orders->update($locked, [
+                'status' => OrderStatus::Cancelled->value,
+                'cancelled_at' => $locked->cancelled_at ?: now(),
+            ]);
+
+            $this->orders->createStatusHistory($locked, [
+                'from_status' => $currentStatus->value,
+                'to_status' => OrderStatus::Cancelled->value,
+                'changed_by' => $actor->getKey(),
+                'notes' => $notes,
+            ]);
+
+            $terminal = $locked->fresh(['preparations', 'items']);
+            $mayReverseInventory = ! $this->inventoryConsumption->hasMaterialPreparationStarted($terminal);
+            $this->preparations->cancelTicketsForOrder($terminal, $actor);
+
+            if ($mayReverseInventory) {
+                $this->inventoryConsumption->reverseForCancelledOrder($terminal, $actor);
+            }
+
+            if ($wasUnpaid) {
+                $this->restoreRewardsForUnpaidTerminalOrder($locked);
+            }
+
+            $locked = $locked->fresh([
+                'customer',
+                'assignedBarista',
+                'items.recipe.lines.ingredient.brand',
+                'statusHistory.changedBy',
+                'preparations',
+                'rewardRedemptions',
+                'diningSession',
+                'servedBy',
+            ]);
+
+            OrderStatusChanged::dispatch(
+                $locked,
+                $currentStatus,
+                OrderStatus::Cancelled,
+                $notes,
             );
 
             return $locked;
@@ -660,6 +771,10 @@ class OrderService implements OrderServiceInterface
             OrderStatus::Completed, OrderStatus::Cancelled, OrderStatus::Rejected => [],
         };
 
+        if ($order->isDiningRound()) {
+            return $this->diningAvailableTransitions($order, $actor, $workflow);
+        }
+
         if ($actor->canManageOrders()) {
             return collect($workflow)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
         }
@@ -678,6 +793,64 @@ class OrderService implements OrderServiceInterface
         );
 
         return collect($operatorAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+    }
+
+    /**
+     * @param  list<OrderStatus>  $workflow
+     * @return array<string, string>
+     */
+    protected function diningAvailableTransitions(Order $order, User $actor, array $workflow): array
+    {
+        $order->loadMissing('diningSession');
+        $session = $order->diningSession;
+
+        $statuses = $workflow;
+
+        if ($session instanceof DiningSession) {
+            $decision = $this->diningCancellation->evaluate($session, $order, $actor);
+
+            $statuses = array_values(array_filter(
+                $statuses,
+                static fn (OrderStatus $status): bool => ! in_array($status, [OrderStatus::Cancelled, OrderStatus::Rejected], true),
+            ));
+
+            if ($decision['can_cancel']) {
+                $statuses[] = OrderStatus::Cancelled;
+            }
+        } elseif ($actor->canManageOrders()) {
+            // Fallback: keep manager workflow without cancel expansion when session missing.
+            $statuses = $workflow;
+        } else {
+            $statuses = array_values(array_filter(
+                $workflow,
+                static fn (OrderStatus $status): bool => ! in_array($status, [OrderStatus::Cancelled, OrderStatus::Rejected], true),
+            ));
+        }
+
+        if ($actor->canManageOrders()) {
+            return collect($statuses)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+        }
+
+        if ($actor->canOperateOrders()) {
+            $operatorAllowed = array_filter(
+                $statuses,
+                fn (OrderStatus $status): bool => in_array(
+                    $status,
+                    [
+                        OrderStatus::Accepted,
+                        OrderStatus::Preparing,
+                        OrderStatus::ReadyForPickup,
+                        OrderStatus::Completed,
+                        OrderStatus::Cancelled,
+                    ],
+                    true,
+                ),
+            );
+
+            return collect($operatorAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+        }
+
+        return [];
     }
 
     /**
