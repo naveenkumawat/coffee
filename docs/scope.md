@@ -1723,3 +1723,12 @@ Customer API coverage should ultimately include:
 Capabilities on Waiter session rounds: `can_cancel`, `cancel_requires_reason`, `can_void` (always false until void/comp), `cancellation_blocked_reason`. Endpoint: `POST .../rounds/{order}/cancel`.
 
 **Deferred (not L1.2):** void / adjustment / comp, refunds, wastage ledger automation, post-payment financial correction.
+
+## L2 — Real café data & launch configuration
+
+* **Goal:** Transition safely from demo/test data to production café data without inventing business values.
+* **Audit / checklist:** `docs/launch-data-todo.md`, `docs/launch-menu.md` (currently STOPPED), `docs/pwa-launch-checklist.md`.
+* **Seed isolation:** production = structural reference only; `DemoSeeder` refused outside local/testing; never `migrate:fresh` in production.
+* **Gate:** `php artisan coffee:launch-readiness` (read-only, `--json`, exit non-zero on blockers).
+* **Catalog import:** Administrator entry preferred after launch-menu confirmation; `LaunchCatalogSeeder` intentionally refuses until menu is confirmed.
+* **Not in L2:** Void/Refund/Comp, Web Push, F3.3 expansion, production deployment without hosts.

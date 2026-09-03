@@ -1,196 +1,133 @@
 # The88Coffees — Launch data to-do
 
-**Purpose:** Single checklist for supplying **real café information** through existing Administrator screens.  
-**Last audited:** 31 Aug 2026 (local database)  
-**Rules:** Do not treat demo seed values as launch-ready. Do not invent missing phones, UPI, addresses, URLs, prices, or legal copy.
+**Purpose:** Actionable checklist to move from demo/test data to real café production data.  
+**Last audited:** 4 Sep 2026 (L2 launch readiness)  
+**Rules:** Do not invent missing phones, UPI, addresses, URLs, prices, recipes, stock, or legal copy. Demo seed ≠ launch data.
 
-**Where to enter data:** Administrator → Website Settings, Social Links, Categories, Flavours, Ingredients, Products, Homepage Sections.
+**Commands:**
+- `php artisan coffee:launch-readiness` — full launch audit (exits non-zero on blockers; `--json` supported)
+- `php artisan coffee:catalog-readiness` — product configuration completeness
 
-**Local baseline (31 Aug 2026):** Brand name + slogan set in Website Settings; Facebook / WhatsApp / Instagram social shells exist (**inactive**, blank URLs → not in public footer); remaining Website Settings empty; **0** categories / flavours / products / homepage sections; **7** ProductTags present.  
-`php artisan coffee:catalog-readiness` → Products: 0 | Ready: 0 | Incomplete: 0.
+**Import strategy (when menu is confirmed):** Prefer Administrator entry for day-one. Optional future `LaunchCatalogSeeder` is intentionally refused until `docs/launch-menu.md` is filled (`database/seeders/LaunchCatalogSeeder.php`). Do not run inventing imports. Never `migrate:fresh` in production.
 
-Demo catalog (18 products, fake contact/UPI, sample CMS) exists only in **local/testing seeders** — not production. Do not copy those into this baseline.
-
----
-
-# Brand & Business
-
-- [x] Business name — set to **The88Coffees** (Administrator → Website Settings → Business)
-- [x] Home slogan / hero subtitle — set to **Sip. Relax. Enjoy.**
-- [ ] Hero title — confirm customer-facing wording (or leave blank if unused) — intentionally blank
-- [ ] Short about text — real café blurb — intentionally blank
-- [ ] Customer phone — real number — intentionally blank
-- [ ] WhatsApp number — real number (also drives WhatsApp social when URL blank) — intentionally blank
-- [ ] Email — real public email if the café wants one shown — intentionally blank in Website Settings
-- [ ] Pickup / visit address — real address — intentionally blank
-- [ ] Opening hours — real hours — intentionally blank
-
-*Status:* Brand + slogan **CONFIGURED**. Contact / about still **NEEDS REAL VALUE**.
+**Local/demo vs production seed:**
+- Always: IngredientCategory + ProductTag + SocialLink shells + optional `ADMIN_EMAIL`/`ADMIN_PASSWORD` Owner
+- local/testing only: `DemoSeeder` (full café simulation)
+- production: structural only — DemoSeeder hard-blocked
 
 ---
 
-# Social Media
+## Classification legend
 
-Platforms expected at launch: Facebook, WhatsApp, Instagram (dynamic Social Links — not hardcoded in the PWA).
-
-- [x] Ensure Facebook / WhatsApp / Instagram rows exist (structural shells; sort 1 / 2 / 3; blank URLs; inactive until configured)
-- [ ] Facebook — real page URL; set active when ready
-- [ ] Instagram — real profile URL; set active when ready
-- [ ] WhatsApp — leave URL blank to use Website Settings WhatsApp, **or** set explicit `wa.me` URL; set active when WhatsApp number is ready
-- [ ] Confirm inactive / empty platforms do **not** show an empty footer row (verified with shells inactive → public `social_links: []`)
-- [ ] Confirm sort order matches desired icon order (shells: Facebook 1, WhatsApp 2, Instagram 3)
-
-*Status:* Structural shells **CONFIGURED**; platforms are **not** launch-ready until real URLs / WhatsApp contact exist and records are activated.
-
----
-
-# Payment
-
-Manual UPI — configure in Website Settings → Payment (upload QR requires `storage:link`).
-
-- [ ] Payment display name (e.g. how UPI appears to customers) — intentionally blank in Website Settings
-- [ ] UPI ID — real café UPI — intentionally blank
-- [ ] Payment phone — real payment number if used — intentionally blank
-- [ ] Payment QR image — upload real QR file — intentionally blank
-- [ ] Payment instructions — real customer steps (pay → upload screenshot / WhatsApp) — intentionally blank in Website Settings
-- [ ] Payment WhatsApp — number for payment confirmation / screenshots — intentionally blank
-
-*Status:* **NEEDS REAL VALUE**. Website Settings payment fields empty (no demo UPI). Note: local/API may still surface generic `COFFEE_*` / `APP_NAME` env fallbacks until production env is cleaned — that is separate from Admin settings.
-
----
-
-# Fulfilment
-
-Supported modes: **Takeaway** and **Delivery** (third-party; charges paid separately by the customer — no invented café delivery fee).
-
-- [ ] Confirm café will offer Takeaway
-- [ ] Confirm café will offer Delivery via third party
-- [ ] Delivery disclaimer — Website Settings empty; config fallback third-party wording left as infrastructure fallback (not marked approved business copy)
-- [ ] Confirm customer-facing Ready / delivery wording matches café ops
-
-*Status:* Behaviour **CONFIGURED**. Disclaimer copy not yet café-approved in Website Settings.
-
----
-
-# CMS
-
-Pages: About · Visit/Contact · FAQ · Terms · Privacy (Website Settings → Pages).
-
-- [ ] About — real story / café copy — intentionally blank
-- [ ] Visit / Contact — real visit guidance (pairs with phone/address/hours) — intentionally blank
-- [ ] FAQ — real order/payment/pickup Q&A — intentionally blank
-- [ ] Terms — **real legal/business terms** (do not invent; supply approved copy) — intentionally blank
-- [ ] Privacy — **real privacy notice** (do not invent; supply approved copy) — intentionally blank
-
-*Status:* **NEEDS REAL VALUE**. Demo CMS text was not copied.
-
----
-
-# Catalog
-
-Enter **real** menu items in Administrator. Do **not** assume demo products belong in production.
-
-**Blocked (31 Aug 2026):** No confirmed real menu source in repo/docs/DB. Catalog intentionally remains empty. Fill [`docs/launch-menu.md`](launch-menu.md) with café decisions before creating categories/products.
-
-### Decide first (see launch-menu.md)
-- [ ] Final list of launch categories
-- [ ] Final list of launch flavours (optional per café)
-- [ ] Final list of launch products (name, description, category, sizes, prices)
-- [ ] Which demo names (if any) are intentionally kept vs discarded
-
-### Structure entry (only after decisions confirmed)
-- [ ] Confirmed categories created
-- [ ] Confirmed flavours created
-- [ ] Confirmed products created (draft / inactive)
-- [ ] Confirmed variants/prices created
-
-### Demo-only reference (local seeder — not production-ready)
-
-| Category (demo) | Demo products |
+| Status | Meaning |
 | --- | --- |
-| Hot Coffee | Cafe Latte, Cappuccino, Flat White, Americano, Hazelnut Mocha, Seasonal Spice Latte (paused demo) |
-| Cold Coffee | Iced Vanilla Latte, Iced Americano, Cold Brew, Caramel Iced Latte |
-| Frappes | Mocha Frappe, Vanilla Bean Frappe, Caramel Crunch Frappe |
-| Tea & Matcha | Classic Masala Chai, Matcha Latte, Iced Matcha Latte |
-| Pastries | Butter Croissant, Chocolate Muffin |
-
-Demo flavours: Vanilla, Hazelnut, Caramel, Mocha, Honey.  
-Demo sizes typically Regular/Large (pastries: Single) with **sample** prices — replace with real prices.
-
-### Admin entry checklist
-- [ ] Create real categories (active + sort order) — catalog kept empty until menu decisions
-- [ ] Create real flavours if used
-- [ ] Create each launch product as draft (`inactive`) until ready
-- [ ] Add variants/sizes + **real** prices
-- [ ] Assign flavours / customizable flags as needed
-- [ ] Assign ProductTags only when marketing decision is made (optional)
-- [ ] Activate only products that pass readiness (see Recipes / Images)
-
-*Local catalog:* **0 products** — nothing READY for sale yet (intentional).
+| READY | System capability or confirmed baseline present |
+| DEMO ONLY | Exists in local DemoSeeder — not for production |
+| MISSING REAL DATA | Café must supply |
+| OPTIONAL/DEFERRED | Nice-to-have or post-launch |
 
 ---
 
-# Recipes
+# BLOCKERS (must clear before production go-live)
 
-For each **intended launch** product / variant:
+Confirm with `php artisan coffee:launch-readiness` (must exit 0).
 
-- [ ] Recipe lines present for every active size
-- [ ] Ingredient records exist (brands/categories as needed)
-- [ ] Major ingredients / customer-facing ingredient summary reviewed
-- [ ] Run `php artisan coffee:catalog-readiness` and fix **configuration** failures (do not fake recipes just to go green)
-
-*Status:* Deferred until real products exist.
-
----
-
-# Inventory
-
-- [ ] List ingredients required for launch recipes
-- [ ] Enter opening stock only when real quantities are known
-- [ ] Treat “stock concern” separately from “incomplete configuration”
-- [ ] Review refill / low-stock process with staff (ops, not a code task)
-
-*Status:* Deferred — do not invent opening stock numbers.
+- [ ] **Brand name** in Website Settings (`business_name`) — local baseline may already be The88Coffees; verify on production DB
+- [ ] **UPI ID** (`payment_upi_id`) — real café UPI
+- [ ] **Payment QR image** uploaded + file present on public disk (`storage:link`)
+- [ ] **Terms** + **Privacy** pages — café-approved legal copy only
+- [ ] **Opening hours** — Website Settings text and/or Cafe Operating Hours (7-day schedule)
+- [ ] **`docs/launch-menu.md` confirmed** — categories, products, sizes, prices filled by café (currently STOPPED)
+- [ ] **Sellable catalog** — at least one **active** product that passes `coffee:catalog-readiness` (category, image, priced variants, recipes, station)
+- [ ] **No `*@coffee.local` users** on production
+- [ ] **Real staff accounts** with strong passwords: Owner/Admin, Operator, Barista, Chef, Waiter (if those panels are used)
+- [ ] If **Dining enabled**: at least one **active** café table (real count/labels from café — do not invent)
 
 ---
 
-# Product Images
+# REQUIRED BEFORE PRODUCTION
 
-- [ ] Photograph / source real images for each launch product
-- [ ] Upload via Administrator product form (public media / `storage:link`)
-- [ ] Optional: category images, hero image
-- [ ] Confirm payment QR uploaded (see Payment)
-
-*Status:* Deferred — do not generate fake product photos.
+- [ ] Customer phone + WhatsApp + pickup/visit address
+- [ ] Short about text
+- [ ] Payment instructions + payment WhatsApp
+- [ ] Payment display name
+- [ ] Delivery disclaimer approved in Website Settings (or explicit accept of config fallback wording)
+- [ ] About / Visit / FAQ CMS pages
+- [ ] Social URLs activated (Facebook / Instagram / WhatsApp) when café wants them public
+- [ ] Confirm Takeaway + third-party Delivery still match ops
+- [ ] GST/tax policy confirmed (enable + percent + GSTIN only with café values — do not invent)
+- [ ] Product images (1:1 WebP/JPEG, ~50–150KB where practical) for every active product
+- [ ] Recipes for every active variant/add-on that prepares food/drink (ingredients, units, qty > 0, station)
+- [ ] Production `.env`: `APP_ENV=production`, `APP_DEBUG=false`, real Sanctum/CORS/session/mail hosts — see `docs/production-deployment.md`
+- [ ] `ADMIN_EMAIL` / `ADMIN_PASSWORD` only for Owner bootstrap (server secrets — never demo password)
 
 ---
 
-# Homepage
+# CAN COMPLETE AFTER LAUNCH
 
-Homepage rails come from **Homepage Sections** (not ProductTags).
+- [ ] Homepage sections merchandising
+- [ ] ProductTags / marketing flags
+- [ ] Promotions / referral tuning
+- [ ] Inventory opening stock quantities (enter only when known — never fake)
+- [ ] Min-stock thresholds / refill ops training
+- [ ] Hero image polish
+- [ ] Category images
+- [ ] Meta WhatsApp Cloud API templates (keep `WHATSAPP_NOTIFICATIONS_ENABLED=false` until ready)
+- [ ] Dining table QR deep-links
+- [ ] Optional public email if not shown at launch
 
-- [ ] Decide section titles / order for launch (e.g. pickup picks, new items — use café wording)
-- [ ] Assign only products intended to appear
-- [ ] Set `max_items` and sort order
-- [ ] Keep inactive / empty sections off
-- [ ] Re-check after products become READY
+---
 
-Demo sections (seed only): “Pickup-ready picks”, “New on the menu”, “Bestsellers” — **not** created in this baseline (wait for real products).
+# Area audit (L2)
 
-*Local:* **0** homepage sections (intentional).
+| Area | Status | Notes |
+| --- | --- | --- |
+| Café / business identity | READY (name/slogan baseline) / contact MISSING | Name+slogan may be set; phone/WhatsApp/address/about still required |
+| Contact details | MISSING REAL DATA | |
+| Opening hours / closures | MISSING REAL DATA | Structured `cafe_operating_hours` + closures Admin exist; demo schedule is DEMO ONLY |
+| Fulfilment settings | READY (capability) | Takeaway+Delivery implemented; dine-in flag default off |
+| Payment UPI / QR | MISSING REAL DATA | Manual payment launch model; no gateway |
+| GST / tax | MISSING REAL DATA / OPTIONAL until café decides | Do not copy demo tax_enabled |
+| Categories / products / variants / prices | MISSING REAL DATA | launch-menu.md empty; DB intentionally 0 on clean production seed |
+| Flavours / add-ons / tags | OPTIONAL/DEFERRED until menu decisions | Demo flavours/add-ons are DEMO ONLY |
+| Preparation stations | READY (model) | Must be set per real product before activate |
+| Recipes / ingredients / units | MISSING REAL DATA | Blocker for activating products; do not guess recipes |
+| Inventory opening stock / min stock | MISSING REAL DATA | Do not seed fake production quantities |
+| Home sections | OPTIONAL/DEFERRED | |
+| Product / hero / QR media | MISSING REAL DATA | PublicMedia + storage:link |
+| Social links | READY (shells) / URLs MISSING | |
+| Promotions | OPTIONAL/DEFERRED | |
+| Staff / roles | MISSING REAL DATA on production | Demo `*@coffee.local` / `password` is DEMO ONLY |
+| Tables / dining | MISSING REAL DATA | Demo T1–T8 DEMO ONLY; inventing table count forbidden |
+| Delivery fee in-app | OPTIONAL/DEFERRED | `delivery_fee_amount` reserved/null; third-party customer-paid remains assumed launch rule — confirm |
+
+---
+
+# Catalog / launch-menu gaps
+
+`docs/launch-menu.md` status: **STOPPED — awaiting café decisions**.
+
+Exact gaps (nothing to import yet):
+- Missing confirmed categories
+- Missing confirmed products / descriptions
+- Missing variants / size labels
+- Missing selling prices
+- Missing flavour / customizable decisions
+- Missing station assignments (cannot assign without products)
+- Missing recipes / ingredients
+- Missing add-ons decisions
+- Missing images
+
+**Required café decisions before catalog import/Admin entry:** fill every non-optional cell in `docs/launch-menu.md`.
 
 ---
 
 ## Suggested order of work
 
-1. ~~Brand name + slogan~~ ✅  
-2. Business contact + WhatsApp  
-3. Payment (UPI / QR / instructions)  
-4. Social URLs + activate shells  
-5. CMS pages (Terms/Privacy with approved copy)  
-6. Categories → products (draft) → variants/prices → recipes → images → activate when READY — **blocked** until [`docs/launch-menu.md`](launch-menu.md) is filled by the café
-7. Inventory opening stock  
-8. Homepage sections  
-9. `php artisan coffee:catalog-readiness` + customer preview  
-
-When this list is complete, return to deployment (`docs/production-deployment.md`) with real HTTPS hosts.
+1. Fill `docs/launch-menu.md` (café)
+2. Contact + payment UPI/QR + hours + Terms/Privacy
+3. Categories → draft products → variants/prices → recipes → images → activate when READY
+4. Staff accounts (real passwords)
+5. Tables only if Dining will launch
+6. `php artisan coffee:launch-readiness` → exit 0
+7. Then deployment hosts (`docs/production-deployment.md`) — **do not deploy without HTTPS hosts/access**

@@ -19,6 +19,7 @@ use App\Support\ProductMarketingTags;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Database\Seeders\IngredientCategorySeeder;
+use Database\Seeders\LaunchCatalogSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -83,6 +84,14 @@ class DemoSeederSafetyTest extends TestCase
         $this->assertFalse(User::query()->where('email', 'like', '%@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'customer@coffee.local')->exists());
         $this->assertFalse(User::query()->where('email', 'admin@coffee.local')->exists());
+    }
+
+    public function test_launch_catalog_seeder_refuses_until_menu_confirmed(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('LaunchCatalogSeeder refused');
+
+        $this->app->make(LaunchCatalogSeeder::class)->run();
     }
 
     public function test_local_database_seeder_loads_demo_data_without_outbound_side_effects(): void

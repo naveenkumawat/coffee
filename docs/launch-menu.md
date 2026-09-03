@@ -1,7 +1,7 @@
 # The88Coffees — Launch menu
 
 **Status: STOPPED — awaiting café decisions**  
-**Date:** 31 Aug 2026  
+**Date:** 31 Aug 2026 · **L2 re-audit:** 4 Sep 2026  
 
 No confirmed real menu list (categories, products, sizes, or selling prices) was found in project docs, seeders, legacy menu tables, or local DB.
 
@@ -9,9 +9,11 @@ No confirmed real menu list (categories, products, sizes, or selling prices) was
 - Demo `ProductSeeder` / category / flavour seeders (local/testing only)
 - Illustrative ₹ examples in `docs/scope.md` (requirements samples, not café prices)
 
-**Catalog left empty:** 0 categories · 0 flavours · 0 products · 0 variants · 0 homepage sections.
+**Catalog left empty:** 0 categories · 0 flavours · 0 products · 0 variants · 0 homepage sections (clean production seed).
 
-Do **not** invent menu items here. Fill the decision tables below, then re-run the catalog structure task.
+Do **not** invent menu items here. Fill the decision tables below, then enter via Administrator (preferred) or implement a data-driven import only after this file is complete. `LaunchCatalogSeeder` currently refuses to run.
+
+**Readiness:** `php artisan coffee:launch-readiness` · `php artisan coffee:catalog-readiness`
 
 ---
 
@@ -77,7 +79,8 @@ Only flavours actually used by launch products.
 | --- | --- | --- | --- | --- |
 | — | — | — | — | No launch products yet |
 
-`php artisan coffee:catalog-readiness` → Products: 0 | Ready: 0 | Incomplete: 0
+`php artisan coffee:catalog-readiness` → Products: 0 | Ready: 0 | Incomplete: 0  
+`php artisan coffee:launch-readiness` → expects blockers until this file is confirmed and catalog/payment/hours are configured.
 
 ---
 

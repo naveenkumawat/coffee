@@ -36,6 +36,8 @@ use App\Services\Invoice\DiningInvoiceService;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
 use App\Services\Invoice\OrderInvoiceService;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
+use App\Services\Launch\LaunchReadinessService;
+use App\Services\Launch\LaunchReadinessServiceInterface;
 use App\Services\Menu\MenuCatalogService;
 use App\Services\Menu\MenuCatalogServiceInterface;
 use App\Services\Menu\MenuCategoryService;
@@ -145,6 +147,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(ProductTagServiceInterface::class, ProductTagService::class);
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
         $this->app->bind(ProductReadinessServiceInterface::class, ProductReadinessService::class);
+        $this->app->bind(LaunchReadinessServiceInterface::class, LaunchReadinessService::class);
         $this->app->bind(RecipeCostingServiceInterface::class, RecipeCostingService::class);
         $this->app->bind(RecipeServiceInterface::class, RecipeService::class);
         $this->app->bind(UserServiceInterface::class, UserService::class);

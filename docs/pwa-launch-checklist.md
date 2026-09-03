@@ -1,8 +1,9 @@
 # Customer PWA Launch Checklist
 
-Last updated: August 31, 2026  
-Status after Phase C6 final QA + D1/D2/D3 prep: ready for production smoke test on real HTTPS hosts; keep customer Blade until live verification.  
-Deployment runbook: `docs/production-deployment.md`.
+Last updated: September 4, 2026 (L2 launch-data readiness)  
+Status after Phase C6 final QA + D1/D2/D3 prep + L2 audit: ready for production smoke test **only after** real café data clears `coffee:launch-readiness`; keep customer Blade until live verification.  
+Deployment runbook: `docs/production-deployment.md`.  
+Launch data checklist: `docs/launch-data-todo.md`.
 
 ## Administrator production content checklist
 
@@ -10,25 +11,28 @@ Configure these in **Administrator** before public launch. Do **not** rely on lo
 
 **Working to-do (fill real café values here):** [`docs/launch-data-todo.md`](launch-data-todo.md)
 
-### Launch data status (local audit — 31 Aug 2026)
+### Launch data status (L2 audit — 4 Sep 2026)
 
-Legend: **CONFIGURED** = Admin/system ready · **NEEDS REAL VALUE** = café must supply · **DEMO-ONLY** = seed sample, not launch · **OPTIONAL** = nice-to-have
+Legend: **READY** · **NEEDS REAL VALUE** · **DEMO-ONLY** · **OPTIONAL/DEFERRED**
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Brand name / slogan targets | CONFIGURED (local baseline) | Website Settings: **The88Coffees** + **Sip. Relax. Enjoy.** (content-driven; not hardcoded in PWA). |
-| Business phone / WhatsApp / email / address / hours | NEEDS REAL VALUE | Local empty. Demo seeder phones/email/address are **DEMO-ONLY**. |
-| Social Links admin + footer | CONFIGURED | Dynamic CRUD. Local shells: Facebook/WhatsApp/Instagram (inactive, blank URLs — not public). URLs still **NEEDS REAL VALUE**. |
-| Payment UPI / phone / QR / instructions | NEEDS REAL VALUE | Admin supports all. Demo UPI is **DEMO-ONLY**. |
-| Fulfilment Takeaway + Delivery + optional Dine-in | CONFIGURED | Takeaway/Delivery always. Dine-in via Website Settings `fulfilment_dine_in_enabled` (default **off**). Café Tables admin CRUD required before enabling. Future table QR = convenience deep-link only. |
-| CMS About / Visit / FAQ / Terms / Privacy | NEEDS REAL VALUE | Local empty. Do not invent legal Terms/Privacy. |
-| ProductTags taxonomy | CONFIGURED | New, Top Seller, Featured, Seasonal, Popular, Limited, Recommended present. Assignments **OPTIONAL** / business decision. |
-| Categories / flavours / products / prices | NEEDS REAL VALUE | Local: **0** products. Demo menu (18 items) is **DEMO-ONLY** — do not assume for production. |
-| Recipes / major ingredients | NEEDS REAL VALUE | After real products exist; do not fake readiness. |
-| Inventory opening stock | NEEDS REAL VALUE | Separate stock concern vs config incomplete. Do not invent quantities. |
-| Product / QR / hero images | NEEDS REAL VALUE | PublicMedia + `storage:link`. Photography is a content task. |
-| Homepage sections | NEEDS REAL VALUE | Local: **0** sections. Demo rails are **DEMO-ONLY**; driven by Admin sections, not tags. |
-| Catalog readiness command | CONFIGURED | `php artisan coffee:catalog-readiness` — local: 0 products. |
+| Brand name / slogan | READY (baseline) / verify on prod | Website Settings targets The88Coffees + Sip. Relax. Enjoy. |
+| Business phone / WhatsApp / email / address / hours | NEEDS REAL VALUE | |
+| Social Links shells | READY | URLs NEEDS REAL VALUE |
+| Payment UPI / phone / QR / instructions | NEEDS REAL VALUE | Manual payment; no gateway |
+| Fulfilment Takeaway + Delivery + optional Dine-in | READY (capability) | Confirm ops; dine-in needs real tables before enable |
+| CMS About / Visit / FAQ / Terms / Privacy | NEEDS REAL VALUE | Legal copy must be café-approved |
+| ProductTags taxonomy | READY | Assignments OPTIONAL |
+| Categories / products / prices / recipes | NEEDS REAL VALUE | `launch-menu.md` STOPPED; clean DB has 0 products |
+| Inventory opening stock | NEEDS REAL VALUE | Do not invent |
+| Product / QR / hero images | NEEDS REAL VALUE | 1:1 product imagery preferred |
+| Homepage sections | OPTIONAL/DEFERRED | |
+| Staff accounts | NEEDS REAL VALUE | Never promote `*@coffee.local` / `password` |
+| Tables | NEEDS REAL VALUE if Dining | Do not invent count |
+| Delivery fee in checkout | OPTIONAL/DEFERRED | Null reserved; third-party customer-paid assumed |
+| Launch readiness command | READY | `php artisan coffee:launch-readiness` (`--json`; non-zero on blockers) |
+| Catalog readiness command | READY | `php artisan coffee:catalog-readiness` |
 
 ### Brand & business
 - [x] Brand / café name (`business_name`) — **The88Coffees** — CONFIGURED (local baseline)
@@ -70,6 +74,7 @@ Legend: **CONFIGURED** = Admin/system ready · **NEEDS REAL VALUE** = café must
 - [ ] ProductTags — OPTIONAL
 - [ ] Inventory quantities — NEEDS REAL VALUE
 - [ ] Homepage sections — NEEDS REAL VALUE
+- [ ] `php artisan coffee:launch-readiness` exits 0 on production DB
 - [ ] No incomplete product publicly active — enforce via readiness
 - [ ] Customer catalog manually reviewed
 

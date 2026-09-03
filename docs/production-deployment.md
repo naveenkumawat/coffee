@@ -115,7 +115,13 @@ php artisan migrate --force
 
 # Production seed: structural reference only (ingredient categories, product tags,
 # social platform shells) + optional ADMIN_* owner. Never loads DemoSeeder when APP_ENV=production.
+# Never run LaunchCatalogSeeder until docs/launch-menu.md is café-confirmed (currently refuses).
 php artisan db:seed --force
+
+# Launch data gate (read-only; non-zero exit = blockers)
+php artisan coffee:launch-readiness
+# php artisan coffee:launch-readiness --json
+php artisan coffee:catalog-readiness
 
 php artisan storage:link
 php artisan optimize:clear
@@ -144,6 +150,8 @@ sudo find storage bootstrap/cache -type f -exec chmod 664 {} \;
 - **Never** on production: `migrate:fresh`, `db:wipe`, `migrate:refresh`
 - Backup MySQL before migrations
 - Seed: `php artisan db:seed --force` with `APP_ENV=production` (IngredientCategory + ProductTag + SocialLink + optional ADMIN_*). No demo catalog/customers/orders.
+- Gate: `php artisan coffee:launch-readiness` must pass (exit 0) before public go-live. Track café-supplied gaps in `docs/launch-data-todo.md`. Do not invent menu/prices/recipes/stock.
+- **Never** promote local demo accounts (`*@coffee.local` / `password`) to production.
 ---
 
 ## F. Storage / media

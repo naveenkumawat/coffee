@@ -393,6 +393,7 @@ Status: Partial
 - [x] R1.7 realtime operational hardening + runbooks implemented (listener discovery off verified; reconnect soft-reload for prep/orders/dining/inventory; client diagnostics; `coffee:realtime-health`; docs/realtime-runbook.md + realtime-smoke-test.md; Web Push deferred)
 - [x] L1.1 Dining Served / Delivered-to-table implemented (per-round `served_at`/`served_by_user_id`; Waiter Mark Served; Ready-to-Serve resolves on Served; `round.served` dining ops signal; session stays open for more rounds)
 - [x] L1.2 Dining post-prep/post-served cancellation matrix implemented (`DiningRoundCancellationPolicy`; privileged reason after prep/Ready; Served blocked; bill/payment/closed gates; F2 reversal only pre-material-prep; void/comp/refund deferred)
+- [x] L2 launch-data readiness implemented (audit + `coffee:launch-readiness` read-only gate; DemoSeeder/production seed isolation verified; `LaunchCatalogSeeder` refuses until launch-menu confirmed; checklists updated — real café data still MISSING, not marked complete)
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 
@@ -461,3 +462,4 @@ Status: Pending
 - [x] Mobile ordering journey audit & hardening (Phase C2): guest-cart login merge with add-ons, auth session recovery, checkout fulfilment/error recovery, shared payment-state presentation, waiter draft/send/bill/close safety, Ready to Serve prominence
 - [x] L1.1 Dining Served / Delivered-to-table: per-round Mark Served after all stations Ready; resolves Ready-to-Serve + stops reminders; Waiter PWA/Blade + customer Delivered state; does not complete session/bill
 - [x] L1.2 Dining cancellation exceptions: canonical server matrix; Waiter pre-prep cancel; Operator/Admin privileged cancel with reason after prep/Ready; Served/bill/payment/closed blocked; inventory follows F2; void/comp/refund deferred
+- [x] L2 launch-data readiness: `coffee:launch-readiness` gate + checklists; real menu/payment/hours/staff/tables still café-supplied (not invented)

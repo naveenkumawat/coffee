@@ -382,7 +382,16 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Table dashboard `display_state` is derived from session status + preparation tickets (`available` / `active` / `preparing` / `ready_to_serve` / `bill_requested` / `payment_pending`); session status remains authority. Ready-to-serve display ignores already-served rounds (`orders.served_at`).
 * Independent per-session drafts; round placement supports idempotency keys; Waiter cannot confirm/reject UPI proof.
 * **L1.1 Served:** Per dining round Mark Served after all required stations Ready (`can_mark_served`). Does not complete the session or bill; further rounds remain allowed. Customer-facing resource may show Served / Delivered to table without requiring customer confirmation.
-* **L1.2 Cancel:** Per-round cancel via dining session routes/API under `DiningRoundCancellationPolicy`. Waiter may cancel only before material prep; Operator/Admin may cancel Ready/unserved with reason. Served → blocked (no void yet).
+- **L1.2 Cancel:** Per-round cancel via dining session routes/API under `DiningRoundCancellationPolicy`. Waiter may cancel only before material prep; Operator/Admin may cancel Ready/unserved with reason. Served → blocked (no void yet).
+
+## Launch data readiness (L2)
+
+* Production seed remains structural only (`DatabaseSeeder`); `DemoSeeder` hard-blocked outside `local`/`testing`.
+* Real café catalog/payment/hours/CMS/staff/tables are **not** invented by the app — supply via Administrator after `docs/launch-menu.md` decisions.
+* Read-only gate: `php artisan coffee:launch-readiness` (`--json`; non-zero on blockers). Product config: `coffee:catalog-readiness`.
+* `LaunchCatalogSeeder` refuses until launch-menu is confirmed (no speculative import platform).
+* Delivery fee stays unset at checkout (`delivery_fee_amount` null) under the third-party customer-paid assumption — confirm before changing.
+* Do not deploy until HTTPS hosts, DB access, and launch-readiness blockers are cleared (`docs/production-deployment.md`, `docs/launch-data-todo.md`).
 
 ## Mobile ordering journey hardening (C2)
 
