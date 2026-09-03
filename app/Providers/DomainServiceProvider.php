@@ -45,6 +45,8 @@ use App\Services\Notification\CustomerNotificationDispatcher;
 use App\Services\Notification\CustomerNotificationDispatcherInterface;
 use App\Services\Notification\StaffNotificationDispatcher;
 use App\Services\Notification\StaffNotificationDispatcherInterface;
+use App\Services\OperationalNotification\OperationalNotificationService;
+use App\Services\OperationalNotification\OperationalNotificationServiceInterface;
 use App\Services\Order\OrderService;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderInventory\OrderInventoryConsumptionService;
@@ -122,6 +124,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(MenuItemServiceInterface::class, MenuItemService::class);
         $this->app->bind(CustomerNotificationDispatcherInterface::class, CustomerNotificationDispatcher::class);
         $this->app->bind(StaffNotificationDispatcherInterface::class, StaffNotificationDispatcher::class);
+        $this->app->bind(OperationalNotificationServiceInterface::class, OperationalNotificationService::class);
         $this->app->bind(WhatsAppNotificationProviderInterface::class, MetaWhatsAppCloudProvider::class);
         $this->app->bind(OrderServiceInterface::class, OrderService::class);
         $this->app->bind(OrderInventoryConsumptionServiceInterface::class, OrderInventoryConsumptionService::class);

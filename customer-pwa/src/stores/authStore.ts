@@ -7,6 +7,7 @@ import { setSessionAuthenticated, isSessionAuthenticated } from '../utils/authSe
 import { isWaiter } from '../utils/roles';
 import { useCartStore } from './cartStore';
 import { useFavouriteStore } from './favouriteStore';
+import { useNotificationStore } from './notificationStore';
 import { useToastStore } from './toastStore';
 
 type AuthStatus = 'idle' | 'initializing' | 'authenticated' | 'guest' | 'session_unknown';
@@ -38,6 +39,7 @@ function resetCustomerSession(set: (value: Partial<AuthState>) => void): void {
   });
   useCartStore.getState().hydrateGuest();
   useFavouriteStore.getState().reset();
+  useNotificationStore.getState().reset();
 }
 
 async function hydrateAuthenticatedSession(customer: Customer): Promise<boolean> {

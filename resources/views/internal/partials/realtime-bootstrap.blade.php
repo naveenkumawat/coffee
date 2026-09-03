@@ -26,6 +26,13 @@
     ];
 @endphp
 
+@if ($realtimeUser !== null)
+    <script>
+        window.__COFFEE_REALTIME__ = @json($realtimeConfig);
+    </script>
+    @vite(['resources/js/notifications.js'])
+@endif
+
 @if ($realtimeEnabled)
     <div
         id="coffee-realtime-indicator"
@@ -36,8 +43,5 @@
         aria-live="polite"
     >Connecting…</div>
 
-    <script>
-        window.__COFFEE_REALTIME__ = @json($realtimeConfig);
-    </script>
     @vite(['resources/js/realtime.js'])
 @endif

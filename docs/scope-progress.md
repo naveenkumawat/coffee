@@ -384,7 +384,8 @@ Status: Partial
 - [x] Internal/staff operational notifications implemented (Administrator/Barista in-app + high-value email; staff WhatsApp deferred)
 - [x] Inventory/refill operational alerts implemented (stock state transitions + refill workflow via StaffNotificationDispatcher)
 - [x] R1.1 realtime foundation implemented (Laravel Reverb + Echo; private user/role channels; PWA + Blade connection bootstrap; probe event; no business notification wiring yet)
-- [ ] R1.2+ realtime business events (orders/payments/preparation/inventory/customer status) not started
+- [x] R1.2 persistent operational notifications + lifecycle tracking implemented (`operational_notifications` / `operational_notification_recipients`; service/repository; ACK API; generic broadcast DTO; computed delay metrics; PWA/Blade client foundation; business event wiring deferred)
+- [ ] R1.3+ realtime business events (orders/payments/preparation/inventory/customer status) not started
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 

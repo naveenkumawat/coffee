@@ -121,7 +121,7 @@ Future API additions expected:
 
 - richer order timeline/status presentation if needed
 - push notification registration endpoints if notifications are introduced later
-- realtime private-channel delivery (R1) — foundation uses Laravel Reverb/Echo; business events arrive in R1.2+
+- realtime private-channel delivery (R1) — foundation uses Laravel Reverb/Echo; persistent operational notification domain (R1.2) with ACK API + store; business event wiring arrives in R1.3+
 - loyalty/rewards endpoints if added later
 
 ## Mobile UX Requirements

@@ -15,7 +15,9 @@ use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
 use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRewardController;
 use App\Http\Controllers\Api\V1\Home\HomeController;
+use App\Http\Controllers\Api\V1\Notification\OperationalNotificationController;
 use App\Http\Controllers\Api\V1\Waiter\WaiterDiningController;
+use App\Http\Middleware\AuthenticateNotificationRequest;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -54,6 +56,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/me', [CustomerAuthController::class, 'me'])->name('me');
             Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
         });
+    });
+
+    Route::middleware([AuthenticateNotificationRequest::class])->prefix('notifications')->name('notifications.')->group(function (): void {
+        Route::get('/', [OperationalNotificationController::class, 'index'])->name('index');
+        Route::get('/action-required', [OperationalNotificationController::class, 'actionRequired'])->name('action-required');
+        Route::post('/{recipient}/delivered', [OperationalNotificationController::class, 'delivered'])->name('delivered');
+        Route::post('/{recipient}/seen', [OperationalNotificationController::class, 'seen'])->name('seen');
+        Route::post('/{recipient}/read', [OperationalNotificationController::class, 'read'])->name('read');
+        Route::post('/{recipient}/acknowledge', [OperationalNotificationController::class, 'acknowledge'])->name('acknowledge');
     });
 
     Route::middleware(['auth:sanctum', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function (): void {

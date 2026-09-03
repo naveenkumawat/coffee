@@ -64,6 +64,7 @@ class RealtimeConnectionService {
   private activeUserId: number | null = null;
   private boundHandlers: Array<[string, (...args: unknown[]) => void]> = [];
   private probeHandlers = new Set<(payload: RealtimeProbePayload) => void>();
+  private notificationHandlers = new Set<(payload: Record<string, unknown>) => void>();
 
   getState(): RealtimeConnectionState {
     return this.state;
@@ -81,6 +82,13 @@ class RealtimeConnectionService {
     this.probeHandlers.add(handler);
     return () => {
       this.probeHandlers.delete(handler);
+    };
+  }
+
+  onOperationalNotification(handler: (payload: Record<string, unknown>) => void): () => void {
+    this.notificationHandlers.add(handler);
+    return () => {
+      this.notificationHandlers.delete(handler);
     };
   }
 
@@ -143,6 +151,9 @@ class RealtimeConnectionService {
       .private(`user.${userId}`)
       .listen('.realtime.probe', (payload: RealtimeProbePayload) => {
         this.probeHandlers.forEach((handler) => handler(payload));
+      })
+      .listen('.operational.notification', (payload: Record<string, unknown>) => {
+        this.notificationHandlers.forEach((handler) => handler(payload));
       });
 
     if (roleChannel) {

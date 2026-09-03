@@ -59,9 +59,15 @@ if (!config?.enabled || !config.key) {
     }
 
     if (config.userId) {
-        echo.private(`user.${config.userId}`).listen('.realtime.probe', () => {
-            // Foundation probe listener — business handlers arrive in R1.2+.
-        });
+        echo.private(`user.${config.userId}`)
+            .listen('.realtime.probe', () => {
+                // Foundation probe listener — keep connection smoke-test quiet.
+            })
+            .listen('.operational.notification', (payload) => {
+                window.dispatchEvent(new CustomEvent('coffee:operational-notification', {
+                    detail: payload,
+                }));
+            });
     }
 
     if (config.roleChannel) {

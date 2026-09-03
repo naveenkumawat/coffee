@@ -1311,12 +1311,25 @@ Realtime is an additive delivery path for operational alerts. It does **not** re
 
 **R1.1 Foundation (done):** Laravel Reverb + Echo, private channels, authenticated connection state for PWA + internal Blade panels. No business event wiring yet.
 
-**R1.2+ (planned, concise):**
-* R1.2 — Staff order/payment/preparation private events on role + user channels
-* R1.3 — Inventory / refill realtime alerts for administrator/operator/barista
-* R1.4 — Customer order-status private user-channel updates (minimal payloads)
-* R1.5 — Waiter dining session realtime (table/session scoped; no broad customer exposure)
-* R1.6 — Hardening: reconnect semantics, presence (optional), ops runbooks
+**R1.2 Persistent operational notifications (done):** Reusable notification domain with lifecycle tracking. Tables `operational_notifications` + `operational_notification_recipients` (separate from Laravel’s DB `notifications` used by the staff bell). Supports user-specific and role/team audiences (role expands to active users). Shared resolve may close one notification for everyone while preserving per-recipient history. Lifecycle meanings (do not fake delivery):
+
+* `created_at` — notification row persisted
+* `broadcast_at` — server attempted realtime dispatch for that recipient
+* `delivered_at` — client explicitly ACKed receipt
+* `first_seen_at` — first time visible to the user
+* `read_at` — user opened/read it
+* `acknowledged_at` — user explicitly acknowledged an action-required alert
+* `resolved_at` — underlying required business condition resolved (notification-level)
+* Response delays (delivery / first-seen / acknowledge / action-start / action-completion / resolution) are **computed** from timestamps — never stored as authority
+
+Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/action-required`, `POST .../{recipient}/delivered|seen|read|acknowledge` (own recipient only; idempotent first-write timestamps). Generic broadcast event `OperationalNotificationBroadcasted` (`.operational.notification`) on `private-user.{id}` with minimal DTO. Persist first; broadcast after commit; websocket failure must not break persistence. PWA + Blade share notification client/store foundation (no final bell/reminder UI yet). Business order/payment/preparation event wiring deferred.
+
+**R1.3+ (planned, concise):**
+* R1.3 — Wire staff order/payment/preparation private events onto the R1.2 domain + role/user channels
+* R1.4 — Inventory / refill realtime alerts for administrator/operator/barista
+* R1.5 — Customer order-status private user-channel updates (minimal payloads)
+* R1.6 — Waiter dining session realtime (table/session scoped; no broad customer exposure)
+* R1.7 — Hardening: reconnect semantics, presence (optional), ops runbooks
 
 Channel model (authorization-ready):
 * `private-user.{id}` — the authenticated user only
