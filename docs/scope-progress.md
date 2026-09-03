@@ -465,8 +465,8 @@ Canonical: `docs/personalisation-architecture.md`.
 
 - [x] **P2.1** — Customer behaviour & event tracking foundation (events, visitor identity, ingest API, PWA tracker, retention, server `order_completed`)
 - [x] **P2.2** — Personalisation profiles (derived customer/visitor affinities, spend/time bands, async rebuild, merge-aware)
-- [ ] **P2.3** — Recommendation engine (next)
-- [ ] **P2.4** — Campaign/popup engine (planned)
+- [x] **P2.3** — Recommendation engine (hybrid strategies, API, PWA rails, impression/click)
+- [ ] **P2.4** — Campaign/popup engine (next)
 - [ ] **P2.5** — Segmentation/targeting (planned)
 - [ ] **P2.6** — Recommendation/campaign analytics (planned)
 
@@ -492,3 +492,4 @@ Canonical: `docs/personalisation-architecture.md`.
 - [x] L4 Phase-1 freeze & demo acceptance: baseline **FROZEN**; **NOT PRODUCTION READY** pending L-data + L-go-live
 - [x] P2.1 behaviour tracking foundation: first-party events + visitor merge + PWA instrumentation (`docs/personalisation-architecture.md`); Phase-1 freeze unchanged
 - [x] P2.2 personalisation profiles: derived customer/visitor profiles from events + completed orders; Phase-1 freeze unchanged
+- [x] P2.3 hybrid recommendation engine: strategy pipeline + `/api/v1/recommendations` + Home/PDP/Cart rails; Phase-1 freeze unchanged

@@ -91,7 +91,7 @@ class CustomerBehaviourEventApiTest extends TestCase
             ->assertJsonValidationErrors(['event_type']);
 
         $this->postJson(route('api.v1.behaviour.events.store'), [
-            'event_type' => BehaviourEventType::RecommendationClicked->value,
+            'event_type' => BehaviourEventType::CampaignClicked->value,
             'visitor_key' => $visitorKey,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['event_type']);

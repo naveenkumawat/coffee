@@ -289,6 +289,8 @@ class BehaviourEventService implements BehaviourEventServiceInterface
             BehaviourEventType::CartItemRemoved,
             BehaviourEventType::FavouriteAdded,
             BehaviourEventType::FavouriteRemoved,
+            BehaviourEventType::RecommendationImpression,
+            BehaviourEventType::RecommendationClicked,
         ], true);
 
         if ($requiresProduct && ($productId === null || $productId <= 0)) {
@@ -336,6 +338,13 @@ class BehaviourEventService implements BehaviourEventServiceInterface
             BehaviourEventType::CheckoutStarted => ['item_count', 'fulfilment_method'],
             BehaviourEventType::ProductViewed, BehaviourEventType::CategoryViewed => ['source'],
             BehaviourEventType::FavouriteAdded, BehaviourEventType::FavouriteRemoved => [],
+            BehaviourEventType::RecommendationImpression, BehaviourEventType::RecommendationClicked => [
+                'request_id',
+                'reason',
+                'strategy',
+                'placement',
+                'context',
+            ],
             default => [],
         };
 
@@ -379,6 +388,20 @@ class BehaviourEventService implements BehaviourEventServiceInterface
 
             if ($key === 'fulfilment_method' && is_string($value)) {
                 $clean[$key] = Str::limit(trim($value), 40, '');
+
+                continue;
+            }
+
+            if (in_array($key, ['request_id', 'reason', 'strategy', 'placement', 'context'], true) && is_string($value)) {
+                $clean[$key] = Str::limit(trim($value), 80, '');
+            }
+        }
+
+        if (in_array($type, [BehaviourEventType::RecommendationImpression, BehaviourEventType::RecommendationClicked], true)) {
+            if (empty($clean['request_id']) || empty($clean['reason']) || empty($clean['placement'])) {
+                throw ValidationException::withMessages([
+                    'metadata' => 'Recommendation events require request_id, reason, and placement.',
+                ]);
             }
         }
 

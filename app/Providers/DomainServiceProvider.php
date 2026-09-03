@@ -90,6 +90,8 @@ use App\Services\Recipe\RecipeCostingService;
 use App\Services\Recipe\RecipeCostingServiceInterface;
 use App\Services\Recipe\RecipeService;
 use App\Services\Recipe\RecipeServiceInterface;
+use App\Services\Recommendation\RecommendationService;
+use App\Services\Recommendation\RecommendationServiceInterface;
 use App\Services\Referral\ReferralService;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Reporting\FinancialReportingService;
@@ -116,6 +118,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(AddOnServiceInterface::class, AddOnService::class);
         $this->app->bind(BehaviourEventServiceInterface::class, BehaviourEventService::class);
         $this->app->bind(PersonalisationProfileServiceInterface::class, PersonalisationProfileService::class);
+        $this->app->bind(RecommendationServiceInterface::class, RecommendationService::class);
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);

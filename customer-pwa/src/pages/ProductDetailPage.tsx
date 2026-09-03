@@ -12,6 +12,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { ProductImage } from '../components/common/ProductImage';
+import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { Product } from '../types/catalog';
 import { PublicProductReview, RatingSummary } from '../types/rating';
 import { getProductVariants, isProductUnavailable } from '../utils/productActions';
@@ -180,6 +181,16 @@ export function ProductDetailPage() {
           {product.category ? `More in ${product.category.name}` : 'Back to menu'}
         </Link>
       </div>
+
+      <RecommendationSection
+        context="product_detail"
+        placement="product_detail_rail"
+        productId={product.id}
+        categoryId={product.category?.id}
+        excludeProductIds={[product.id]}
+        limit={8}
+        title="You may also like"
+      />
     </div>
   );
 }

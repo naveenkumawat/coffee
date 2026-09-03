@@ -33,6 +33,11 @@ class StoreBehaviourEventRequest extends AbstractRequest
             'metadata.item_count' => ['nullable', 'integer', 'min:0', 'max:200'],
             'metadata.fulfilment_method' => ['nullable', 'string', 'max:40'],
             'metadata.source' => ['nullable', 'string', 'max:40'],
+            'metadata.request_id' => ['nullable', 'string', 'max:80'],
+            'metadata.reason' => ['nullable', 'string', 'max:80'],
+            'metadata.strategy' => ['nullable', 'string', 'max:80'],
+            'metadata.placement' => ['nullable', 'string', 'max:80'],
+            'metadata.context' => ['nullable', 'string', 'max:80'],
             'occurred_at' => ['nullable', 'date'],
             'idempotency_key' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9:._-]+$/'],
         ];

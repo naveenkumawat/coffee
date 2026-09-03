@@ -18,9 +18,11 @@ enum BehaviourEventType: string
     // Server business events (Laravel authoritative; reject from clients)
     case OrderCompleted = 'order_completed';
 
-    // Reserved for later personalisation engines (reject until implemented)
+    // Recommendation feedback (P2.3)
     case RecommendationImpression = 'recommendation_impression';
     case RecommendationClicked = 'recommendation_clicked';
+
+    // Reserved for later campaign engines
     case CampaignImpression = 'campaign_impression';
     case CampaignClicked = 'campaign_clicked';
     case CampaignConverted = 'campaign_converted';
@@ -40,6 +42,8 @@ enum BehaviourEventType: string
             self::CheckoutStarted,
             self::FavouriteAdded,
             self::FavouriteRemoved,
+            self::RecommendationImpression,
+            self::RecommendationClicked,
         ];
     }
 

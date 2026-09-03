@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
+use App\Http\Controllers\Api\V1\Customer\CustomerRecommendationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRewardController;
 use App\Http\Controllers\Api\V1\Home\HomeController;
@@ -52,6 +53,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/cafe-availability', [CafeAvailabilityController::class, 'show'])->name('cafe-availability.show');
     Route::get('/home', [HomeController::class, 'show'])->name('home.show');
     Route::get('/cafe-tables', [CafeTableController::class, 'index'])->name('cafe-tables.index');
+
+    Route::get('/recommendations', [CustomerRecommendationController::class, 'index'])
+        ->middleware('throttle:behaviour-events')
+        ->name('recommendations.index');
 
     Route::prefix('behaviour')->name('behaviour.')->middleware('throttle:behaviour-events')->group(function (): void {
         Route::post('/events', [CustomerBehaviourEventController::class, 'store'])->name('events.store');

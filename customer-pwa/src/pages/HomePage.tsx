@@ -8,6 +8,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Header } from '../components/common/Header';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { ProductCategory } from '../types/catalog';
 import { HomeSection } from '../types/home';
 
@@ -69,23 +70,26 @@ export function HomePage() {
       {errorMessage ? <ErrorState description={errorMessage} onRetry={() => window.location.reload()} /> : null}
 
       {!isLoading && !errorMessage ? (
-        sections.length > 0 ? (
-          sections.map((section) => (
-            <HomeProductSection
-              key={section.id}
-              title={section.title}
-              subtitle={section.subtitle}
-              products={section.products}
+        <>
+          <RecommendationSection context="home" placement="home_rail" limit={8} title="For you" />
+          {sections.length > 0 ? (
+            sections.map((section) => (
+              <HomeProductSection
+                key={section.id}
+                title={section.title}
+                subtitle={section.subtitle}
+                products={section.products}
+              />
+            ))
+          ) : (
+            <EmptyState
+              title="Menu coming soon"
+              description="Browse the full menu to find something to order for pickup."
+              actionLabel="Open menu"
+              actionHref="/menu"
             />
-          ))
-        ) : (
-          <EmptyState
-            title="Menu coming soon"
-            description="Browse the full menu to find something to order for pickup."
-            actionLabel="Open menu"
-            actionHref="/menu"
-          />
-        )
+          )}
+        </>
       ) : null}
     </div>
   );

@@ -9,6 +9,7 @@ import { StickyActionBar } from '../components/common/StickyActionBar';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useAuthStore } from '../stores/authStore';
@@ -220,6 +221,19 @@ export function CartPage() {
             </p>
           )}
 
+          <RecommendationSection
+            context="cart"
+            placement="cart_rail"
+            cartProductIds={cart.items
+              .map((item) => item.product?.id)
+              .filter((id): id is number => typeof id === 'number')}
+            excludeProductIds={cart.items
+              .map((item) => item.product?.id)
+              .filter((id): id is number => typeof id === 'number')}
+            limit={6}
+            title="Complete your order"
+          />
+
           <section className="cart-summary-card">
             <OrderTaxBreakdown
               subtotal={summary?.subtotal ?? 0}
@@ -257,7 +271,7 @@ export function CartPage() {
                   ? 'Fix unavailable items to continue.'
                   : authStatus === 'authenticated'
                     ? 'Next: choose takeaway or delivery'
-                    : 'Next: sign in to continue'
+                    : 'Next: sign in to checkout'
             }
           >
             <button

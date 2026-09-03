@@ -12,19 +12,23 @@ Profile Builder (deterministic V1)
         ↓
 Derived Personalisation Profile
         ↓
-P2.3 Recommendation Engine
-P2.4 Campaign / Popup Engine
-P2.5 Segmentation / Targeting
+Recommendation Candidate Strategies
         ↓
-Impression / Click / Conversion events → P2.6 Analytics
+Eligibility / Scoring / Ranking / Dedup / Diversity / Business Rules
+        ↓
+Recommendation Surfaces (home, product_detail, cart, …)
+        ↓
+Impression / Click (recommendation_* events)
+        ↓
+P2.6 Analytics / conversion feedback
 ```
 
 | Phase | Status | Scope |
 | --- | --- | --- |
 | **P2.1** Behaviour Tracking | **COMPLETE** | Raw append-only events, visitor identity, ingest API, PWA client, retention |
 | **P2.2** Personalisation Profiles | **COMPLETE** | Derived customer/visitor profiles from events + completed orders |
-| **P2.3** Recommendation Engine | **NEXT** | Rank / suggest products using profiles + catalog; cold-start strategies |
-| **P2.4** Campaign/Popup Engine | Planned | Targeted landing/popups using segments + context |
+| **P2.3** Recommendation Engine | **COMPLETE** | Hybrid strategy pipeline; guest/customer/cold-start; API + PWA rails |
+| **P2.4** Campaign/Popup Engine | **NEXT** | Targeted landing/popups using segments + context |
 | **P2.5** Segmentation/Targeting | Planned | Visitor/customer segments for campaigns |
 | **P2.6** Analytics | Planned | Recommendation/campaign impression→conversion reporting |
 
@@ -32,7 +36,7 @@ Impression / Click / Conversion events → P2.6 Analytics
 
 ### Client interaction events (PWA → `POST /api/v1/behaviour/events`)
 
-`product_viewed`, `category_viewed`, `search_performed`, `product_customized`, `cart_item_added`, `cart_item_removed`, `checkout_started`, `favourite_added`, `favourite_removed`
+`product_viewed`, `category_viewed`, `search_performed`, `product_customized`, `cart_item_added`, `cart_item_removed`, `checkout_started`, `favourite_added`, `favourite_removed`, `recommendation_impression`, `recommendation_clicked`
 
 ### Server business events (Laravel only)
 
@@ -40,7 +44,7 @@ Impression / Click / Conversion events → P2.6 Analytics
 
 ### Reserved (reject until later phases)
 
-`recommendation_*`, `campaign_*`
+`campaign_*`
 
 ## Anonymous visitor identity
 
@@ -126,3 +130,46 @@ After a valid P2.1 claim/merge: visitor profile row is deleted; customer profile
 - Event diagnostics: `php artisan coffee:behaviour-events-prune --stats`
 - Profile rebuild/reset: `php artisan coffee:personalisation-profiles-rebuild ...`
 - No customer surveillance dashboard in P2.1/P2.2
+
+## P2.3 hybrid recommendation engine
+
+Canonical orchestrator: `RecommendationService` (strategy pipeline).
+
+```
+Candidate Strategies → Eligibility → Weighted Scoring → Dedup → Soft Diversity → Final list
+```
+
+### Strategies
+
+| Key | Signal |
+| --- | --- |
+| `buy_again` | Distinct completed orders / qty / recency (excludes cancelled/rejected) |
+| `favourite` | Existing `ProductFavourite` watchlist |
+| `repeated_interest` | Multi-day / engagement behaviour (distinct days > same-session spam) |
+| `affinity` | P2.2 `profilePayloadFor*` product affinities when evidence sufficient |
+| `similar` | Category / flavour catalog adjacency |
+| `frequently_bought_together` | Distinct-order co-occurrence with minimum evidence |
+| `cart_context` | Cart complements (FBT when available, else category) |
+| `trending` | Recent multi-actor behaviour + completed-order momentum |
+| `popular` | Completed-order sales popularity (not `is_bestseller` alone) |
+| `new_arrival` | Configurable creation window (+ optional `is_new` merchandising override) |
+| `featured` / `bestseller` | Existing catalog merchandising flags |
+
+Cold start (`has_sufficient_evidence = false`): trending / popular / featured / bestseller / new / similar / cart — no invented personal preferences. Warm profiles increase personalised strategy contribution via config weights + warm strategy list.
+
+### Surfaces & API
+
+- Contexts: `home`, `product_detail`, `menu`, `cart`, `post_order`
+- `GET /api/v1/recommendations` — guest (`visitor_key`) or authenticated customer; customer-safe `ProductResource` + stable `reason` keys (no scores/profile internals)
+- PWA rails: Home, Product detail, Cart (`RecommendationSection` + ProductCard / customization)
+- Feedback: `recommendation_impression` / `recommendation_clicked` with allowlisted `request_id`, `reason`, `strategy`, `placement`, `context`; impressions deduped per request in the client
+
+### Config / cache
+
+`coffee.behaviour.recommendations.*` — limits, lookbacks, FBT/trending mins, strategy weights, cold/warm/context strategy maps. Global aggregates cached as JSON-safe arrays (`RecommendationAggregateStore`); never cache personalised result sets across users.
+
+### Out of scope (later)
+
+- Large recommendation admin UI (P2.4/P2.5 campaigns/targeting)
+- Purchase/conversion attribution analytics (P2.6)
+- ML / external recommendation services

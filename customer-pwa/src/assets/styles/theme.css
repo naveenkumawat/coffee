@@ -3774,6 +3774,13 @@ textarea.coffee-input:focus {
   min-height: 100%;
 }
 
+.recommendation-section .recommendation-reason {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--coffee-muted, #6b635c);
+  line-height: 1.3;
+}
+
 .product-card {
   gap: 1.15rem;
   padding: 0.55rem;

@@ -9,7 +9,9 @@ export type BehaviourEventType =
   | 'cart_item_removed'
   | 'checkout_started'
   | 'favourite_added'
-  | 'favourite_removed';
+  | 'favourite_removed'
+  | 'recommendation_impression'
+  | 'recommendation_clicked';
 
 export interface BehaviourEventPayload {
   event_type: BehaviourEventType;
