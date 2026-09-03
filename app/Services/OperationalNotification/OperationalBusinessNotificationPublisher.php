@@ -392,6 +392,22 @@ class OperationalBusinessNotificationPublisher
         });
     }
 
+    public function handleDiningRoundServed(Order $order, DiningSession $session): void
+    {
+        $this->safe(function () use ($order): void {
+            $this->notifications->resolveOpenForSubject(
+                $order,
+                [
+                    OperationalNotificationType::DiningReadyToServe,
+                    OperationalNotificationType::EscalationNoWaiterOnline,
+                ],
+                resolutionAction: 'served',
+            );
+        });
+
+        unset($session);
+    }
+
     protected function maybeEscalateMissingStationPresence(OrderPreparation $ticket): void
     {
         $role = match ($ticket->station) {

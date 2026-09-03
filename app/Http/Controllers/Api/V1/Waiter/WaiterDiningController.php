@@ -9,6 +9,7 @@ use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
 use App\Models\DiningRoundDraftAddOn;
 use App\Models\DiningSession;
+use App\Models\Order;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
@@ -272,6 +273,17 @@ class WaiterDiningController extends Controller
         return $this->respondWithResource(
             new WaiterDiningSessionResource($this->loadSession($session)),
             'Cash marked as received.',
+        );
+    }
+
+    public function markRoundServed(Request $request, DiningSession $session, Order $order): JsonResponse
+    {
+        $this->authorize('markServed', $session);
+        $this->dining->markRoundServed($session, $order, $request->user());
+
+        return $this->respondWithResource(
+            new WaiterDiningSessionResource($this->loadSession($session)),
+            'Round marked as served.',
         );
     }
 

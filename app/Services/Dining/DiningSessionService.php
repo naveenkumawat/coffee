@@ -15,6 +15,7 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningPaymentProofReceived;
 use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
+use App\Events\Dining\DiningRoundServed;
 use App\Events\Dining\DiningSessionClosed;
 use App\Events\Dining\DiningSessionOpened;
 use App\Events\Dining\DiningSessionReopened;
@@ -23,6 +24,7 @@ use App\Models\DiningRoundDraft;
 use App\Models\DiningRoundDraftAddOn;
 use App\Models\DiningSession;
 use App\Models\Order;
+use App\Models\OrderPreparation;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\AddOn\AddOnServiceInterface;
@@ -746,6 +748,86 @@ class DiningSessionService implements DiningSessionServiceInterface
         });
     }
 
+    public function markRoundServed(DiningSession $session, Order $order, User $actor): Order
+    {
+        if (! $actor->canOperateDining() && ! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+            throw ValidationException::withMessages([
+                'order' => 'You are not allowed to mark this round as served.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($session, $order, $actor): Order {
+            $lockedSession = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+
+            if (! in_array($lockedSession->status, [
+                DiningSessionStatus::Open,
+                DiningSessionStatus::BillingRequested,
+                DiningSessionStatus::AwaitingPayment,
+                DiningSessionStatus::Paid,
+            ], true)) {
+                throw ValidationException::withMessages([
+                    'session' => 'This dining session is not active.',
+                ]);
+            }
+
+            $lockedOrder = Order::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((int) $lockedOrder->dining_session_id !== (int) $lockedSession->getKey()) {
+                throw ValidationException::withMessages([
+                    'order' => 'That round does not belong to this dining session.',
+                ]);
+            }
+
+            if (! $lockedOrder->isDiningRound()) {
+                throw ValidationException::withMessages([
+                    'order' => 'Only dining rounds can be marked as served.',
+                ]);
+            }
+
+            if (in_array($lockedOrder->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+                throw ValidationException::withMessages([
+                    'order' => 'Cancelled or rejected rounds cannot be marked as served.',
+                ]);
+            }
+
+            if ($lockedOrder->served_at !== null) {
+                return $lockedOrder->fresh(['preparations', 'items', 'servedBy', 'diningSession.cafeTable'])
+                    ?? $lockedOrder;
+            }
+
+            $lockedOrder->loadMissing('preparations');
+            $activeTickets = $lockedOrder->preparations->filter(
+                static fn (OrderPreparation $ticket): bool => $ticket->status !== OrderPreparationStatus::Cancelled,
+            );
+
+            $allReady = $activeTickets->isNotEmpty()
+                && $activeTickets->every(
+                    static fn (OrderPreparation $ticket): bool => $ticket->status === OrderPreparationStatus::Ready,
+                );
+
+            if (! $allReady) {
+                throw ValidationException::withMessages([
+                    'order' => 'Mark served only after every station is Ready.',
+                ]);
+            }
+
+            $lockedOrder->fill([
+                'served_at' => now(),
+                'served_by_user_id' => $actor->getKey(),
+            ])->save();
+
+            $fresh = $lockedOrder->fresh(['preparations', 'items', 'servedBy', 'diningSession.cafeTable'])
+                ?? $lockedOrder;
+
+            event(new DiningRoundServed($fresh, $lockedSession, $actor));
+
+            return $fresh;
+        });
+    }
+
     public function closeSession(DiningSession $session, User $actor): DiningSession
     {
         if (! $actor->canOperateDining() && ! $actor->canManageOrders()) {
@@ -996,7 +1078,9 @@ class DiningSessionService implements DiningSessionServiceInterface
             }
 
             if ($tickets->every(static fn ($ticket): bool => $ticket->status === OrderPreparationStatus::Ready)) {
-                $hasReady = true;
+                if ($order->served_at === null) {
+                    $hasReady = true;
+                }
 
                 continue;
             }

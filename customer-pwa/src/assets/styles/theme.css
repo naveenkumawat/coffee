@@ -6185,6 +6185,21 @@ body.product-overlay-open .bottom-navigation {
   background: linear-gradient(180deg, rgba(124, 90, 59, 0.1), #fff);
 }
 
+.waiter-round-card.is-served {
+  border-color: rgba(34, 120, 80, 0.35);
+  background: linear-gradient(180deg, rgba(34, 120, 80, 0.08), #fff);
+}
+
+.waiter-round-card .waiter-mark-served {
+  align-self: stretch;
+  margin-top: 0.25rem;
+}
+
+.status-badge.is-served {
+  background: rgba(34, 120, 80, 0.12);
+  color: rgb(22, 90, 60);
+}
+
 .waiter-station-chips {
   display: flex;
   flex-wrap: wrap;

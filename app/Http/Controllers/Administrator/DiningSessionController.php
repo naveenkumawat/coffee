@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrator;
 use App\Enums\DiningSessionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\DiningSession;
+use App\Models\Order;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
 use Illuminate\Contracts\View\View;
@@ -122,6 +123,14 @@ class DiningSessionController extends Controller
         $this->dining->markCashReceived($diningSession, $request->user('admin'));
 
         return back()->with('status', 'Dining cash marked as received.');
+    }
+
+    public function markRoundServed(Request $request, DiningSession $diningSession, Order $order): RedirectResponse
+    {
+        $this->authorize('markServed', $diningSession);
+        $this->dining->markRoundServed($diningSession, $order, $request->user('admin'));
+
+        return back()->with('status', 'Round marked as served.');
     }
 
     public function rejectPaymentProof(Request $request, DiningSession $diningSession): RedirectResponse

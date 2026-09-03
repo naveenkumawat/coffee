@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Waiter;
 use App\Http\Controllers\Controller;
 use App\Models\CafeTable;
 use App\Models\DiningSession;
+use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
@@ -116,6 +117,14 @@ class DiningSessionController extends Controller
         $this->dining->markCashReceived($session, $request->user('admin'));
 
         return back()->with('status', 'Cash marked as received.');
+    }
+
+    public function markRoundServed(Request $request, DiningSession $session, Order $order): RedirectResponse
+    {
+        $this->authorize('markServed', $session);
+        $this->dining->markRoundServed($session, $order, $request->user('admin'));
+
+        return back()->with('status', 'Round marked as served.');
     }
 
     public function changePaymentMethod(Request $request, DiningSession $session): RedirectResponse

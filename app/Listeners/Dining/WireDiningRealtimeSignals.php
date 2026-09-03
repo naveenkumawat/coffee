@@ -7,6 +7,7 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningPaymentProofReceived;
 use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
+use App\Events\Dining\DiningRoundServed;
 use App\Events\Dining\DiningSessionClosed;
 use App\Events\Dining\DiningSessionOpened;
 use App\Events\Dining\DiningSessionReopened;
@@ -38,6 +39,11 @@ class WireDiningRealtimeSignals
     public function handleRoundPlaced(DiningRoundPlaced $event): void
     {
         $this->publisher->roundPlaced($event->order, $event->session);
+    }
+
+    public function handleRoundServed(DiningRoundServed $event): void
+    {
+        $this->publisher->roundServed($event->order, $event->session);
     }
 
     public function handleBillReady(DiningBillReady $event): void

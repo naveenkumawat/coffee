@@ -147,7 +147,7 @@ stopwaitsecs=10
 
 1. Is notification still `action_required` and unresolved?
 2. Dismiss toast ≠ resolve
-3. Dining `ready_to_serve` resolves only on Completed/Cancelled/Rejected (no Served yet)
+3. Dining `ready_to_serve` resolves on Served / Completed / Cancelled / Rejected (L1.1 Mark Served)
 4. After reconnect, REST sync must drop resolved items — check sync errors in diagnostics
 
 ### Presence incorrect
@@ -170,11 +170,14 @@ stopwaitsecs=10
 3. After reconnect, Orders/Detail/Dining pages REST-reconcile
 4. Background Web Push is **not** implemented (deferred past R1.7 hardening)
 
-## Served / Delivered-to-table (decision)
+## Served / Delivered-to-table (L1.1)
 
-**Current:** `dining.ready_to_serve` remains actionable until the round/order reaches Completed, Cancelled, or Rejected. There is no Served/Delivered-to-table action.
+**Current:** Waiter/Operator/Admin mark a dining **round** Served after all required preparation tickets are Ready (`orders.served_at` / `served_by_user_id`). Preparation Ready ≠ Served; Served ≠ session/order Completed.
 
-**Recommendation:** Add an explicit Waiter **Served / Delivered-to-table** action in a future Dining workflow phase (not as part of realtime hardening). Reminder noise after food is already at the table is a real ops pain, but inventing Served inside R1.7 would change dining business rules. Keep resolving Ready-to-Serve on Completed/Cancelled/Rejected until that dining UX ships.
+* Resolves `dining.ready_to_serve` (and related Waiter-coverage escalation) with `resolution_action=served`; 30s reminders stop immediately; history retained.
+* Emits safe `.dining.ops` `round.served` via `DiningRealtimePublisher` (REST remains authority).
+* Does not close the session, freeze the bill, imply payment, or block further rounds.
+* Idempotent: duplicate Mark Served returns canonical served state without duplicate history/signals.
 
 ## Related docs
 

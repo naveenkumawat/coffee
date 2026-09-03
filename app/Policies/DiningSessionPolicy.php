@@ -64,6 +64,14 @@ class DiningSessionPolicy
         return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
     }
 
+    /**
+     * Mark dining round delivered to table — Waiter / Operator / Admin.
+     */
+    public function markServed(User $user, DiningSession $session): bool
+    {
+        return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();
+    }
+
     public function changePaymentMethod(User $user, DiningSession $session): bool
     {
         return $user->canOperateDining() || $user->canManageOrders() || $user->canOperateOrders();

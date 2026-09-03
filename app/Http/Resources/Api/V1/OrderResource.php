@@ -108,6 +108,8 @@ class OrderResource extends JsonResource
             'accepted_at' => $order->accepted_at?->toIso8601String(),
             'preparing_at' => $order->preparing_at?->toIso8601String(),
             'ready_for_pickup_at' => $order->ready_for_pickup_at?->toIso8601String(),
+            'served_at' => $order->isDiningRound() ? $order->served_at?->toIso8601String() : null,
+            'served' => $order->isDiningRound() ? $order->served_at !== null : false,
             'completed_at' => $order->completed_at?->toIso8601String(),
             'cancelled_at' => $order->cancelled_at?->toIso8601String(),
             'rejected_at' => $order->rejected_at?->toIso8601String(),

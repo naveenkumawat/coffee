@@ -69,6 +69,8 @@ class Order extends AbstractModel
         'accepted_at',
         'preparing_at',
         'ready_for_pickup_at',
+        'served_at',
+        'served_by_user_id',
         'completed_at',
         'cancelled_at',
         'rejected_at',
@@ -100,6 +102,7 @@ class Order extends AbstractModel
             'accepted_at' => 'datetime',
             'preparing_at' => 'datetime',
             'ready_for_pickup_at' => 'datetime',
+            'served_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'rejected_at' => 'datetime',
@@ -121,6 +124,11 @@ class Order extends AbstractModel
         return $this->belongsTo(User::class, 'payment_received_by_id')->withTrashed();
     }
 
+    public function servedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'served_by_user_id')->withTrashed();
+    }
+
     public function cafeTable(): BelongsTo
     {
         return $this->belongsTo(CafeTable::class)->withTrashed();
@@ -134,6 +142,11 @@ class Order extends AbstractModel
     public function isDiningRound(): bool
     {
         return $this->dining_session_id !== null;
+    }
+
+    public function isServed(): bool
+    {
+        return $this->served_at !== null;
     }
 
     public function items(): HasMany

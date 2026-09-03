@@ -90,6 +90,9 @@ export interface WaiterRound {
   total_amount?: string | null;
   ready_to_serve: boolean;
   ready_to_serve_age_seconds?: number | null;
+  served?: boolean;
+  served_at?: string | null;
+  can_mark_served?: boolean;
   is_preparing: boolean;
   stations: Array<{
     station?: string | null;
@@ -233,6 +236,16 @@ export function markWaiterCashReceived(
 ): Promise<ApiEnvelope<WaiterDiningSession>> {
   return post<ApiEnvelope<WaiterDiningSession>, Record<string, never>>(
     `/waiter/sessions/${sessionId}/cash`,
+    {},
+  );
+}
+
+export function markWaiterRoundServed(
+  sessionId: number | string,
+  orderId: number | string,
+): Promise<ApiEnvelope<WaiterDiningSession>> {
+  return post<ApiEnvelope<WaiterDiningSession>, Record<string, never>>(
+    `/waiter/sessions/${sessionId}/rounds/${orderId}/served`,
     {},
   );
 }

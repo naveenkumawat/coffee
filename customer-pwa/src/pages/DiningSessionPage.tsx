@@ -218,12 +218,19 @@ export function DiningSessionPage() {
       <section className="stack gap-2">
         <h2>Rounds</h2>
         {session.rounds.length === 0 ? <p className="muted">No rounds yet.</p> : null}
-        {session.rounds.map((round, index) => (
-          <div key={String(round.id ?? index)}>
-            Round {String(round.dining_round_number ?? index + 1)} · {String(round.order_number ?? '')} ·{' '}
-            {String(round.status ?? '')}
-          </div>
-        ))}
+        {session.rounds.map((round, index) => {
+          const served = Boolean(round.served);
+          const statusLabel = served
+            ? 'Delivered to table'
+            : String(round.status_label ?? round.status ?? '');
+
+          return (
+            <div key={String(round.id ?? index)}>
+              Round {String(round.dining_round_number ?? index + 1)} · {String(round.order_number ?? '')} ·{' '}
+              {statusLabel}
+            </div>
+          );
+        })}
       </section>
 
       {canOrder ? (

@@ -115,7 +115,7 @@ PWA features depend on:
 - checkout endpoints for summary and submit
 - orders endpoints for own list and own detail
 - authenticated product rating create/update/delete
-- waiter dining endpoints (`/api/v1/waiter/tables`, sessions, drafts, rounds, bill, cash, close)
+- waiter dining endpoints (`/api/v1/waiter/tables`, sessions, drafts, rounds, mark served, bill, cash, close)
 
 Future API additions expected:
 
@@ -282,3 +282,4 @@ See `customer-pwa/README.md` for the deployment checklist.
 - Shared `paymentStatePresentation` is the canonical customer payment-state wording (confirmation + payment card).
 - Dining Session drafts remain session-scoped; Waiter table switches must not merge drafts.
 - React PWA remains preferred Waiter mobile UI; Blade Waiter stays fallback.
+- **L1.1:** Waiter session shows Mark Served on fully Ready unserved rounds; Served status syncs via `.dining.ops` + REST. Customer dining may show Delivered to table; no customer confirm / no repeating customer Served alerts.

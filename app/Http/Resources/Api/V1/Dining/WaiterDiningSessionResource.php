@@ -29,7 +29,7 @@ class WaiterDiningSessionResource extends JsonResource
             ? $session->orders
                 ->sortBy('dining_round_number')
                 ->values()
-                ->map(fn (Order $order): array => $this->roundPayload($order))
+                ->map(fn (Order $order): array => $this->roundPayload($order, $session, $actor))
                 ->all()
             : [];
 
@@ -93,7 +93,7 @@ class WaiterDiningSessionResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
-    protected function roundPayload(Order $order): array
+    protected function roundPayload(Order $order, DiningSession $session, ?User $actor): array
     {
         $preparations = $order->relationLoaded('preparations')
             ? $order->preparations
@@ -114,10 +114,13 @@ class WaiterDiningSessionResource extends JsonResource
         $activeTickets = $preparations->filter(
             static fn ($ticket): bool => $ticket->status !== OrderPreparationStatus::Cancelled,
         );
-        $readyToServe = $activeTickets->isNotEmpty()
+        $stationsReady = $activeTickets->isNotEmpty()
             && $activeTickets->every(
                 static fn ($ticket): bool => $ticket->status === OrderPreparationStatus::Ready,
             );
+        $readyToServe = $stationsReady
+            && $order->served_at === null
+            && ! in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true);
         $isPreparing = $activeTickets->contains(
             static fn ($ticket): bool => in_array(
                 $ticket->status,
@@ -149,8 +152,11 @@ class WaiterDiningSessionResource extends JsonResource
             'placed_at' => $order->placed_at?->toIso8601String() ?? $order->created_at?->toIso8601String(),
             'subtotal' => $order->subtotal,
             'total_amount' => $order->total_amount,
-            'ready_to_serve' => $readyToServe && ! in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true),
+            'ready_to_serve' => $readyToServe,
             'ready_to_serve_age_seconds' => $readyToServeAgeSeconds,
+            'served' => $order->served_at !== null,
+            'served_at' => $order->served_at?->toIso8601String(),
+            'can_mark_served' => ($actor?->can('markServed', $session) ?? false) && $readyToServe,
             'is_preparing' => $isPreparing,
             'stations' => $stations,
             'items' => $items->map(static function ($item): array {

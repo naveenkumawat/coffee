@@ -1332,7 +1332,7 @@ Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/actio
 | `order.requires_acceptance` | Retail → `payment_confirmed` | Owner/Manager/Operator | Accepted / Rejected / Cancelled |
 | `order.payment_proof_review` | `OrderPaymentProofReceived` (new key per upload stamp) | Owner/Manager/Operator | PaymentConfirmed / proof rejected / order terminal / prior open review on resubmission (`proof_resubmitted`) |
 | `preparation.ticket_pending` | Ticket → `pending` | Barista (BAR) or Chef (KITCHEN) | First meaningful station action: **Accepted** (also Preparing/Ready/Cancelled). Not held open until Ready. |
-| `dining.ready_to_serve` | Dining round when **all** active tickets Ready (once) | Waiter + Operator | Order Completed / Cancelled / Rejected. **No explicit served state exists** — nearest canonical transitions only. |
+| `dining.ready_to_serve` | Dining round when **all** active tickets Ready (once) | Waiter + Operator | **Served** (L1.1 Delivered-to-table) / Completed / Cancelled / Rejected |
 | `order.cancelled` / `order.rejected` | Order terminal | Owner/Manager/Operator | Informational |
 | `preparation.ticket_cancelled` | Ticket cancelled | Matching station role | Informational |
 | `dining.round_cancelled` | Dining order Cancelled/Rejected | Waiter + Operator | Informational |
@@ -1347,7 +1347,7 @@ UPI retail place does **not** create actionable attention (wait for proof / paym
 * **Sound:** bundled local chime; unlock after first gesture; failures ignored; visual path always works.
 * **Multi-tab:** BroadcastChannel + localStorage leader election — only leader plays sound / shows reminder toasts / increments reminder_count. All tabs upsert state.
 * **Reconnect:** authoritative `GET` list + action-required on bootstrap, reconnect, online, and visibility after absence. Socket is fast path only.
-* **Dining limitation (preserved):** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected — no Served state in R1.3B (L1 workflow gap).
+* **Dining Ready-to-Serve resolution (L1.1):** `dining.ready_to_serve` resolves on **Served** / Completed / Cancelled / Rejected. Preparation Ready ≠ Served; Served ≠ session/order Completed.
 
 **R1.4 Customer realtime notifications + live order tracking (done):** Customer-owned order/session updates on `private-user.{id}` via the same operational notification domain (no separate customer role channel).
 
@@ -1371,7 +1371,7 @@ UPI retail place does **not** create actionable attention (wait for proof / paym
 * **Signals:** Domain dining/order/prep events → `DiningRealtimePublisher` → `DiningOpsSignalBroadcasted` (`.dining.ops`) with safe payload only: `event_id`, `type`, `session_id`, `table_id`, optional `order_id`/`state`, `updated_at`. Never money, recipes, costs, payment secrets, or private customer fields.
 * **Clients:** Socket = signal; REST = authority. Waiter PWA table dashboard + active session soft-refetch via coalesced `useDiningOpsSync`; customer dining session subscribes to session channel; Blade waiter/operator dining pages soft-reload on role `.dining.ops`. Event-id dedupe + coalesce avoid REST storms.
 * **Multi-Waiter:** Concurrent Waiters share session/table signals; duplicate bill/close remain idempotent/canonical via REST; sockets never grant Operator payment powers.
-* **Ready-to-serve gap:** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected (no Served). **R1.7 decision:** recommend explicit Served/Delivered-to-table in a future Dining UX phase — not implemented in realtime hardening.
+* **Ready-to-serve → Served (L1.1):** Preparation Ready ≠ Served. Waiter/Operator/Admin mark a dining **round** Served (`orders.served_at` / `served_by_user_id`) after all required stations are Ready. Resolves `dining.ready_to_serve` and stops 30s reminders immediately. Does not close the session, freeze the bill, or block further rounds. Realtime: `DiningRealtimePublisher` emits `round.served` (`.dining.ops`); REST remains authority.
 
 **R1.7 Realtime operational hardening & runbooks (done):**
 
@@ -1708,3 +1708,5 @@ Customer API coverage should ultimately include:
 - Each Dining Session has an independent server-persisted draft; switching tables must not merge drafts.
 - C1 customization/add-ons are shared between Customer and Waiter; prices remain server-owned.
 - Phase C2 locks: guest cart survives login; ambiguous writes reconcile before retry; shared payment-state presentation is canonical; server owns commercial/operational truth.
+- **L1.1 Served / Delivered-to-table:** Per dining **round** (canonical Order), after all active prep tickets are Ready. `POST /api/v1/waiter/sessions/{session}/rounds/{order}/served` (+ Blade Waiter/Operator/Admin). Idempotent. Resolves Ready-to-Serve alerts. Customer may see “Delivered to table”; customer does not confirm. Served does not imply payment or session close.
+- **Cancellation gap (deferred):** Post-Served cancellation still follows existing order/dining cancellation authorization — no new L1 exception matrix in this phase.

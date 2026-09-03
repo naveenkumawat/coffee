@@ -103,6 +103,17 @@ class DiningRealtimePublisher
         );
     }
 
+    public function roundServed(Order $order, DiningSession $session): void
+    {
+        $this->signalSession(
+            $session,
+            'round.served',
+            'served',
+            (int) $order->getKey(),
+            'served-'.$order->getKey(),
+        );
+    }
+
     public function preparationChanged(OrderPreparation $ticket): void
     {
         $this->safe(function () use ($ticket): void {

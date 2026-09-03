@@ -115,6 +115,12 @@ interface DiningSessionServiceInterface
 
     public function markCashReceived(DiningSession $session, User $actor): DiningSession;
 
+    /**
+     * Mark a dining round as delivered to the table (Served).
+     * Does not complete payment or close the session.
+     */
+    public function markRoundServed(DiningSession $session, Order $order, User $actor): Order;
+
     public function closeSession(DiningSession $session, User $actor): DiningSession;
 
     public function reopenSession(DiningSession $session, User $actor, ?string $note = null): DiningSession;

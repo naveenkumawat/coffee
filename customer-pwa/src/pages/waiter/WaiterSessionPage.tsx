@@ -6,6 +6,7 @@ import {
   closeWaiterSession,
   fetchWaiterSession,
   markWaiterCashReceived,
+  markWaiterRoundServed,
   reopenWaiterSession,
   requestWaiterBill,
   setWaiterPaymentMethod,
@@ -226,6 +227,7 @@ export function WaiterSessionPage() {
               className={[
                 'waiter-round-card',
                 round.ready_to_serve ? 'is-ready' : '',
+                round.served ? 'is-served' : '',
                 round.is_preparing ? 'is-preparing' : '',
               ]
                 .filter(Boolean)
@@ -236,14 +238,20 @@ export function WaiterSessionPage() {
                   Round {round.round_number}
                   {round.order_number ? ` · ${round.order_number}` : ''}
                 </strong>
-                <span className={`status-badge${round.ready_to_serve ? ' is-ready' : ''}`}>
-                  {round.ready_to_serve
-                    ? `Ready to serve${
-                        typeof round.ready_to_serve_age_seconds === 'number'
-                          ? ` · ${formatElapsed(round.ready_to_serve_age_seconds)}`
-                          : ''
-                      }`
-                    : (round.status_label ?? round.status ?? 'Placed')}
+                <span
+                  className={`status-badge${round.ready_to_serve ? ' is-ready' : ''}${
+                    round.served ? ' is-served' : ''
+                  }`}
+                >
+                  {round.served
+                    ? 'Served'
+                    : round.ready_to_serve
+                      ? `Ready to serve${
+                          typeof round.ready_to_serve_age_seconds === 'number'
+                            ? ` · ${formatElapsed(round.ready_to_serve_age_seconds)}`
+                            : ''
+                        }`
+                      : (round.status_label ?? round.status ?? 'Placed')}
                 </span>
               </div>
               {round.stations.length > 0 ? (
@@ -264,6 +272,21 @@ export function WaiterSessionPage() {
                 ))}
               </ul>
               <strong className="waiter-round-total">{formatCurrency(round.total_amount)}</strong>
+              {round.can_mark_served ? (
+                <button
+                  type="button"
+                  className="btn btn-primary rounded-pill waiter-mark-served"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(
+                      async () => (await markWaiterRoundServed(sessionId, round.id)).data,
+                      `Round ${round.round_number} marked served`,
+                    )
+                  }
+                >
+                  Mark Served
+                </button>
+              ) : null}
             </article>
           ))}
         </div>

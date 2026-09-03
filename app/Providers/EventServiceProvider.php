@@ -9,6 +9,7 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningPaymentProofReceived;
 use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
+use App\Events\Dining\DiningRoundServed;
 use App\Events\Dining\DiningSessionClosed;
 use App\Events\Dining\DiningSessionOpened;
 use App\Events\Dining\DiningSessionReopened;
@@ -35,6 +36,7 @@ use App\Listeners\OperationalNotification\WireOperationalDiningPaymentConfirmed;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofReceived;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofRejected;
 use App\Listeners\OperationalNotification\WireOperationalDiningRoundPlaced;
+use App\Listeners\OperationalNotification\WireOperationalDiningRoundServed;
 use App\Listeners\OperationalNotification\WireOperationalIngredientStockStatusChanged;
 use App\Listeners\OperationalNotification\WireOperationalInventoryRefillRequest;
 use App\Listeners\OperationalNotification\WireOperationalOrderPlaced;
@@ -111,6 +113,10 @@ class EventServiceProvider extends ServiceProvider
         DiningRoundPlaced::class => [
             WireOperationalDiningRoundPlaced::class,
             [WireDiningRealtimeSignals::class, 'handleRoundPlaced'],
+        ],
+        DiningRoundServed::class => [
+            WireOperationalDiningRoundServed::class,
+            [WireDiningRealtimeSignals::class, 'handleRoundServed'],
         ],
         DiningSessionOpened::class => [
             [WireDiningRealtimeSignals::class, 'handleSessionOpened'],

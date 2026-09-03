@@ -24,6 +24,10 @@
                 $activeTickets = $tickets->filter(fn ($ticket) => $ticket->status?->value !== 'cancelled');
                 $allReady = $activeTickets->isNotEmpty()
                     && $activeTickets->every(fn ($ticket) => $ticket->status?->value === 'ready');
+                $isServed = $order->served_at !== null;
+                $canMarkServed = $allReady && ! $isServed
+                    && ! in_array($order->status?->value, ['cancelled', 'rejected'], true)
+                    && auth('admin')->user()?->can('markServed', $session);
                 $roundTiming = $timingByOrderId->get($order->id);
             @endphp
             <div class="mb-6 pb-5 border-bottom border-gray-200">
@@ -32,13 +36,31 @@
                         Round {{ $order->dining_round_number }} · {{ $order->order_number }}
                     </span>
                     <x-internal.order-status-badge :status="$order->status" :order="$order" />
-                    @if ($allReady)
+                    @if ($isServed)
+                        <span class="badge badge-light-primary">Served</span>
+                    @elseif ($allReady)
                         <span class="badge badge-light-success">Ready to Serve</span>
                     @endif
                     @if ($roundTiming)
                         <span class="badge badge-light">Elapsed {{ $fmt($roundTiming['round_elapsed_seconds']) }}</span>
-                        @if ($roundTiming['ready_to_serve_age_seconds'] !== null)
+                        @if ($roundTiming['ready_to_serve_age_seconds'] !== null && ! $isServed)
                             <span class="badge badge-light-info">Ready age {{ $fmt($roundTiming['ready_to_serve_age_seconds']) }}</span>
+                        @endif
+                    @endif
+                    @if ($canMarkServed)
+                        @php
+                            $servedRoute = match (true) {
+                                request()->routeIs('waiter.*') => route('waiter.sessions.rounds.served', [$session, $order]),
+                                request()->routeIs('operator.*') => route('operator.dining-sessions.rounds.served', [$session, $order]),
+                                request()->routeIs('administrator.*') => route('administrator.dining-sessions.rounds.served', [$session, $order]),
+                                default => null,
+                            };
+                        @endphp
+                        @if ($servedRoute)
+                            <form method="POST" action="{{ $servedRoute }}" class="d-inline">
+                                @csrf
+                                <x-internal.button label="Mark Served" type="submit" variant="success" icon="ki-check" />
+                            </form>
                         @endif
                     @endif
                 </div>

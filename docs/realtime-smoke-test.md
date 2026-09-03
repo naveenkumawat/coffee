@@ -49,8 +49,8 @@ Legend: **Leader** = elected tab in the same browser profile (not across devices
 | Trigger | Waiter/customer round → prep → all stations ready |
 | Recipients | Waiter (`dining.ready_to_serve` + `.dining.ops`); customer if attached |
 | UI | Waiter tables/session live reconcile; ready chip |
-| Sound/reminder | Waiter actionable reminder until Completed/Cancelled/Rejected (**no Served**) |
-| Resolution | Complete/cancel/reject round/order (Served not available) |
+| Sound/reminder | Waiter actionable reminder until Served / Completed / Cancelled / Rejected |
+| Resolution | Waiter **Mark Served** (L1.1) preferred; also complete/cancel/reject |
 | Reconnect | Table card + session rounds/status recover via REST |
 
 ## E — Payment proof
