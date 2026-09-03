@@ -3,6 +3,7 @@
 namespace App\Services\OperationalNotification;
 
 use App\Enums\OperationalNotificationPriority;
+use App\Enums\OperationalNotificationType;
 use App\Enums\UserRole;
 use App\Events\Realtime\OperationalNotificationBroadcasted;
 use App\Models\OperationalNotification;
@@ -10,6 +11,7 @@ use App\Models\OperationalNotificationRecipient;
 use App\Models\User;
 use App\Repositories\OperationalNotification\OperationalNotificationRepositoryInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,11 +37,14 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
         ?Model $actor = null,
         ?array $metadata = null,
         bool $broadcast = true,
+        ?string $idempotencyKey = null,
     ): OperationalNotification {
         $recipientRows = $this->normalizeAudience($audience);
+        $metadata = $metadata ?? [];
 
         if ($recipientRows === []) {
-            throw new \InvalidArgumentException('Operational notification requires at least one recipient.');
+            $metadata['intended_roles'] = $this->intendedRoleValues($audience);
+            $metadata['no_active_recipients'] = true;
         }
 
         $notification = DB::transaction(function () use (
@@ -55,6 +60,7 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
             $actor,
             $metadata,
             $recipientRows,
+            $idempotencyKey,
         ): OperationalNotification {
             $attributes = [
                 'type' => $type,
@@ -65,7 +71,8 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
                 'action_required' => $actionRequired,
                 'action_code' => $actionCode,
                 'action_url' => $actionUrl,
-                'metadata' => $metadata,
+                'metadata' => $metadata === [] ? null : $metadata,
+                'idempotency_key' => $idempotencyKey,
             ];
 
             if ($subject !== null) {
@@ -79,13 +86,15 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
             }
 
             $notification = $this->notifications->createNotification($attributes);
-            $this->notifications->createRecipients($notification, $recipientRows);
+
+            if ($recipientRows !== []) {
+                $this->notifications->createRecipients($notification, $recipientRows);
+            }
 
             return $notification->load('recipients');
         });
 
-        if ($broadcast) {
-            // Persist is authoritative; fan-out runs only after the creating transaction commits.
+        if ($broadcast && $notification->recipients->isNotEmpty()) {
             DB::afterCommit(function () use ($notification): void {
                 $fresh = $notification->fresh(['recipients']) ?? $notification;
                 $this->dispatchBroadcast($fresh);
@@ -93,6 +102,78 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
         }
 
         return $notification->fresh(['recipients']) ?? $notification;
+    }
+
+    public function createUniqueAndBroadcast(
+        string $idempotencyKey,
+        string $type,
+        string $category,
+        string $title,
+        string $message,
+        array $audience,
+        OperationalNotificationPriority $priority = OperationalNotificationPriority::Normal,
+        bool $actionRequired = false,
+        ?string $actionCode = null,
+        ?string $actionUrl = null,
+        ?Model $subject = null,
+        ?Model $actor = null,
+        ?array $metadata = null,
+        bool $broadcast = true,
+    ): OperationalNotification {
+        $existing = $this->notifications->findByIdempotencyKey($idempotencyKey);
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        try {
+            return $this->createAndBroadcast(
+                type: $type,
+                category: $category,
+                title: $title,
+                message: $message,
+                audience: $audience,
+                priority: $priority,
+                actionRequired: $actionRequired,
+                actionCode: $actionCode,
+                actionUrl: $actionUrl,
+                subject: $subject,
+                actor: $actor,
+                metadata: $metadata,
+                broadcast: $broadcast,
+                idempotencyKey: $idempotencyKey,
+            );
+        } catch (QueryException $exception) {
+            $existing = $this->notifications->findByIdempotencyKey($idempotencyKey);
+
+            if ($existing !== null) {
+                return $existing;
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function resolveOpenForSubject(
+        Model $subject,
+        array $types = [],
+        ?User $resolvedBy = null,
+        ?string $resolutionAction = null,
+    ): Collection {
+        $typeValues = array_map(
+            fn (string|OperationalNotificationType $type): string => $type instanceof OperationalNotificationType
+                ? $type->value
+                : $type,
+            $types,
+        );
+
+        $resolved = collect();
+
+        foreach ($this->notifications->findOpenForSubject($subject, $typeValues) as $notification) {
+            $resolved->push($this->resolve($notification, $resolvedBy, $resolutionAction));
+        }
+
+        return $resolved;
     }
 
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection
@@ -221,6 +302,25 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
         }
 
         return array_values($rows);
+    }
+
+    /**
+     * @param  list<User>|list<UserRole>  $audience
+     * @return list<string>
+     */
+    protected function intendedRoleValues(array $audience): array
+    {
+        $roles = [];
+
+        foreach ($audience as $item) {
+            if ($item instanceof UserRole) {
+                $roles[] = $item->value;
+            } elseif ($item instanceof User && $item->role instanceof UserRole) {
+                $roles[] = $item->role->value;
+            }
+        }
+
+        return array_values(array_unique($roles));
     }
 
     protected function dispatchBroadcast(OperationalNotification $notification): void

@@ -3,6 +3,7 @@
 namespace App\Services\OperationalNotification;
 
 use App\Enums\OperationalNotificationPriority;
+use App\Enums\OperationalNotificationType;
 use App\Enums\UserRole;
 use App\Models\OperationalNotification;
 use App\Models\OperationalNotificationRecipient;
@@ -30,7 +31,44 @@ interface OperationalNotificationServiceInterface
         ?Model $actor = null,
         ?array $metadata = null,
         bool $broadcast = true,
+        ?string $idempotencyKey = null,
     ): OperationalNotification;
+
+    /**
+     * Idempotent create — returns existing row when idempotency_key already claimed.
+     *
+     * @param  list<User>|list<UserRole>  $audience
+     * @param  array<string, mixed>|null  $metadata
+     */
+    public function createUniqueAndBroadcast(
+        string $idempotencyKey,
+        string $type,
+        string $category,
+        string $title,
+        string $message,
+        array $audience,
+        OperationalNotificationPriority $priority = OperationalNotificationPriority::Normal,
+        bool $actionRequired = false,
+        ?string $actionCode = null,
+        ?string $actionUrl = null,
+        ?Model $subject = null,
+        ?Model $actor = null,
+        ?array $metadata = null,
+        bool $broadcast = true,
+    ): OperationalNotification;
+
+    /**
+     * Resolve all unresolved notifications for a subject, optionally filtered by type values.
+     *
+     * @param  list<string|OperationalNotificationType>  $types
+     * @return Collection<int, OperationalNotification>
+     */
+    public function resolveOpenForSubject(
+        Model $subject,
+        array $types = [],
+        ?User $resolvedBy = null,
+        ?string $resolutionAction = null,
+    ): Collection;
 
     /**
      * @return Collection<int, OperationalNotificationRecipient>

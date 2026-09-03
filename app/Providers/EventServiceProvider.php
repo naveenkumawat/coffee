@@ -23,6 +23,11 @@ use App\Listeners\Dining\QualifyReferralOnDiningPaymentConfirmed;
 use App\Listeners\Dining\SendDiningBillReadyNotification;
 use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
+use App\Listeners\OperationalNotification\WireOperationalOrderPlaced;
+use App\Listeners\OperationalNotification\WireOperationalOrderPreparationStatusChanged;
+use App\Listeners\OperationalNotification\WireOperationalOrderStatusChanged;
+use App\Listeners\OperationalNotification\WireOperationalPaymentProofReceived;
+use App\Listeners\OperationalNotification\WireOperationalPaymentProofRejected;
 use App\Listeners\Order\QualifyReferralOnCashReceived;
 use App\Listeners\Order\QualifyReferralOnPaymentConfirmed;
 use App\Listeners\Order\SendOrderCashReceivedNotification;
@@ -40,6 +45,15 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 
 class EventServiceProvider extends ServiceProvider
 {
+    /**
+     * Listeners are registered explicitly in $listen. Auto-discovery would
+     * double-fire WireOperational* handlers that are also listed here.
+     */
+    public function shouldDiscoverEvents(): bool
+    {
+        return false;
+    }
+
     protected $listen = [
         MenuCategorySaved::class => [
             FlushMenuCatalogCache::class,
@@ -56,21 +70,26 @@ class EventServiceProvider extends ServiceProvider
         OrderPlaced::class => [
             SendOrderPlacedNotification::class,
             NotifyStaffOrderPlaced::class,
+            WireOperationalOrderPlaced::class,
         ],
         OrderPaymentProofReceived::class => [
             SendOrderPaymentProofReceivedNotification::class,
             NotifyStaffPaymentProofReceived::class,
+            WireOperationalPaymentProofReceived::class,
         ],
         OrderPaymentProofRejected::class => [
             SendOrderPaymentProofRejectedNotification::class,
+            WireOperationalPaymentProofRejected::class,
         ],
         OrderStatusChanged::class => [
             SendOrderStatusChangedNotification::class,
             NotifyStaffOrderStatusChanged::class,
             QualifyReferralOnPaymentConfirmed::class,
+            WireOperationalOrderStatusChanged::class,
         ],
         OrderPreparationStatusChanged::class => [
             NotifyStaffOrderPreparationStatusChanged::class,
+            WireOperationalOrderPreparationStatusChanged::class,
         ],
         DiningBillReady::class => [
             SendDiningBillReadyNotification::class,

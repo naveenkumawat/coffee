@@ -1322,10 +1322,25 @@ Realtime is an additive delivery path for operational alerts. It does **not** re
 * `resolved_at` — underlying required business condition resolved (notification-level)
 * Response delays (delivery / first-seen / acknowledge / action-start / action-completion / resolution) are **computed** from timestamps — never stored as authority
 
-Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/action-required`, `POST .../{recipient}/delivered|seen|read|acknowledge` (own recipient only; idempotent first-write timestamps). Generic broadcast event `OperationalNotificationBroadcasted` (`.operational.notification`) on `private-user.{id}` with minimal DTO. Persist first; broadcast after commit; websocket failure must not break persistence. PWA + Blade share notification client/store foundation (no final bell/reminder UI yet). Business order/payment/preparation event wiring deferred.
+Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/action-required`, `POST .../{recipient}/delivered|seen|read|acknowledge` (own recipient only; idempotent first-write timestamps). Generic broadcast event `OperationalNotificationBroadcasted` (`.operational.notification`) on `private-user.{id}` with minimal DTO. Persist first; broadcast after commit; websocket failure must not break persistence. PWA + Blade share notification client/store foundation (no final bell/reminder UI yet).
 
-**R1.3+ (planned, concise):**
-* R1.3 — Wire staff order/payment/preparation private events onto the R1.2 domain + role/user channels
+**R1.3A Business event wiring (done):** Domain events → `OperationalBusinessNotificationPublisher` → `OperationalNotificationService` (not from controllers). Dedup via unique `idempotency_key` (`type:Subject:id:lifecycle`). Empty active audience persists shell row with `metadata.no_active_recipients` and does not fail the business flow.
+
+| Type | Create | Audience | Resolve |
+|------|--------|----------|---------|
+| `order.requires_attention` | Cash retail `OrderPlaced` while `pending_payment` | Owner/Manager/Operator | Accepted / Rejected / Cancelled / PaymentConfirmed |
+| `order.requires_acceptance` | Retail → `payment_confirmed` | Owner/Manager/Operator | Accepted / Rejected / Cancelled |
+| `order.payment_proof_review` | `OrderPaymentProofReceived` (new key per upload stamp) | Owner/Manager/Operator | PaymentConfirmed / proof rejected / order terminal / prior open review on resubmission (`proof_resubmitted`) |
+| `preparation.ticket_pending` | Ticket → `pending` | Barista (BAR) or Chef (KITCHEN) | First meaningful station action: **Accepted** (also Preparing/Ready/Cancelled). Not held open until Ready. |
+| `dining.ready_to_serve` | Dining round when **all** active tickets Ready (once) | Waiter + Operator | Order Completed / Cancelled / Rejected. **No explicit served state exists** — nearest canonical transitions only. |
+| `order.cancelled` / `order.rejected` | Order terminal | Owner/Manager/Operator | Informational |
+| `preparation.ticket_cancelled` | Ticket cancelled | Matching station role | Informational |
+| `dining.round_cancelled` | Dining order Cancelled/Rejected | Waiter + Operator | Informational |
+
+UPI retail place does **not** create actionable attention (wait for proof / payment confirm). Mixed BAR+KITCHEN orders create independent station notifications. Customer realtime status is deferred.
+
+**R1.3B+ (planned, concise):**
+* R1.3B — Bell drawer + reminder UX foundations on top of R1.3A
 * R1.4 — Inventory / refill realtime alerts for administrator/operator/barista
 * R1.5 — Customer order-status private user-channel updates (minimal payloads)
 * R1.6 — Waiter dining session realtime (table/session scoped; no broad customer exposure)

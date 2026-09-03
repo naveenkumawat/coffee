@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\OperationalNotification;
 use App\Models\OperationalNotificationRecipient;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -25,6 +26,14 @@ interface OperationalNotificationRepositoryInterface
     public function findRecipientForUser(int $recipientId, User $user): ?OperationalNotificationRecipient;
 
     public function findNotificationById(int $notificationId): ?OperationalNotification;
+
+    public function findByIdempotencyKey(string $idempotencyKey): ?OperationalNotification;
+
+    /**
+     * @param  list<string>  $types
+     * @return Collection<int, OperationalNotification>
+     */
+    public function findOpenForSubject(Model $subject, array $types = []): Collection;
 
     /**
      * @return Collection<int, OperationalNotificationRecipient>

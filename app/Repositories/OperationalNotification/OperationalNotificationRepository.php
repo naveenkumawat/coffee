@@ -7,6 +7,7 @@ use App\Models\OperationalNotification;
 use App\Models\OperationalNotificationRecipient;
 use App\Models\User;
 use App\Repositories\AbstractRepository;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -58,6 +59,26 @@ class OperationalNotificationRepository extends AbstractRepository implements Op
             ->with('recipients')
             ->whereKey($notificationId)
             ->first();
+    }
+
+    public function findByIdempotencyKey(string $idempotencyKey): ?OperationalNotification
+    {
+        return $this->notificationModel->newQuery()
+            ->with('recipients')
+            ->where('idempotency_key', $idempotencyKey)
+            ->first();
+    }
+
+    public function findOpenForSubject(Model $subject, array $types = []): Collection
+    {
+        return $this->notificationModel->newQuery()
+            ->with('recipients')
+            ->whereNull('resolved_at')
+            ->where('subject_type', $subject->getMorphClass())
+            ->where('subject_id', $subject->getKey())
+            ->when($types !== [], fn ($query) => $query->whereIn('type', $types))
+            ->orderBy('id')
+            ->get();
     }
 
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection

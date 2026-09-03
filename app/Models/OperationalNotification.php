@@ -14,6 +14,7 @@ class OperationalNotification extends AbstractModel
 
     protected $fillable = [
         'uuid',
+        'idempotency_key',
         'type',
         'category',
         'priority',
