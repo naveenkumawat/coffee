@@ -76,6 +76,7 @@
   --coffee-shell-max: 34rem;
   --bottom-nav-height: 4.35rem;
   --coffee-bottom-nav-height: var(--bottom-nav-height);
+  --coffee-safe-top: env(safe-area-inset-top, 0px);
   --coffee-safe-bottom: env(safe-area-inset-bottom, 0px);
   --coffee-nav-offset: calc(var(--bottom-nav-height) + var(--coffee-safe-bottom));
   --coffee-sticky-cta-height: 9.5rem;
@@ -129,9 +130,22 @@ button {
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
+  /* Notch once on the shell — do not re-apply on banners/headers. */
+  padding-top: var(--coffee-safe-top);
   /* Opaque shell — avoid backdrop-filter here so position:fixed chrome stays viewport-fixed. */
   background: #ffffff;
   box-shadow: var(--coffee-shadow);
+}
+
+/*
+ * Status banners (closed café / offline / SW update) stay in normal document flow
+ * above app-main. Padding (not collapsing margin) keeps the shell background flush
+ * to the top and lets banner height grow when copy wraps.
+ */
+.app-status-banners {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 0.75rem 0;
 }
 
 .app-main {
@@ -1243,10 +1257,12 @@ a.category-pill {
 }
 
 .offline-banner {
-  margin: 0.75rem 0.75rem 0;
+  margin: 0;
   color: var(--coffee-primary-dark);
   font-size: 0.9rem;
+  line-height: 1.35;
   text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .offline-banner.is-offline {
@@ -1264,7 +1280,7 @@ a.category-pill {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0.75rem 0.75rem 0;
+  margin: 0;
   padding: 0.9rem 1rem;
   border-radius: 1.1rem;
   background: #1f4d3a;

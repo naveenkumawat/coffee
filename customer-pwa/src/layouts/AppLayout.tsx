@@ -55,30 +55,39 @@ export function AppLayout() {
     return <Navigate to="/waiter" replace />;
   }
 
+  const cafeClosed = Boolean(availability && !availability.available);
+  const showStatusBanners =
+    needRefresh || networkStatus === 'offline' || networkStatus === 'restored' || cafeClosed;
+
   return (
     <div className="app-shell">
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <ServiceWorkerUpdateBanner
-        visible={needRefresh}
-        onRefresh={applyUpdate}
-        onDismiss={dismiss}
-        brandName={brandName}
-      />
-      {networkStatus === 'offline' ? (
-        <div className="offline-banner is-offline" role="status" aria-live="polite">
-          You’re offline. Browse cached pages, but cart, checkout, account, and orders need a connection.
-        </div>
-      ) : null}
-      {networkStatus === 'restored' ? (
-        <div className="offline-banner is-restored" role="status" aria-live="polite">
-          Back online. Your live cart and account data will refresh.
-        </div>
-      ) : null}
-      {availability && !availability.available ? (
-        <div className="offline-banner is-offline" role="status" aria-live="polite">
-          {availability.message}
+      {showStatusBanners ? (
+        <div className="app-status-banners">
+          <ServiceWorkerUpdateBanner
+            visible={needRefresh}
+            onRefresh={applyUpdate}
+            onDismiss={dismiss}
+            brandName={brandName}
+          />
+          {networkStatus === 'offline' ? (
+            <div className="offline-banner is-offline" role="status" aria-live="polite">
+              You’re offline. Browse cached pages, but cart, checkout, account, and orders need a
+              connection.
+            </div>
+          ) : null}
+          {networkStatus === 'restored' ? (
+            <div className="offline-banner is-restored" role="status" aria-live="polite">
+              Back online. Your live cart and account data will refresh.
+            </div>
+          ) : null}
+          {cafeClosed ? (
+            <div className="offline-banner is-offline" role="status" aria-live="polite">
+              {availability?.message}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <main className="app-main" id="main-content">
