@@ -29,6 +29,10 @@
 @if ($realtimeUser !== null)
     <script>
         window.__COFFEE_REALTIME__ = @json($realtimeConfig);
+        window.__COFFEE_OPS_NOTIFICATIONS__ = {
+            reminderIntervalMs: 30000,
+            apiBase: @json(url('/api/v1/notifications')),
+        };
     </script>
     @vite(['resources/js/notifications.js'])
 @endif

@@ -251,6 +251,23 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
         return $this->notifications->incrementReminder($recipient);
     }
 
+    public function recordPresentedReminder(OperationalNotificationRecipient $recipient): OperationalNotificationRecipient
+    {
+        $recipient->loadMissing('notification');
+        $notification = $recipient->notification;
+
+        if (
+            $notification === null
+            || $notification->resolved_at !== null
+            || ! $notification->action_required
+            || ! $this->isReminderEligibleType((string) $notification->type)
+        ) {
+            return $recipient->fresh(['notification']) ?? $recipient;
+        }
+
+        return $this->notifications->incrementReminder($recipient);
+    }
+
     public function metricsForRecipient(OperationalNotificationRecipient $recipient): array
     {
         $notification = $recipient->relationLoaded('notification')
@@ -267,6 +284,17 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
             'action_completion_delay_seconds' => $this->delaySeconds($createdAt, $recipient->action_completed_at),
             'resolution_delay_seconds' => $this->delaySeconds($createdAt, $notification?->resolved_at),
         ];
+    }
+
+    protected function isReminderEligibleType(string $type): bool
+    {
+        return in_array($type, [
+            OperationalNotificationType::OrderRequiresAttention->value,
+            OperationalNotificationType::OrderRequiresAcceptance->value,
+            OperationalNotificationType::OrderPaymentProofReview->value,
+            OperationalNotificationType::PreparationTicketPending->value,
+            OperationalNotificationType::DiningReadyToServe->value,
+        ], true);
     }
 
     /**

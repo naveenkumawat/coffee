@@ -118,3 +118,12 @@ export async function acknowledgeNotification(recipientId: number): Promise<Oper
 
   return response.data;
 }
+
+export async function recordNotificationReminder(recipientId: number): Promise<OperationalNotificationItem> {
+  const response = await post<ApiEnvelope<OperationalNotificationItem>, Record<string, never>>(
+    `/notifications/${recipientId}/reminded`,
+    {},
+  );
+
+  return response.data;
+}

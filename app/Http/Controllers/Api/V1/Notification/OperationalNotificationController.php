@@ -93,6 +93,16 @@ class OperationalNotificationController extends Controller
         );
     }
 
+    public function reminded(Request $request, OperationalNotificationRecipient $recipient): JsonResponse
+    {
+        $recipient = $this->ownedRecipient($request, $recipient);
+
+        return $this->respondWithResource(
+            new OperationalNotificationResource($this->notifications->recordPresentedReminder($recipient)),
+            'Reminder recorded.',
+        );
+    }
+
     protected function currentUser(Request $request): User
     {
         $user = $request->user();

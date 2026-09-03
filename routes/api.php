@@ -65,6 +65,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/{recipient}/seen', [OperationalNotificationController::class, 'seen'])->name('seen');
         Route::post('/{recipient}/read', [OperationalNotificationController::class, 'read'])->name('read');
         Route::post('/{recipient}/acknowledge', [OperationalNotificationController::class, 'acknowledge'])->name('acknowledge');
+        Route::post('/{recipient}/reminded', [OperationalNotificationController::class, 'reminded'])->name('reminded');
     });
 
     Route::middleware(['auth:sanctum', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function (): void {

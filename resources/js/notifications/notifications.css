@@ -1,0 +1,217 @@
+.coffee-ops-bell {
+    position: relative;
+}
+
+.coffee-ops-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    line-height: 1.1rem;
+    font-size: 0.65rem;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #fff;
+    text-align: center;
+    padding: 0 0.25rem;
+    transform: translate(35%, -25%);
+}
+
+.coffee-ops-badge.is-action {
+    right: auto;
+    left: 0;
+    background: #f6c000;
+    color: #3d2918;
+    transform: translate(-35%, -25%);
+}
+
+.coffee-ops-badge.is-action.is-critical {
+    background: #ff6b35;
+    color: #fff;
+}
+
+.coffee-ops-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 12, 6, 0.45);
+    z-index: 1090;
+}
+
+.coffee-ops-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(100vw, 420px);
+    height: 100%;
+    background: #fff;
+    z-index: 1091;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 28px rgba(0, 0, 0, 0.18);
+}
+
+html.coffee-ops-drawer-open,
+body.coffee-ops-drawer-open {
+    overflow: hidden;
+}
+
+.coffee-ops-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    background: #3d2918;
+    color: #fff;
+}
+
+.coffee-ops-drawer-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.coffee-ops-drawer-body {
+    overflow: auto;
+    padding: 0.85rem 1rem 1.5rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.coffee-ops-section-title {
+    margin: 0.85rem 0 0.55rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6d5b4d;
+    font-weight: 700;
+}
+
+.coffee-ops-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    border: 1px solid #eadfD4;
+    border-radius: 0.65rem;
+    padding: 0.8rem;
+    margin-bottom: 0.65rem;
+    background: #fff;
+}
+
+.coffee-ops-card.is-unread {
+    background: #fff8ef;
+    border-color: #e4c9a5;
+}
+
+.coffee-ops-card.is-critical {
+    border-color: #ff6b35;
+    box-shadow: inset 3px 0 0 #ff6b35;
+}
+
+.coffee-ops-card-title {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #2b1c12;
+    overflow-wrap: anywhere;
+}
+
+.coffee-ops-card-message {
+    margin: 0.2rem 0 0;
+    font-size: 0.85rem;
+    color: #6b584a;
+    overflow-wrap: anywhere;
+}
+
+.coffee-ops-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: #8a7463;
+}
+
+.coffee-ops-chip {
+    background: #eef6ee;
+    color: #2f6b3a;
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+}
+
+.coffee-ops-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.coffee-ops-toast-host {
+    position: fixed;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    width: min(100vw - 1.5rem, 360px);
+    pointer-events: none;
+}
+
+.coffee-ops-toast {
+    pointer-events: auto;
+    background: #fff;
+    border: 1px solid #eadfd4;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+    padding: 0.8rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.coffee-ops-toast.is-action {
+    border-color: #f0b429;
+}
+
+.coffee-ops-toast.is-critical {
+    border-color: #ff6b35;
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.25);
+}
+
+.coffee-ops-toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.coffee-ops-toast-body strong {
+    color: #2b1c12;
+    overflow-wrap: anywhere;
+}
+
+.coffee-ops-toast-body span {
+    color: #6b584a;
+    font-size: 0.86rem;
+    overflow-wrap: anywhere;
+}
+
+.coffee-ops-toast-reminder {
+    font-size: 0.75rem;
+    color: #a05a00;
+}
+
+.coffee-ops-toast-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+@media (max-width: 430px) {
+    .coffee-ops-drawer {
+        width: 100vw;
+    }
+
+    .coffee-ops-toast-host {
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+        bottom: 0.5rem;
+    }
+}

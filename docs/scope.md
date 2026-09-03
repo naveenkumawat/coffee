@@ -1339,12 +1339,21 @@ Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/actio
 
 UPI retail place does **not** create actionable attention (wait for proof / payment confirm). Mixed BAR+KITCHEN orders create independent station notifications. Customer realtime status is deferred.
 
-**R1.3B+ (planned, concise):**
-* R1.3B — Bell drawer + reminder UX foundations on top of R1.3A
-* R1.4 — Inventory / refill realtime alerts for administrator/operator/barista
-* R1.5 — Customer order-status private user-channel updates (minimal payloads)
-* R1.6 — Waiter dining session realtime (table/session scoped; no broad customer exposure)
-* R1.7 — Hardening: reconnect semantics, presence (optional), ops runbooks
+**R1.3B Realtime notification UI + reminder engine (done):** Shared operational notification client for all internal Blade panels (Administrator/Operator/Barista/Chef/Waiter) and waiter PWA foundation.
+
+* **Bell + center:** Shared header bell opens responsive drawer (Action required / Recent). Badges for unread + action-required. Toast alerts for incoming items; critical gets stronger persistent styling.
+* **ACK meanings (unchanged server first-write):** socket receive → `delivered`; visible toast/drawer → `seen`; open/detail → `read`; Acknowledge button → `acknowledge`. Delivery alone does **not** mark read.
+* **Reminders:** `ActionReminderManager` with configurable `REMINDER_INTERVAL_MS = 30000`. Eligible types only (`order.requires_attention|requires_acceptance`, `order.payment_proof_review`, `preparation.ticket_pending`, `dining.ready_to_serve`). Informational cancel/reject = no repeat. Continues until notification **resolved** (ack dismisses toast only). Presented reminders POST `/api/v1/notifications/{recipient}/reminded` (atomic `reminder_count` / `last_reminded_at`; no-op if resolved/non-eligible/foreign recipient).
+* **Sound:** bundled local chime; unlock after first gesture; failures ignored; visual path always works.
+* **Multi-tab:** BroadcastChannel + localStorage leader election — only leader plays sound / shows reminder toasts / increments reminder_count. All tabs upsert state.
+* **Reconnect:** authoritative `GET` list + action-required on bootstrap, reconnect, online, and visibility after absence. Socket is fast path only.
+* **Dining limitation (preserved):** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected — no Served state in R1.3B (L1 workflow gap).
+
+**R1.4+ (planned, concise):**
+* R1.4 — Customer order-status private user-channel updates + customer notification history UI
+* R1.5 — Inventory / refill realtime alerts for administrator/operator/barista
+* R1.6 — Waiter dining session realtime (table/session scoped)
+* R1.7 — Hardening: presence/escalation, ops runbooks; decide whether Dining needs explicit Served
 
 Channel model (authorization-ready):
 * `private-user.{id}` — the authenticated user only

@@ -58,7 +58,10 @@ class AppServiceProvider extends ServiceProvider
             $view->with('customerCartCount', $customerCartCount);
         });
 
-        View::composer('internal.includes.partials.header', function ($view): void {
+        View::composer([
+            'internal.includes.partials.header',
+            'internal.partials.operational-notification-ui',
+        ], function ($view): void {
             $user = auth('admin')->user();
             $staffNotifications = collect();
             $staffUnreadCount = 0;

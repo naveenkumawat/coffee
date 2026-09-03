@@ -289,7 +289,7 @@ class StaffOperationalNotificationTest extends TestCase
         $this->assertSame(OrderStatus::Accepted, $updated->status);
     }
 
-    public function test_administrator_header_shows_unread_badge_and_order_link(): void
+    public function test_administrator_header_shows_operational_notification_bell(): void
     {
         $admin = User::factory()->owner()->create();
         $customer = User::factory()->customer()->create();
@@ -300,9 +300,8 @@ class StaffOperationalNotificationTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->get(route('administrator.dashboard'))
             ->assertOk()
-            ->assertSee('Notifications', false)
-            ->assertSee('New order #'.$order->order_number, false)
-            ->assertSee(route('administrator.orders.show', $order), false);
+            ->assertSee('coffee-ops-bell', false)
+            ->assertSee('coffee-ops-drawer', false);
     }
 
     /**

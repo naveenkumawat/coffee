@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { isWaiter } from '../utils/roles';
 import { realtimeConnection } from './RealtimeConnection';
 import { RealtimeConnectionState } from './types';
+import { normalizeRealtimePayload } from '../notifications/normalize';
+import { useActionReminderEngine, presentImmediateAlert } from '../notifications/useActionReminderEngine';
+import { createTabLeader } from '../notifications/tabLeader';
+import { createNotificationSoundManager } from '../notifications/sound';
+import { SYNC_ABSENCE_MS } from '../notifications/config';
 
 /**
- * Connects the shared Echo client when authenticated; disconnects on logout.
- * Safe under React StrictMode (connect is generation-guarded; effect cleanup disconnects).
+ * Connects Echo, syncs operational notifications, and runs reminder engine for staff PWA.
  */
 export function useRealtimeBootstrap(): RealtimeConnectionState {
   const status = useAuthStore((state) => state.status);
@@ -15,50 +19,85 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
   const [connectionState, setConnectionState] = useState<RealtimeConnectionState>(
     () => realtimeConnection.getState(),
   );
+  const leaderRef = useRef<ReturnType<typeof createTabLeader> | null>(null);
+  const soundRef = useRef<ReturnType<typeof createNotificationSoundManager> | null>(null);
+  const hiddenSince = useRef<number | null>(null);
+  const staffSession = status === 'authenticated' && Boolean(customer?.id);
+  const reminderEnabled = staffSession && isWaiter(customer);
+
+  useActionReminderEngine(reminderEnabled);
 
   useEffect(() => realtimeConnection.subscribe(setConnectionState), []);
 
   useEffect(() => {
-    if (status !== 'authenticated' || !customer?.id) {
+    if (!staffSession || !customer?.id) {
       useNotificationStore.getState().reset();
       realtimeConnection.disconnect();
       return;
     }
 
+    leaderRef.current = createTabLeader();
+    soundRef.current = createNotificationSoundManager();
+
     const roleChannel = isWaiter(customer) ? 'role.waiter' : null;
     void realtimeConnection.connect(customer.id, roleChannel);
+    void useNotificationStore.getState().sync();
 
     const unsubscribe = realtimeConnection.onOperationalNotification((payload) => {
-      const recipientId = Number(payload.recipient_id);
-      if (!Number.isFinite(recipientId) || recipientId <= 0) {
+      const normalized = normalizeRealtimePayload(payload);
+      if (!normalized) {
         return;
       }
 
-      useNotificationStore.getState().upsertFromRealtime({
-        recipient_id: recipientId,
-        id: Number(payload.id) || undefined,
-        uuid: typeof payload.uuid === 'string' ? payload.uuid : undefined,
-        type: typeof payload.type === 'string' ? payload.type : undefined,
-        category: typeof payload.category === 'string' ? payload.category : undefined,
-        priority: typeof payload.priority === 'string' ? payload.priority : undefined,
-        title: typeof payload.title === 'string' ? payload.title : undefined,
-        message: typeof payload.message === 'string' ? payload.message : undefined,
-        action_required: Boolean(payload.action_required),
-        action_code: typeof payload.action_code === 'string' ? payload.action_code : null,
-        action_url: typeof payload.action_url === 'string' ? payload.action_url : null,
-        created_at: typeof payload.created_at === 'string' ? payload.created_at : null,
-      });
+      useNotificationStore.getState().upsertFromRealtime(normalized);
+      void useNotificationStore.getState().markDelivered(normalized.recipient_id).catch(() => undefined);
 
-      void useNotificationStore.getState().markDelivered(recipientId).catch(() => {
-        // Delivery ACK is best-effort; REST list remains authoritative.
-      });
+      if (leaderRef.current?.isLeader()) {
+        const item = useNotificationStore.getState().items.find(
+          (row) => row.recipient_id === normalized.recipient_id,
+        );
+        if (item) {
+          presentImmediateAlert(item, true);
+          void soundRef.current?.play();
+        }
+      }
     });
+
+    const onVisibility = (): void => {
+      if (document.hidden) {
+        hiddenSince.current = Date.now();
+        return;
+      }
+
+      const away = hiddenSince.current ? Date.now() - hiddenSince.current : 0;
+      hiddenSince.current = null;
+      if (away >= SYNC_ABSENCE_MS) {
+        void useNotificationStore.getState().sync();
+      }
+    };
+
+    const onOnline = (): void => {
+      void useNotificationStore.getState().sync();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', onOnline);
 
     return () => {
       unsubscribe();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', onOnline);
+      leaderRef.current?.destroy();
       realtimeConnection.disconnect();
     };
-  }, [status, customer?.id, customer?.role]);
+  }, [staffSession, customer?.id, customer?.role]);
+
+  useEffect(() => {
+    useNotificationStore.getState().setConnectionState(connectionState);
+    if (connectionState === 'connected' || connectionState === 'reconnected') {
+      void useNotificationStore.getState().sync();
+    }
+  }, [connectionState]);
 
   return connectionState;
 }

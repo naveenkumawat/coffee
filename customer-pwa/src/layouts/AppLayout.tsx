@@ -6,6 +6,7 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { RealtimeStatusIndicator } from '../components/common/RealtimeStatusIndicator';
 import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpdateBanner';
 import { ToastHost } from '../components/common/ToastHost';
+import { NotificationBell, NotificationDrawer } from '../components/notifications/NotificationBell';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
@@ -94,12 +95,18 @@ export function AppLayout() {
         </div>
       ) : null}
       <main className="app-main" id="main-content">
+        {authStatus === 'authenticated' && isWaiter(customer) ? (
+          <div className="ops-notification-floating-bell">
+            <NotificationBell />
+          </div>
+        ) : null}
         <Suspense fallback={<LoadingSkeleton cardCount={2} lines={4} />}>
           <Outlet />
         </Suspense>
         {!hasStickyCta ? <SiteFooter /> : null}
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
+      {authStatus === 'authenticated' ? <NotificationDrawer /> : null}
       <RealtimeStatusIndicator state={realtimeState} />
       <BottomNavigation />
     </div>

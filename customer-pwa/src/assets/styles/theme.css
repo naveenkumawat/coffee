@@ -6372,3 +6372,154 @@ body.product-overlay-open .bottom-navigation {
   background: rgba(46, 125, 50, 0.16);
   color: #1b5e20;
 }
+
+/* R1.3B operational notifications (waiter PWA foundation) */
+.ops-notification-floating-bell {
+  position: sticky;
+  top: 0.65rem;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0.85rem;
+  margin-bottom: -0.25rem;
+}
+
+.ops-notification-bell {
+  position: relative;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(61, 41, 24, 0.92);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.ops-notification-bell-unread,
+.ops-notification-bell-action {
+  position: absolute;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  line-height: 1.1rem;
+  text-align: center;
+}
+
+.ops-notification-bell-unread {
+  top: -0.15rem;
+  right: -0.15rem;
+  background: #dc3545;
+  color: #fff;
+}
+
+.ops-notification-bell-action {
+  top: -0.15rem;
+  left: -0.15rem;
+  background: #f6c000;
+  color: #3d2918;
+}
+
+.ops-notification-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+
+.ops-notification-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(20, 12, 6, 0.45);
+}
+
+.ops-notification-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(100vw, 420px);
+  height: 100%;
+  background: #fff8ef;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 28px rgba(0, 0, 0, 0.18);
+}
+
+.ops-notification-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #3d2918;
+  color: #fff;
+}
+
+.ops-notification-drawer-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.ops-notification-drawer-header button,
+.ops-notification-card-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.14);
+  color: inherit;
+}
+
+.ops-notification-drawer-body {
+  overflow: auto;
+  padding: 0.9rem 1rem 1.5rem;
+}
+
+.ops-notification-drawer-body h3 {
+  margin: 0.8rem 0 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6d5b4d;
+}
+
+.ops-notification-card {
+  border: 1px solid #eadfd4;
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  margin-bottom: 0.65rem;
+  background: #fff;
+}
+
+.ops-notification-card h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-notification-card p {
+  margin: 0.3rem 0;
+  color: #6b584a;
+  overflow-wrap: anywhere;
+}
+
+.ops-notification-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ops-notification-card-actions button {
+  background: #3d2918;
+  color: #fff;
+}
+
+.ops-notification-empty {
+  color: #8a7463;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 430px) {
+  .ops-notification-drawer {
+    width: 100vw;
+  }
+}

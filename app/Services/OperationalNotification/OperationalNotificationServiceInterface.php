@@ -101,6 +101,12 @@ interface OperationalNotificationServiceInterface
     public function recordReminder(OperationalNotificationRecipient $recipient): OperationalNotificationRecipient;
 
     /**
+     * Atomically record a presented reminder for an unresolved action-required recipient.
+     * No-ops when resolved, non-actionable, or type is not reminder-eligible.
+     */
+    public function recordPresentedReminder(OperationalNotificationRecipient $recipient): OperationalNotificationRecipient;
+
+    /**
      * @return array{
      *     delivery_delay_seconds: int|null,
      *     first_seen_delay_seconds: int|null,

@@ -110,6 +110,22 @@
         <script src="{{ asset('internal/assets/js/custom.js') }}"></script>
         <script src="{{ asset('internal/assets/js/config/app-config.js') }}"></script>
         @include('internal.partials.realtime-bootstrap', ['panel' => $panel])
+        @include('internal.partials.operational-notification-ui', [
+            'dashboardRoute' => match ($panel) {
+                'administrator' => route('administrator.dashboard'),
+                'operator' => route('operator.dashboard'),
+                'chef' => route('chef.dashboard'),
+                'waiter' => route('waiter.dashboard'),
+                default => route('barista.dashboard'),
+            },
+            'notificationsReadAllRoute' => match ($panel) {
+                'administrator' => route('administrator.notifications.read-all'),
+                'operator' => route('operator.notifications.read-all'),
+                'chef' => route('chef.notifications.read-all'),
+                'waiter' => route('waiter.notifications.read-all'),
+                default => route('barista.notifications.read-all'),
+            },
+        ])
         @stack('scripts')
         @include('components.flash-toast')
     </body>

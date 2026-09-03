@@ -364,16 +364,20 @@ class OperationalNotificationLifecycleTest extends TestCase
     {
         $api = File::get(base_path('customer-pwa/src/api/notifications.ts'));
         $store = File::get(base_path('customer-pwa/src/stores/notificationStore.ts'));
-        $bladeClient = File::get(base_path('resources/js/notifications.js'));
+        $bladeApi = File::get(base_path('resources/js/notifications/api.js'));
+        $bladeBootstrap = File::get(base_path('resources/js/notifications/bootstrap.js'));
         $realtime = File::get(base_path('resources/js/realtime.js'));
 
         $this->assertStringContainsString('fetchNotifications', $api);
         $this->assertStringContainsString('markNotificationDelivered', $api);
+        $this->assertStringContainsString('recordNotificationReminder', $api);
         $this->assertStringContainsString('unreadCount', $store);
         $this->assertStringContainsString('actionRequiredCount', $store);
         $this->assertStringContainsString('acknowledge', $store);
-        $this->assertStringContainsString('__COFFEE_NOTIFICATIONS__', $bladeClient);
+        $this->assertStringContainsString('__COFFEE_NOTIFICATIONS__', $bladeApi);
+        $this->assertStringContainsString('createActionReminderManager', $bladeBootstrap);
         $this->assertStringContainsString('operational.notification', $realtime);
         $this->assertStringContainsString('resources/js/notifications.js', File::get(base_path('resources/views/internal/partials/realtime-bootstrap.blade.php')));
+        $this->assertStringContainsString('reminded', File::get(base_path('routes/api.php')));
     }
 }
