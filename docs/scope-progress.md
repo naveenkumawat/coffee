@@ -7,6 +7,7 @@ Software completion audit: [development-completion-audit.md](./development-compl
 
 ## Audit Summary
 
+- **L4 (2026-09-04):** Phase-1 software baseline is **DEVELOPMENT COMPLETE / FROZEN** after demo acceptance (representative workflow suite + full **585** tests). **NOT PRODUCTION READY** until **L-data** (real café values) + **L-go-live** (deploy/smoke). See frozen-baseline in `docs/development-completion-audit.md`.
 - **L3 (2026-09-04):** Phase-1 software for the agreed launch model is ~93% complete. No launch-critical **software** gaps remain. Blockers for go-live are café **DATA/CONFIG** (`docs/launch-data-todo.md`) and **production smoke**, not missing core features. See `docs/development-completion-audit.md`. Project is **not** marked launch-ready.
 - Completed foundations:
   - Laravel 13 application scaffold
@@ -397,8 +398,9 @@ Status: Partial
 - [x] L1.2 Dining post-prep/post-served cancellation matrix implemented (`DiningRoundCancellationPolicy`; privileged reason after prep/Ready; Served blocked; bill/payment/closed gates; F2 reversal only pre-material-prep; void/comp/refund deferred)
 - [x] L2 launch-data readiness implemented (audit + `coffee:launch-readiness` read-only gate; DemoSeeder/production seed isolation verified; `LaunchCatalogSeeder` refuses until launch-menu confirmed; checklists updated — real café data still MISSING, not marked complete)
 - [x] L3 launch feature completion audit completed (`docs/development-completion-audit.md`; ~93% Phase-1 software for agreed launch model; no launch-critical software gaps; real café data + prod smoke remain separate; **not** marked launch-ready)
+- [x] L4 Phase-1 development freeze & demo acceptance completed (representative demo workflows verified via automated tests; production safeguards confirmed; baseline **FROZEN** — **NOT PRODUCTION READY** until L-data + L-go-live)
 - [x] Customer product search implemented
-- [ ] Internal search for orders/customers/products/ingredients/refill requests implemented (optional L4 soft polish; not launch-critical)
+- [ ] Internal search for orders/customers/products/ingredients/refill requests implemented (explicitly deferred; not launch-critical; out of frozen Phase-1 baseline)
 
 ## Phase 11 - Security, Audit, and Responsive Completion
 Status: Partial (non-blocking polish only)
@@ -440,18 +442,27 @@ Status: Pending (explicitly deferred; not launch-blocking)
 - [ ] Advanced accounting implemented
 - [ ] AI forecasting and recommendation features implemented
 
+## Phase-1 software baseline (L4 freeze)
+
+Status: **DEVELOPMENT COMPLETE / FROZEN** (2026-09-04)
+
+- Agreed Phase-1 launch-model software is frozen: no new Phase-1 features without an explicit reopen.
+- **NOT PRODUCTION READY** and **not launch-ready** until café **L-data** + **L-go-live** smoke succeed.
+- Demo acceptance proven with controlled demo/test data only (`DemoSeeder` local/testing).
+- Canonical freeze record: `docs/development-completion-audit.md` → Frozen baseline (L4).
+
 ## Remaining SOFTWARE phases (post-L3)
 
 Canonical detail: `docs/development-completion-audit.md`.
 
 - [x] **L3** — Launch feature completion audit (`docs/development-completion-audit.md`)
-- [ ] **L4** — Optional soft polish only if ops need it before go-live (staff internal search; dense Admin responsive/a11y spot-fixes; broader policy review). Not required to declare software development-complete for the agreed launch model.
-- [ ] **Post-launch / Phase 2+** — Web Push/VAPID; payment gateway; void/comp/refund; OTP; loyalty/wallet; courier API; F3.3 enhancement; advanced AI — only when product prioritizes them.
+- [x] **L4** — Phase-1 development freeze & demo acceptance (workflows verified; safeguards confirmed; baseline frozen)
+- [ ] **Post-launch / Phase 2+** — Web Push/VAPID; payment gateway; void/comp/refund; OTP; loyalty/wallet; courier API; F3.3 enhancement; advanced AI; optional staff internal search / Admin polish — only when product prioritizes them (outside frozen Phase-1)
 
 ## Later non-software phases (do not treat as development backlog)
 
 - [ ] **L-data** — Final real café data loading (menu, prices, recipes, stock, images, UPI/QR, hours, staff, tables, legal). Gate: `php artisan coffee:launch-readiness`. See `docs/launch-data-todo.md`. DemoSeeder remains local/testing only.
-- [ ] **L-go-live** — Production deployment + smoke (`docs/production-deployment.md`, realtime runbook). Software-complete ≠ launch-ready.
+- [ ] **L-go-live** — Production deployment + smoke (`docs/production-deployment.md`, realtime runbook). Software-complete / frozen ≠ launch-ready.
 
 ## Dining flow
 
@@ -466,3 +477,5 @@ Canonical detail: `docs/development-completion-audit.md`.
 - [x] L1.1 Dining Served / Delivered-to-table: per-round Mark Served after all stations Ready; resolves Ready-to-Serve + stops reminders; Waiter PWA/Blade + customer Delivered state; does not complete session/bill
 - [x] L1.2 Dining cancellation exceptions: canonical server matrix; Waiter pre-prep cancel; Operator/Admin privileged cancel with reason after prep/Ready; Served/bill/payment/closed blocked; inventory follows F2; void/comp/refund deferred
 - [x] L2 launch-data readiness: `coffee:launch-readiness` gate + checklists; real menu/payment/hours/staff/tables still café-supplied (not invented)
+- [x] L3 development-completion audit: software vs data separation; no launch-critical software gaps for agreed model
+- [x] L4 Phase-1 freeze & demo acceptance: baseline **FROZEN**; **NOT PRODUCTION READY** pending L-data + L-go-live

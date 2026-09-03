@@ -20,6 +20,8 @@ Remaining work is mostly:
 
 This audit does **not** mark the project launch-ready. Software readiness ≠ café-data readiness ≠ production go-live.
 
+**L4 (2026-09-04):** Phase-1 software baseline is **DEVELOPMENT COMPLETE / FROZEN** after demo acceptance. See [Frozen baseline (L4)](#frozen-baseline-l4). Still **not** production-ready.
+
 Demo/controlled seed data (`DemoSeeder`) remains **local/testing only**. Real production values must not be invented.
 
 ---
@@ -68,7 +70,7 @@ Demo/controlled seed data (`DemoSeeder`) remains **local/testing only**. Real pr
 | Web Push / VAPID | DEFERRED | Documented deferred past R1.7 | Optional engagement | No | Post-launch |
 | Customer transactional email/WhatsApp | COMPLETE | Mailables + WhatsApp dispatcher; tests | Prod credentials/templates | No — CONFIG | Prod verify |
 | Staff WhatsApp | DEFERRED | In-app + email; WhatsApp deferred | Optional | No | Post-launch |
-| Internal search (orders/customers/products) | NOT IMPLEMENTED | No staff search module/routes | Build if ops need it | No | Soft polish (L4) |
+| Internal search (orders/customers/products) | NOT IMPLEMENTED | No staff search module/routes | Build if ops need it | No | Post-launch (outside freeze) |
 | Audit / history depth | PARTIAL | SoftDeletes + operational notifications + consumption ledger; no universal activity-log UI | Optional audit UI | No | Post-launch polish |
 | SoftDeletes (scoped entities) | COMPLETE | Models use SoftDeletes where established | — | No | — |
 | Idempotency (payments / ops notifications / dining) | COMPLETE | Keys + tests in payment/ops/dining paths | — | No | — |
@@ -211,13 +213,9 @@ These are **software** only. Real café data remains a **separate later phase**.
 
 Status: **DONE** (2026-09-04). No large feature work in this phase.
 
-### L4 — Soft polish (optional, non-blocking)
+### L4 — Phase-1 development freeze & demo acceptance
 
-Only if ops need it before go-live:
-
-- Staff internal search for orders/customers/products/ingredients/refills
-- Spot responsive/a11y fixes on dense Admin screens
-- Broader policy review pass where still role-middleware-only
+Status: **DONE** (2026-09-04). Baseline **FROZEN**. No new Phase-1 features. Soft polish (internal search, dense Admin a11y, policy breadth) is **out of freeze** / post-launch unless product reopens scope.
 
 ### L-data — Final real café data loading *(not software)*
 
@@ -229,12 +227,52 @@ Follow `docs/production-deployment.md` + realtime smoke runbook. Do not equate s
 
 ### Post-launch / Phase 2+
 
-Gateway, Web Push, void/comp/refund, OTP, loyalty/wallet, courier API, advanced analytics, mobile apps — only when product prioritizes them.
+Gateway, Web Push, void/comp/refund, OTP, loyalty/wallet, courier API, advanced analytics, mobile apps, optional staff search — only when product prioritizes them.
+
+---
+
+## Frozen baseline (L4)
+
+**Frozen:** 2026-09-04  
+**Status:** Phase-1 software **DEVELOPMENT COMPLETE / FROZEN** for the agreed launch model.  
+**Not:** production-ready or launch-ready (requires **L-data** + **L-go-live**).
+
+### Acceptance (demo / automated)
+
+Representative launch workflows verified via feature tests (subset **178** passed) covering takeaway/delivery + disclaimer, payment proof/cash, dining rounds/Served/cancel, Waiter/Operator/Chef paths, inventory consumption/refill, promotions/referrals/invoices, realtime hardening/presence/dining channels, cafe availability, and launch-readiness/demo seeder safeguards.
+
+Full suite at freeze: **585** tests passed, **3563** assertions.
+
+PWA at freeze: `npm run typecheck` + `npm run build` OK (`customer-pwa`).
+
+Pint: clean on dirty tree.
+
+### Production safeguards confirmed
+
+- `DemoSeeder` (and demo child seeders) refuse non-`local`/`testing` (`DemoSeederSafetyTest`)
+- Production `DatabaseSeeder` is structural-only (no catalog/orders/`@coffee.local` users)
+- `LaunchCatalogSeeder` refuses until launch menu confirmed
+- `coffee:launch-readiness` fails while real business/payment/catalog/CMS data missing
+- Delivery fee remains unset under third-party model (`delivery_fee_amount` null; optional deferred in readiness)
+- Deferred features (gateway, Web Push, void/comp/refund, courier API, etc.) are **not** launch-required
+
+### Explicitly deferred (outside frozen Phase-1)
+
+Web Push/VAPID · payment gateway · void/comp/refund · post-payment financial correction · wastage automation · advanced AI · F3.3 enhancement · OTP · loyalty/wallet · courier API · staff internal search · optional Admin responsive polish
+
+### Demo data
+
+`DemoSeeder` remains coherent enough for local/testing acceptance only. Do not expand into a final production menu. Do not invent café production values.
+
+### Next phases
+
+1. **L-data** — owner-supplied real café data; pass `coffee:launch-readiness`
+2. **L-go-live** — production deploy + smoke per `docs/production-deployment.md`
 
 ---
 
 ## Trivial doc consistency notes corrected with L3
 
-- Historical Phase 0–early checklists in `docs/scope-progress.md` retain early-project wording; later phases and L1/L2/L3 are authoritative for current status.
+- Historical Phase 0–early checklists in `docs/scope-progress.md` retain early-project wording; later phases and L1/L2/L3/L4 are authoritative for current status.
 - Phase 12 “table ordering / dine-in” items are satisfied by Dining (D1–L1.2); marked accordingly in progress update.
 - Immediate next-build backlog at end of progress file replaced by remaining software phases above.

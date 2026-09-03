@@ -400,6 +400,12 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Delivery model stays third-party / café does not collect delivery fee; disclaimer is config-driven.
 * Do not mark the project launch-ready from L3 alone.
 
+## Phase-1 freeze (L4)
+
+* Phase-1 agreed launch-model software is **DEVELOPMENT COMPLETE / FROZEN** after demo acceptance.
+* **NOT PRODUCTION READY** until real café data (`docs/launch-data-todo.md`) and production smoke (`docs/production-deployment.md`).
+* Freeze record: `docs/development-completion-audit.md` → Frozen baseline (L4).
+
 ## Mobile ordering journey hardening (C2)
 
 * Guest cart merge preserves add-on `configuration_hash` lines; login returns to intended checkout path.

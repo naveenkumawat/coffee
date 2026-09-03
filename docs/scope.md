@@ -1739,3 +1739,10 @@ Capabilities on Waiter session rounds: `can_cancel`, `cancel_requires_reason`, `
 * **Artifact:** `docs/development-completion-audit.md` (status matrix + remaining software phases).
 * **Outcome:** Agreed Phase-1 launch-model software is treated as development-complete enough for real-data loading; **not** launch-ready until L-data + L-go-live.
 * **Do not implement in L3:** Large new features discovered by the audit — prioritize first.
+
+## L4 — Phase-1 development freeze & demo acceptance
+
+* **Purpose:** Freeze Phase-1 software; prove launch workflows with controlled demo data; confirm production safeguards.
+* **Outcome:** Baseline **DEVELOPMENT COMPLETE / FROZEN**. **NOT PRODUCTION READY** until L-data + L-go-live.
+* **Artifact:** Frozen-baseline section in `docs/development-completion-audit.md`.
+* **Out of freeze:** Web Push, gateway, void/comp/refund, courier API, soft polish features.
