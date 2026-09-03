@@ -383,6 +383,8 @@ Status: Partial
 - [x] Customer transactional WhatsApp notifications implemented (order/payment lifecycle via Meta Cloud API; password flows remain email-only; preparing off by default)
 - [x] Internal/staff operational notifications implemented (Administrator/Barista in-app + high-value email; staff WhatsApp deferred)
 - [x] Inventory/refill operational alerts implemented (stock state transitions + refill workflow via StaffNotificationDispatcher)
+- [x] R1.1 realtime foundation implemented (Laravel Reverb + Echo; private user/role channels; PWA + Blade connection bootstrap; probe event; no business notification wiring yet)
+- [ ] R1.2+ realtime business events (orders/payments/preparation/inventory/customer status) not started
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 

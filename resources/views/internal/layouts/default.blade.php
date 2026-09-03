@@ -109,6 +109,7 @@
         <script src="{{ asset('internal/assets/plugins/custom/ckeditor/ckeditor-classic.bundle.js') }}"></script>
         <script src="{{ asset('internal/assets/js/custom.js') }}"></script>
         <script src="{{ asset('internal/assets/js/config/app-config.js') }}"></script>
+        @include('internal.partials.realtime-bootstrap', ['panel' => $panel])
         @stack('scripts')
         @include('components.flash-toast')
     </body>

@@ -1305,6 +1305,27 @@ Future integrations can extend these notifications through:
 * SMS
 * Mobile push notifications
 
+### R1 — Realtime delivery (self-hosted)
+
+Realtime is an additive delivery path for operational alerts. It does **not** replace REST/API authority.
+
+**R1.1 Foundation (done):** Laravel Reverb + Echo, private channels, authenticated connection state for PWA + internal Blade panels. No business event wiring yet.
+
+**R1.2+ (planned, concise):**
+* R1.2 — Staff order/payment/preparation private events on role + user channels
+* R1.3 — Inventory / refill realtime alerts for administrator/operator/barista
+* R1.4 — Customer order-status private user-channel updates (minimal payloads)
+* R1.5 — Waiter dining session realtime (table/session scoped; no broad customer exposure)
+* R1.6 — Hardening: reconnect semantics, presence (optional), ops runbooks
+
+Channel model (authorization-ready):
+* `private-user.{id}` — the authenticated user only
+* `private-role.administrator` — owner/manager
+* `private-role.operator|barista|chef|waiter` — matching staff role only
+* Customers never subscribe to staff role channels
+
+Constraints: self-hosted Reverb only (no Pusher/Ably/Firebase). Broadcast DTOs only — never raw Eloquent models. Realtime failure must never block REST.
+
 ---
 
 # 42. Search

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { fetchCurrentCustomer, loginCustomer, logoutCustomer, registerCustomer } from '../api/auth';
 import { ApiError, setUnauthorizedHandler } from '../api/client';
+import { realtimeConnection } from '../realtime/RealtimeConnection';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
 import { setSessionAuthenticated, isSessionAuthenticated } from '../utils/authSession';
 import { isWaiter } from '../utils/roles';
@@ -158,6 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return { customer: response.data, mergedGuestCart };
   },
   logout: async () => {
+    realtimeConnection.disconnect();
     await logoutCustomer();
     resetCustomerSession(set);
   },
@@ -171,9 +173,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
   clearAuth: () => {
+    realtimeConnection.disconnect();
     resetCustomerSession(set);
   },
   setGuest: () => {
+    realtimeConnection.disconnect();
     resetCustomerSession(set);
   },
 }));

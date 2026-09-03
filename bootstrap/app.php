@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AddRequestContext;
+use App\Http\Middleware\AuthenticateBroadcastRequest;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ExposeSanctumCsrfToken;
 use App\Http\Middleware\SecurityHeaders;
@@ -22,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+    )
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['middleware' => ['web', AuthenticateBroadcastRequest::class]],
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(AddRequestContext::class);

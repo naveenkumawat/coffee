@@ -40,4 +40,21 @@ return [
         ),
     ],
     'timezone' => env('COFFEE_TIMEZONE', 'Asia/Kolkata'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Realtime (R1) — Laravel Reverb
+    |--------------------------------------------------------------------------
+    |
+    | Clients may connect only when enabled and credentials are present.
+    | When disabled or misconfigured, REST/API continues normally.
+    |
+    */
+    'realtime' => [
+        'enabled' => (bool) env('COFFEE_REALTIME_ENABLED', env('BROADCAST_CONNECTION') === 'reverb'),
+        'key' => env('REVERB_APP_KEY'),
+        'host' => env('REVERB_HOST', 'localhost'),
+        'port' => (int) env('REVERB_PORT', 8080),
+        'scheme' => env('REVERB_SCHEME', 'http'),
+    ],
 ];

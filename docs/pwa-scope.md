@@ -121,6 +121,7 @@ Future API additions expected:
 
 - richer order timeline/status presentation if needed
 - push notification registration endpoints if notifications are introduced later
+- realtime private-channel delivery (R1) — foundation uses Laravel Reverb/Echo; business events arrive in R1.2+
 - loyalty/rewards endpoints if added later
 
 ## Mobile UX Requirements

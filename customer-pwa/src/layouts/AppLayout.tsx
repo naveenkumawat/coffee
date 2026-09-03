@@ -3,11 +3,13 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { RealtimeStatusIndicator } from '../components/common/RealtimeStatusIndicator';
 import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpdateBanner';
 import { ToastHost } from '../components/common/ToastHost';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
+import { useRealtimeBootstrap } from '../realtime/useRealtimeBootstrap';
 import { useAuthStore } from '../stores/authStore';
 import { selectBrandName, selectAvailability, useContentStore } from '../stores/contentStore';
 import { clearChunkRecoveryFlag } from '../utils/chunkRecovery';
@@ -22,6 +24,7 @@ export function AppLayout() {
   const authStatus = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
   const [hasStickyCta, setHasStickyCta] = useState(false);
+  const realtimeState = useRealtimeBootstrap();
 
   useAppBootstrap();
 
@@ -97,6 +100,7 @@ export function AppLayout() {
         {!hasStickyCta ? <SiteFooter /> : null}
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
+      <RealtimeStatusIndicator state={realtimeState} />
       <BottomNavigation />
     </div>
   );
