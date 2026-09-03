@@ -75,5 +75,43 @@ return [
         'search_query_max_length' => (int) env('COFFEE_BEHAVIOUR_SEARCH_QUERY_MAX_LENGTH', 100),
         'visitor_ttl_days' => (int) env('COFFEE_BEHAVIOUR_VISITOR_TTL_DAYS', 180),
         'rate_limit_per_minute' => (int) env('COFFEE_BEHAVIOUR_RATE_LIMIT_PER_MINUTE', 60),
+
+        /*
+        | P2.2 derived personalisation profiles (rebuildable; not commercial truth).
+        | Purchase signals use canonical completed orders — never client order_completed.
+        */
+        'profile' => [
+            'version' => 1,
+            'min_evidence_signals' => (int) env('COFFEE_PERSONALISATION_MIN_EVIDENCE', 3),
+            'top_n' => (int) env('COFFEE_PERSONALISATION_TOP_N', 10),
+            'recent_n' => (int) env('COFFEE_PERSONALISATION_RECENT_N', 8),
+            'stale_after_hours' => (int) env('COFFEE_PERSONALISATION_STALE_HOURS', 24),
+            'lookback_days' => (int) env('COFFEE_PERSONALISATION_LOOKBACK_DAYS', 180),
+            'recency_half_life_days' => (float) env('COFFEE_PERSONALISATION_HALF_LIFE_DAYS', 30),
+            'max_repeats_per_signal' => (int) env('COFFEE_PERSONALISATION_MAX_REPEATS', 5),
+            'min_orders_for_spend_band' => (int) env('COFFEE_PERSONALISATION_MIN_ORDERS_SPEND', 2),
+            'min_orders_for_frequency' => (int) env('COFFEE_PERSONALISATION_MIN_ORDERS_FREQ', 2),
+            'weights' => [
+                'purchase_item' => 10.0,
+                'favourite_added' => 5.0,
+                'cart_item_added' => 3.0,
+                'product_customized' => 2.5,
+                'product_viewed' => 1.0,
+                'category_viewed' => 1.0,
+                'favourite_removed' => -1.5,
+                'cart_item_removed' => -0.5,
+            ],
+            'spend_bands' => [
+                ['key' => 'low', 'max' => 200.0],
+                ['key' => 'mid', 'max' => 500.0],
+                ['key' => 'high', 'max' => null],
+            ],
+            'time_of_day' => [
+                'morning' => [5, 11],
+                'afternoon' => [11, 17],
+                'evening' => [17, 21],
+                'night' => [21, 5],
+            ],
+        ],
     ],
 ];

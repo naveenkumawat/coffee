@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('coffee:behaviour-events-prune')
     ->dailyAt('03:20')
     ->withoutOverlapping();
+
+Schedule::command('coffee:personalisation-profiles-rebuild --stale --limit=200')
+    ->hourly()
+    ->withoutOverlapping();

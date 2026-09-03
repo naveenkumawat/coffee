@@ -6,19 +6,24 @@ Phase-1 launch software remains **FROZEN**; this is Phase-2 work on top of that 
 ## Pipeline
 
 ```
-Behaviour Events (P2.1)
-  → Derived Customer/Visitor Profile (P2.2)
-  → Segmentation / Context (P2.5)
-  → Recommendation Engine (P2.3) + Campaign/Popup Engine (P2.4)
-  → Impression / Click / Conversion events
-  → Analytics (P2.6)
+Behaviour Events + Canonical Completed Orders
+        ↓
+Profile Builder (deterministic V1)
+        ↓
+Derived Personalisation Profile
+        ↓
+P2.3 Recommendation Engine
+P2.4 Campaign / Popup Engine
+P2.5 Segmentation / Targeting
+        ↓
+Impression / Click / Conversion events → P2.6 Analytics
 ```
 
 | Phase | Status | Scope |
 | --- | --- | --- |
-| **P2.1** Behaviour Tracking | **Implemented** | Raw append-only events, visitor identity, ingest API, PWA client, retention |
-| **P2.2** Personalisation Profile | Next | Derive affinities (category/product/flavour/variant/add-on), spend band, time-of-day, frequency — from events, not speculative columns |
-| **P2.3** Recommendation Engine | Planned | Rank / suggest products using profiles + catalog |
+| **P2.1** Behaviour Tracking | **COMPLETE** | Raw append-only events, visitor identity, ingest API, PWA client, retention |
+| **P2.2** Personalisation Profiles | **COMPLETE** | Derived customer/visitor profiles from events + completed orders |
+| **P2.3** Recommendation Engine | **NEXT** | Rank / suggest products using profiles + catalog; cold-start strategies |
 | **P2.4** Campaign/Popup Engine | Planned | Targeted landing/popups using segments + context |
 | **P2.5** Segmentation/Targeting | Planned | Visitor/customer segments for campaigns |
 | **P2.6** Analytics | Planned | Recommendation/campaign impression→conversion reporting |
@@ -45,24 +50,79 @@ Behaviour Events (P2.1)
 - On login/register, PWA calls `POST /api/v1/behaviour/merge`.
 - **Ownership boundary:** `customer_visitor_identities` claims a `visitor_key` for at most one customer (first successful merge). Later customers on a shared device get `visitor_claimed` and the PWA rotates the visitor id. Merge of unclaimed events is idempotent (`customer_id IS NULL` only). Authenticated activity belonging to another customer is never rewritten.
 
-## Privacy & retention
+## P2.2 derived profiles
+
+Canonical model: `personalisation_profiles` — one row per **customer** *or* **visitor** (`customer_id` XOR `visitor_key`).
+
+Stored signals (ranked JSON where flexible):
+
+- category / product / flavour affinities
+- preferred variants, add-on preferences
+- recent product/category ids
+- purchase frequency + repeat-purchase product ids
+- spend band (`low` / `mid` / `high` with sufficiency flag)
+- time-of-day preferences (`morning` / `afternoon` / `evening` / `night`)
+- sample counts, `has_sufficient_evidence`, `calculated_at`, `profile_version`
+
+### Scoring (deterministic V1)
+
+Configured under `coffee.behaviour.profile` (not magic numbers in call sites):
+
+| Evidence | Approximate weight |
+| --- | --- |
+| Canonical completed-order line | `purchase_item` (10) |
+| Favourite added | 5 |
+| Cart add | 3 |
+| Customize | 2.5 |
+| View / category view | 1 |
+| Favourite / cart remove | small negative |
+
+- **Purchases** come only from `orders.status = completed` (+ items/add-ons). Behaviour `order_completed` rows are **excluded** from scoring to avoid double counting.
+- Cancelled/rejected orders are excluded.
+- Repeat cap: diminishing `1/n` within `max_repeats_per_signal`.
+- Recency: exponential decay with `recency_half_life_days` (café timezone via `coffee.timezone`).
+- Cold start: empty affinities + `has_sufficient_evidence = false` when below `min_evidence_signals`. No invented preferences.
+
+### Rebuild / processing
+
+- `PersonalisationProfileService::rebuildForCustomer|Visitor` — idempotent full rebuild.
+- `RebuildPersonalisationProfileJob` (unique, queued) after meaningful ingest / order completed / visitor merge.
+- `coffee:personalisation-profiles-rebuild` (`--customer`, `--visitor`, `--stale`, `--reset-*`).
+- Hourly stale rebuild scheduled. Failures never affect cart/checkout/payment UX.
+- Internal read contract: `profilePayloadForCustomer|Visitor` for future engines (no raw event dump to PWA).
+
+### Visitor → customer
+
+After a valid P2.1 claim/merge: visitor profile row is deleted; customer profile rebuild uses attached events + orders. Shared-device `visitor_claimed` unchanged.
+
+### Privacy / retention interaction
+
+| Topic | Behaviour |
+| --- | --- |
+| Tracking disabled | No behaviour events loaded into rebuild; **canonical completed orders** still inform customer profiles |
+| Raw event prune | Deletes events only; profiles remain until next rebuild (then reflect remaining lookback window + orders) |
+| Profile reset | `--reset-customer` / `--reset-visitor` deletes derived rows only — never orders/finance/inventory |
+| PWA | Does not expose full behavioural history or profile internals |
+
+## Privacy & retention (events)
 
 | Topic | Behaviour |
 | --- | --- |
 | Purpose | Personalisation foundation (recommendations, campaigns, analytics) — not payments/ops |
 | Collected | Event type, visitor key, optional customer id, product/category/variant/order refs, short page context, allowlisted metadata |
-| Search | Normalized, length-limited query text only (`coffee.behaviour.search_query_max_length`) |
+| Search | Normalized, length-limited query text only |
 | Not stored | Auth tokens, payment details, recipes/costs, secrets, arbitrary payloads, fingerprints |
-| Disable | `COFFEE_BEHAVIOUR_TRACKING_ENABLED=false` — API no-ops; content exposes `behaviour.tracking_enabled`; journey unaffected |
-| Retention | Raw events pruned by `coffee:behaviour-events-prune` (scheduled daily). Default 180 days. Does **not** delete orders, payments, inventory, audit, or operational records |
-| Consent | No cookie-consent platform in P2.1. Future consent can gate the same `enabled` config / content flag |
+| Disable | `COFFEE_BEHAVIOUR_TRACKING_ENABLED=false` |
+| Retention | `coffee:behaviour-events-prune` (scheduled). Does **not** delete orders, payments, inventory, audit, or operational records |
 
 ## Performance
 
-- Thin synchronous insert; public contract stable if processing later moves to queues.
+- Thin event insert; profile rebuild is async/unique-job.
 - Rate limit: `throttle:behaviour-events`.
 - PWA tracker fails silently; never blocks navigation/cart/checkout.
 
-## Admin
+## Admin / ops
 
-No surveillance dashboard. Diagnostics: `php artisan coffee:behaviour-events-prune --stats`.
+- Event diagnostics: `php artisan coffee:behaviour-events-prune --stats`
+- Profile rebuild/reset: `php artisan coffee:personalisation-profiles-rebuild ...`
+- No customer surveillance dashboard in P2.1/P2.2

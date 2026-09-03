@@ -30,6 +30,8 @@ use App\Repositories\OperationalNotification\OperationalNotificationRepository;
 use App\Repositories\OperationalNotification\OperationalNotificationRepositoryInterface;
 use App\Repositories\Order\OrderRepository;
 use App\Repositories\Order\OrderRepositoryInterface;
+use App\Repositories\Personalisation\PersonalisationProfileRepository;
+use App\Repositories\Personalisation\PersonalisationProfileRepositoryInterface;
 use App\Repositories\Product\ProductCategoryRepository;
 use App\Repositories\Product\ProductCategoryRepositoryInterface;
 use App\Repositories\Product\ProductFlavourRepository;
@@ -55,6 +57,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(BehaviourEventRepositoryInterface::class, BehaviourEventRepository::class);
+        $this->app->bind(PersonalisationProfileRepositoryInterface::class, PersonalisationProfileRepository::class);
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavouriteRepositoryInterface::class, FavouriteRepository::class);
         $this->app->bind(HomeSectionRepositoryInterface::class, HomeSectionRepository::class);

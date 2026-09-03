@@ -64,6 +64,8 @@ use App\Services\OrderSecurity\OrderSecurityService;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\Payment\PaymentEligibilityService;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
+use App\Services\Personalisation\PersonalisationProfileService;
+use App\Services\Personalisation\PersonalisationProfileServiceInterface;
 use App\Services\Product\ProductCatalogService;
 use App\Services\Product\ProductCatalogServiceInterface;
 use App\Services\Product\ProductCategoryService;
@@ -113,6 +115,7 @@ class DomainServiceProvider extends ServiceProvider
     {
         $this->app->bind(AddOnServiceInterface::class, AddOnService::class);
         $this->app->bind(BehaviourEventServiceInterface::class, BehaviourEventService::class);
+        $this->app->bind(PersonalisationProfileServiceInterface::class, PersonalisationProfileService::class);
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);

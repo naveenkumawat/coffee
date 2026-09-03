@@ -8,6 +8,7 @@ use App\Models\CustomerBehaviourEvent;
 use App\Models\Order;
 use App\Models\User;
 use App\Repositories\Behaviour\BehaviourEventRepositoryInterface;
+use App\Services\Personalisation\PersonalisationProfileServiceInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,7 @@ class BehaviourEventService implements BehaviourEventServiceInterface
 {
     public function __construct(
         protected BehaviourEventRepositoryInterface $events,
+        protected PersonalisationProfileServiceInterface $profiles,
     ) {}
 
     public function isEnabled(): bool
@@ -106,6 +108,12 @@ class BehaviourEventService implements BehaviourEventServiceInterface
             throw $exception;
         }
 
+        if ($customer !== null) {
+            $this->profiles->dispatchRebuildForCustomer((int) $customer->getKey());
+        } else {
+            $this->profiles->dispatchRebuildForVisitor($visitorKey);
+        }
+
         return [
             'accepted' => true,
             'event_id' => (int) $event->getKey(),
@@ -123,7 +131,7 @@ class BehaviourEventService implements BehaviourEventServiceInterface
 
         $visitorKey = $this->normalizeVisitorKey($visitorKey);
 
-        return DB::transaction(function () use ($visitorKey, $customer): array {
+        $result = DB::transaction(function () use ($visitorKey, $customer): array {
             $identity = $this->events->findVisitorIdentity($visitorKey);
 
             if ($identity !== null && (int) $identity->customer_id !== (int) $customer->getKey()) {
@@ -145,6 +153,12 @@ class BehaviourEventService implements BehaviourEventServiceInterface
                 'attached' => $attached,
             ];
         });
+
+        if (($result['merged'] ?? false) === true) {
+            $this->profiles->afterVisitorMerged($visitorKey, $customer);
+        }
+
+        return $result;
     }
 
     public function recordOrderCompleted(Order $order): ?CustomerBehaviourEvent
