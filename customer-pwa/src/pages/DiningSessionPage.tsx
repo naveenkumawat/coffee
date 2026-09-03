@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
@@ -12,6 +12,7 @@ import {
   uploadDiningPaymentProof,
 } from '../api/dining';
 import { fetchMenuCatalogue } from '../api/catalog';
+import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 
 export function DiningSessionPage() {
   const { sessionId = '' } = useParams();
@@ -24,11 +25,27 @@ export function DiningSessionPage() {
   const [busy, setBusy] = useState(false);
   const [proofFile, setProofFile] = useState<File | null>(null);
 
-  async function reload(): Promise<void> {
+  const reload = useCallback(async (): Promise<void> => {
     const response = await fetchDiningSession(sessionId);
     setSession(response.data);
-  }
+  }, [sessionId]);
 
+  useLiveCanonicalSync(
+    () => {
+      void reload().catch(() => undefined);
+    },
+    (signal) => {
+      if (signal.subject?.type === 'DiningSession' && String(signal.subject.id) === String(sessionId)) {
+        return true;
+      }
+
+      if (signal.type.startsWith('customer.dining') || signal.type.startsWith('customer.payment')) {
+        return Boolean(signal.action_url && signal.action_url.includes(`/dining/sessions/${sessionId}`));
+      }
+
+      return false;
+    },
+  );
   useEffect(() => {
     let cancelled = false;
 

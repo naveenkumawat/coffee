@@ -2,7 +2,29 @@ import { useEffect, useId, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { formatElapsed, isActionable, sortActionRequired } from '../../notifications/normalize';
+import { isCustomerNotificationType } from '../../notifications/liveSignals';
 import { lockOverlayBackgroundScroll, unlockOverlayBackgroundScroll } from '../../utils/overlayScrollLock';
+
+function resolveOpenPath(actionUrl: string | null | undefined, fallbackSubjectPath: string | null): string | null {
+  if (actionUrl) {
+    if (actionUrl.startsWith('/orders') || actionUrl.startsWith('/dining') || actionUrl.startsWith('/waiter')) {
+      return actionUrl;
+    }
+
+    try {
+      const parsed = new URL(actionUrl, window.location.origin);
+      if (parsed.origin === window.location.origin) {
+        if (parsed.pathname.startsWith('/orders') || parsed.pathname.startsWith('/dining') || parsed.pathname.startsWith('/waiter')) {
+          return `${parsed.pathname}${parsed.search}`;
+        }
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  return fallbackSubjectPath;
+}
 
 export function NotificationBell() {
   const unreadCount = useNotificationStore((state) => state.unreadCount);
@@ -14,7 +36,7 @@ export function NotificationBell() {
     <button
       type="button"
       className="ops-notification-bell"
-      aria-label={`Notifications, ${unreadCount} unread, ${actionRequiredCount} action required`}
+      aria-label={`Notifications, ${unreadCount} unread${actionRequiredCount > 0 ? `, ${actionRequiredCount} action required` : ''}`}
       aria-expanded={drawerOpen}
       onClick={() => setDrawerOpen(!drawerOpen)}
     >
@@ -52,7 +74,7 @@ export function NotificationDrawer() {
     lockOverlayBackgroundScroll();
     closeRef.current?.focus({ preventScroll: true });
 
-    items.filter(isActionable).forEach((item) => {
+    items.forEach((item) => {
       if (!item.first_seen_at) {
         void markSeen(item.recipient_id);
       }
@@ -85,7 +107,26 @@ export function NotificationDrawer() {
   }
 
   const actionable = sortActionRequired(items.filter(isActionable));
-  const recent = items.filter((item) => !isActionable(item) || Boolean(item.read_at) || Boolean(item.resolved_at));
+  const recent = items
+    .filter((item) => !isActionable(item) || Boolean(item.read_at) || Boolean(item.resolved_at) || isCustomerNotificationType(item.type))
+    .slice()
+    .sort((a, b) => Date.parse(b.created_at ?? '') - Date.parse(a.created_at ?? ''));
+
+  function openItem(item: (typeof items)[number]): void {
+    void markRead(item.recipient_id);
+    setDrawerOpen(false);
+
+    const subjectPath = item.subject?.type === 'Order'
+      ? `/orders/${item.subject.id}`
+      : item.subject?.type === 'DiningSession'
+        ? `/dining/sessions/${item.subject.id}`
+        : null;
+
+    const path = resolveOpenPath(item.action_url, subjectPath);
+    if (path) {
+      navigate(path);
+    }
+  }
 
   return (
     <div className="ops-notification-layer">
@@ -103,49 +144,43 @@ export function NotificationDrawer() {
           </button>
         </header>
         <div className="ops-notification-drawer-body">
-          <h3>Action required</h3>
-          {actionable.length === 0 ? <p className="ops-notification-empty">No action required.</p> : null}
-          {actionable.map((item) => (
-            <article key={item.recipient_id} className="ops-notification-card">
-              <h4>{item.title}</h4>
-              <p>{item.message}</p>
-              <small>{formatElapsed(item.created_at)}</small>
-              <div className="ops-notification-card-actions">
-                {item.action_url ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void markRead(item.recipient_id);
-                      setDrawerOpen(false);
-                      const url = item.action_url ?? '';
-                      if (url.startsWith('http')) {
-                        window.location.assign(url);
-                      } else {
-                        navigate(url.replace(/^\/waiter/, '/waiter') || '/waiter');
-                      }
-                    }}
-                  >
-                    Open
-                  </button>
-                ) : null}
-                <button type="button" onClick={() => void acknowledge(item.recipient_id)}>
-                  Acknowledge
-                </button>
-              </div>
-            </article>
-          ))}
+          {actionable.length > 0 ? (
+            <>
+              <h3>Action required</h3>
+              {actionable.map((item) => (
+                <article key={item.recipient_id} className="ops-notification-card">
+                  <h4>{item.title}</h4>
+                  <p>{item.message}</p>
+                  <small>{formatElapsed(item.created_at)}</small>
+                  <div className="ops-notification-card-actions">
+                    <button type="button" onClick={() => openItem(item)}>
+                      Open
+                    </button>
+                    <button type="button" onClick={() => void acknowledge(item.recipient_id)}>
+                      Acknowledge
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </>
+          ) : null}
 
           <h3>Recent</h3>
           {recent.length === 0 ? <p className="ops-notification-empty">No recent notifications.</p> : null}
-          {recent.slice(0, 30).map((item) => (
+          {recent.slice(0, 40).map((item) => (
             <article key={`recent-${item.recipient_id}`} className="ops-notification-card">
               <h4>{item.title}</h4>
               <p>{item.message}</p>
-              {!item.read_at ? (
-                <button type="button" onClick={() => void markRead(item.recipient_id)}>
-                  Mark read
+              <div className="ops-notification-card-actions">
+                <button type="button" onClick={() => openItem(item)}>
+                  Open
                 </button>
-              ) : null}
+                {!item.read_at ? (
+                  <button type="button" onClick={() => void markRead(item.recipient_id)}>
+                    Mark read
+                  </button>
+                ) : null}
+              </div>
             </article>
           ))}
         </div>

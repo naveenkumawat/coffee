@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * R1.3A operational notification type keys (persisted on operational_notifications.type).
+ * Operational notification type keys (persisted on operational_notifications.type).
  */
 enum OperationalNotificationType: string
 {
@@ -29,4 +29,26 @@ enum OperationalNotificationType: string
     case OrderRejected = 'order.rejected';
     case PreparationTicketCancelled = 'preparation.ticket_cancelled';
     case DiningRoundCancelled = 'dining.round_cancelled';
+
+    // --- R1.4 customer-facing (order/session owner only) ---
+
+    case CustomerOrderPlaced = 'customer.order.placed';
+    case CustomerPaymentProofReceived = 'customer.payment.proof_received';
+    case CustomerPaymentConfirmed = 'customer.payment.confirmed';
+    case CustomerPaymentRejected = 'customer.payment.rejected';
+    case CustomerOrderAccepted = 'customer.order.accepted';
+    case CustomerOrderPreparing = 'customer.order.preparing';
+    case CustomerOrderReady = 'customer.order.ready';
+    case CustomerOrderCompleted = 'customer.order.completed';
+    case CustomerOrderCancelled = 'customer.order.cancelled';
+    case CustomerOrderRejected = 'customer.order.rejected';
+    case CustomerDiningRoundUpdated = 'customer.dining.round_updated';
+    case CustomerDiningReady = 'customer.dining.ready';
+    case CustomerDiningBillRequested = 'customer.dining.bill_requested';
+    case CustomerDiningSessionClosed = 'customer.dining.session_closed';
+
+    public function isCustomerFacing(): bool
+    {
+        return str_starts_with($this->value, 'customer.');
+    }
 }

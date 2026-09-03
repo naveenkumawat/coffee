@@ -6,6 +6,9 @@ use App\Events\Customer\CustomerPasswordChanged;
 use App\Events\Customer\CustomerRegistered;
 use App\Events\Dining\DiningBillReady;
 use App\Events\Dining\DiningPaymentConfirmed;
+use App\Events\Dining\DiningPaymentProofReceived;
+use App\Events\Dining\DiningPaymentProofRejected;
+use App\Events\Dining\DiningRoundPlaced;
 use App\Events\Inventory\IngredientStockStatusChanged;
 use App\Events\Inventory\InventoryRefillRequestCreated;
 use App\Events\Inventory\InventoryRefillRequestStatusChanged;
@@ -23,6 +26,11 @@ use App\Listeners\Dining\QualifyReferralOnDiningPaymentConfirmed;
 use App\Listeners\Dining\SendDiningBillReadyNotification;
 use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
 use App\Listeners\Menu\FlushMenuCatalogCache;
+use App\Listeners\OperationalNotification\WireOperationalDiningBillReady;
+use App\Listeners\OperationalNotification\WireOperationalDiningPaymentConfirmed;
+use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofReceived;
+use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofRejected;
+use App\Listeners\OperationalNotification\WireOperationalDiningRoundPlaced;
 use App\Listeners\OperationalNotification\WireOperationalOrderPlaced;
 use App\Listeners\OperationalNotification\WireOperationalOrderPreparationStatusChanged;
 use App\Listeners\OperationalNotification\WireOperationalOrderStatusChanged;
@@ -91,12 +99,23 @@ class EventServiceProvider extends ServiceProvider
             NotifyStaffOrderPreparationStatusChanged::class,
             WireOperationalOrderPreparationStatusChanged::class,
         ],
+        DiningRoundPlaced::class => [
+            WireOperationalDiningRoundPlaced::class,
+        ],
         DiningBillReady::class => [
             SendDiningBillReadyNotification::class,
+            WireOperationalDiningBillReady::class,
         ],
         DiningPaymentConfirmed::class => [
             SendDiningPaymentConfirmedNotification::class,
             QualifyReferralOnDiningPaymentConfirmed::class,
+            WireOperationalDiningPaymentConfirmed::class,
+        ],
+        DiningPaymentProofReceived::class => [
+            WireOperationalDiningPaymentProofReceived::class,
+        ],
+        DiningPaymentProofRejected::class => [
+            WireOperationalDiningPaymentProofRejected::class,
         ],
         OrderCashReceived::class => [
             SendOrderCashReceivedNotification::class,

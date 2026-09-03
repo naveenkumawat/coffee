@@ -2,17 +2,17 @@
 
 namespace App\Listeners\OperationalNotification;
 
-use App\Events\Order\OrderPaymentProofRejected;
+use App\Events\Dining\DiningPaymentProofReceived;
 use App\Services\OperationalNotification\OperationalBusinessNotificationPublisher;
 
-class WireOperationalPaymentProofRejected
+class WireOperationalDiningPaymentProofReceived
 {
     public function __construct(
         protected OperationalBusinessNotificationPublisher $publisher,
     ) {}
 
-    public function handle(OrderPaymentProofRejected $event): void
+    public function handle(DiningPaymentProofReceived $event): void
     {
-        $this->publisher->handlePaymentProofRejected($event->order, $event->customerFacingReason);
+        $this->publisher->handleDiningPaymentProofReceived($event->session, $event->isResubmission);
     }
 }

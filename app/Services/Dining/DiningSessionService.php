@@ -12,6 +12,8 @@ use App\Enums\StaffNotificationAudience;
 use App\Enums\StaffNotificationType;
 use App\Events\Dining\DiningBillReady;
 use App\Events\Dining\DiningPaymentConfirmed;
+use App\Events\Dining\DiningPaymentProofReceived;
+use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
 use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
@@ -545,6 +547,9 @@ class DiningSessionService implements DiningSessionServiceInterface
             ]);
         }
 
+        $wasResubmission = $session->payment_status === PaymentStatus::Rejected
+            || filled($session->payment_proof_rejection_notes);
+
         $session->clearPaymentProofFiles();
         $session->fill([
             'payment_proof_path' => $path,
@@ -575,6 +580,8 @@ class DiningSessionService implements DiningSessionServiceInterface
                 true,
             );
         }
+
+        event(new DiningPaymentProofReceived($session->fresh(['customer']) ?? $session, $wasResubmission));
 
         return $session->fresh(['cafeTable', 'customer', 'orders.items']);
     }
@@ -610,7 +617,11 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'status' => DiningSessionStatus::AwaitingPayment,
             ])->save();
 
-            return $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+
+            event(new DiningPaymentProofRejected($fresh ?? $locked, $reason));
+
+            return $fresh ?? $locked;
         });
     }
 

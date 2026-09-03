@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchOrders } from '../api/orders';
 import { ApiError } from '../api/client';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { OrderListCard } from '../components/orders/OrderListCard';
+import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 import { Order } from '../types/order';
 import { isActiveOrder, sortOrdersForDisplay } from '../utils/orders';
 
@@ -16,10 +17,10 @@ export function OrdersPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function loadOrders(nextPage = 1, append = false): Promise<void> {
+  const loadOrders = useCallback(async (nextPage = 1, append = false, soft = false): Promise<void> => {
     if (append) {
       setIsLoadingMore(true);
-    } else {
+    } else if (!soft) {
       setIsLoading(true);
       setErrorMessage(null);
     }
@@ -29,21 +30,28 @@ export function OrdersPage() {
       setOrders((current) => (append ? [...current, ...response.data] : response.data));
       setPage(response.meta?.pagination?.current_page ?? nextPage);
       setLastPage(response.meta?.pagination?.last_page ?? 1);
+      setErrorMessage(null);
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your orders.');
-      if (!append) {
-        setOrders([]);
+      if (!soft) {
+        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your orders.');
+        if (!append) {
+          setOrders([]);
+        }
       }
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadOrders(1);
-  }, []);
+  }, [loadOrders]);
 
+  useLiveCanonicalSync(
+    () => loadOrders(1, false, true),
+    (signal) => signal.type.startsWith('customer.'),
+  );
   function handleLoadMore(event: FormEvent): void {
     event.preventDefault();
     void loadOrders(page + 1, true);

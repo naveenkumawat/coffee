@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { fetchOrder } from '../api/orders';
@@ -13,6 +13,7 @@ import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButto
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
+import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
 import { orderDiscountLines } from '../utils/discounts';
@@ -33,33 +34,48 @@ export function OrderDetailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
 
-  async function loadOrder(): Promise<void> {
+  const loadOrder = useCallback(async (soft = false): Promise<void> => {
     if (!orderId) {
       setErrorMessage('Order not found.');
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    setErrorMessage(null);
+    if (!soft) {
+      setIsLoading(true);
+      setErrorMessage(null);
+    }
 
     try {
       const response = await fetchOrder(orderId);
       setOrder(response.data);
       setPayment(response.meta?.payment ?? null);
+      setErrorMessage(null);
     } catch (error) {
-      setOrder(null);
-      setPayment(null);
-      setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this order.');
+      if (!soft) {
+        setOrder(null);
+        setPayment(null);
+        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this order.');
+      }
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [orderId]);
 
   useEffect(() => {
     void loadOrder();
-  }, [orderId]);
+  }, [loadOrder]);
 
+  useLiveCanonicalSync(
+    () => loadOrder(true),
+    (signal) => {
+      if (signal.subject?.type === 'Order' && String(signal.subject.id) === String(orderId)) {
+        return true;
+      }
+
+      return Boolean(signal.action_url && signal.action_url.includes(`/orders/${orderId}`));
+    },
+  );
   const ratedProductIds = useMemo(() => {
     if (!order || order.status !== 'completed') {
       return new Set<number>();

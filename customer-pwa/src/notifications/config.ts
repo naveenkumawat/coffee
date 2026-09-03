@@ -11,5 +11,14 @@ export const REMINDER_ELIGIBLE_TYPES = new Set([
   'dining.ready_to_serve',
 ]);
 
+/** Customer informational types that get a one-time strong toast + sound (no 30s repeat). */
+export const CUSTOMER_STRONG_ALERT_TYPES = new Set([
+  'customer.order.ready',
+  'customer.payment.rejected',
+  'customer.order.cancelled',
+  'customer.order.rejected',
+  'customer.dining.ready',
+]);
+
 export const CHANNEL_NAME = 'coffee-ops-notifications';
 export const STORAGE_LEADER_KEY = 'coffee.ops.notifications.leader';

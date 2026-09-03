@@ -120,8 +120,8 @@ PWA features depend on:
 Future API additions expected:
 
 - richer order timeline/status presentation if needed
-- push notification registration endpoints if notifications are introduced later
-- realtime private-channel delivery (R1) — foundation uses Laravel Reverb/Echo; persistent operational notification domain (R1.2) with ACK API + store; business event wiring arrives in R1.3+
+- background Web Push / VAPID registration (R1.7) — R1.4 uses in-app + optional foreground Notification when already granted
+- realtime private-channel delivery (R1) — Reverb/Echo foundation (R1.1); operational notification domain (R1.2); staff wiring/UI (R1.3); **customer order/dining notifications + live REST reconciliation (R1.4 done)**
 - loyalty/rewards endpoints if added later
 
 ## Mobile UX Requirements
@@ -262,7 +262,7 @@ See `customer-pwa/README.md` for the deployment checklist.
 - implementing a payment gateway
 - integrating a third-party courier/delivery provider API
 - implementing inventory consumption from orders
-- implementing push notifications now
+- implementing background Web Push/VAPID now (R1.7; R1.4 covers in-app customer notifications + live order tracking)
 - modifying internal Blade Administrator or Barista surfaces
 
 

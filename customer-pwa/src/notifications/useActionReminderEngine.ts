@@ -1,14 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { OperationalNotificationItem } from '../api/notifications';
-import { REMINDER_INTERVAL_MS } from './config';
-import { isReminderEligible, sortActionRequired } from './normalize';
+import { CUSTOMER_STRONG_ALERT_TYPES, REMINDER_INTERVAL_MS } from './config';
+import { isCustomerStrongAlert, isReminderEligible, sortActionRequired } from './normalize';
 import { createNotificationSoundManager } from './sound';
 import { createTabLeader } from './tabLeader';
 import { useNotificationStore } from '../stores/notificationStore';
 import { useToastStore } from '../stores/toastStore';
 
 /**
- * Leader-only 30s reminder engine for actionable operational notifications.
+ * Leader-only 30s reminder engine for actionable operational notifications (staff).
+ * Customer notifications never use repeating reminders.
  */
 export function useActionReminderEngine(enabled: boolean): void {
   const items = useNotificationStore((state) => state.items);
@@ -85,10 +86,40 @@ export function useActionReminderEngine(enabled: boolean): void {
   }, [enabled, items]);
 }
 
+function maybeBrowserForegroundNotification(item: OperationalNotificationItem): void {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return;
+  }
+
+  if (!isCustomerStrongAlert(item.type) && !item.action_required) {
+    return;
+  }
+
+  try {
+    new Notification(item.title || 'Update', {
+      body: item.message || undefined,
+      tag: `ops-${item.recipient_id}`,
+    });
+  } catch {
+    // Permission/API quirks must never break the app.
+  }
+}
+
 export function presentImmediateAlert(item: OperationalNotificationItem, isLeader: boolean): void {
   if (!isLeader) {
     return;
   }
 
-  useToastStore.getState().push(item.title, item.action_required ? 'info' : 'success', item.action_required ? 7000 : 4000);
+  const strongCustomer = isCustomerStrongAlert(item.type);
+  const duration = item.action_required || strongCustomer ? 7000 : 4000;
+  const tone = item.action_required || strongCustomer || item.priority === 'high' || item.priority === 'critical'
+    ? 'info'
+    : 'success';
+
+  useToastStore.getState().push(item.title, tone, duration);
+  maybeBrowserForegroundNotification(item);
+}
+
+export function shouldPlayAlertSound(item: OperationalNotificationItem): boolean {
+  return Boolean(item.action_required) || CUSTOMER_STRONG_ALERT_TYPES.has(item.type);
 }

@@ -95,7 +95,7 @@ export function AppLayout() {
         </div>
       ) : null}
       <main className="app-main" id="main-content">
-        {authStatus === 'authenticated' && isWaiter(customer) ? (
+        {authStatus === 'authenticated' ? (
           <div className="ops-notification-floating-bell">
             <NotificationBell />
           </div>

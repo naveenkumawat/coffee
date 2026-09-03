@@ -4,17 +4,20 @@ namespace App\Services\OperationalNotification;
 
 use App\Enums\OperationalNotificationPriority;
 use App\Enums\OperationalNotificationType;
+use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderPreparationStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PreparationStation;
 use App\Enums\UserRole;
+use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\OrderPreparation;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * R1.3A bridge: domain events → OperationalNotificationService.
+ * R1.3A / R1.4 bridge: domain events → OperationalNotificationService.
  * Never throws into the business event pipeline.
  */
 class OperationalBusinessNotificationPublisher
@@ -27,8 +30,12 @@ class OperationalBusinessNotificationPublisher
     {
         $this->safe(function () use ($order): void {
             if ($order->isDiningRound()) {
+                $this->publishCustomerDiningRoundPlaced($order);
+
                 return;
             }
+
+            $this->publishCustomerOrderPlaced($order);
 
             // UPI/retail awaiting customer proof is not staff-actionable yet.
             if (! $order->isCashPayment()) {
@@ -58,6 +65,8 @@ class OperationalBusinessNotificationPublisher
     public function handlePaymentProofReceived(Order $order, bool $isResubmission = false): void
     {
         $this->safe(function () use ($order, $isResubmission): void {
+            $this->publishCustomerPaymentProofReceived($order, $isResubmission);
+
             if ($isResubmission) {
                 $this->notifications->resolveOpenForSubject(
                     $order,
@@ -84,20 +93,24 @@ class OperationalBusinessNotificationPublisher
         });
     }
 
-    public function handlePaymentProofRejected(Order $order): void
+    public function handlePaymentProofRejected(Order $order, ?string $customerFacingReason = null): void
     {
-        $this->safe(function () use ($order): void {
+        $this->safe(function () use ($order, $customerFacingReason): void {
             $this->notifications->resolveOpenForSubject(
                 $order,
                 [OperationalNotificationType::OrderPaymentProofReview],
                 resolutionAction: 'proof_rejected',
             );
+
+            $this->publishCustomerPaymentRejected($order, $customerFacingReason);
         });
     }
 
     public function handleOrderStatusChanged(Order $order, OrderStatus $fromStatus, OrderStatus $toStatus): void
     {
         $this->safe(function () use ($order, $fromStatus, $toStatus): void {
+            $this->publishCustomerOrderStatusChanged($order, $toStatus);
+
             if ($toStatus === OrderStatus::PaymentConfirmed && ! $order->isDiningRound()) {
                 $this->notifications->resolveOpenForSubject(
                     $order,
@@ -218,7 +231,7 @@ class OperationalBusinessNotificationPublisher
         OrderPreparationStatus $toStatus,
     ): void {
         $this->safe(function () use ($ticket, $toStatus): void {
-            $ticket->loadMissing(['order.items', 'order.preparations']);
+            $ticket->loadMissing(['order.items', 'order.preparations', 'order.customer']);
 
             if ($toStatus === OrderPreparationStatus::Pending) {
                 $audience = match ($ticket->station) {
@@ -334,7 +347,482 @@ class OperationalBusinessNotificationPublisher
                 actionUrl: $this->orderUrl($order),
                 subject: $order,
             );
+
+            $this->publishCustomerDiningReady($order);
         });
+    }
+
+    public function handleDiningRoundPlaced(Order $order, DiningSession $session): void
+    {
+        $this->safe(function () use ($order, $session): void {
+            $this->publishCustomerDiningRoundPlaced($order, $session);
+        });
+    }
+
+    public function handleDiningBillReady(DiningSession $session): void
+    {
+        $this->safe(function () use ($session): void {
+            $audience = $this->customerAudience($session);
+            if ($audience === []) {
+                return;
+            }
+
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerDiningBillRequested, $session, 'bill'),
+                type: OperationalNotificationType::CustomerDiningBillRequested->value,
+                category: 'dining',
+                title: 'Bill ready',
+                message: 'Your dining bill for '.$session->session_number.' is ready.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::High,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $session,
+                metadata: $this->customerSafeDiningMeta($session),
+            );
+        });
+    }
+
+    public function handleDiningPaymentConfirmed(DiningSession $session): void
+    {
+        $this->safe(function () use ($session): void {
+            $audience = $this->customerAudience($session);
+            if ($audience === []) {
+                return;
+            }
+
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerPaymentConfirmed, $session, 'confirmed'),
+                type: OperationalNotificationType::CustomerPaymentConfirmed->value,
+                category: 'payment',
+                title: 'Payment confirmed',
+                message: 'Payment for dining session '.$session->session_number.' is confirmed.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::Normal,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $session,
+                metadata: $this->customerSafeDiningMeta($session),
+            );
+
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerDiningSessionClosed, $session, 'closed'),
+                type: OperationalNotificationType::CustomerDiningSessionClosed->value,
+                category: 'dining',
+                title: 'Dining session closed',
+                message: 'Your dining session '.$session->session_number.' is complete. Thank you!',
+                audience: $audience,
+                priority: OperationalNotificationPriority::Normal,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $session,
+                metadata: $this->customerSafeDiningMeta($session),
+            );
+        });
+    }
+
+    public function handleDiningPaymentProofReceived(DiningSession $session, bool $isResubmission = false): void
+    {
+        $this->safe(function () use ($session, $isResubmission): void {
+            $audience = $this->customerAudience($session);
+            if ($audience === []) {
+                return;
+            }
+
+            $stamp = $session->payment_proof_uploaded_at?->format('YmdHis') ?: now()->format('YmdHis');
+
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerPaymentProofReceived, $session, $stamp),
+                type: OperationalNotificationType::CustomerPaymentProofReceived->value,
+                category: 'payment',
+                title: $isResubmission ? 'Payment proof resubmitted' : 'Payment proof received',
+                message: 'We received your payment proof for '.$session->session_number.'. Awaiting verification.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::Normal,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $session,
+                metadata: $this->customerSafeDiningMeta($session),
+            );
+        });
+    }
+
+    public function handleDiningPaymentProofRejected(DiningSession $session, ?string $customerFacingReason = null): void
+    {
+        $this->safe(function () use ($session, $customerFacingReason): void {
+            $audience = $this->customerAudience($session);
+            if ($audience === []) {
+                return;
+            }
+
+            $reason = filled($customerFacingReason)
+                ? trim((string) $customerFacingReason)
+                : 'Please upload a clearer payment screenshot.';
+
+            $stamp = now()->format('YmdHis');
+
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerPaymentRejected, $session, $stamp),
+                type: OperationalNotificationType::CustomerPaymentRejected->value,
+                category: 'payment',
+                title: 'Payment proof needs attention',
+                message: 'Payment proof for '.$session->session_number.' was not accepted. '.$reason,
+                audience: $audience,
+                priority: OperationalNotificationPriority::High,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $session,
+                metadata: $this->customerSafeDiningMeta($session),
+            );
+        });
+    }
+
+    protected function publishCustomerDiningRoundPlaced(Order $order, ?DiningSession $session = null): void
+    {
+        $order->loadMissing('diningSession');
+        $session ??= $order->diningSession;
+        if (! $session instanceof DiningSession) {
+            return;
+        }
+
+        $audience = $this->customerAudience($session);
+        if ($audience === []) {
+            return;
+        }
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::CustomerDiningRoundUpdated, $order, 'placed'),
+            type: OperationalNotificationType::CustomerDiningRoundUpdated->value,
+            category: 'dining',
+            title: 'Round placed',
+            message: 'Your dining round '.$order->order_number.' was sent to the kitchen.',
+            audience: $audience,
+            priority: OperationalNotificationPriority::Normal,
+            actionRequired: false,
+            actionUrl: $this->customerDiningUrl($session),
+            subject: $order,
+            metadata: $this->customerSafeDiningMeta($session, $order),
+        );
+    }
+
+    protected function publishCustomerOrderPlaced(Order $order): void
+    {
+        if ($order->isDiningRound()) {
+            return;
+        }
+
+        $audience = $this->customerAudience($order);
+        if ($audience === []) {
+            return;
+        }
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::CustomerOrderPlaced, $order, 'placed'),
+            type: OperationalNotificationType::CustomerOrderPlaced->value,
+            category: 'order',
+            title: 'Order received',
+            message: 'We received order '.$order->order_number.'.',
+            audience: $audience,
+            priority: OperationalNotificationPriority::Normal,
+            actionRequired: false,
+            actionUrl: $this->customerOrderUrl($order),
+            subject: $order,
+            metadata: $this->customerSafeOrderMeta($order),
+        );
+    }
+
+    protected function publishCustomerPaymentProofReceived(Order $order, bool $isResubmission): void
+    {
+        $audience = $this->customerAudience($order);
+        if ($audience === []) {
+            return;
+        }
+
+        $stamp = $order->payment_proof_uploaded_at?->format('YmdHis') ?: now()->format('YmdHis');
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::CustomerPaymentProofReceived, $order, $stamp),
+            type: OperationalNotificationType::CustomerPaymentProofReceived->value,
+            category: 'payment',
+            title: $isResubmission ? 'Payment proof resubmitted' : 'Payment proof received',
+            message: 'We received your payment proof for order '.$order->order_number.'. Awaiting verification.',
+            audience: $audience,
+            priority: OperationalNotificationPriority::Normal,
+            actionRequired: false,
+            actionUrl: $this->customerOrderUrl($order),
+            subject: $order,
+            metadata: $this->customerSafeOrderMeta($order),
+        );
+    }
+
+    protected function publishCustomerPaymentRejected(Order $order, ?string $customerFacingReason): void
+    {
+        $audience = $this->customerAudience($order);
+        if ($audience === []) {
+            return;
+        }
+
+        $reason = filled($customerFacingReason)
+            ? trim((string) $customerFacingReason)
+            : 'Please upload a clearer payment screenshot.';
+
+        $stamp = now()->format('YmdHis');
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::CustomerPaymentRejected, $order, $stamp),
+            type: OperationalNotificationType::CustomerPaymentRejected->value,
+            category: 'payment',
+            title: 'Payment proof needs attention',
+            message: 'Payment proof for order '.$order->order_number.' was not accepted. '.$reason,
+            audience: $audience,
+            priority: OperationalNotificationPriority::High,
+            actionRequired: false,
+            actionUrl: $this->customerOrderUrl($order),
+            subject: $order,
+            metadata: $this->customerSafeOrderMeta($order),
+        );
+    }
+
+    protected function publishCustomerOrderStatusChanged(Order $order, OrderStatus $toStatus): void
+    {
+        if ($order->isDiningRound()) {
+            $this->publishCustomerDiningRoundStatus($order, $toStatus);
+
+            return;
+        }
+
+        $audience = $this->customerAudience($order);
+        if ($audience === []) {
+            return;
+        }
+
+        $map = match ($toStatus) {
+            OrderStatus::PaymentConfirmed => [
+                'type' => OperationalNotificationType::CustomerPaymentConfirmed,
+                'title' => 'Payment confirmed',
+                'message' => 'Payment for order '.$order->order_number.' is confirmed.',
+                'priority' => OperationalNotificationPriority::Normal,
+            ],
+            OrderStatus::Accepted => [
+                'type' => OperationalNotificationType::CustomerOrderAccepted,
+                'title' => 'Order accepted',
+                'message' => 'Order '.$order->order_number.' was accepted and will be prepared soon.',
+                'priority' => OperationalNotificationPriority::Normal,
+            ],
+            OrderStatus::Preparing => [
+                'type' => OperationalNotificationType::CustomerOrderPreparing,
+                'title' => 'Preparing your order',
+                'message' => 'Order '.$order->order_number.' is being prepared.',
+                'priority' => OperationalNotificationPriority::Normal,
+            ],
+            OrderStatus::ReadyForPickup => [
+                'type' => OperationalNotificationType::CustomerOrderReady,
+                'title' => $this->customerReadyTitle($order),
+                'message' => $this->customerReadyMessage($order),
+                'priority' => OperationalNotificationPriority::High,
+            ],
+            OrderStatus::Completed => [
+                'type' => OperationalNotificationType::CustomerOrderCompleted,
+                'title' => 'Order completed',
+                'message' => 'Order '.$order->order_number.' is complete. Thank you!',
+                'priority' => OperationalNotificationPriority::Normal,
+            ],
+            OrderStatus::Cancelled => [
+                'type' => OperationalNotificationType::CustomerOrderCancelled,
+                'title' => 'Order cancelled',
+                'message' => 'Order '.$order->order_number.' was cancelled.',
+                'priority' => OperationalNotificationPriority::High,
+            ],
+            OrderStatus::Rejected => [
+                'type' => OperationalNotificationType::CustomerOrderRejected,
+                'title' => 'Order rejected',
+                'message' => 'Order '.$order->order_number.' was rejected.',
+                'priority' => OperationalNotificationPriority::High,
+            ],
+            default => null,
+        };
+
+        if ($map === null) {
+            return;
+        }
+
+        /** @var OperationalNotificationType $type */
+        $type = $map['type'];
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key($type, $order, $toStatus->value),
+            type: $type->value,
+            category: str_starts_with($type->value, 'customer.payment') ? 'payment' : 'order',
+            title: $map['title'],
+            message: $map['message'],
+            audience: $audience,
+            priority: $map['priority'],
+            actionRequired: false,
+            actionUrl: $this->customerOrderUrl($order),
+            subject: $order,
+            metadata: $this->customerSafeOrderMeta($order),
+        );
+    }
+
+    protected function publishCustomerDiningRoundStatus(Order $order, OrderStatus $toStatus): void
+    {
+        $order->loadMissing('diningSession');
+        $session = $order->diningSession;
+        if (! $session instanceof DiningSession) {
+            return;
+        }
+
+        $audience = $this->customerAudience($session);
+        if ($audience === []) {
+            return;
+        }
+
+        if (in_array($toStatus, [OrderStatus::Accepted, OrderStatus::Preparing], true)) {
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerDiningRoundUpdated, $order, $toStatus->value),
+                type: OperationalNotificationType::CustomerDiningRoundUpdated->value,
+                category: 'dining',
+                title: $toStatus === OrderStatus::Preparing ? 'Round preparing' : 'Round accepted',
+                message: 'Dining round '.$order->order_number.' is now '.$toStatus->label().'.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::Normal,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $order,
+                metadata: $this->customerSafeDiningMeta($session, $order),
+            );
+
+            return;
+        }
+
+        if ($toStatus === OrderStatus::Cancelled) {
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerOrderCancelled, $order, $toStatus->value),
+                type: OperationalNotificationType::CustomerOrderCancelled->value,
+                category: 'dining',
+                title: 'Round cancelled',
+                message: 'Dining round '.$order->order_number.' was cancelled.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::High,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $order,
+                metadata: $this->customerSafeDiningMeta($session, $order),
+            );
+
+            return;
+        }
+
+        if ($toStatus === OrderStatus::Rejected) {
+            $this->notifications->createUniqueAndBroadcast(
+                idempotencyKey: $this->key(OperationalNotificationType::CustomerOrderRejected, $order, $toStatus->value),
+                type: OperationalNotificationType::CustomerOrderRejected->value,
+                category: 'dining',
+                title: 'Round rejected',
+                message: 'Dining round '.$order->order_number.' was rejected.',
+                audience: $audience,
+                priority: OperationalNotificationPriority::High,
+                actionRequired: false,
+                actionUrl: $this->customerDiningUrl($session),
+                subject: $order,
+                metadata: $this->customerSafeDiningMeta($session, $order),
+            );
+        }
+    }
+
+    protected function publishCustomerDiningReady(Order $order): void
+    {
+        $order->loadMissing('diningSession');
+        $session = $order->diningSession;
+        if (! $session instanceof DiningSession) {
+            return;
+        }
+
+        $audience = $this->customerAudience($session);
+        if ($audience === []) {
+            return;
+        }
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::CustomerDiningReady, $order, 'all_ready'),
+            type: OperationalNotificationType::CustomerDiningReady->value,
+            category: 'dining',
+            title: 'Your food is ready',
+            message: 'Dining round '.$order->order_number.' is ready.',
+            audience: $audience,
+            priority: OperationalNotificationPriority::High,
+            actionRequired: false,
+            actionUrl: $this->customerDiningUrl($session),
+            subject: $order,
+            metadata: $this->customerSafeDiningMeta($session, $order),
+        );
+    }
+
+    /**
+     * @return list<User>
+     */
+    protected function customerAudience(Order|DiningSession $subject): array
+    {
+        $subject->loadMissing('customer');
+        $customer = $subject->customer;
+
+        if (! $customer instanceof User || ! $customer->is_active) {
+            return [];
+        }
+
+        return [$customer];
+    }
+
+    /**
+     * @return array{order_number?: string, public_status?: string|null, fulfilment_method?: string|null, session_number?: string}
+     */
+    protected function customerSafeOrderMeta(Order $order): array
+    {
+        return array_filter([
+            'order_number' => (string) $order->order_number,
+            'public_status' => $order->status instanceof OrderStatus ? $order->status->value : null,
+            'fulfilment_method' => $order->fulfilment_method instanceof OrderFulfilmentMethod
+                ? $order->fulfilment_method->value
+                : null,
+        ], fn ($value): bool => $value !== null && $value !== '');
+    }
+
+    /**
+     * @return array{session_number?: string, order_number?: string, public_status?: string|null}
+     */
+    protected function customerSafeDiningMeta(DiningSession $session, ?Order $order = null): array
+    {
+        return array_filter([
+            'session_number' => (string) $session->session_number,
+            'order_number' => $order?->order_number ? (string) $order->order_number : null,
+            'public_status' => $order?->status instanceof OrderStatus ? $order->status->value : null,
+        ], fn ($value): bool => $value !== null && $value !== '');
+    }
+
+    protected function customerReadyTitle(Order $order): string
+    {
+        return match ($order->fulfilment_method) {
+            OrderFulfilmentMethod::Delivery => 'Ready for delivery',
+            OrderFulfilmentMethod::DineIn => 'Ready to serve',
+            default => 'Ready for pickup',
+        };
+    }
+
+    protected function customerReadyMessage(Order $order): string
+    {
+        $label = $order->customerLabelForStatus(OrderStatus::ReadyForPickup);
+
+        return 'Order '.$order->order_number.' is '.$label.'.';
+    }
+
+    protected function customerOrderUrl(Order $order): string
+    {
+        return '/orders/'.$order->getKey();
+    }
+
+    protected function customerDiningUrl(DiningSession $session): string
+    {
+        return '/dining/sessions/'.$session->getKey();
     }
 
     /**
@@ -345,8 +833,11 @@ class OperationalBusinessNotificationPublisher
         return [UserRole::Owner, UserRole::Manager, UserRole::Operator];
     }
 
-    protected function key(OperationalNotificationType $type, Order|OrderPreparation $subject, string $lifecycle): string
-    {
+    protected function key(
+        OperationalNotificationType $type,
+        Order|OrderPreparation|DiningSession $subject,
+        string $lifecycle,
+    ): string {
         return implode(':', [
             $type->value,
             class_basename($subject),

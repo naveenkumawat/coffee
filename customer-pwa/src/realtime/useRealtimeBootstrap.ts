@@ -5,13 +5,18 @@ import { isWaiter } from '../utils/roles';
 import { realtimeConnection } from './RealtimeConnection';
 import { RealtimeConnectionState } from './types';
 import { normalizeRealtimePayload } from '../notifications/normalize';
-import { useActionReminderEngine, presentImmediateAlert } from '../notifications/useActionReminderEngine';
+import {
+  presentImmediateAlert,
+  shouldPlayAlertSound,
+  useActionReminderEngine,
+} from '../notifications/useActionReminderEngine';
 import { createTabLeader } from '../notifications/tabLeader';
 import { createNotificationSoundManager } from '../notifications/sound';
 import { SYNC_ABSENCE_MS } from '../notifications/config';
+import { emitLiveSignal, toLiveSignal } from '../notifications/liveSignals';
 
 /**
- * Connects Echo, syncs operational notifications, and runs reminder engine for staff PWA.
+ * Connects Echo, syncs operational notifications, reminders (waiter), and customer live signals.
  */
 export function useRealtimeBootstrap(): RealtimeConnectionState {
   const status = useAuthStore((state) => state.status);
@@ -22,15 +27,15 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
   const leaderRef = useRef<ReturnType<typeof createTabLeader> | null>(null);
   const soundRef = useRef<ReturnType<typeof createNotificationSoundManager> | null>(null);
   const hiddenSince = useRef<number | null>(null);
-  const staffSession = status === 'authenticated' && Boolean(customer?.id);
-  const reminderEnabled = staffSession && isWaiter(customer);
+  const authenticated = status === 'authenticated' && Boolean(customer?.id);
+  const reminderEnabled = authenticated && isWaiter(customer);
 
   useActionReminderEngine(reminderEnabled);
 
   useEffect(() => realtimeConnection.subscribe(setConnectionState), []);
 
   useEffect(() => {
-    if (!staffSession || !customer?.id) {
+    if (!authenticated || !customer?.id) {
       useNotificationStore.getState().reset();
       realtimeConnection.disconnect();
       return;
@@ -52,12 +57,20 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
       useNotificationStore.getState().upsertFromRealtime(normalized);
       void useNotificationStore.getState().markDelivered(normalized.recipient_id).catch(() => undefined);
 
-      if (leaderRef.current?.isLeader()) {
-        const item = useNotificationStore.getState().items.find(
-          (row) => row.recipient_id === normalized.recipient_id,
-        );
-        if (item) {
-          presentImmediateAlert(item, true);
+      const item = useNotificationStore.getState().items.find(
+        (row) => row.recipient_id === normalized.recipient_id,
+      );
+
+      if (item) {
+        const signal = toLiveSignal(item);
+        if (signal) {
+          emitLiveSignal(signal);
+        }
+      }
+
+      if (leaderRef.current?.isLeader() && item) {
+        presentImmediateAlert(item, true);
+        if (shouldPlayAlertSound(item)) {
           void soundRef.current?.play();
         }
       }
@@ -90,7 +103,7 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
       leaderRef.current?.destroy();
       realtimeConnection.disconnect();
     };
-  }, [staffSession, customer?.id, customer?.role]);
+  }, [authenticated, customer?.id, customer?.role]);
 
   useEffect(() => {
     useNotificationStore.getState().setConnectionState(connectionState);

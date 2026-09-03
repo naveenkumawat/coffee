@@ -1337,7 +1337,7 @@ Authenticated API: `GET /api/v1/notifications`, `GET /api/v1/notifications/actio
 | `preparation.ticket_cancelled` | Ticket cancelled | Matching station role | Informational |
 | `dining.round_cancelled` | Dining order Cancelled/Rejected | Waiter + Operator | Informational |
 
-UPI retail place does **not** create actionable attention (wait for proof / payment confirm). Mixed BAR+KITCHEN orders create independent station notifications. Customer realtime status is deferred.
+UPI retail place does **not** create actionable attention (wait for proof / payment confirm). Mixed BAR+KITCHEN orders create independent station notifications. Customer realtime status is R1.4.
 
 **R1.3B Realtime notification UI + reminder engine (done):** Shared operational notification client for all internal Blade panels (Administrator/Operator/Barista/Chef/Waiter) and waiter PWA foundation.
 
@@ -1349,11 +1349,19 @@ UPI retail place does **not** create actionable attention (wait for proof / paym
 * **Reconnect:** authoritative `GET` list + action-required on bootstrap, reconnect, online, and visibility after absence. Socket is fast path only.
 * **Dining limitation (preserved):** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected — no Served state in R1.3B (L1 workflow gap).
 
-**R1.4+ (planned, concise):**
-* R1.4 — Customer order-status private user-channel updates + customer notification history UI
+**R1.4 Customer realtime notifications + live order tracking (done):** Customer-owned order/session updates on `private-user.{id}` via the same operational notification domain (no separate customer role channel).
+
+* **Types:** `customer.order.placed|accepted|preparing|ready|completed|cancelled|rejected`, `customer.payment.proof_received|confirmed|rejected`, `customer.dining.round_updated|ready|bill_requested|session_closed`. Audience = authenticated order/session owner only; walk-in dining with null `customer_id` creates none.
+* **Payload:** customer-safe title/message/priority/action_url/subject ids + public status metadata only — no recipe, cost, margin, staff, other-customer, or payment secrets.
+* **UX:** Shared PWA bell/drawer/toasts for authenticated customers (same stack as Waiter). No 30s repeating reminders; one-time strong alert+sound for Ready / payment rejected / cancel/reject. Optional foreground `Notification` only if permission already granted (no Web Push/VAPID — R1.7).
+* **Live tracking:** Socket is signal only; order list/detail and dining session soft-refetch canonical REST on customer notification, reconnect, online, and visibility resume.
+* **ACK:** delivered on socket; seen when drawer visible; read on open. Multi-tab leader election reused from R1.3B for sound/toast ownership.
+* **Boundary:** Staff R1.3A/B notifications unchanged. Background push deferred to R1.7.
+
+**R1.5+ (planned, concise):**
 * R1.5 — Inventory / refill realtime alerts for administrator/operator/barista
 * R1.6 — Waiter dining session realtime (table/session scoped)
-* R1.7 — Hardening: presence/escalation, ops runbooks; decide whether Dining needs explicit Served
+* R1.7 — Hardening: presence/escalation, ops runbooks; decide whether Dining needs explicit Served; background Web Push/VAPID
 
 Channel model (authorization-ready):
 * `private-user.{id}` — the authenticated user only

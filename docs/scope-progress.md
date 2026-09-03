@@ -387,7 +387,7 @@ Status: Partial
 - [x] R1.2 persistent operational notifications + lifecycle tracking implemented (`operational_notifications` / `operational_notification_recipients`; service/repository; ACK API; generic broadcast DTO; computed delay metrics; PWA/Blade client foundation; business event wiring deferred)
 - [x] R1.3A operational business event wiring implemented (order/payment/prep/dining ready-to-serve/cancel → OperationalNotificationService; idempotency_key dedupe; resolve helpers; no bell/reminder UI yet)
 - [x] R1.3B realtime notification UI + reminder engine implemented (shared Blade bell/drawer/toasts/sound; 30s ActionReminderManager; multi-tab leader election; `/reminded` endpoint; reconnect sync; waiter PWA foundation; dining ready-to-serve resolution limitation preserved)
-- [ ] R1.4 customer realtime order-status + customer notification history UI not started
+- [x] R1.4 customer realtime order-status + notification history implemented (customer.* operational types; owner-only recipients; PWA bell/drawer; live order/dining REST reconciliation; no repeating customer reminders; strong Ready/reject/cancel alerts; logout clears state)
 - [ ] R1.5+ inventory/waiter-session realtime events not started
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
