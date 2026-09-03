@@ -17,6 +17,7 @@ import { emitLiveSignal, toLiveSignal } from '../notifications/liveSignals';
 import { createEventDedupe, createSyncCoalescer } from '../notifications/eventDedupe';
 import { emitDiningOps, normalizeDiningOpsPayload } from '../notifications/diningOpsSignals';
 import { post } from '../api/client';
+import { publishRealtimeDiagnostics, realtimeDiagnostics } from './diagnostics';
 
 /**
  * Connects Echo, syncs operational notifications, reminders (waiter), and customer live signals.
@@ -33,14 +34,22 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
   const dedupeRef = useRef(createEventDedupe('ops'));
   const diningDedupeRef = useRef(createEventDedupe('dining'));
   const syncCoalescerRef = useRef(
-    createSyncCoalescer(() => useNotificationStore.getState().sync(), SYNC_COALESCE_MS),
+    createSyncCoalescer(async () => {
+      await useNotificationStore.getState().sync();
+      realtimeDiagnostics.markReconcile();
+      publishRealtimeDiagnostics();
+    }, SYNC_COALESCE_MS),
   );
   const authenticated = status === 'authenticated' && Boolean(customer?.id);
   const reminderEnabled = authenticated && isWaiter(customer);
 
   useActionReminderEngine(reminderEnabled);
 
-  useEffect(() => realtimeConnection.subscribe(setConnectionState), []);
+  useEffect(() => realtimeConnection.subscribe((next) => {
+    setConnectionState(next);
+    realtimeDiagnostics.setConnectionState(next);
+    publishRealtimeDiagnostics();
+  }), []);
 
   useEffect(() => {
     if (!authenticated || !customer?.id) {
@@ -65,7 +74,12 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
       if (!waiter) {
         return;
       }
-      void post('/realtime/presence/heartbeat', {}).catch(() => undefined);
+      void post('/realtime/presence/heartbeat', {})
+        .then(() => {
+          realtimeDiagnostics.markPresenceHeartbeat();
+          publishRealtimeDiagnostics();
+        })
+        .catch(() => undefined);
     };
 
     const presenceLeave = (): void => {
@@ -83,6 +97,9 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
       if (!normalized) {
         return;
       }
+
+      realtimeDiagnostics.markEvent('operational.notification');
+      publishRealtimeDiagnostics();
 
       const dedupeKey = normalized.uuid
         || `${normalized.id ?? ''}:${normalized.recipient_id}:${normalized.created_at ?? ''}`;
@@ -120,6 +137,8 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
         return;
       }
 
+      realtimeDiagnostics.markEvent('dining.ops');
+      publishRealtimeDiagnostics();
       emitDiningOps(normalized);
     });
 

@@ -113,6 +113,18 @@ function createClient() {
                     ?? actionPayload?.meta?.action_required_count,
             });
             reminder.syncFromStore();
+
+            try {
+                const diag = window.__COFFEE_REALTIME_DIAGNOSTICS__;
+                if (diag && typeof diag === 'object') {
+                    window.__COFFEE_REALTIME_DIAGNOSTICS__ = {
+                        ...diag,
+                        last_reconcile_at: new Date().toISOString(),
+                    };
+                }
+            } catch {
+                // ignore
+            }
         } catch (error) {
             store.setState({
                 status: 'error',

@@ -1371,11 +1371,16 @@ UPI retail place does **not** create actionable attention (wait for proof / paym
 * **Signals:** Domain dining/order/prep events → `DiningRealtimePublisher` → `DiningOpsSignalBroadcasted` (`.dining.ops`) with safe payload only: `event_id`, `type`, `session_id`, `table_id`, optional `order_id`/`state`, `updated_at`. Never money, recipes, costs, payment secrets, or private customer fields.
 * **Clients:** Socket = signal; REST = authority. Waiter PWA table dashboard + active session soft-refetch via coalesced `useDiningOpsSync`; customer dining session subscribes to session channel; Blade waiter/operator dining pages soft-reload on role `.dining.ops`. Event-id dedupe + coalesce avoid REST storms.
 * **Multi-Waiter:** Concurrent Waiters share session/table signals; duplicate bill/close remain idempotent/canonical via REST; sockets never grant Operator payment powers.
-* **Ready-to-serve gap (pending L1):** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected (no Served). Do not invent Served in R1.6 — decide in R1.7 whether Dining needs explicit Served/Delivered-to-table.
-* **Constraints:** Round placement stays REST + idempotency. Broadcast failure must not fail Dining workflows. Presence remains advisory (no table locking).
+* **Ready-to-serve gap:** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected (no Served). **R1.7 decision:** recommend explicit Served/Delivered-to-table in a future Dining UX phase — not implemented in realtime hardening.
 
-**R1.7+ (planned, concise):**
-* R1.7 — Hardening: ops runbooks; decide whether Dining needs explicit Served; background Web Push/VAPID
+**R1.7 Realtime operational hardening & runbooks (done):**
+
+* **Audit:** End-to-end chain remains commit → domain event → publisher → persisted operational notification (when applicable) → broadcast signal → client dedupe → REST reconcile. Sockets never business authority.
+* **Failure isolation:** Reverb down/restart must not block REST; dining/notification publishers swallow broadcast failures; clients reconnect and reconcile (Blade soft-reload for prep/orders/dining/inventory pages; PWA sync + dining/order hooks).
+* **Dedupe:** `withEvents(discover: false)` keeps a single intended listener set; client event-id dedupe + sync coalesce; notification idempotency_keys unchanged.
+* **Diagnostics:** `php artisan coffee:realtime-health` (`--probe`, `--metrics`, `--json`); client `__COFFEE_REALTIME_DIAGNOSTICS__` (connection/reconnect/last event/reconcile/presence heartbeat — no sensitive payloads).
+* **Docs:** `docs/realtime-runbook.md`, `docs/realtime-smoke-test.md`.
+* **Deferred:** Background Web Push/VAPID remains future work (not part of R1.7 hardening).
 
 Channel model (authorization-ready):
 * `private-user.{id}` — the authenticated user only

@@ -120,8 +120,8 @@ PWA features depend on:
 Future API additions expected:
 
 - richer order timeline/status presentation if needed
-- background Web Push / VAPID registration (R1.7) — R1.4 uses in-app + optional foreground Notification when already granted
-- realtime private-channel delivery (R1) — Reverb/Echo foundation (R1.1); operational notification domain (R1.2); staff wiring/UI (R1.3); customer order/dining notifications + live REST reconciliation (R1.4); presence heartbeats + sync coalesce/dedupe for waiter PWA (R1.5); **Waiter/Dining session+table scoped `.dining.ops` + soft REST reconcile for tables/session/customer dining (R1.6)**
+- background Web Push / VAPID registration (post–R1.7) — R1.4 uses in-app + optional foreground Notification when already granted; R1.7 hardening did not ship push
+- realtime private-channel delivery (R1) — Reverb/Echo foundation (R1.1); operational notification domain (R1.2); staff wiring/UI (R1.3); customer order/dining notifications + live REST reconciliation (R1.4); presence heartbeats + sync coalesce/dedupe (R1.5); Waiter/Dining session+table `.dining.ops` (R1.6); **ops hardening, diagnostics, reconnect soft-reload, runbooks (R1.7)**
 - loyalty/rewards endpoints if added later
 
 ## Mobile UX Requirements
@@ -262,7 +262,7 @@ See `customer-pwa/README.md` for the deployment checklist.
 - implementing a payment gateway
 - integrating a third-party courier/delivery provider API
 - implementing inventory consumption from orders
-- implementing background Web Push/VAPID now (R1.7; R1.4 covers in-app customer notifications + live order tracking)
+- implementing background Web Push/VAPID now (deferred past R1.7 hardening; R1.4 covers in-app customer notifications + live order tracking)
 - modifying internal Blade Administrator or Barista surfaces
 
 

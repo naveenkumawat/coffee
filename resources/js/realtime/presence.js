@@ -61,3 +61,17 @@ export function shouldSoftReloadDiningPage() {
     return /\/waiter\/(tables|sessions)/i.test(path)
         || /\/(administrator|operator)\/dining-sessions/i.test(path);
 }
+
+/**
+ * Pages that must soft-reload after reconnect / missed realtime signals (R1.7).
+ * REST remains authoritative — reload is a recovery reconcile, not business logic.
+ */
+export function shouldSoftReloadOnReconnect() {
+    const path = window.location.pathname || '';
+
+    return shouldSoftReloadInventoryPage()
+        || shouldSoftReloadDiningPage()
+        || /\/(barista|chef|operator|administrator)\/preparations/i.test(path)
+        || /\/(operator|administrator)\/orders(\/|$)/i.test(path)
+        || /\/waiter\/tables/i.test(path);
+}

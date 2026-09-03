@@ -1,5 +1,5 @@
 /**
- * Shared Echo bootstrap for internal Blade panels (R1.1 + R1.5).
+ * Shared Echo bootstrap for internal Blade panels (R1.1 + R1.5 + R1.6 + R1.7).
  *
  * Reads window.__COFFEE_REALTIME__ from the layout. No-ops when disabled
  * or credentials are missing so REST panels keep working without Reverb.
@@ -13,7 +13,9 @@ import {
     renderPresenceSummary,
     shouldSoftReloadDiningPage,
     shouldSoftReloadInventoryPage,
+    shouldSoftReloadOnReconnect,
 } from './realtime/presence';
+import { createRealtimeDiagnostics } from './realtime/diagnostics';
 import { createEventDedupe } from './notifications/eventDedupe';
 
 window.Pusher = Pusher;
@@ -21,10 +23,18 @@ window.Pusher = Pusher;
 const config = window.__COFFEE_REALTIME__;
 const inventoryDedupe = createEventDedupe('inv');
 const diningDedupe = createEventDedupe('dining');
+const diagnostics = createRealtimeDiagnostics('blade');
+window.__COFFEE_REALTIME_DIAGNOSTICS__ = diagnostics.snapshot();
+
+function publishDiagnostics() {
+    window.__COFFEE_REALTIME_DIAGNOSTICS__ = diagnostics.snapshot();
+}
 
 if (!config?.enabled || !config.key) {
     window.__COFFEE_ECHO__ = null;
     window.__COFFEE_REALTIME_STATE__ = 'offline';
+    diagnostics.setConnectionState('offline');
+    publishDiagnostics();
 } else {
     const echo = new Echo({
         broadcaster: 'reverb',
@@ -46,14 +56,19 @@ if (!config?.enabled || !config.key) {
 
     window.__COFFEE_ECHO__ = echo;
     window.__COFFEE_REALTIME_STATE__ = 'connecting';
+    diagnostics.setConnectionState('connecting');
+    publishDiagnostics();
 
     const connector = echo.connector?.pusher;
     const indicator = document.getElementById('coffee-realtime-indicator');
     let heartbeatTimer = null;
     let presenceMembers = [];
+    let reconnectReloadTimer = null;
 
     function setState(state, label) {
         window.__COFFEE_REALTIME_STATE__ = state;
+        diagnostics.setConnectionState(state);
+        publishDiagnostics();
         if (!indicator) {
             return;
         }
@@ -84,6 +99,10 @@ if (!config?.enabled || !config.key) {
                 },
                 body: '{}',
             });
+            if (path.includes('heartbeat')) {
+                diagnostics.markPresenceHeartbeat();
+                publishDiagnostics();
+            }
         } catch {
             // Presence is advisory — never block the panel.
         }
@@ -102,6 +121,22 @@ if (!config?.enabled || !config.key) {
             window.clearInterval(heartbeatTimer);
             heartbeatTimer = null;
         }
+    }
+
+    function scheduleReconnectSoftReload() {
+        if (!shouldSoftReloadOnReconnect()) {
+            return;
+        }
+
+        if (reconnectReloadTimer) {
+            window.clearTimeout(reconnectReloadTimer);
+        }
+
+        reconnectReloadTimer = window.setTimeout(() => {
+            diagnostics.markReconcile();
+            publishDiagnostics();
+            window.location.reload();
+        }, 450);
     }
 
     function updatePresenceUi(members) {
@@ -175,6 +210,8 @@ if (!config?.enabled || !config.key) {
                 return;
             }
 
+            diagnostics.markEvent('inventory.ops');
+            publishDiagnostics();
             window.dispatchEvent(new CustomEvent('coffee:inventory-ops', { detail: payload }));
 
             if (shouldSoftReloadInventoryPage()) {
@@ -196,6 +233,8 @@ if (!config?.enabled || !config.key) {
                 return;
             }
 
+            diagnostics.markEvent('dining.ops');
+            publishDiagnostics();
             window.dispatchEvent(new CustomEvent('coffee:dining-ops', { detail: payload }));
 
             if (shouldSoftReloadDiningPage()) {
@@ -208,8 +247,14 @@ if (!config?.enabled || !config.key) {
 
     if (connector) {
         connector.connection.bind('connected', () => {
+            const wasReconnecting = window.__COFFEE_REALTIME_STATE__ === 'reconnecting'
+                || window.__COFFEE_REALTIME_STATE__ === 'disconnected'
+                || window.__COFFEE_REALTIME_STATE__ === 'failed';
             setState('connected', 'Live');
             startHeartbeat();
+            if (wasReconnecting) {
+                scheduleReconnectSoftReload();
+            }
         });
         connector.connection.bind('connecting', () => setState('reconnecting', 'Reconnecting…'));
         connector.connection.bind('unavailable', () => {
@@ -229,9 +274,12 @@ if (!config?.enabled || !config.key) {
     if (config.userId) {
         echo.private(`user.${config.userId}`)
             .listen('.realtime.probe', () => {
-                // Foundation probe listener — keep connection smoke-test quiet.
+                diagnostics.markEvent('realtime.probe');
+                publishDiagnostics();
             })
             .listen('.operational.notification', (payload) => {
+                diagnostics.markEvent('operational.notification');
+                publishDiagnostics();
                 window.dispatchEvent(new CustomEvent('coffee:operational-notification', {
                     detail: payload,
                 }));

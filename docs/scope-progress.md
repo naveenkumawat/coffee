@@ -390,7 +390,7 @@ Status: Partial
 - [x] R1.4 customer realtime order-status + notification history implemented (customer.* operational types; owner-only recipients; PWA bell/drawer; live order/dining REST reconciliation; no repeating customer reminders; strong Ready/reject/cancel alerts; logout clears state)
 - [x] R1.5 realtime reliability + presence + inventory/refill updates implemented (advisory presence-ops + heartbeat; no-staff escalations; sync coalesce/event dedupe; inventory operational notifications + role-channel signals; Admin/Operator presence summary; Barista refill live soft-reload)
 - [x] R1.6 Waiter/Dining table-session scoped realtime implemented (dining-session/table channels; DiningRealtimePublisher `.dining.ops`; Waiter PWA + customer dining + Blade soft REST reconcile; multi-Waiter idempotent bill/close; safe payloads; ready-to-serve Served gap preserved for R1.7)
-- [ ] R1.7 hardening / Served decision / Web Push not started
+- [x] R1.7 realtime operational hardening + runbooks implemented (listener discovery off verified; reconnect soft-reload for prep/orders/dining/inventory; client diagnostics; `coffee:realtime-health`; docs/realtime-runbook.md + realtime-smoke-test.md; Served recommended for future Dining UX; Web Push deferred)
 - [x] Customer product search implemented
 - [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
 
