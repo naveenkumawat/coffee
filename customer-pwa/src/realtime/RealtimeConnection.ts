@@ -6,6 +6,7 @@ import {
   RealtimeConnectionState,
   RealtimeProbePayload,
 } from './types';
+import { DiningOpsPayload } from '../notifications/diningOpsSignals';
 
 type EchoInstance = InstanceType<typeof Echo>;
 
@@ -65,6 +66,8 @@ class RealtimeConnectionService {
   private boundHandlers: Array<[string, (...args: unknown[]) => void]> = [];
   private probeHandlers = new Set<(payload: RealtimeProbePayload) => void>();
   private notificationHandlers = new Set<(payload: Record<string, unknown>) => void>();
+  private diningOpsHandlers = new Set<(payload: Record<string, unknown>) => void>();
+  private scopedChannelRefCounts = new Map<string, number>();
 
   getState(): RealtimeConnectionState {
     return this.state;
@@ -92,6 +95,66 @@ class RealtimeConnectionService {
     };
   }
 
+  onDiningOps(handler: (payload: Record<string, unknown>) => void): () => void {
+    this.diningOpsHandlers.add(handler);
+    return () => {
+      this.diningOpsHandlers.delete(handler);
+    };
+  }
+
+  subscribeDiningSession(
+    sessionId: number | string,
+    handler: (payload: DiningOpsPayload) => void,
+  ): () => void {
+    return this.subscribeScopedChannel(`dining-session.${sessionId}`, handler);
+  }
+
+  subscribeTable(
+    tableId: number | string,
+    handler: (payload: DiningOpsPayload) => void,
+  ): () => void {
+    return this.subscribeScopedChannel(`table.${tableId}`, handler);
+  }
+
+  private subscribeScopedChannel(
+    channelName: string,
+    handler: (payload: DiningOpsPayload) => void,
+  ): () => void {
+    const echo = this.echo;
+    if (!echo) {
+      return () => undefined;
+    }
+
+    const refs = this.scopedChannelRefCounts.get(channelName) ?? 0;
+    this.scopedChannelRefCounts.set(channelName, refs + 1);
+
+    const channel = echo.private(channelName);
+    const listener = (payload: Record<string, unknown>): void => {
+      handler(payload as DiningOpsPayload);
+    };
+    channel.listen('.dining.ops', listener);
+
+    return () => {
+      try {
+        channel.stopListening('.dining.ops', listener);
+      } catch {
+        // ignore
+      }
+
+      const next = (this.scopedChannelRefCounts.get(channelName) ?? 1) - 1;
+      if (next <= 0) {
+        this.scopedChannelRefCounts.delete(channelName);
+        try {
+          echo.leave(channelName);
+        } catch {
+          // ignore
+        }
+      } else {
+        this.scopedChannelRefCounts.set(channelName, next);
+      }
+    };
+  }
+
   private setState(next: RealtimeConnectionState): void {
     if (this.state === next) {
       return;
@@ -100,7 +163,11 @@ class RealtimeConnectionService {
     this.listeners.forEach((listener) => listener(next));
   }
 
-  async connect(userId: number, roleChannel: string | null = null): Promise<void> {
+  async connect(
+    userId: number,
+    roleChannel: string | null = null,
+    options: { joinPresence?: boolean } = {},
+  ): Promise<void> {
     const env = readEnvConfig();
 
     if (!env.enabled || !env.key) {
@@ -157,7 +224,15 @@ class RealtimeConnectionService {
       });
 
     if (roleChannel) {
-      echo.private(roleChannel);
+      echo
+        .private(roleChannel)
+        .listen('.dining.ops', (payload: Record<string, unknown>) => {
+          this.diningOpsHandlers.forEach((handler) => handler(payload));
+        });
+    }
+
+    if (options.joinPresence) {
+      echo.join('ops');
     }
   }
 
@@ -223,6 +298,7 @@ class RealtimeConnectionService {
   disconnect(): void {
     this.connectGeneration += 1;
     this.activeUserId = null;
+    this.scopedChannelRefCounts.clear();
 
     if (this.echo) {
       const connector = this.echo.connector as { pusher?: { connection: {

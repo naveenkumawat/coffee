@@ -15,6 +15,9 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningPaymentProofReceived;
 use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
+use App\Events\Dining\DiningSessionClosed;
+use App\Events\Dining\DiningSessionOpened;
+use App\Events\Dining\DiningSessionReopened;
 use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
 use App\Models\DiningRoundDraftAddOn;
@@ -107,7 +110,10 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'opened_at' => now(),
             ]);
 
-            return $session->fresh(['cafeTable', 'customer', 'openedBy', 'drafts', 'orders']);
+            $fresh = $session->fresh(['cafeTable', 'customer', 'openedBy', 'drafts', 'orders']);
+            event(new DiningSessionOpened($fresh ?? $session));
+
+            return $fresh ?? $session;
         });
     }
 
@@ -517,7 +523,14 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             $locked->fill($attributes)->save();
 
-            return $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items']) ?? $locked;
+            $hint = 'method_'.$method->apiKey();
+
+            DB::afterCommit(function () use ($fresh, $hint): void {
+                app(DiningRealtimePublisher::class)->paymentChanged($fresh, $hint);
+            });
+
+            return $fresh;
         });
     }
 
@@ -744,6 +757,10 @@ class DiningSessionService implements DiningSessionServiceInterface
         return DB::transaction(function () use ($session): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
 
+            if ($locked->status === DiningSessionStatus::Closed) {
+                return $locked->fresh(['cafeTable', 'customer', 'orders.items']) ?? $locked;
+            }
+
             if ($locked->status !== DiningSessionStatus::Paid && $locked->payment_status !== PaymentStatus::Confirmed) {
                 throw ValidationException::withMessages([
                     'session' => 'Close the session only after payment is confirmed.',
@@ -757,7 +774,10 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             DiningRoundDraft::query()->where('dining_session_id', $locked->getKey())->delete();
 
-            return $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items']);
+            event(new DiningSessionClosed($fresh ?? $locked));
+
+            return $fresh ?? $locked;
         });
     }
 
@@ -812,7 +832,10 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             $locked->promotions()->delete();
 
-            return $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
+            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
+            event(new DiningSessionReopened($fresh ?? $locked));
+
+            return $fresh ?? $locked;
         });
     }
 

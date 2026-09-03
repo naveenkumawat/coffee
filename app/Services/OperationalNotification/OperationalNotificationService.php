@@ -176,6 +176,27 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
         return $resolved;
     }
 
+    public function resolveOpenByTypes(
+        array $types,
+        ?User $resolvedBy = null,
+        ?string $resolutionAction = null,
+    ): Collection {
+        $typeValues = array_map(
+            fn (string|OperationalNotificationType $type): string => $type instanceof OperationalNotificationType
+                ? $type->value
+                : $type,
+            $types,
+        );
+
+        $resolved = collect();
+
+        foreach ($this->notifications->findOpenByTypes($typeValues) as $notification) {
+            $resolved->push($this->resolve($notification, $resolvedBy, $resolutionAction));
+        }
+
+        return $resolved;
+    }
+
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection
     {
         return $this->notifications->listForUser($user, $limit, $actionRequiredOnly);
@@ -294,6 +315,11 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
             OperationalNotificationType::OrderPaymentProofReview->value,
             OperationalNotificationType::PreparationTicketPending->value,
             OperationalNotificationType::DiningReadyToServe->value,
+            OperationalNotificationType::EscalationNoBaristaOnline->value,
+            OperationalNotificationType::EscalationNoChefOnline->value,
+            OperationalNotificationType::EscalationNoWaiterOnline->value,
+            OperationalNotificationType::InventoryRefillRequested->value,
+            OperationalNotificationType::InventoryStockOut->value,
         ], true);
     }
 

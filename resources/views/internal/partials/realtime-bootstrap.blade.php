@@ -13,6 +13,8 @@
         default => null,
     };
 
+    $showPresenceSummary = in_array($panel ?? null, ['administrator', 'operator'], true);
+
     $realtimeConfig = [
         'enabled' => $realtimeEnabled,
         'key' => config('coffee.realtime.key'),
@@ -23,6 +25,10 @@
         'csrfToken' => csrf_token(),
         'userId' => $realtimeUser?->id,
         'roleChannel' => $roleChannel,
+        'joinPresence' => $realtimeEnabled && $roleChannel !== null,
+        'showPresenceSummary' => $showPresenceSummary,
+        'presenceApiBase' => url('/api/v1/realtime/presence'),
+        'presenceIntervalMs' => 20000,
     ];
 @endphp
 

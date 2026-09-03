@@ -14,6 +14,7 @@ import { ErrorState } from '../../components/common/ErrorState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { PageHeader } from '../../components/common/PageHeader';
 import { StickyActionBar } from '../../components/common/StickyActionBar';
+import { useDiningOpsSync } from '../../notifications/useDiningOpsSync';
 import { useToastStore } from '../../stores/toastStore';
 import { formatCurrency } from '../../utils/format';
 import {
@@ -73,6 +74,14 @@ export function WaiterSessionPage() {
   useEffect(() => {
     void loadSession();
   }, [loadSession]);
+
+  useDiningOpsSync(
+    () => {
+      void loadSession();
+    },
+    (payload) => String(payload.session_id) === String(sessionId),
+    { sessionId },
+  );
 
   const billTotal = useMemo(() => {
     if (!session) {

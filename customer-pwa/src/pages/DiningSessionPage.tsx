@@ -12,6 +12,7 @@ import {
   uploadDiningPaymentProof,
 } from '../api/dining';
 import { fetchMenuCatalogue } from '../api/catalog';
+import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
 import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 
 export function DiningSessionPage() {
@@ -46,6 +47,15 @@ export function DiningSessionPage() {
       return false;
     },
   );
+
+  useDiningOpsSync(
+    () => {
+      void reload().catch(() => undefined);
+    },
+    (payload) => String(payload.session_id) === String(sessionId),
+    { sessionId },
+  );
+
   useEffect(() => {
     let cancelled = false;
 

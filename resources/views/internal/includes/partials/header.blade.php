@@ -78,6 +78,18 @@
                     />
                 </div>
 
+                @if ($user && in_array($panel, ['administrator', 'operator'], true))
+                    <div class="app-navbar-item ms-1 ms-md-4 d-none d-md-flex align-items-center">
+                        <span
+                            id="coffee-ops-presence"
+                            class="badge badge-light fw-semibold text-gray-700 coffee-ops-presence"
+                            hidden
+                            role="status"
+                            aria-live="polite"
+                        >Staff online</span>
+                    </div>
+                @endif
+
                 @if ($user)
                     <div class="app-navbar-item ms-1 ms-md-4">
                         <button

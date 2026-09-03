@@ -1358,15 +1358,31 @@ UPI retail place does **not** create actionable attention (wait for proof / paym
 * **ACK:** delivered on socket; seen when drawer visible; read on open. Multi-tab leader election reused from R1.3B for sound/toast ownership.
 * **Boundary:** Staff R1.3A/B notifications unchanged. Background push deferred to R1.7.
 
-**R1.5+ (planned, concise):**
-* R1.5 — Inventory / refill realtime alerts for administrator/operator/barista
-* R1.6 — Waiter dining session realtime (table/session scoped)
-* R1.7 — Hardening: presence/escalation, ops runbooks; decide whether Dining needs explicit Served; background Web Push/VAPID
+**R1.5 Realtime reliability, presence, inventory/refill (done):**
+
+* **Presence (advisory only):** Echo `presence-ops` for staff roles; TTL heartbeats via `POST /api/v1/realtime/presence/heartbeat` (unique user counts, not tabs). Customers denied. Admin/Operator header shows role online summaries. Presence never blocks workflows.
+* **No-staff escalation:** When BAR/KITCHEN ticket pending or dining ready-to-serve is created and the target role has no online presence → Operator/Admin actionable `escalation.no_*_online` (deduped per work lifecycle). Resolves when staff heartbeats online or underlying work resolves.
+* **Reliability:** Client event-id/uuid dedupe (bounded session memory); coalesced REST sync on reconnect/online/visibility; connection states remain subtle; failure never clears notification state or blocks ops.
+* **Inventory/refill realtime:** Domain events → `OperationalInventoryNotificationPublisher` → operational notifications + minimal `.inventory.ops` role-channel signals (Admin/Operator/Barista). Low = informational; out-of-stock + pending refill = actionable/reminder-eligible. Soft-reload inventory/refill Blade pages on signal. No cost/profit in payloads. Legacy StaffNotificationDispatcher email/bell retained.
+
+**R1.6 Waiter/Dining table-session scoped realtime (done):**
+
+* **Channels:** `private-dining-session.{id}` (session owner customer OR dining/order staff); `private-table.{id}` (dining/order staff only); keep `private-user.{id}` for personal notifications; Waiter/Operator also receive `.dining.ops` on role channels.
+* **Signals:** Domain dining/order/prep events → `DiningRealtimePublisher` → `DiningOpsSignalBroadcasted` (`.dining.ops`) with safe payload only: `event_id`, `type`, `session_id`, `table_id`, optional `order_id`/`state`, `updated_at`. Never money, recipes, costs, payment secrets, or private customer fields.
+* **Clients:** Socket = signal; REST = authority. Waiter PWA table dashboard + active session soft-refetch via coalesced `useDiningOpsSync`; customer dining session subscribes to session channel; Blade waiter/operator dining pages soft-reload on role `.dining.ops`. Event-id dedupe + coalesce avoid REST storms.
+* **Multi-Waiter:** Concurrent Waiters share session/table signals; duplicate bill/close remain idempotent/canonical via REST; sockets never grant Operator payment powers.
+* **Ready-to-serve gap (pending L1):** `dining.ready_to_serve` still resolves only on Completed/Cancelled/Rejected (no Served). Do not invent Served in R1.6 — decide in R1.7 whether Dining needs explicit Served/Delivered-to-table.
+* **Constraints:** Round placement stays REST + idempotency. Broadcast failure must not fail Dining workflows. Presence remains advisory (no table locking).
+
+**R1.7+ (planned, concise):**
+* R1.7 — Hardening: ops runbooks; decide whether Dining needs explicit Served; background Web Push/VAPID
 
 Channel model (authorization-ready):
 * `private-user.{id}` — the authenticated user only
 * `private-role.administrator` — owner/manager
 * `private-role.operator|barista|chef|waiter` — matching staff role only
+* `private-dining-session.{id}` — session owner customer or dining/order staff
+* `private-table.{id}` — dining/order staff only
 * Customers never subscribe to staff role channels
 
 Constraints: self-hosted Reverb only (no Pusher/Ably/Firebase). Broadcast DTOs only — never raw Eloquent models. Realtime failure must never block REST.

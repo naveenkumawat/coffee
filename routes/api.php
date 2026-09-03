@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRewardController;
 use App\Http\Controllers\Api\V1\Home\HomeController;
 use App\Http\Controllers\Api\V1\Notification\OperationalNotificationController;
+use App\Http\Controllers\Api\V1\Realtime\RealtimePresenceController;
 use App\Http\Controllers\Api\V1\Waiter\WaiterDiningController;
 use App\Http\Middleware\AuthenticateNotificationRequest;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('/{recipient}/read', [OperationalNotificationController::class, 'read'])->name('read');
         Route::post('/{recipient}/acknowledge', [OperationalNotificationController::class, 'acknowledge'])->name('acknowledge');
         Route::post('/{recipient}/reminded', [OperationalNotificationController::class, 'reminded'])->name('reminded');
+    });
+
+    Route::middleware([AuthenticateNotificationRequest::class])->prefix('realtime')->name('realtime.')->group(function (): void {
+        Route::post('/presence/heartbeat', [RealtimePresenceController::class, 'heartbeat'])->name('presence.heartbeat');
+        Route::post('/presence/leave', [RealtimePresenceController::class, 'leave'])->name('presence.leave');
+        Route::get('/presence/summary', [RealtimePresenceController::class, 'summary'])->name('presence.summary');
     });
 
     Route::middleware(['auth:sanctum', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function (): void {

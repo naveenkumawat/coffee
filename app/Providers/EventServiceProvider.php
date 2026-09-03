@@ -9,6 +9,9 @@ use App\Events\Dining\DiningPaymentConfirmed;
 use App\Events\Dining\DiningPaymentProofReceived;
 use App\Events\Dining\DiningPaymentProofRejected;
 use App\Events\Dining\DiningRoundPlaced;
+use App\Events\Dining\DiningSessionClosed;
+use App\Events\Dining\DiningSessionOpened;
+use App\Events\Dining\DiningSessionReopened;
 use App\Events\Inventory\IngredientStockStatusChanged;
 use App\Events\Inventory\InventoryRefillRequestCreated;
 use App\Events\Inventory\InventoryRefillRequestStatusChanged;
@@ -25,12 +28,15 @@ use App\Listeners\Customer\SendCustomerWelcomeNotification;
 use App\Listeners\Dining\QualifyReferralOnDiningPaymentConfirmed;
 use App\Listeners\Dining\SendDiningBillReadyNotification;
 use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
+use App\Listeners\Dining\WireDiningRealtimeSignals;
 use App\Listeners\Menu\FlushMenuCatalogCache;
 use App\Listeners\OperationalNotification\WireOperationalDiningBillReady;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentConfirmed;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofReceived;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentProofRejected;
 use App\Listeners\OperationalNotification\WireOperationalDiningRoundPlaced;
+use App\Listeners\OperationalNotification\WireOperationalIngredientStockStatusChanged;
+use App\Listeners\OperationalNotification\WireOperationalInventoryRefillRequest;
 use App\Listeners\OperationalNotification\WireOperationalOrderPlaced;
 use App\Listeners\OperationalNotification\WireOperationalOrderPreparationStatusChanged;
 use App\Listeners\OperationalNotification\WireOperationalOrderStatusChanged;
@@ -54,8 +60,9 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 class EventServiceProvider extends ServiceProvider
 {
     /**
-     * Listeners are registered explicitly in $listen. Auto-discovery would
-     * double-fire WireOperational* handlers that are also listed here.
+     * Listeners are registered explicitly in $listen. Framework discovery is
+     * disabled via Application::configure()->withEvents(discover: false) so
+     * WireOperational* / WireDiningRealtimeSignals handlers do not double-fire.
      */
     public function shouldDiscoverEvents(): bool
     {
@@ -94,28 +101,44 @@ class EventServiceProvider extends ServiceProvider
             NotifyStaffOrderStatusChanged::class,
             QualifyReferralOnPaymentConfirmed::class,
             WireOperationalOrderStatusChanged::class,
+            [WireDiningRealtimeSignals::class, 'handleOrderStatusChanged'],
         ],
         OrderPreparationStatusChanged::class => [
             NotifyStaffOrderPreparationStatusChanged::class,
             WireOperationalOrderPreparationStatusChanged::class,
+            [WireDiningRealtimeSignals::class, 'handlePreparationStatusChanged'],
         ],
         DiningRoundPlaced::class => [
             WireOperationalDiningRoundPlaced::class,
+            [WireDiningRealtimeSignals::class, 'handleRoundPlaced'],
+        ],
+        DiningSessionOpened::class => [
+            [WireDiningRealtimeSignals::class, 'handleSessionOpened'],
+        ],
+        DiningSessionClosed::class => [
+            [WireDiningRealtimeSignals::class, 'handleSessionClosed'],
+        ],
+        DiningSessionReopened::class => [
+            [WireDiningRealtimeSignals::class, 'handleSessionReopened'],
         ],
         DiningBillReady::class => [
             SendDiningBillReadyNotification::class,
             WireOperationalDiningBillReady::class,
+            [WireDiningRealtimeSignals::class, 'handleBillReady'],
         ],
         DiningPaymentConfirmed::class => [
             SendDiningPaymentConfirmedNotification::class,
             QualifyReferralOnDiningPaymentConfirmed::class,
             WireOperationalDiningPaymentConfirmed::class,
+            [WireDiningRealtimeSignals::class, 'handlePaymentConfirmed'],
         ],
         DiningPaymentProofReceived::class => [
             WireOperationalDiningPaymentProofReceived::class,
+            [WireDiningRealtimeSignals::class, 'handlePaymentProofReceived'],
         ],
         DiningPaymentProofRejected::class => [
             WireOperationalDiningPaymentProofRejected::class,
+            [WireDiningRealtimeSignals::class, 'handlePaymentProofRejected'],
         ],
         OrderCashReceived::class => [
             SendOrderCashReceivedNotification::class,
@@ -123,12 +146,15 @@ class EventServiceProvider extends ServiceProvider
         ],
         IngredientStockStatusChanged::class => [
             NotifyStaffIngredientStockStatusChanged::class,
+            WireOperationalIngredientStockStatusChanged::class,
         ],
         InventoryRefillRequestCreated::class => [
             [NotifyStaffInventoryRefillRequest::class, 'handleCreated'],
+            [WireOperationalInventoryRefillRequest::class, 'handleCreated'],
         ],
         InventoryRefillRequestStatusChanged::class => [
             [NotifyStaffInventoryRefillRequest::class, 'handleStatusChanged'],
+            [WireOperationalInventoryRefillRequest::class, 'handleStatusChanged'],
         ],
     ];
 }

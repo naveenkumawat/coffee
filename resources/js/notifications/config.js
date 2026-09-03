@@ -11,8 +11,14 @@ export const REMINDER_ELIGIBLE_TYPES = new Set([
     'order.payment_proof_review',
     'preparation.ticket_pending',
     'dining.ready_to_serve',
+    'escalation.no_barista_online',
+    'escalation.no_chef_online',
+    'escalation.no_waiter_online',
+    'inventory.refill_requested',
+    'inventory.stock_out',
 ]);
 
 export const CHANNEL_NAME = 'coffee-ops-notifications';
 export const STORAGE_LEADER_KEY = 'coffee.ops.notifications.leader';
 export const STORAGE_EVENT_KEY = 'coffee.ops.notifications.event';
+export const SYNC_COALESCE_MS = 400;

@@ -11,6 +11,7 @@ import { BrandLogo } from '../../components/common/BrandLogo';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { useDiningOpsSync } from '../../notifications/useDiningOpsSync';
 import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
 import { formatCurrency } from '../../utils/format';
@@ -82,6 +83,10 @@ export function WaiterTablesPage() {
   useEffect(() => {
     void loadTables();
   }, [loadTables]);
+
+  useDiningOpsSync(() => {
+    void loadTables();
+  });
 
   async function handleStartSession(table: WaiterTable): Promise<void> {
     setBusyTableId(table.id);

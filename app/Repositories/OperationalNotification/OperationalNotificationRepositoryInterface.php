@@ -36,6 +36,12 @@ interface OperationalNotificationRepositoryInterface
     public function findOpenForSubject(Model $subject, array $types = []): Collection;
 
     /**
+     * @param  list<string>  $types
+     * @return Collection<int, OperationalNotification>
+     */
+    public function findOpenByTypes(array $types): Collection;
+
+    /**
      * @return Collection<int, OperationalNotificationRecipient>
      */
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection;

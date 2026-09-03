@@ -13,17 +13,19 @@ use App\Models\DiningSession;
 use App\Models\Order;
 use App\Models\OrderPreparation;
 use App\Models\User;
+use App\Services\Realtime\RealtimePresenceServiceInterface;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * R1.3A / R1.4 bridge: domain events → OperationalNotificationService.
+ * R1.3A / R1.4 / R1.5 bridge: domain events → OperationalNotificationService.
  * Never throws into the business event pipeline.
  */
 class OperationalBusinessNotificationPublisher
 {
     public function __construct(
         protected OperationalNotificationServiceInterface $notifications,
+        protected RealtimePresenceServiceInterface $presence,
     ) {}
 
     public function handleOrderPlaced(Order $order): void
@@ -155,7 +157,10 @@ class OperationalBusinessNotificationPublisher
             if ($toStatus === OrderStatus::Completed && $order->isDiningRound()) {
                 $this->notifications->resolveOpenForSubject(
                     $order,
-                    [OperationalNotificationType::DiningReadyToServe],
+                    [
+                        OperationalNotificationType::DiningReadyToServe,
+                        OperationalNotificationType::EscalationNoWaiterOnline,
+                    ],
                     resolutionAction: 'order_completed',
                 );
 
@@ -175,6 +180,7 @@ class OperationalBusinessNotificationPublisher
                     OperationalNotificationType::OrderRequiresAcceptance,
                     OperationalNotificationType::OrderPaymentProofReview,
                     OperationalNotificationType::DiningReadyToServe,
+                    OperationalNotificationType::EscalationNoWaiterOnline,
                 ],
                 resolutionAction: $resolution,
             );
@@ -183,7 +189,11 @@ class OperationalBusinessNotificationPublisher
             foreach ($order->preparations as $ticket) {
                 $this->notifications->resolveOpenForSubject(
                     $ticket,
-                    [OperationalNotificationType::PreparationTicketPending],
+                    [
+                        OperationalNotificationType::PreparationTicketPending,
+                        OperationalNotificationType::EscalationNoBaristaOnline,
+                        OperationalNotificationType::EscalationNoChefOnline,
+                    ],
                     resolutionAction: $resolution,
                 );
             }
@@ -266,6 +276,8 @@ class OperationalBusinessNotificationPublisher
                     subject: $ticket,
                 );
 
+                $this->maybeEscalateMissingStationPresence($ticket);
+
                 return;
             }
 
@@ -279,7 +291,11 @@ class OperationalBusinessNotificationPublisher
             ], true)) {
                 $this->notifications->resolveOpenForSubject(
                     $ticket,
-                    [OperationalNotificationType::PreparationTicketPending],
+                    [
+                        OperationalNotificationType::PreparationTicketPending,
+                        OperationalNotificationType::EscalationNoBaristaOnline,
+                        OperationalNotificationType::EscalationNoChefOnline,
+                    ],
                     resolutionAction: $toStatus->value,
                 );
             }
@@ -348,8 +364,91 @@ class OperationalBusinessNotificationPublisher
                 subject: $order,
             );
 
+            $this->maybeEscalateMissingWaiterPresence($order);
             $this->publishCustomerDiningReady($order);
         });
+    }
+
+    public function handleStaffRoleCameOnline(User $user): void
+    {
+        $this->safe(function () use ($user): void {
+            $key = $this->presence->presenceKeyForUser($user);
+            if ($key === null) {
+                return;
+            }
+
+            $types = match ($key) {
+                'barista' => [OperationalNotificationType::EscalationNoBaristaOnline],
+                'chef' => [OperationalNotificationType::EscalationNoChefOnline],
+                'waiter' => [OperationalNotificationType::EscalationNoWaiterOnline],
+                default => [],
+            };
+
+            if ($types === []) {
+                return;
+            }
+
+            $this->notifications->resolveOpenByTypes($types, $user, 'staff_online');
+        });
+    }
+
+    protected function maybeEscalateMissingStationPresence(OrderPreparation $ticket): void
+    {
+        $role = match ($ticket->station) {
+            PreparationStation::Bar => UserRole::Barista,
+            PreparationStation::Kitchen => UserRole::Chef,
+            default => null,
+        };
+
+        if ($role === null || $this->presence->isRoleOnline($role)) {
+            return;
+        }
+
+        $type = $role === UserRole::Barista
+            ? OperationalNotificationType::EscalationNoBaristaOnline
+            : OperationalNotificationType::EscalationNoChefOnline;
+
+        $label = $role === UserRole::Barista ? 'Barista' : 'Chef';
+        $station = $ticket->station instanceof PreparationStation
+            ? $ticket->station->label()
+            : 'Station';
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key($type, $ticket, 'pending'),
+            type: $type->value,
+            category: 'escalation',
+            title: 'No '.$label.' online',
+            message: $station.' ticket for order '.($ticket->order?->order_number ?? '#'.$ticket->order_id).' is waiting and no '.$label.' is online.',
+            audience: $this->operatorAdminAudience(),
+            priority: OperationalNotificationPriority::High,
+            actionRequired: true,
+            actionCode: 'staff_coverage',
+            actionUrl: $this->preparationUrl($ticket),
+            subject: $ticket,
+            metadata: ['advisory_presence' => true, 'missing_role' => $role->value],
+        );
+    }
+
+    protected function maybeEscalateMissingWaiterPresence(Order $order): void
+    {
+        if ($this->presence->isRoleOnline(UserRole::Waiter)) {
+            return;
+        }
+
+        $this->notifications->createUniqueAndBroadcast(
+            idempotencyKey: $this->key(OperationalNotificationType::EscalationNoWaiterOnline, $order, 'all_ready'),
+            type: OperationalNotificationType::EscalationNoWaiterOnline->value,
+            category: 'escalation',
+            title: 'No Waiter online',
+            message: 'Dining round '.$order->order_number.' is ready to serve and no Waiter is online.',
+            audience: $this->operatorAdminAudience(),
+            priority: OperationalNotificationPriority::High,
+            actionRequired: true,
+            actionCode: 'staff_coverage',
+            actionUrl: $this->orderUrl($order),
+            subject: $order,
+            metadata: ['advisory_presence' => true, 'missing_role' => UserRole::Waiter->value],
+        );
     }
 
     public function handleDiningRoundPlaced(Order $order, DiningSession $session): void

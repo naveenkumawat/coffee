@@ -71,6 +71,18 @@ interface OperationalNotificationServiceInterface
     ): Collection;
 
     /**
+     * Resolve unresolved notifications matching type values (any subject).
+     *
+     * @param  list<string|OperationalNotificationType>  $types
+     * @return Collection<int, OperationalNotification>
+     */
+    public function resolveOpenByTypes(
+        array $types,
+        ?User $resolvedBy = null,
+        ?string $resolutionAction = null,
+    ): Collection;
+
+    /**
      * @return Collection<int, OperationalNotificationRecipient>
      */
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection;

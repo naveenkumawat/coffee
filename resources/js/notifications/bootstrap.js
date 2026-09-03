@@ -6,13 +6,15 @@ import { createTabLeader } from './tabLeader';
 import { createActionReminderManager } from './reminder';
 import { createNotificationUi } from './ui';
 import { normalizePayload, isActionable, isReminderEligible } from './normalize';
-import { SYNC_ABSENCE_MS } from './config';
+import { SYNC_ABSENCE_MS, SYNC_COALESCE_MS } from './config';
+import { createEventDedupe, createSyncCoalescer } from './eventDedupe';
 
 function createClient() {
     const store = createNotificationStore();
     const sound = createNotificationSoundManager();
     const leader = createTabLeader();
     const deliveredAcked = new Set();
+    const eventDedupe = createEventDedupe('ops');
     let hiddenSince = null;
 
     const ui = createNotificationUi({
@@ -84,7 +86,7 @@ function createClient() {
         },
     });
 
-    async function sync() {
+    async function syncNow() {
         store.setState({ status: 'syncing', error: null });
 
         try {
@@ -119,11 +121,17 @@ function createClient() {
         }
     }
 
+    const syncCoalescer = createSyncCoalescer(syncNow, SYNC_COALESCE_MS);
+    const sync = () => syncCoalescer.request();
+
     async function handleRealtime(raw) {
         const item = normalizePayload(raw);
         if (!item) {
             return;
         }
+
+        const dedupeKey = item.uuid || `${item.id}:${item.recipient_id}:${item.created_at || ''}`;
+        const isNew = eventDedupe.claim(dedupeKey);
 
         store.upsert(item);
 
@@ -140,7 +148,7 @@ function createClient() {
             }
         }
 
-        if (leader.isLeader()) {
+        if (isNew && leader.isLeader()) {
             ui.showToast(item);
             if (isActionable(item)) {
                 await sound.play();
@@ -156,9 +164,6 @@ function createClient() {
         window.addEventListener('coffee:operational-notification', (event) => {
             void handleRealtime(event.detail);
         });
-
-        // Also listen if Echo already attached a channel listener that dispatches the event
-        // (resources/js/realtime.js).
     }
 
     function bindLifecycle() {
@@ -172,21 +177,23 @@ function createClient() {
             const away = hiddenSince ? Date.now() - hiddenSince : 0;
             hiddenSince = null;
             if (away >= SYNC_ABSENCE_MS) {
-                void sync();
+                sync();
             }
         });
 
         window.addEventListener('online', () => {
-            void sync();
+            sync();
         });
 
         const indicator = document.getElementById('coffee-realtime-indicator');
         if (indicator) {
+            let lastSyncState = null;
             const observer = new MutationObserver(() => {
                 const state = indicator.dataset.state || 'idle';
                 store.setState({ connectionState: state });
-                if (state === 'connected' || state === 'reconnected') {
-                    void sync();
+                if ((state === 'connected' || state === 'reconnected') && state !== lastSyncState) {
+                    lastSyncState = state;
+                    sync();
                 }
             });
             observer.observe(indicator, { attributes: true, attributeFilter: ['data-state'] });
@@ -195,7 +202,7 @@ function createClient() {
 
     bindRealtime();
     bindLifecycle();
-    void sync();
+    sync();
 
     return {
         store,
@@ -210,7 +217,6 @@ function createClient() {
 
 const ready = () => {
     if (!document.getElementById('coffee-ops-bell')) {
-        // Still expose API helper when markup missing.
         window.__COFFEE_NOTIFICATIONS__ = notificationsApi;
 
         return;

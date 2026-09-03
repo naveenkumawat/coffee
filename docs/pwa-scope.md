@@ -121,7 +121,7 @@ Future API additions expected:
 
 - richer order timeline/status presentation if needed
 - background Web Push / VAPID registration (R1.7) — R1.4 uses in-app + optional foreground Notification when already granted
-- realtime private-channel delivery (R1) — Reverb/Echo foundation (R1.1); operational notification domain (R1.2); staff wiring/UI (R1.3); **customer order/dining notifications + live REST reconciliation (R1.4 done)**
+- realtime private-channel delivery (R1) — Reverb/Echo foundation (R1.1); operational notification domain (R1.2); staff wiring/UI (R1.3); customer order/dining notifications + live REST reconciliation (R1.4); presence heartbeats + sync coalesce/dedupe for waiter PWA (R1.5); **Waiter/Dining session+table scoped `.dining.ops` + soft REST reconcile for tables/session/customer dining (R1.6)**
 - loyalty/rewards endpoints if added later
 
 ## Mobile UX Requirements

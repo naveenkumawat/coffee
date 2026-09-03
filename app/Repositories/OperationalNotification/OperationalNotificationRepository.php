@@ -81,6 +81,20 @@ class OperationalNotificationRepository extends AbstractRepository implements Op
             ->get();
     }
 
+    public function findOpenByTypes(array $types): Collection
+    {
+        if ($types === []) {
+            return collect();
+        }
+
+        return $this->notificationModel->newQuery()
+            ->with('recipients')
+            ->whereNull('resolved_at')
+            ->whereIn('type', $types)
+            ->orderBy('id')
+            ->get();
+    }
+
     public function listForUser(User $user, int $limit = 30, bool $actionRequiredOnly = false): Collection
     {
         return $this->recipientModel->newQuery()

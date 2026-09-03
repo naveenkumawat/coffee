@@ -47,6 +47,19 @@ enum OperationalNotificationType: string
     case CustomerDiningBillRequested = 'customer.dining.bill_requested';
     case CustomerDiningSessionClosed = 'customer.dining.session_closed';
 
+    // --- R1.5 presence escalation + inventory/refill ---
+
+    /** Actionable work waiting and target station role has no online presence. */
+    case EscalationNoBaristaOnline = 'escalation.no_barista_online';
+    case EscalationNoChefOnline = 'escalation.no_chef_online';
+    case EscalationNoWaiterOnline = 'escalation.no_waiter_online';
+
+    case InventoryStockLow = 'inventory.stock_low';
+    case InventoryStockOut = 'inventory.stock_out';
+    case InventoryStockRestored = 'inventory.stock_restored';
+    case InventoryRefillRequested = 'inventory.refill_requested';
+    case InventoryRefillUpdated = 'inventory.refill_updated';
+
     public function isCustomerFacing(): bool
     {
         return str_starts_with($this->value, 'customer.');
