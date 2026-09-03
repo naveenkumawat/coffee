@@ -254,6 +254,7 @@
                         <thead>
                             <tr class="text-muted fw-bold text-uppercase">
                                 <th>Round</th>
+                                <th>Stations</th>
                                 <th>Round→Ready</th>
                                 <th>BAR prep</th>
                                 <th>KITCHEN prep</th>
@@ -264,13 +265,14 @@
                             @forelse ($report['dining_rounds']['rows'] as $row)
                                 <tr>
                                     <td>{{ $row['order_number'] }} · R{{ $row['round_number'] }}</td>
+                                    <td>{{ $row['required_station_count'] ?? '—' }}</td>
                                     <td>{{ $fmt($row['round_to_ready_seconds']) }}</td>
                                     <td>{{ $fmt($row['bar_prep_seconds']) }}</td>
                                     <td>{{ $fmt($row['kitchen_prep_seconds']) }}</td>
                                     <td>{{ $fmt($row['station_gap_seconds']) }}</td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5" class="text-muted">No dining rounds in this period.</td></tr>
+                                <tr><td colspan="6" class="text-muted">No dining rounds in this period.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -368,6 +370,38 @@
                 @empty
                     <p class="text-muted mb-0">None.</p>
                 @endforelse
+            </div>
+        </div>
+        <div class="row g-5 mb-7">
+            <div class="col-lg-6">
+                <div class="card card-flush internal-card h-100">
+                    <div class="card-header pt-6"><div class="card-title"><h3 class="fw-bold">Ready to Serve rounds</h3></div></div>
+                    <div class="card-body pt-2">
+                        @forelse ($live['ready_to_serve_rounds'] as $row)
+                            <div class="d-flex justify-content-between py-2 border-bottom border-gray-100 fs-7">
+                                <span>{{ $row['order_number'] }} · {{ $row['table'] }} · R{{ $row['round_number'] }}</span>
+                                <span class="fw-bold">{{ $fmt($row['ready_to_serve_age_seconds']) }}</span>
+                            </div>
+                        @empty
+                            <p class="text-muted mb-0">None.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card card-flush internal-card h-100">
+                    <div class="card-header pt-6"><div class="card-title"><h3 class="fw-bold">Bill requested sessions</h3></div></div>
+                    <div class="card-body pt-2">
+                        @forelse ($live['bill_requested_sessions'] as $row)
+                            <div class="d-flex justify-content-between py-2 border-bottom border-gray-100 fs-7">
+                                <span>{{ $row['session_number'] }} · {{ $row['table'] }}</span>
+                                <span class="fw-bold">{{ $fmt($row['bill_requested_elapsed_seconds']) }}</span>
+                            </div>
+                        @empty
+                            <p class="text-muted mb-0">None.</p>
+                        @endforelse
+                    </div>
+                </div>
             </div>
         </div>
     @endif

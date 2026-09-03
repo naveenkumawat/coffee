@@ -96,7 +96,7 @@ export function ProductTags({
   const [positionReady, setPositionReady] = useState(false);
 
   const marketingTags = useMemo(
-    () => (tags ?? []).filter((tag) => Boolean(tag.key) && Boolean(tag.label)),
+    () => (Array.isArray(tags) ? tags : []).filter((tag) => Boolean(tag.key) && Boolean(tag.label)),
     [tags],
   );
 

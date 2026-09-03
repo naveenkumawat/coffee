@@ -366,7 +366,7 @@ Status: Partial
 - [x] Snapshot-only revenue rules locked (confirmed Takeaway/Delivery orders; confirmed Dining Sessions; rounds never double-counted)
 - [x] Inventory + product analytics implemented (Phase F3.2: `InventoryProductReportingService`; ledger-backed inventory; OrderItem product volume; Admin analytics + CSV; Operator today ops subset)
 - [x] Product-wise / category-wise sales volume reports implemented (Phase F3.2; paid eligibility follows F3.1)
-- [x] Operational performance analytics implemented (Phase F3.3: `OperationalPerformanceReportingService`; BAR/KITCHEN timing; mixed-order coordination; dining round/session ops; Admin + Operator + staff live context)
+- [x] Operational performance analytics implemented (Phase F3.3: `OperationalPerformanceReportingService`; BAR/KITCHEN timing; add-ons excluded from ticket multiplication; mixed-order coordination; dining round/session ops shared for customer+waiter; Admin + Operator + staff live context; C2 idempotency-safe counts)
 - [ ] Customer reports implemented
 - [ ] Profitability reports implemented
 

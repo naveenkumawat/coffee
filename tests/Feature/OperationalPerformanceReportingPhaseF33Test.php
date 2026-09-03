@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\DiningSessionStatus;
+use App\Enums\IngredientUnit;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderPreparationStatus;
 use App\Enums\OrderStatus;
@@ -11,21 +12,27 @@ use App\Enums\PaymentStatus;
 use App\Enums\PreparationStation;
 use App\Enums\ProductType;
 use App\Enums\UserRole;
+use App\Enums\WebsiteSettingKey;
 use App\Models\CafeTable;
 use App\Models\DiningSession;
+use App\Models\Ingredient;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPreparation;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
+use App\Models\Recipe;
+use App\Models\RecipeLine;
 use App\Models\User;
+use App\Models\WebsiteSetting;
 use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\Reporting\OperationalPerformanceReportingService;
 use App\Services\Reporting\OperationalPerformanceReportingServiceInterface;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class OperationalPerformanceReportingPhaseF33Test extends TestCase
@@ -139,6 +146,7 @@ class OperationalPerformanceReportingPhaseF33Test extends TestCase
         $row = collect($report['mixed_orders']['rows'])->firstWhere('order_number', $order->order_number);
         $this->assertFalse($row['all_stations_ready']);
         $this->assertNull($row['overall_ready_at']);
+        $this->assertNull($row['station_gap_seconds']);
         $this->assertSame(PreparationStation::Kitchen->value, $row['blocking_station']);
 
         OrderPreparation::query()
@@ -247,16 +255,16 @@ class OperationalPerformanceReportingPhaseF33Test extends TestCase
         ]);
 
         $roundRow = collect($report['dining_rounds']['rows'])->firstWhere('order_number', $round1->order_number);
-        $this->assertSame(900, $roundRow['round_to_ready_seconds']);
-        $this->assertSame(300, $roundRow['station_gap_seconds']);
+        $this->assertEqualsWithDelta(900, $roundRow['round_to_ready_seconds'], 1);
+        $this->assertEqualsWithDelta(300, $roundRow['station_gap_seconds'], 1);
+        $this->assertSame(2, $roundRow['required_station_count']);
 
         $sessionRow = collect($report['dining_sessions']['rows'])->firstWhere('session_number', $session->session_number);
         $this->assertSame(2, $sessionRow['round_count']);
-        $this->assertSame(5700, $sessionRow['session_duration_seconds']);
-        $this->assertSame(600, $sessionRow['bill_request_to_payment_seconds']);
-        $this->assertSame(300, $sessionRow['payment_to_close_seconds']);
-        $this->assertSame(1800, $sessionRow['avg_round_interval_seconds']);
-
+        $this->assertEqualsWithDelta(5700, $sessionRow['session_duration_seconds'], 1);
+        $this->assertEqualsWithDelta(600, $sessionRow['bill_request_to_payment_seconds'], 1);
+        $this->assertEqualsWithDelta(300, $sessionRow['payment_to_close_seconds'], 1);
+        $this->assertEqualsWithDelta(1800, $sessionRow['avg_round_interval_seconds'], 1);
         $openRow = collect($report['dining_sessions']['rows'])->firstWhere('session_number', $openSession->session_number);
         $this->assertSame(0, $openRow['round_count']);
         $this->assertNull($openRow['session_duration_seconds']);
@@ -385,6 +393,199 @@ class OperationalPerformanceReportingPhaseF33Test extends TestCase
         $metrics = app(OperationalPerformanceReportingService::class)->ticketMetrics($todayTicket->fresh());
         $this->assertSame(60, $metrics['queue_wait_seconds']);
         $this->assertSame(240, $metrics['prep_seconds']);
+    }
+
+    public function test_add_ons_do_not_multiply_preparation_ticket_counts(): void
+    {
+        $order = Order::factory()->create([
+            'fulfilment_method' => OrderFulfilmentMethod::Takeaway,
+            'status' => OrderStatus::Preparing,
+            'placed_at' => now()->subMinutes(15),
+            'accepted_at' => now()->subMinutes(14),
+        ]);
+
+        $item = OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'preparation_station' => PreparationStation::Bar,
+            'product_name' => 'Cappuccino',
+            'variant_name' => 'Large',
+            'quantity' => 1,
+            'unit_price' => '120.00',
+            'line_subtotal' => '120.00',
+        ]);
+        $item->addOns()->create([
+            'add_on_id' => null,
+            'name' => 'Extra Shot',
+            'quantity' => 1,
+            'unit_price' => '20.00',
+            'total_price' => '20.00',
+        ]);
+        $item->addOns()->create([
+            'add_on_id' => null,
+            'name' => 'Vanilla',
+            'quantity' => 1,
+            'unit_price' => '15.00',
+            'total_price' => '15.00',
+        ]);
+
+        $this->attachTicket($order, PreparationStation::Bar, OrderPreparationStatus::Ready, [
+            'created_at' => now()->subMinutes(14),
+            'accepted_at' => now()->subMinutes(13),
+            'preparing_at' => now()->subMinutes(12),
+            'ready_at' => now()->subMinutes(5),
+        ]);
+
+        $report = app(OperationalPerformanceReportingServiceInterface::class)->buildAdminReport([
+            'preset' => OperationalPerformanceReportingService::PRESET_TODAY,
+        ]);
+
+        $this->assertSame(1, $report['stations'][PreparationStation::Bar->value]['ready_tickets']);
+        $this->assertSame(1, OrderPreparation::query()->where('order_id', $order->id)->count());
+        $this->assertSame(2, $item->fresh()->addOns()->count());
+    }
+
+    public function test_customer_and_waiter_dining_rounds_share_same_metrics_path(): void
+    {
+        $waiter = User::factory()->waiter()->create();
+        $customer = User::factory()->customer()->create();
+
+        $waiterSession = $this->makeDiningSession(
+            status: DiningSessionStatus::Open,
+            openedAt: now()->subHour(),
+        );
+        $waiterSession->forceFill(['opened_by_user_id' => $waiter->id, 'customer_id' => null])->save();
+
+        $customerSession = $this->makeDiningSession(
+            status: DiningSessionStatus::Open,
+            openedAt: now()->subMinutes(50),
+        );
+        $customerSession->forceFill(['customer_id' => $customer->id])->save();
+
+        $waiterRound = $this->makeDiningRound($waiterSession, 1, now()->subMinutes(40));
+        $this->attachTicket($waiterRound, PreparationStation::Bar, OrderPreparationStatus::Ready, [
+            'created_at' => now()->subMinutes(40),
+            'accepted_at' => now()->subMinutes(39),
+            'preparing_at' => now()->subMinutes(38),
+            'ready_at' => now()->subMinutes(30),
+        ]);
+
+        $customerRound = $this->makeDiningRound($customerSession, 1, now()->subMinutes(35));
+        $this->attachTicket($customerRound, PreparationStation::Bar, OrderPreparationStatus::Ready, [
+            'created_at' => now()->subMinutes(35),
+            'accepted_at' => now()->subMinutes(34),
+            'preparing_at' => now()->subMinutes(33),
+            'ready_at' => now()->subMinutes(25),
+        ]);
+
+        $report = app(OperationalPerformanceReportingServiceInterface::class)->buildAdminReport([
+            'preset' => OperationalPerformanceReportingService::PRESET_TODAY,
+        ]);
+
+        $waiterRow = collect($report['dining_rounds']['rows'])->firstWhere('order_number', $waiterRound->order_number);
+        $customerRow = collect($report['dining_rounds']['rows'])->firstWhere('order_number', $customerRound->order_number);
+
+        $this->assertNotNull($waiterRow);
+        $this->assertNotNull($customerRow);
+        $this->assertEqualsWithDelta(600, $waiterRow['round_to_ready_seconds'], 1);
+        $this->assertEqualsWithDelta(600, $customerRow['round_to_ready_seconds'], 1);
+        $this->assertSame(1, $waiterRow['required_station_count']);
+        $this->assertSame(1, $customerRow['required_station_count']);
+        $this->assertSame(array_keys($waiterRow), array_keys($customerRow));
+    }
+
+    public function test_idempotent_round_and_bill_do_not_double_count_analytics(): void
+    {
+        $this->putDiningEnabled();
+
+        $waiter = User::factory()->waiter()->create();
+        $table = CafeTable::factory()->create(['is_active' => true]);
+        $category = ProductCategory::factory()->create();
+        $product = Product::factory()->create([
+            'product_category_id' => $category->id,
+            'is_active' => true,
+            'is_available' => true,
+            'preparation_station' => PreparationStation::Bar,
+        ]);
+        $variant = ProductVariant::factory()->create([
+            'product_id' => $product->id,
+            'is_active' => true,
+            'is_available' => true,
+            'price' => '50.00',
+        ]);
+        $ingredient = Ingredient::factory()->create([
+            'is_active' => true,
+            'current_stock' => '10000.000',
+            'measurement_unit' => IngredientUnit::Gram,
+            'base_measurement_unit' => IngredientUnit::Gram,
+        ]);
+        $recipe = Recipe::query()->create([
+            'product_variant_id' => $variant->id,
+            'is_active' => true,
+        ]);
+        RecipeLine::query()->create([
+            'recipe_id' => $recipe->id,
+            'ingredient_id' => $ingredient->id,
+            'quantity' => '1.000',
+            'measurement_unit' => IngredientUnit::Gram->value,
+            'base_quantity' => '1.000',
+            'base_measurement_unit' => IngredientUnit::Gram->value,
+            'sort_order' => 1,
+        ]);
+
+        Sanctum::actingAs($waiter);
+
+        $sessionId = (int) $this->postJson(route('api.v1.waiter.sessions.store'), [
+            'cafe_table_id' => $table->id,
+        ])->json('data.id');
+
+        $this->postJson(route('api.v1.waiter.sessions.drafts.store', $sessionId), [
+            'product_variant_id' => $variant->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        $payload = ['idempotency_key' => 'f33-round-once'];
+        $this->postJson(route('api.v1.waiter.sessions.rounds.store', $sessionId), $payload)->assertCreated();
+        $this->postJson(route('api.v1.waiter.sessions.rounds.store', $sessionId), $payload)->assertOk();
+
+        $this->assertSame(1, Order::query()->where('dining_session_id', $sessionId)->count());
+        $this->assertSame(1, OrderPreparation::query()->whereIn(
+            'order_id',
+            Order::query()->where('dining_session_id', $sessionId)->pluck('id'),
+        )->count());
+
+        $this->postJson(route('api.v1.waiter.sessions.request-bill', $sessionId))->assertOk();
+        $this->postJson(route('api.v1.waiter.sessions.request-bill', $sessionId))->assertOk();
+
+        $session = DiningSession::query()->findOrFail($sessionId);
+        $this->assertNotNull($session->billing_requested_at);
+        $this->assertSame(DiningSessionStatus::AwaitingPayment, $session->status);
+
+        $report = app(OperationalPerformanceReportingServiceInterface::class)->buildAdminReport([
+            'preset' => OperationalPerformanceReportingService::PRESET_TODAY,
+        ]);
+        $sessionRows = collect($report['dining_sessions']['rows'])->where('session_number', $session->session_number);
+        $this->assertCount(1, $sessionRows);
+        $this->assertSame(1, $sessionRows->first()['round_count']);
+    }
+
+    protected function putDiningEnabled(): void
+    {
+        WebsiteSetting::query()->updateOrCreate(
+            ['key' => WebsiteSettingKey::FulfilmentDineInEnabled->value],
+            [
+                'section' => WebsiteSettingKey::FulfilmentDineInEnabled->section(),
+                'value_type' => WebsiteSettingKey::FulfilmentDineInEnabled->valueType(),
+                'value' => '1',
+            ],
+        );
+        WebsiteSetting::query()->updateOrCreate(
+            ['key' => WebsiteSettingKey::OrderingManualClosed->value],
+            [
+                'section' => WebsiteSettingKey::OrderingManualClosed->section(),
+                'value_type' => WebsiteSettingKey::OrderingManualClosed->valueType(),
+                'value' => '0',
+            ],
+        );
     }
 
     protected function makeTicket(

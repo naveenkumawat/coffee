@@ -1,4 +1,8 @@
-import { RefObject, useEffect, useRef } from 'react';
+import { RefObject, useLayoutEffect, useRef } from 'react';
+import {
+  lockOverlayBackgroundScroll,
+  unlockOverlayBackgroundScroll,
+} from '../utils/overlayScrollLock';
 
 interface UseProductOverlayOptions {
   open: boolean;
@@ -11,11 +15,13 @@ interface UseProductOverlayOptions {
 const overlayStack: string[] = [];
 
 /**
- * Shared overlay chrome: body scroll lock, focus restore, Escape,
- * backdrop-safe history Back, and prefers-reduced-motion-friendly lifecycle.
+ * Shared overlay chrome: nested-safe background scroll lock, focus restore,
+ * Escape, and backdrop-safe history Back.
  *
- * Nested overlays push stacked history entries. Closing the inner sheet via
- * Back/X must not close the outer sheet.
+ * Critical lock/unlock runs in useLayoutEffect so unlock + viewport restore
+ * happen before paint (no top → previous-position flicker).
+ *
+ * Overlay open is UI state only — same URL, no router navigation.
  */
 export function useProductOverlay({
   open,
@@ -26,39 +32,28 @@ export function useProductOverlay({
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const pushedHistoryRef = useRef(false);
   const closedByPopRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       return;
     }
 
-    previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const frame = window.requestAnimationFrame(() => {
-      focusRef.current?.focus();
-    });
+    lockOverlayBackgroundScroll();
 
-    const scrollY = window.scrollY;
-    const { style } = document.body;
-    const previousOverflow = style.overflow;
-    const previousPosition = style.position;
-    const previousTop = style.top;
-    const previousWidth = style.width;
-    const isNested = overlayStack.length > 0;
-
-    style.overflow = 'hidden';
-    style.position = 'fixed';
-    style.top = `-${scrollY}px`;
-    style.width = '100%';
-    document.body.classList.add('product-overlay-open');
+    // Focus after lock, before paint — never scroll the page into view.
+    focusRef.current?.focus({ preventScroll: true });
 
     closedByPopRef.current = false;
     const alreadyOurs = window.history.state?.productOverlay === historyKey;
 
     if (!alreadyOurs) {
       pushedHistoryRef.current = true;
+      // Same URL — no route/hash change; enables hardware Back to dismiss.
       window.history.pushState({ productOverlay: historyKey }, '');
     }
 
@@ -74,7 +69,7 @@ export function useProductOverlay({
 
       closedByPopRef.current = true;
       pushedHistoryRef.current = false;
-      onClose();
+      onCloseRef.current();
     };
 
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -82,20 +77,18 @@ export function useProductOverlay({
         return;
       }
 
-      // Only the topmost overlay handles Escape.
       if (overlayStack[overlayStack.length - 1] !== historyKey) {
         return;
       }
 
       event.preventDefault();
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.cancelAnimationFrame(frame);
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
 
@@ -105,24 +98,23 @@ export function useProductOverlay({
         overlayStack.splice(stackIndex, 1);
       }
 
-      // Nested overlays must not unlock body scroll while a parent remains open.
-      if (!isNested && overlayStack.length === 0) {
-        style.overflow = previousOverflow;
-        style.position = previousPosition;
-        style.top = previousTop;
-        style.width = previousWidth;
-        document.body.classList.remove('product-overlay-open');
-        window.scrollTo(0, scrollY);
-      }
-
+      // Pop our history entry while still locked so any browser scroll work
+      // happens under the fixed-body offset, then unlock atomically.
       if (pushedHistoryRef.current && !closedByPopRef.current) {
         pushedHistoryRef.current = false;
         window.history.back();
       }
 
-      if (!isNested) {
-        previouslyFocusedRef.current?.focus?.();
+      unlockOverlayBackgroundScroll();
+
+      const trigger = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+
+      // Only restore focus when the element is still in the document and
+      // visible enough that preventScroll can keep the viewport stable.
+      if (trigger && document.contains(trigger)) {
+        trigger.focus({ preventScroll: true });
       }
     };
-  }, [open, historyKey, onClose, focusRef]);
+  }, [open, historyKey, focusRef]);
 }

@@ -220,6 +220,20 @@ export function ProductCustomizationSheet({
               <strong className="product-overlay-price">{formatCurrency(previewTotal)}</strong>
             </div>
 
+            {variants.length === 1 && variants[0] ? (
+              <div className="product-overlay-block">
+                <span className="product-overlay-label">Size</span>
+                <p className="product-overlay-selected-variant">
+                  {variants[0].name}
+                  {variants[0].serving_size.label
+                    ? ` · ${variants[0].serving_size.label}`
+                    : variants[0].serving_size.value
+                      ? ` · ${variants[0].serving_size.value}${variants[0].serving_size.unit ? ` ${variants[0].serving_size.unit}` : ''}`
+                      : ''}
+                </p>
+              </div>
+            ) : null}
+
             {variants.length > 1 ? (
               <div className="product-overlay-block">
                 <span className="product-overlay-label">Size</span>
@@ -258,20 +272,25 @@ export function ProductCustomizationSheet({
 
             {catalogAddOns.length > 0 ? (
               <div className="product-overlay-block">
-                <span className="product-overlay-label">Optional add-ons</span>
+                <span className="product-overlay-label">Customize / Add-ons</span>
                 <div className="product-addon-list" role="group" aria-label="Add-ons">
                   {catalogAddOns.map((addOn) => {
                     const qty = addOnQty[addOn.id] ?? 0;
                     const isSingle = addOn.max_quantity <= 1;
+                    const nameId = `addon-name-${addOn.id}`;
+                    const descId = addOn.description ? `addon-desc-${addOn.id}` : undefined;
 
                     return (
                       <div key={addOn.id} className="product-addon-row">
-                        <div className="product-addon-copy">
+                        <div className="product-addon-main">
                           {isSingle ? (
-                            <label className="product-addon-check">
+                            <label className="product-addon-select" htmlFor={`addon-check-${addOn.id}`}>
                               <input
+                                id={`addon-check-${addOn.id}`}
                                 type="checkbox"
                                 checked={qty > 0}
+                                aria-labelledby={nameId}
+                                aria-describedby={descId}
                                 onChange={(event) => {
                                   setAddOnQty((current) => ({
                                     ...current,
@@ -279,20 +298,32 @@ export function ProductCustomizationSheet({
                                   }));
                                 }}
                               />
-                              <span>
-                                <strong>{addOn.name}</strong>
-                                {addOn.description ? <small>{addOn.description}</small> : null}
+                              <span className="product-addon-copy">
+                                <span id={nameId} className="product-addon-name">
+                                  {addOn.name}
+                                </span>
+                                {addOn.description ? (
+                                  <span id={descId} className="product-addon-desc">
+                                    {addOn.description}
+                                  </span>
+                                ) : null}
                               </span>
                             </label>
                           ) : (
-                            <>
-                              <strong>{addOn.name}</strong>
-                              {addOn.description ? <small>{addOn.description}</small> : null}
-                            </>
+                            <div className="product-addon-copy">
+                              <span id={nameId} className="product-addon-name">
+                                {addOn.name}
+                              </span>
+                              {addOn.description ? (
+                                <span id={descId} className="product-addon-desc">
+                                  {addOn.description}
+                                </span>
+                              ) : null}
+                            </div>
                           )}
                         </div>
                         <div className="product-addon-meta">
-                          <span>{formatCurrency(addOn.price)}</span>
+                          <span className="product-addon-price">+{formatCurrency(addOn.price)}</span>
                           {!isSingle ? (
                             <QuantityStepper
                               value={qty}

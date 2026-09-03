@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Contracts\WhatsApp\WhatsAppNotificationProviderInterface;
+use App\Models\AddOn;
 use App\Models\CafeTable;
 use App\Models\HomeSection;
 use App\Models\IngredientCategory;
@@ -102,6 +103,12 @@ class DemoSeederSafetyTest extends TestCase
         $this->assertGreaterThanOrEqual(10, CafeTable::query()->count());
         $this->assertTrue(CafeTable::query()->where('is_active', false)->exists());
         $this->assertGreaterThanOrEqual(25, Product::query()->count());
+        $this->assertTrue(AddOn::query()->where('name', 'Extra Espresso Shot')->where('is_active', true)->exists());
+        $this->assertTrue(
+            Product::query()->where('name', 'Cappuccino')->whereHas('addOns', function ($query): void {
+                $query->where('add_ons.name', 'Extra Espresso Shot');
+            })->exists(),
+        );
         $this->assertTrue(Order::query()->where('fulfilment_method', 'dine_in')->exists());
         $this->assertTrue(
             WebsiteSetting::query()->where('key', 'fulfilment_dine_in_enabled')->where('value', '1')->exists(),

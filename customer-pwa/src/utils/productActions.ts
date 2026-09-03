@@ -12,16 +12,14 @@ export function productHasAddOns(product: Product): boolean {
   return (product.add_ons?.length ?? 0) > 0;
 }
 
-/** Fast-add only when there is a single variant and no catalog add-ons. */
-export function canQuickAddProduct(product: Product): boolean {
-  const variants = getProductVariants(product);
-
-  return variants.length === 1 && variants[0].is_available && !productHasAddOns(product);
+/** Fast-add is retired — every product opens the shared customization sheet. */
+export function canQuickAddProduct(_product: Product): boolean {
+  return false;
 }
 
-/** Opens ProductCustomizationSheet instead of inline fast-add / size cups. */
+/** Always open ProductCustomizationSheet (single/multi variant, with or without add-ons). */
 export function needsProductCustomization(product: Product): boolean {
-  return hasMultipleVariants(product) || productHasAddOns(product);
+  return !isProductUnavailable(product);
 }
 
 export function isProductUnavailable(product: Product): boolean {

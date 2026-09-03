@@ -44,7 +44,7 @@ export function filterMenuProducts(products: Product[], filters: MenuProductFilt
       product.customer_ingredient_summary,
       product.category?.name,
       ...product.flavours.map((flavour) => flavour.name),
-      ...product.tags.map((tag) => tag.label),
+      ...(Array.isArray(product.tags) ? product.tags : []).map((tag) => tag.label),
     ]
       .filter(Boolean)
       .join(' ')

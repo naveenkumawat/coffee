@@ -2546,51 +2546,94 @@ textarea.coffee-input:focus {
 }
 
 .product-addon-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem 0.85rem;
+  padding: 0.75rem 0.85rem;
   border: 1.5px solid rgba(28, 25, 23, 0.12);
   border-radius: 1rem;
   background: #fff;
 }
 
-.product-addon-copy {
-  display: grid;
-  gap: 0.15rem;
+.product-addon-main {
+  flex: 1 1 11rem;
   min-width: 0;
 }
 
-.product-addon-copy strong {
-  font-size: 0.95rem;
-}
-
-.product-addon-copy small {
-  color: var(--coffee-muted);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.product-addon-check {
+.product-addon-select {
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
   margin: 0;
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
 }
 
-.product-addon-check input {
+.product-addon-select input {
   margin-top: 0.2rem;
   flex-shrink: 0;
 }
 
+.product-addon-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.product-addon-name {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--coffee-accent);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.product-addon-desc {
+  display: block;
+  color: var(--coffee-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .product-addon-meta {
-  display: grid;
-  justify-items: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
   gap: 0.35rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.product-addon-price {
   color: var(--coffee-primary);
   font-weight: 700;
   font-size: 0.9rem;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+@media (max-width: 380px) {
+  .product-addon-meta {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .product-addon-row:has(.product-addon-select) .product-addon-meta {
+    padding-left: 1.55rem;
+  }
 }
 
 .product-customize-qty {
@@ -2600,9 +2643,53 @@ textarea.coffee-input:focus {
 }
 
 .product-order-control.is-customize.is-compact {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+.product-order-control.is-customize.is-compact .product-order-price {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid rgba(28, 25, 23, 0.14);
+  border-radius: 0.9rem;
+  background: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--coffee-accent);
+}
+
+.product-order-control.is-customize.is-compact .product-card-bag-add {
+  min-height: 2.85rem;
+  min-width: 2.85rem;
+  border: 1px solid rgba(28, 25, 23, 0.14);
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.product-order-control.is-customize.is-full {
+  display: flex;
+  width: 100%;
+}
+
+.product-order-control.is-customize.is-full .product-card-action {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.product-overlay-selected-variant {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--coffee-ink, #1c1917);
 }
 
 .availability-chip-soft {
@@ -5202,7 +5289,8 @@ body.product-overlay-open .bottom-navigation {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(100%, 28rem);
+  width: 100%;
+  max-width: 28rem;
   max-height: 92vh;
   max-height: 92dvh;
   margin: 0 auto;
@@ -5391,16 +5479,16 @@ body.product-overlay-open .bottom-navigation {
 
 /* Quick Add fallback panel */
 .product-overlay-panel-compact {
-  max-height: min(62dvh, 28rem);
+  max-height: min(78dvh, 34rem);
 }
 
 .product-overlay-header-compact {
   align-items: flex-start;
-  padding: 0.55rem 0.9rem 0.25rem;
+  padding: 0.55rem 1rem 0.25rem;
 }
 
 .product-overlay-body-compact {
-  padding: 0.35rem 1rem 0.15rem;
+  padding: 0.25rem 0 0.15rem;
 }
 
 .product-overlay-footer-compact {

@@ -366,8 +366,7 @@ Separate from takeaway/delivery checkout:
 
 **Inventory + product analytics (Phase F3.2):** Inventory analytics read the persisted inventory ledger only — never recompute history from current recipes. Product quantity analytics use canonical `order_items` (Dining round items are a valid physical/volume source). Paid product sales eligibility follows F3.1 (confirmed retail; confirmed Dining Session only). BAR/KITCHEN reporting here is volume only. `InventoryProductReportingService` is the single inventory/product reporting domain; Admin gets full analytics + CSV; Operator gets today operational subset (no cost/margin/valuation).
 
-**Operational performance analytics (Phase F3.3):** Timing analytics use persisted workflow timestamps only. BAR/KITCHEN performance comes from preparation tickets; mixed-order completion uses the latest required station `ready_at`; dining preparation is round-level; dining service/billing timing is session-level. Operational timing must not be mixed with financial authority. `OperationalPerformanceReportingService` is the single operational performance domain; Admin gets historical analytics + CSV; Operator gets today ops subset; Barista/Chef see live station queue age only; Waiter sees dining timing only (no financial leakage).
-
+**Operational performance analytics (Phase F3.3):** Timing analytics use persisted workflow timestamps only. BAR/KITCHEN performance comes from preparation tickets; C1 add-ons never multiply ticket workload; mixed-order completion uses the latest required station `ready_at`; dining preparation is round-level (customer + Waiter rounds share one model); dining service/billing timing is session-level. Operational timing must not be mixed with financial (F3.1) or inventory (F2/F3.2) authority. `OperationalPerformanceReportingService` is the single operational performance domain; Admin gets historical analytics + CSV; Operator gets today ops subset; Barista/Chef see live station queue age only; Waiter sees contextual dining timing only (no financial leakage; no waiter leaderboards).
 Roles: **Waiter** panel for tables/sessions and dining cash; **Operator**/administrators confirm/reject dining UPI proof; **Barista**/**Chef** prepare station tickets; administrators manage catalog/config.
 Catalog: products have `product_type` (beverage/food) and `preparation_station` (bar/kitchen).
 
@@ -386,7 +385,7 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Checkout clears fulfilment-scoped validation on method switch; place-order errors scroll to feedback and keep form state.
 * Canonical payment-state presentation (`paymentStatePresentation`) drives customer confirmation/payment card wording.
 * Waiter send-round keeps draft until confirmed success (or reconciled empty draft); bill request is idempotent when already awaiting payment; `close_blocked_reason` explains invalid close.
-* Ready to Serve remains derived from station tickets; no F3.3 analytics added here.
+* Ready to Serve remains derived from station tickets; Waiter PWA may show live Ready age from ticket `ready_at` only (no historical F3.3 dashboard in mobile Waiter Mode).
 
 
 ## Product add-ons (C1)

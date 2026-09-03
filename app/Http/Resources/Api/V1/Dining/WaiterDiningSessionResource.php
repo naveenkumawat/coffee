@@ -106,6 +106,7 @@ class WaiterDiningSessionResource extends JsonResource
                 'station_label' => $ticket->station?->label(),
                 'status' => $ticket->status?->value,
                 'status_label' => $ticket->status?->label(),
+                'ready_at' => $ticket->ready_at?->toIso8601String(),
             ])
             ->values()
             ->all();
@@ -125,6 +126,16 @@ class WaiterDiningSessionResource extends JsonResource
             ),
         );
 
+        $overallReadyAt = $readyToServe
+            ? $activeTickets
+                ->map(static fn ($ticket) => $ticket->ready_at)
+                ->filter()
+                ->max()
+            : null;
+        $readyToServeAgeSeconds = $overallReadyAt !== null
+            ? max(0, $overallReadyAt->diffInSeconds(now()))
+            : null;
+
         $items = $order->relationLoaded('items')
             ? $order->items
             : $order->items()->with('addOns')->get();
@@ -139,6 +150,7 @@ class WaiterDiningSessionResource extends JsonResource
             'subtotal' => $order->subtotal,
             'total_amount' => $order->total_amount,
             'ready_to_serve' => $readyToServe && ! in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true),
+            'ready_to_serve_age_seconds' => $readyToServeAgeSeconds,
             'is_preparing' => $isPreparing,
             'stations' => $stations,
             'items' => $items->map(static function ($item): array {

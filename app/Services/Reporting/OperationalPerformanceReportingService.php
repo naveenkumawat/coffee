@@ -640,7 +640,9 @@ class OperationalPerformanceReportingService implements OperationalPerformanceRe
                 'kitchen_ready_at' => $kitchenReady?->toDateTimeString(),
                 'overall_ready_at' => $overallReady?->toDateTimeString(),
                 'all_stations_ready' => $allReady,
-                'station_gap_seconds' => $this->secondsBetween($earliestReady, $latestReady),
+                'station_gap_seconds' => ($barReady && $kitchenReady)
+                    ? $this->secondsBetween($earliestReady, $latestReady)
+                    : null,
                 'blocking_station' => $blocking,
             ];
         }
@@ -768,13 +770,16 @@ class OperationalPerformanceReportingService implements OperationalPerformanceRe
                 'session_id' => $order->dining_session_id,
                 'order_number' => $order->order_number,
                 'round_number' => $order->dining_round_number,
+                'required_station_count' => $active->count(),
                 'round_to_ready_seconds' => $this->secondsBetween($placed, $overallReady),
                 'bar_prep_seconds' => $bar ? $this->ticketMetrics($bar)['prep_seconds'] : null,
                 'kitchen_prep_seconds' => $kitchen ? $this->ticketMetrics($kitchen)['prep_seconds'] : null,
-                'station_gap_seconds' => $this->secondsBetween(
-                    $this->minTimestamp(array_filter([$barReady, $kitchenReady])),
-                    $this->maxTimestamp(array_filter([$barReady, $kitchenReady])),
-                ),
+                'station_gap_seconds' => ($barReady && $kitchenReady)
+                    ? $this->secondsBetween(
+                        $this->minTimestamp(array_filter([$barReady, $kitchenReady])),
+                        $this->maxTimestamp(array_filter([$barReady, $kitchenReady])),
+                    )
+                    : null,
                 'all_ready' => $allReady,
             ];
         }

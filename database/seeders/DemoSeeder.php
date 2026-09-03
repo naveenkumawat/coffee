@@ -41,6 +41,7 @@ class DemoSeeder extends Seeder
             ProductSeeder::class,
             DemoFoodCatalogSeeder::class,
             RecipeSeeder::class,
+            DemoAddOnSeeder::class,
             InventoryRefillRequestSeeder::class,
             CafeTableSeeder::class,
             DemoPromotionSeeder::class,

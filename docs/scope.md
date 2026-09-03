@@ -1198,9 +1198,12 @@ Administrator reports provide business and operational information from **transa
 
 * **Operational analytics** = persisted workflow timestamps only (`order_preparations.*_at`, order lifecycle timestamps, dining session opened/bill/paid/closed). Never infer durations from current status alone when timestamps exist; never recalculate history from mutable SLA settings.
 * **BAR/KITCHEN performance** = preparation tickets. Queue wait = created→accepted; start delay = accepted→preparing; prep = preparing→ready; total = created→ready. Missing timestamps are excluded (not zero-filled).
+* **Add-ons** = parent OrderItem customization context only — they do not create independent preparation tickets or multiply ticket-count analytics.
 * **Mixed order completion** = latest required station `ready_at`. Station gap = latest − earliest station ready. One station ready does not complete the order.
-* **Dining preparation** = round-level. **Dining service/billing performance** = session-level. Do not mix operational timing with financial authority (F3.1).
-* No invented business SLA values. Relative live backlog metrics only. Canonical service: `OperationalPerformanceReportingService` (Admin historical report + CSV; Operator today ops subset; Barista/Chef live queue age only; Waiter dining timing only).
+* **Dining preparation** = round-level (customer-created and Waiter-created rounds share one analytics model). **Dining service/billing performance** = session/table-level. No waiter ranking or employee leaderboards.
+* Do not mix operational timing with financial authority (F3.1) or inventory authority (F2/F3.2).
+* No invented business SLA values. Relative live backlog metrics only. Canonical service: `OperationalPerformanceReportingService` (Admin historical report + CSV; Operator today ops subset; Barista/Chef live queue age only; Waiter contextual dining timing only).
+* C2 idempotent retries (checkout / Send Order / bill request) must never double-count tickets, rounds, or sessions.
 
 ### Sales Reports
 

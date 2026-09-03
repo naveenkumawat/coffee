@@ -89,12 +89,14 @@ export interface WaiterRound {
   subtotal?: string | null;
   total_amount?: string | null;
   ready_to_serve: boolean;
+  ready_to_serve_age_seconds?: number | null;
   is_preparing: boolean;
   stations: Array<{
     station?: string | null;
     station_label?: string | null;
     status?: string | null;
     status_label?: string | null;
+    ready_at?: string | null;
   }>;
   items: WaiterRoundItem[];
 }

@@ -21,6 +21,18 @@ import {
   rememberWaiterSession,
 } from '../../utils/waiterSession';
 
+function formatElapsed(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safe / 60);
+  const rem = safe % 60;
+
+  if (minutes <= 0) {
+    return `${rem}s`;
+  }
+
+  return `${minutes}m ${String(rem).padStart(2, '0')}s`;
+}
+
 export function WaiterSessionPage() {
   const { sessionId = '' } = useParams();
   const navigate = useNavigate();
@@ -217,7 +229,11 @@ export function WaiterSessionPage() {
                 </strong>
                 <span className={`status-badge${round.ready_to_serve ? ' is-ready' : ''}`}>
                   {round.ready_to_serve
-                    ? 'Ready to serve'
+                    ? `Ready to serve${
+                        typeof round.ready_to_serve_age_seconds === 'number'
+                          ? ` · ${formatElapsed(round.ready_to_serve_age_seconds)}`
+                          : ''
+                      }`
                     : (round.status_label ?? round.status ?? 'Placed')}
                 </span>
               </div>
