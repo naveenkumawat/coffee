@@ -38,6 +38,10 @@ class StoreBehaviourEventRequest extends AbstractRequest
             'metadata.strategy' => ['nullable', 'string', 'max:80'],
             'metadata.placement' => ['nullable', 'string', 'max:80'],
             'metadata.context' => ['nullable', 'string', 'max:80'],
+            'metadata.campaign_id' => ['nullable', 'integer', 'min:1'],
+            'metadata.attribution_key' => ['nullable', 'string', 'max:80'],
+            'metadata.cta_type' => ['nullable', 'string', 'max:40'],
+            'metadata.session_key' => ['nullable', 'string', 'max:64'],
             'occurred_at' => ['nullable', 'date'],
             'idempotency_key' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9:._-]+$/'],
         ];

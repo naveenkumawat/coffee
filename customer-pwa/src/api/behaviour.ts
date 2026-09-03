@@ -11,7 +11,10 @@ export type BehaviourEventType =
   | 'favourite_added'
   | 'favourite_removed'
   | 'recommendation_impression'
-  | 'recommendation_clicked';
+  | 'recommendation_clicked'
+  | 'campaign_impression'
+  | 'campaign_clicked'
+  | 'campaign_dismissed';
 
 export interface BehaviourEventPayload {
   event_type: BehaviourEventType;

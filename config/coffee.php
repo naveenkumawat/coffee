@@ -188,5 +188,13 @@ return [
                 'post_order' => ['buy_again', 'frequently_bought_together', 'affinity', 'trending', 'popular', 'featured'],
             ],
         ],
+
+        /*
+        | P2.4 campaign / popup engine.
+        */
+        'campaigns' => [
+            'cache_ttl_seconds' => (int) env('COFFEE_CAMPAIGNS_CACHE_TTL', 120),
+            'popup_max_per_page' => 1,
+        ],
     ],
 ];

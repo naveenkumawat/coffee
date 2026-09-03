@@ -3,6 +3,7 @@
 use App\Http\Controllers\Administrator\AddOnController;
 use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
+use App\Http\Controllers\Administrator\CampaignController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\DiningSessionController;
 use App\Http\Controllers\Administrator\FinancialReportController;
@@ -204,6 +205,13 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::put('promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
     Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
     Route::patch('promotions/{promotion}/toggle', [PromotionController::class, 'toggle'])->name('promotions.toggle');
+    Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
+    Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+    Route::get('campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
+    Route::put('campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
+    Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+    Route::patch('campaigns/{campaign}/status/{status}', [CampaignController::class, 'setStatus'])->name('campaigns.status');
     Route::get('referrals', [ReferralController::class, 'index'])->name('referrals.index');
 
     Route::get('cafe-schedule', [CafeScheduleController::class, 'index'])->name('cafe-schedule.index');

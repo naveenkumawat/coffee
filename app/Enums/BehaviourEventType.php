@@ -22,9 +22,10 @@ enum BehaviourEventType: string
     case RecommendationImpression = 'recommendation_impression';
     case RecommendationClicked = 'recommendation_clicked';
 
-    // Reserved for later campaign engines
+    // Campaign feedback (P2.4)
     case CampaignImpression = 'campaign_impression';
     case CampaignClicked = 'campaign_clicked';
+    case CampaignDismissed = 'campaign_dismissed';
     case CampaignConverted = 'campaign_converted';
 
     /**
@@ -44,6 +45,9 @@ enum BehaviourEventType: string
             self::FavouriteRemoved,
             self::RecommendationImpression,
             self::RecommendationClicked,
+            self::CampaignImpression,
+            self::CampaignClicked,
+            self::CampaignDismissed,
         ];
     }
 

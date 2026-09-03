@@ -8,35 +8,39 @@ Phase-1 launch software remains **FROZEN**; this is Phase-2 work on top of that 
 ```
 Behaviour Events + Canonical Completed Orders
         ↓
-Profile Builder (deterministic V1)
+Derived Personalisation Profile (P2.2)
+        +
+Current Context (placement / cart / product / optional location)
+        +
+Campaign Rules (Admin)
         ↓
-Derived Personalisation Profile
+Campaign Targeting Engine
         ↓
-Recommendation Candidate Strategies
+Priority / Frequency / Collision
         ↓
-Eligibility / Scoring / Ranking / Dedup / Diversity / Business Rules
+Popup / future Banner / Inline / Landing surfaces
         ↓
-Recommendation Surfaces (home, product_detail, cart, …)
+Impression / Click / Dismiss
         ↓
-Impression / Click (recommendation_* events)
-        ↓
-P2.6 Analytics / conversion feedback
+P2.6 Conversion Analytics
 ```
+
+(Also parallel: Recommendation Candidate Strategies → Surfaces → Impression/Click → P2.6)
 
 | Phase | Status | Scope |
 | --- | --- | --- |
 | **P2.1** Behaviour Tracking | **COMPLETE** | Raw append-only events, visitor identity, ingest API, PWA client, retention |
 | **P2.2** Personalisation Profiles | **COMPLETE** | Derived customer/visitor profiles from events + completed orders |
 | **P2.3** Recommendation Engine | **COMPLETE** | Hybrid strategy pipeline; guest/customer/cold-start; API + PWA rails |
-| **P2.4** Campaign/Popup Engine | **NEXT** | Targeted landing/popups using segments + context |
-| **P2.5** Segmentation/Targeting | Planned | Visitor/customer segments for campaigns |
+| **P2.4** Campaign/Popup Engine | **COMPLETE** | Admin campaigns; targeting/frequency; eligible API; PWA popup |
+| **P2.5** Segmentation/Targeting | **NEXT** | Reusable visitor/customer segments for campaigns |
 | **P2.6** Analytics | Planned | Recommendation/campaign impression→conversion reporting |
 
 ## P2.1 collection
 
 ### Client interaction events (PWA → `POST /api/v1/behaviour/events`)
 
-`product_viewed`, `category_viewed`, `search_performed`, `product_customized`, `cart_item_added`, `cart_item_removed`, `checkout_started`, `favourite_added`, `favourite_removed`, `recommendation_impression`, `recommendation_clicked`
+`product_viewed`, `category_viewed`, `search_performed`, `product_customized`, `cart_item_added`, `cart_item_removed`, `checkout_started`, `favourite_added`, `favourite_removed`, `recommendation_impression`, `recommendation_clicked`, `campaign_impression`, `campaign_clicked`, `campaign_dismissed`
 
 ### Server business events (Laravel only)
 
@@ -44,7 +48,7 @@ P2.6 Analytics / conversion feedback
 
 ### Reserved (reject until later phases)
 
-`campaign_*`
+`campaign_converted`
 
 ## Anonymous visitor identity
 
@@ -170,6 +174,48 @@ Cold start (`has_sufficient_evidence = false`): trending / popular / featured / 
 
 ### Out of scope (later)
 
-- Large recommendation admin UI (P2.4/P2.5 campaigns/targeting)
 - Purchase/conversion attribution analytics (P2.6)
 - ML / external recommendation services
+
+## P2.4 campaign / popup engine
+
+Canonical models: `campaigns`, `campaign_impressions` (frequency history).
+
+Admin CRUD under Administrator → **Campaigns** (draft/active/paused/ended). Campaigns may reference a Promotion/Product/Category as CTA destination; they do **not** reimplement discount logic.
+
+### Matching pipeline
+
+```
+Active + scheduled
+    ↓
+Placement match (global/home/menu/category/product/cart/checkout/order_success + optional ids/tags)
+    ↓
+Audience / context rules (ALL / ANY / exclude; allowlisted operators)
+    ↓
+Frequency eligibility (session / actor / day / cooldown / max impressions)
+    ↓
+Priority → specificity → schedule → id tie-break
+    ↓
+At most one popup
+```
+
+Rules reuse P2.2 `profilePayloadFor*` plus canonical completed-order / favourite reads. Location rules (`location_city` / `location_zone`) fail closed unless explicit `location_available` context is provided — no covert geolocation/IP identity.
+
+### Surfaces & API
+
+- Primary surface: customer PWA popup (`CampaignPopupController` + overlay scroll lock)
+- Architecture-ready surfaces: `banner`, `inline`, `landing` (same targeting)
+- `GET /api/v1/campaigns/eligible` — customer-safe render payload only (no rules/scores/profile)
+- `POST /api/v1/campaigns/interactions` — optional explicit frequency write
+- Behaviour ingest: `campaign_impression` / `campaign_clicked` / `campaign_dismissed` (mirrors frequency rows); `campaign_converted` reserved for P2.6
+- Impressions fire only when the modal is actually presented; client dedupes per `request_id`
+
+### Config / cache
+
+`coffee.behaviour.campaigns.*` — cache TTL for active campaign config by surface. Never cache personalized eligibility across actors.
+
+### Out of scope (later)
+
+- P2.5 reusable segments
+- P2.6 impression→purchase attribution dashboard
+- Aggressive exit-intent / dark-pattern triggers

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\AddOn;
 use App\Models\CafeClosure;
 use App\Models\CafeTable;
+use App\Models\Campaign;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerReferral;
@@ -33,6 +34,7 @@ use App\Models\WebsiteSetting;
 use App\Policies\AddOnPolicy;
 use App\Policies\CafeClosurePolicy;
 use App\Policies\CafeTablePolicy;
+use App\Policies\CampaignPolicy;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
 use App\Policies\CustomerReferralPolicy;
@@ -68,6 +70,7 @@ class AuthServiceProvider extends ServiceProvider
         CartItem::class => CartItemPolicy::class,
         CustomerReferral::class => CustomerReferralPolicy::class,
         CafeClosure::class => CafeClosurePolicy::class,
+        Campaign::class => CampaignPolicy::class,
         CafeTable::class => CafeTablePolicy::class,
         DiningSession::class => DiningSessionPolicy::class,
         HomeSection::class => HomeSectionPolicy::class,

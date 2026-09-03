@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { CampaignPopupController } from '../components/campaigns/CampaignPopupController';
 import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -107,6 +108,7 @@ export function AppLayout() {
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
       {authStatus === 'authenticated' ? <NotificationDrawer /> : null}
+      <CampaignPopupController />
       <RealtimeStatusIndicator state={realtimeState} />
       <BottomNavigation />
     </div>

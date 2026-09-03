@@ -406,16 +406,17 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * **NOT PRODUCTION READY** until real café data (`docs/launch-data-todo.md`) and production smoke (`docs/production-deployment.md`).
 * Freeze record: `docs/development-completion-audit.md` → Frozen baseline (L4).
 
-## Behaviour tracking & personalisation foundation (P2.1–P2.3)
+## Behaviour tracking & personalisation foundation (P2.1–P2.4)
 
 * Append-only `customer_behaviour_events` + `customer_visitor_identities` (first-party; no fingerprinting).
 * Client ingest: `POST /api/v1/behaviour/events`; merge: `POST /api/v1/behaviour/merge`.
 * Server-authoritative `order_completed` from `OrderStatusChanged` (clients cannot submit).
 * **P2.2:** derived `personalisation_profiles` (customer XOR visitor) rebuilt deterministically from behaviour events + canonical completed orders; purchase scoring ignores behaviour `order_completed` rows.
 * Async `RebuildPersonalisationProfileJob`; `coffee:personalisation-profiles-rebuild`; internal `profilePayloadFor*` for engines (not exposed as full history to PWA).
-* **P2.3:** `RecommendationService` strategy pipeline (buy again, favourites, affinity, FBT, trending/popular/new/featured, cart context); `GET /api/v1/recommendations`; PWA recommendation rails; `recommendation_impression` / `recommendation_clicked`.
-* Config: `coffee.behaviour.*` including `profile` and `recommendations` weights/lookbacks.
-* Detail: `docs/personalisation-architecture.md`. P2.4 campaign/popup engine next.
+* **P2.3:** `RecommendationService` strategy pipeline; `GET /api/v1/recommendations`; PWA recommendation rails; `recommendation_impression` / `recommendation_clicked`.
+* **P2.4:** `campaigns` + `campaign_impressions`; Admin campaign CRUD; `CampaignEligibilityService` (placement/audience/frequency); `GET /api/v1/campaigns/eligible`; PWA popup controller; `campaign_impression` / `campaign_clicked` / `campaign_dismissed`.
+* Config: `coffee.behaviour.*` including `profile`, `recommendations`, and `campaigns`.
+* Detail: `docs/personalisation-architecture.md`. P2.5 segmentation/targeting next.
 
 ## Mobile ordering journey hardening (C2)
 

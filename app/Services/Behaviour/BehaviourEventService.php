@@ -4,10 +4,12 @@ namespace App\Services\Behaviour;
 
 use App\Enums\BehaviourEventSource;
 use App\Enums\BehaviourEventType;
+use App\Enums\CampaignImpressionEvent;
 use App\Models\CustomerBehaviourEvent;
 use App\Models\Order;
 use App\Models\User;
 use App\Repositories\Behaviour\BehaviourEventRepositoryInterface;
+use App\Services\Campaign\CampaignEligibilityServiceInterface;
 use App\Services\Personalisation\PersonalisationProfileServiceInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ class BehaviourEventService implements BehaviourEventServiceInterface
     public function __construct(
         protected BehaviourEventRepositoryInterface $events,
         protected PersonalisationProfileServiceInterface $profiles,
+        protected CampaignEligibilityServiceInterface $campaigns,
     ) {}
 
     public function isEnabled(): bool
@@ -113,6 +116,8 @@ class BehaviourEventService implements BehaviourEventServiceInterface
         } else {
             $this->profiles->dispatchRebuildForVisitor($visitorKey);
         }
+
+        $this->mirrorCampaignFrequencyEvent($type, $metadata, $visitorKey, $customer);
 
         return [
             'accepted' => true,
@@ -345,6 +350,16 @@ class BehaviourEventService implements BehaviourEventServiceInterface
                 'placement',
                 'context',
             ],
+            BehaviourEventType::CampaignImpression,
+            BehaviourEventType::CampaignClicked,
+            BehaviourEventType::CampaignDismissed => [
+                'campaign_id',
+                'request_id',
+                'placement',
+                'cta_type',
+                'attribution_key',
+                'session_key',
+            ],
             default => [],
         };
 
@@ -392,8 +407,14 @@ class BehaviourEventService implements BehaviourEventServiceInterface
                 continue;
             }
 
-            if (in_array($key, ['request_id', 'reason', 'strategy', 'placement', 'context'], true) && is_string($value)) {
+            if (in_array($key, ['request_id', 'reason', 'strategy', 'placement', 'context', 'attribution_key', 'cta_type', 'session_key'], true) && is_string($value)) {
                 $clean[$key] = Str::limit(trim($value), 80, '');
+
+                continue;
+            }
+
+            if ($key === 'campaign_id' && is_numeric($value)) {
+                $clean[$key] = (int) $value;
             }
         }
 
@@ -401,6 +422,18 @@ class BehaviourEventService implements BehaviourEventServiceInterface
             if (empty($clean['request_id']) || empty($clean['reason']) || empty($clean['placement'])) {
                 throw ValidationException::withMessages([
                     'metadata' => 'Recommendation events require request_id, reason, and placement.',
+                ]);
+            }
+        }
+
+        if (in_array($type, [
+            BehaviourEventType::CampaignImpression,
+            BehaviourEventType::CampaignClicked,
+            BehaviourEventType::CampaignDismissed,
+        ], true)) {
+            if (empty($clean['campaign_id']) || empty($clean['request_id']) || empty($clean['placement'])) {
+                throw ValidationException::withMessages([
+                    'metadata' => 'Campaign events require campaign_id, request_id, and placement.',
                 ]);
             }
         }
@@ -467,5 +500,42 @@ class BehaviourEventService implements BehaviourEventServiceInterface
         }
 
         return 'client:'.$key;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $metadata
+     */
+    protected function mirrorCampaignFrequencyEvent(
+        BehaviourEventType $type,
+        ?array $metadata,
+        string $visitorKey,
+        ?User $customer,
+    ): void {
+        $map = [
+            BehaviourEventType::CampaignImpression->value => CampaignImpressionEvent::Impression->value,
+            BehaviourEventType::CampaignClicked->value => CampaignImpressionEvent::Click->value,
+            BehaviourEventType::CampaignDismissed->value => CampaignImpressionEvent::Dismiss->value,
+        ];
+
+        if (! isset($map[$type->value]) || ! is_array($metadata) || empty($metadata['campaign_id'])) {
+            return;
+        }
+
+        try {
+            $this->campaigns->recordInteraction([
+                'campaign_id' => (int) $metadata['campaign_id'],
+                'event_type' => $map[$type->value],
+                'visitor_key' => $visitorKey,
+                'session_key' => $metadata['session_key'] ?? null,
+                'placement' => $metadata['placement'] ?? null,
+                'request_id' => $metadata['request_id'] ?? null,
+                'cta_type' => $metadata['cta_type'] ?? null,
+            ], $customer);
+        } catch (Throwable $exception) {
+            Log::warning('Failed to mirror campaign frequency event.', [
+                'type' => $type->value,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 }

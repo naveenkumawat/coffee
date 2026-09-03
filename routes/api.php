@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Catalog\CatalogController;
 use App\Http\Controllers\Api\V1\Content\WebsiteContentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerAccountController;
 use App\Http\Controllers\Api\V1\Customer\CustomerBehaviourEventController;
+use App\Http\Controllers\Api\V1\Customer\CustomerCampaignController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
@@ -57,6 +58,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/recommendations', [CustomerRecommendationController::class, 'index'])
         ->middleware('throttle:behaviour-events')
         ->name('recommendations.index');
+
+    Route::get('/campaigns/eligible', [CustomerCampaignController::class, 'eligible'])
+        ->middleware('throttle:behaviour-events')
+        ->name('campaigns.eligible');
+    Route::post('/campaigns/interactions', [CustomerCampaignController::class, 'interact'])
+        ->middleware('throttle:behaviour-events')
+        ->name('campaigns.interactions');
 
     Route::prefix('behaviour')->name('behaviour.')->middleware('throttle:behaviour-events')->group(function (): void {
         Route::post('/events', [CustomerBehaviourEventController::class, 'store'])->name('events.store');
