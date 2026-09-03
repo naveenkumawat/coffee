@@ -393,6 +393,13 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Delivery fee stays unset at checkout (`delivery_fee_amount` null) under the third-party customer-paid assumption — confirm before changing.
 * Do not deploy until HTTPS hosts, DB access, and launch-readiness blockers are cleared (`docs/production-deployment.md`, `docs/launch-data-todo.md`).
 
+## Development completion audit (L3)
+
+* Canonical matrix: `docs/development-completion-audit.md`.
+* Phase-1 agreed launch-model software is treated as complete enough for real-data loading; café data + production smoke remain separate phases.
+* Delivery model stays third-party / café does not collect delivery fee; disclaimer is config-driven.
+* Do not mark the project launch-ready from L3 alone.
+
 ## Mobile ordering journey hardening (C2)
 
 * Guest cart merge preserves add-on `configuration_hash` lines; login returns to intended checkout path.

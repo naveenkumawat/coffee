@@ -1,11 +1,13 @@
 # Coffee Cafe Scope Progress
 
-Last audited: August 30, 2026
+Last audited: September 4, 2026
 Requirements source: [scope.md](./scope.md)
 Architecture source: [architecture.md](./architecture.md)
+Software completion audit: [development-completion-audit.md](./development-completion-audit.md)
 
 ## Audit Summary
 
+- **L3 (2026-09-04):** Phase-1 software for the agreed launch model is ~93% complete. No launch-critical **software** gaps remain. Blockers for go-live are café **DATA/CONFIG** (`docs/launch-data-todo.md`) and **production smoke**, not missing core features. See `docs/development-completion-audit.md`. Project is **not** marked launch-ready.
 - Completed foundations:
   - Laravel 13 application scaffold
   - MySQL-oriented runtime configuration
@@ -394,11 +396,12 @@ Status: Partial
 - [x] L1.1 Dining Served / Delivered-to-table implemented (per-round `served_at`/`served_by_user_id`; Waiter Mark Served; Ready-to-Serve resolves on Served; `round.served` dining ops signal; session stays open for more rounds)
 - [x] L1.2 Dining post-prep/post-served cancellation matrix implemented (`DiningRoundCancellationPolicy`; privileged reason after prep/Ready; Served blocked; bill/payment/closed gates; F2 reversal only pre-material-prep; void/comp/refund deferred)
 - [x] L2 launch-data readiness implemented (audit + `coffee:launch-readiness` read-only gate; DemoSeeder/production seed isolation verified; `LaunchCatalogSeeder` refuses until launch-menu confirmed; checklists updated — real café data still MISSING, not marked complete)
+- [x] L3 launch feature completion audit completed (`docs/development-completion-audit.md`; ~93% Phase-1 software for agreed launch model; no launch-critical software gaps; real café data + prod smoke remain separate; **not** marked launch-ready)
 - [x] Customer product search implemented
-- [ ] Internal search for orders/customers/products/ingredients/refill requests implemented
+- [ ] Internal search for orders/customers/products/ingredients/refill requests implemented (optional L4 soft polish; not launch-critical)
 
 ## Phase 11 - Security, Audit, and Responsive Completion
-Status: Partial
+Status: Partial (non-blocking polish only)
 
 - [x] Role middleware exists
 - [x] Policies exist for current menu entities
@@ -406,29 +409,28 @@ Status: Partial
 - [x] Structured request/exception logging exists
 - [x] Shared internal responsive shell exists
 - [x] Customer data isolation rules implemented for order/account modules
-- [ ] Broader module policy coverage implemented
-- [ ] Inventory and order audit trail implemented
-- [ ] Full responsive coverage across all scoped screens implemented
+- [ ] Broader module policy coverage implemented (optional polish; role model covers launch ops)
+- [ ] Inventory and order audit trail implemented (ledger + operational notifications exist; universal activity-log UI optional)
+- [ ] Full responsive coverage across all scoped screens implemented (core mobile shells done; dense Admin spot-fix optional)
 - [x] Final customer PWA installability, manifest, service worker, and offline shell implemented
 - [x] Production deployment prep (D3): env/Sanctum/CORS/Apache runbook, rate limits, security headers, `docs/production-deployment.md` (deploy not executed; customer Blade retained)
 
 ## Phase 12 - Phase 2 Enhancements
-Status: Pending
+Status: Pending (explicitly deferred; not launch-blocking)
 
 - [ ] Online payment gateway integration implemented
 - [x] Automated WhatsApp transactional notifications implemented (Cloud API; credentials/templates still required in production)
 - [ ] OTP authentication implemented
 - [ ] QR menu implemented
-- [ ] Table ordering implemented
-- [ ] Dine-in order mode implemented
-- [x] Delivery order mode implemented (third-party arrangement; no courier API yet)
-- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented
+- [x] Table ordering / dine-in order mode implemented (Dining D1–L1.2; Waiter + customer session flow)
+- [x] Delivery order mode implemented (third-party arrangement; café does not collect delivery fee; disclaimer configurable; no courier API)
+- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented (promotions/referrals exist in Phase 1; wallet/loyalty still Phase 2)
 - [x] Ratings and reviews implemented
 - [ ] Order scheduling implemented
 - [ ] Advanced purchasing, suppliers, expenses, tax/GST, barcode, printer, and display integrations implemented
 
 ## Phase 13 - Phase 3 Enhancements
-Status: Pending
+Status: Pending (explicitly deferred; not launch-blocking)
 
 - [ ] Mobile apps implemented
 - [ ] Multi-branch support implemented
@@ -438,25 +440,26 @@ Status: Pending
 - [ ] Advanced accounting implemented
 - [ ] AI forecasting and recommendation features implemented
 
-## Immediate Next Build Order
+## Remaining SOFTWARE phases (post-L3)
 
-- [x] Finalize scope document path normalization and keep `docs/scope.md` as the canonical requirements file
-- [ ] Add user-management foundations needed by downstream order and customer modules
-- [ ] Implement ingredient categories and ingredients
-- [ ] Implement inventory transactions and low-stock thresholds
-- [ ] Expand menu into full product categories, products, flavours, and variants
-- [ ] Implement recipes and costing before order fulfillment
-- [ ] Build orders, checkout, payment confirmation, and barista operational flows
-- [ ] Build the mobile-first customer PWA on top of the implemented customer API surface
+Canonical detail: `docs/development-completion-audit.md`.
 
+- [x] **L3** — Launch feature completion audit (`docs/development-completion-audit.md`)
+- [ ] **L4** — Optional soft polish only if ops need it before go-live (staff internal search; dense Admin responsive/a11y spot-fixes; broader policy review). Not required to declare software development-complete for the agreed launch model.
+- [ ] **Post-launch / Phase 2+** — Web Push/VAPID; payment gateway; void/comp/refund; OTP; loyalty/wallet; courier API; F3.3 enhancement; advanced AI — only when product prioritizes them.
+
+## Later non-software phases (do not treat as development backlog)
+
+- [ ] **L-data** — Final real café data loading (menu, prices, recipes, stock, images, UPI/QR, hours, staff, tables, legal). Gate: `php artisan coffee:launch-readiness`. See `docs/launch-data-todo.md`. DemoSeeder remains local/testing only.
+- [ ] **L-go-live** — Production deployment + smoke (`docs/production-deployment.md`, realtime runbook). Software-complete ≠ launch-ready.
 
 ## Dining flow
 
 - **Normal:** Menu → Cart → Checkout (takeaway / delivery only)
-- **Dining:** Table → Session → Rounds → Finish → Bill → Pay → Close
+- **Dining:** Table → Session → Rounds → Prep → Ready → Served → Bill → Pay → Close (more rounds allowed while session open)
 - PWA exposes Dining when `fulfilment.dining_enabled` is true (`/dining?table=CODE` preselect supported).
 - Waiter role operates table service; food & beverage catalog uses product type + prep station.
-
+- Delivery: third-party fulfilment; delivery fee not calculated/collected in café checkout; configurable customer disclaimer.
 - [x] Product add-ons (Phase C1): catalog assignment, cart configuration hash merge, server pricing, free-drink base-only waiver, inventory base+add-on consumption, admin CRUD, Dining drafts/rounds, PWA customization + payment-state UX, invoice nesting
 - [x] Waiter mobile PWA (Phase C1.1): SPA waiter auth, table dashboard display states, multi-table independent drafts, menu/add-on ordering into dining drafts, idempotent round send, bill/payment/close via existing permissions (Blade Waiter retained)
 - [x] Mobile ordering journey audit & hardening (Phase C2): guest-cart login merge with add-ons, auth session recovery, checkout fulfilment/error recovery, shared payment-state presentation, waiter draft/send/bill/close safety, Ready to Serve prominence

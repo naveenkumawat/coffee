@@ -1732,3 +1732,10 @@ Capabilities on Waiter session rounds: `can_cancel`, `cancel_requires_reason`, `
 * **Gate:** `php artisan coffee:launch-readiness` (read-only, `--json`, exit non-zero on blockers).
 * **Catalog import:** Administrator entry preferred after launch-menu confirmation; `LaunchCatalogSeeder` intentionally refuses until menu is confirmed.
 * **Not in L2:** Void/Refund/Comp, Web Push, F3.3 expansion, production deployment without hosts.
+
+## L3 — Launch feature completion audit
+
+* **Purpose:** Separate remaining **software** work from café **data/config** and production verification before go-live.
+* **Artifact:** `docs/development-completion-audit.md` (status matrix + remaining software phases).
+* **Outcome:** Agreed Phase-1 launch-model software is treated as development-complete enough for real-data loading; **not** launch-ready until L-data + L-go-live.
+* **Do not implement in L3:** Large new features discovered by the audit — prioritize first.
