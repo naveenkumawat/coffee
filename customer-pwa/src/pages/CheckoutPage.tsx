@@ -27,6 +27,7 @@ import { Order } from '../types/order';
 import { cartDiscounts } from '../utils/discounts';
 import { formatCurrency, joinLabels } from '../utils/format';
 import { getFieldError } from '../utils/forms';
+import { trackBehaviour } from '../tracking/behaviourTracker';
 
 interface CheckoutNavigationState {
   order?: Order;
@@ -62,8 +63,25 @@ export function CheckoutPage() {
   const [displayState, setDisplayState] = useState<'summary' | 'empty' | 'review-cart' | 'error'>('summary');
   const isSubmittingRef = useRef(false);
   const didHydrateDefaults = useRef(false);
+  const trackedCheckoutStart = useRef(false);
   const availability = useContentStore((state) => selectAvailability(state.content));
   const orderingClosed = Boolean(availability && !availability.available);
+
+  useEffect(() => {
+    if (trackedCheckoutStart.current || isLoading || !cart) {
+      return;
+    }
+
+    trackedCheckoutStart.current = true;
+    trackBehaviour({
+      event_type: 'checkout_started',
+      metadata: {
+        item_count: cart.items?.length ?? 0,
+        fulfilment_method: fulfilmentMethod,
+      },
+      dedupe_key: 'checkout_started',
+    });
+  }, [isLoading, cart, fulfilmentMethod]);
 
   async function loadSummary(
     preserveForm = false,

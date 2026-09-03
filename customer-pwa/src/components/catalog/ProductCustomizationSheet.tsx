@@ -10,6 +10,7 @@ import { addonUnitTotal, buildCartAddOnDisplay, canonicalizeAddOns } from '../..
 import { buildCartDisplayFromProduct } from '../../utils/cartDisplay';
 import { formatCurrency } from '../../utils/format';
 import { getPreferredVariant, getProductVariants } from '../../utils/productActions';
+import { trackBehaviour } from '../../tracking/behaviourTracker';
 import { QuantityStepper } from '../common/QuantityStepper';
 
 export type ProductConfiguredPayload = {
@@ -101,6 +102,18 @@ export function ProductCustomizationSheet({
     setAddOnQty(toQtyMap(initialAddOns, nextAddOns));
     setQuantity(Math.max(1, initialQuantity));
     setIsSaving(false);
+
+    trackBehaviour({
+      event_type: 'product_customized',
+      product_id: product.id,
+      product_category_id: product.category?.id ?? undefined,
+      product_variant_id: preferred?.id ?? undefined,
+      metadata: {
+        variant_id: preferred?.id ?? undefined,
+        addon_count: canonicalizeAddOns(initialAddOns).length,
+      },
+      dedupe_key: `product_customized:${product.id}`,
+    });
   }, [open, product, initialVariantId, initialAddOns, initialQuantity]);
 
   useProductOverlay({

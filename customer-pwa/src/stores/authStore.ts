@@ -5,6 +5,7 @@ import { realtimeConnection } from '../realtime/RealtimeConnection';
 import { Customer, LoginPayload, RegisterPayload } from '../types/auth';
 import { setSessionAuthenticated, isSessionAuthenticated } from '../utils/authSession';
 import { isWaiter } from '../utils/roles';
+import { associateVisitorWithCustomer } from '../tracking/behaviourTracker';
 import { useCartStore } from './cartStore';
 import { useFavouriteStore } from './favouriteStore';
 import { useNotificationStore } from './notificationStore';
@@ -63,6 +64,8 @@ async function hydrateAuthenticatedSession(customer: Customer): Promise<boolean>
     useCartStore.getState().loadCart(),
     useFavouriteStore.getState().refreshIds(),
   ]);
+
+  void associateVisitorWithCustomer();
 
   return mergedGuestCart;
 }

@@ -459,6 +459,17 @@ Canonical detail: `docs/development-completion-audit.md`.
 - [x] **L4** — Phase-1 development freeze & demo acceptance (workflows verified; safeguards confirmed; baseline frozen)
 - [ ] **Post-launch / Phase 2+** — Web Push/VAPID; payment gateway; void/comp/refund; OTP; loyalty/wallet; courier API; F3.3 enhancement; advanced AI; optional staff internal search / Admin polish — only when product prioritizes them (outside frozen Phase-1)
 
+## Phase 2 personalisation track (outside Phase-1 freeze)
+
+Canonical: `docs/personalisation-architecture.md`.
+
+- [x] **P2.1** — Customer behaviour & event tracking foundation (events, visitor identity, ingest API, PWA tracker, retention, server `order_completed`)
+- [ ] **P2.2** — Personalisation profile derivation (next)
+- [ ] **P2.3** — Recommendation engine (planned)
+- [ ] **P2.4** — Campaign/popup engine (planned)
+- [ ] **P2.5** — Segmentation/targeting (planned)
+- [ ] **P2.6** — Recommendation/campaign analytics (planned)
+
 ## Later non-software phases (do not treat as development backlog)
 
 - [ ] **L-data** — Final real café data loading (menu, prices, recipes, stock, images, UPI/QR, hours, staff, tables, legal). Gate: `php artisan coffee:launch-readiness`. See `docs/launch-data-todo.md`. DemoSeeder remains local/testing only.
@@ -479,3 +490,4 @@ Canonical detail: `docs/development-completion-audit.md`.
 - [x] L2 launch-data readiness: `coffee:launch-readiness` gate + checklists; real menu/payment/hours/staff/tables still café-supplied (not invented)
 - [x] L3 development-completion audit: software vs data separation; no launch-critical software gaps for agreed model
 - [x] L4 Phase-1 freeze & demo acceptance: baseline **FROZEN**; **NOT PRODUCTION READY** pending L-data + L-go-live
+- [x] P2.1 behaviour tracking foundation: first-party events + visitor merge + PWA instrumentation (`docs/personalisation-architecture.md`); Phase-1 freeze unchanged

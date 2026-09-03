@@ -80,6 +80,9 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 'dine_in_enabled' => $this->diningEnabled(),
                 'dining_enabled' => $this->diningEnabled(),
             ],
+            'behaviour' => [
+                'tracking_enabled' => (bool) config('coffee.behaviour.enabled', true),
+            ],
             'pages' => [
                 'about' => $this->filledOrNull($values[WebsiteSettingKey::PagesAbout->value] ?? null),
                 'contact' => $this->filledOrNull($values[WebsiteSettingKey::PagesContact->value] ?? null),

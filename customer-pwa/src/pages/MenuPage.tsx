@@ -11,6 +11,7 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
+import { trackBehaviour } from '../tracking/behaviourTracker';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -95,6 +96,40 @@ export function MenuPage() {
   useEffect(() => {
     setSearchInput(activeSearch);
   }, [activeSearch]);
+
+  useEffect(() => {
+    if (!activeSearch) {
+      return;
+    }
+
+    const handle = window.setTimeout(() => {
+      trackBehaviour({
+        event_type: 'search_performed',
+        metadata: {
+          query: activeSearch,
+          result_count: filteredProducts.length,
+        },
+        dedupe_key: `search:${activeSearch.toLowerCase()}`,
+      });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(handle);
+  }, [activeSearch, filteredProducts.length]);
+
+  useEffect(() => {
+    if (selectedCategoryIds.length === 0) {
+      return;
+    }
+
+    for (const categoryId of selectedCategoryIds) {
+      trackBehaviour({
+        event_type: 'category_viewed',
+        product_category_id: categoryId,
+        metadata: { source: 'menu_filter' },
+        dedupe_key: `category_viewed:${categoryId}`,
+      });
+    }
+  }, [selectedCategoryIds]);
 
   useEffect(() => {
     let cancelled = false;

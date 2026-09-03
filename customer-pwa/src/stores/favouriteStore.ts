@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { addFavourite, fetchFavouriteIds, removeFavourite } from '../api/favourites';
 import { ApiError } from '../api/client';
+import { trackBehaviour } from '../tracking/behaviourTracker';
 
 interface FavouriteState {
   ids: number[];
@@ -46,8 +47,16 @@ export const useFavouriteStore = create<FavouriteState>((set, get) => ({
     try {
       if (currentlyFavourite) {
         await removeFavourite(productId);
+        trackBehaviour({
+          event_type: 'favourite_removed',
+          product_id: productId,
+        });
       } else {
         await addFavourite(productId);
+        trackBehaviour({
+          event_type: 'favourite_added',
+          product_id: productId,
+        });
       }
 
       return !currentlyFavourite;

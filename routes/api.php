@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CafeTable\CafeTableController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogController;
 use App\Http\Controllers\Api\V1\Content\WebsiteContentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerAccountController;
+use App\Http\Controllers\Api\V1\Customer\CustomerBehaviourEventController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
@@ -51,6 +52,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::get('/cafe-availability', [CafeAvailabilityController::class, 'show'])->name('cafe-availability.show');
     Route::get('/home', [HomeController::class, 'show'])->name('home.show');
     Route::get('/cafe-tables', [CafeTableController::class, 'index'])->name('cafe-tables.index');
+
+    Route::prefix('behaviour')->name('behaviour.')->middleware('throttle:behaviour-events')->group(function (): void {
+        Route::post('/events', [CustomerBehaviourEventController::class, 'store'])->name('events.store');
+    });
 
     Route::middleware(['auth:sanctum'])->group(function (): void {
         Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -128,6 +133,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/ids', [CustomerFavouriteController::class, 'ids'])->name('ids');
             Route::post('/', [CustomerFavouriteController::class, 'store'])->name('store');
             Route::delete('/{product}', [CustomerFavouriteController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('behaviour')->name('behaviour.')->middleware('throttle:behaviour-events')->group(function (): void {
+            Route::post('/merge', [CustomerBehaviourEventController::class, 'merge'])->name('merge');
         });
 
         Route::prefix('products/{product}/rating')->name('products.rating.')->middleware('throttle:product-rating')->group(function (): void {

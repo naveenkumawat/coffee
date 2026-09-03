@@ -7,6 +7,8 @@ use App\Services\AddOn\AddOnService;
 use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Auth\RoleService;
 use App\Services\Auth\RoleServiceInterface;
+use App\Services\Behaviour\BehaviourEventService;
+use App\Services\Behaviour\BehaviourEventServiceInterface;
 use App\Services\CafeAvailability\CafeAvailabilityService;
 use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\CafeTable\CafeTableService;
@@ -110,6 +112,7 @@ class DomainServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AddOnServiceInterface::class, AddOnService::class);
+        $this->app->bind(BehaviourEventServiceInterface::class, BehaviourEventService::class);
         $this->app->bind(CartServiceInterface::class, CartService::class);
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);

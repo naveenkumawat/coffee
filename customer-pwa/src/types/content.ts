@@ -29,6 +29,10 @@ export interface WebsiteFulfilmentContent {
   dining_enabled?: boolean;
 }
 
+export interface WebsiteBehaviourContent {
+  tracking_enabled: boolean;
+}
+
 export interface WebsitePagesContent {
   about: string | null;
   contact: string | null;
@@ -65,6 +69,7 @@ export interface WebsiteContent {
   business: WebsiteBusinessContent;
   payment: WebsitePaymentContent;
   fulfilment?: WebsiteFulfilmentContent;
+  behaviour?: WebsiteBehaviourContent;
   pages: WebsitePagesContent;
   social_links?: WebsiteSocialLink[];
   availability?: WebsiteAvailabilityContent;

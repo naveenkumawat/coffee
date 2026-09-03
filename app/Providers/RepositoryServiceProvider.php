@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Repositories\Behaviour\BehaviourEventRepository;
+use App\Repositories\Behaviour\BehaviourEventRepositoryInterface;
 use App\Repositories\CafeTable\CafeTableRepository;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Cart\CartRepository;
@@ -52,6 +54,7 @@ class RepositoryServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(BehaviourEventRepositoryInterface::class, BehaviourEventRepository::class);
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavouriteRepositoryInterface::class, FavouriteRepository::class);
         $this->app->bind(HomeSectionRepositoryInterface::class, HomeSectionRepository::class);

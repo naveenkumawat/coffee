@@ -113,5 +113,14 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('product-rating', function (Request $request) {
             return Limit::perMinute(20)->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()));
         });
+
+        RateLimiter::for('behaviour-events', function (Request $request) {
+            $limit = max(10, (int) config('coffee.behaviour.rate_limit_per_minute', 60));
+            $visitor = (string) $request->input('visitor_key', '');
+            $key = $request->user()?->getAuthIdentifier()
+                ?? ($visitor !== '' ? 'visitor:'.$visitor : $request->ip());
+
+            return Limit::perMinute($limit)->by((string) $key);
+        });
     }
 }

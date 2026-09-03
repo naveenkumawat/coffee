@@ -37,6 +37,7 @@ interface WebsiteSettingServiceInterface
      *         whatsapp_number: ?string
      *     },
      *     fulfilment: array{delivery_disclaimer: ?string, dine_in_enabled: bool},
+     *     behaviour: array{tracking_enabled: bool},
      *     pages: array{
      *         about: ?string,
      *         contact: ?string,

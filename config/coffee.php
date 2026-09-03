@@ -57,4 +57,23 @@ return [
         'port' => (int) env('REVERB_PORT', 8080),
         'scheme' => env('REVERB_SCHEME', 'http'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Behaviour tracking (P2.1) — first-party personalisation foundation
+    |--------------------------------------------------------------------------
+    |
+    | Optional interaction analytics for future recommendations/campaigns.
+    | Disabling must never break browse/cart/checkout. Retention deletes only
+    | raw behaviour events — never orders, payments, inventory, or audit rows.
+    |
+    */
+    'behaviour' => [
+        'enabled' => (bool) env('COFFEE_BEHAVIOUR_TRACKING_ENABLED', true),
+        'retention_days' => (int) env('COFFEE_BEHAVIOUR_RETENTION_DAYS', 180),
+        'metadata_max_bytes' => (int) env('COFFEE_BEHAVIOUR_METADATA_MAX_BYTES', 2048),
+        'search_query_max_length' => (int) env('COFFEE_BEHAVIOUR_SEARCH_QUERY_MAX_LENGTH', 100),
+        'visitor_ttl_days' => (int) env('COFFEE_BEHAVIOUR_VISITOR_TTL_DAYS', 180),
+        'rate_limit_per_minute' => (int) env('COFFEE_BEHAVIOUR_RATE_LIMIT_PER_MINUTE', 60),
+    ],
 ];

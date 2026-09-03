@@ -406,6 +406,16 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * **NOT PRODUCTION READY** until real café data (`docs/launch-data-todo.md`) and production smoke (`docs/production-deployment.md`).
 * Freeze record: `docs/development-completion-audit.md` → Frozen baseline (L4).
 
+## Behaviour tracking & personalisation foundation (P2.1)
+
+* Append-only `customer_behaviour_events` + `customer_visitor_identities` (first-party; no fingerprinting).
+* Client ingest: `POST /api/v1/behaviour/events` (guest or customer session); merge: `POST /api/v1/behaviour/merge` (customer).
+* Server-authoritative `order_completed` from `OrderStatusChanged` (clients cannot submit).
+* Config: `coffee.behaviour.*` / `COFFEE_BEHAVIOUR_TRACKING_ENABLED`; content flag `behaviour.tracking_enabled`.
+* Retention: `coffee:behaviour-events-prune` (scheduled); does not touch orders/finance/inventory/ops.
+* PWA: shared `tracking/behaviourTracker.ts` + opaque visitor id; fail-silent.
+* Detail: `docs/personalisation-architecture.md`. P2.2+ profile/recommendation/campaign not implemented.
+
 ## Mobile ordering journey hardening (C2)
 
 * Guest cart merge preserves add-on `configuration_hash` lines; login returns to intended checkout path.

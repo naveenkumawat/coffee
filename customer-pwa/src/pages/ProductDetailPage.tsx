@@ -15,6 +15,7 @@ import { ProductImage } from '../components/common/ProductImage';
 import { Product } from '../types/catalog';
 import { PublicProductReview, RatingSummary } from '../types/rating';
 import { getProductVariants, isProductUnavailable } from '../utils/productActions';
+import { trackBehaviour } from '../tracking/behaviourTracker';
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams();
@@ -37,6 +38,13 @@ export function ProductDetailPage() {
         setProduct(productResponse.data);
         setRatingSummary(ratingsResponse.data.rating_summary);
         setReviews(ratingsResponse.data.reviews);
+        trackBehaviour({
+          event_type: 'product_viewed',
+          product_id: productResponse.data.id,
+          product_category_id: productResponse.data.category?.id ?? undefined,
+          metadata: { source: 'product_detail' },
+          dedupe_key: `product_viewed:${productResponse.data.id}`,
+        });
       } catch (error) {
         setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this drink.');
       } finally {

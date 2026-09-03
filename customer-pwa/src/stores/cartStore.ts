@@ -42,6 +42,7 @@ import {
   writeGuestCartItems,
 } from '../utils/guestCartStorage';
 import { totalCartQuantity } from '../utils/cartQuantity';
+import { trackBehaviour } from '../tracking/behaviourTracker';
 
 interface CartState {
   count: number;
@@ -275,6 +276,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   addItem: async (payload) => {
     const release = withPendingVariant(set, payload.product_variant_id);
     const addOns = canonicalizeAddOns(payload.add_ons);
+    const productId = payload.display?.product?.id;
 
     try {
       if (!isSessionAuthenticated()) {
@@ -289,6 +291,19 @@ export const useCartStore = create<CartState>((set, get) => ({
           summary: state.summary,
           count: state.summary.item_count,
         });
+
+        if (productId) {
+          trackBehaviour({
+            event_type: 'cart_item_added',
+            product_id: productId,
+            product_variant_id: payload.product_variant_id,
+            metadata: {
+              quantity: payload.quantity,
+              variant_id: payload.product_variant_id,
+              addon_count: addOns.length,
+            },
+          });
+        }
 
         return {
           message: 'Added to cart.',
@@ -327,6 +342,19 @@ export const useCartStore = create<CartState>((set, get) => ({
       try {
         const response = await addCartItem({ ...payload, add_ons: addOns });
         applyCartState(set, response);
+
+        if (productId) {
+          trackBehaviour({
+            event_type: 'cart_item_added',
+            product_id: productId,
+            product_variant_id: payload.product_variant_id,
+            metadata: {
+              quantity: payload.quantity,
+              variant_id: payload.product_variant_id,
+              addon_count: addOns.length,
+            },
+          });
+        }
 
         return response;
       } catch (error) {
@@ -427,6 +455,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   removeItem: async (cartItemId) => {
     const item = get().cart?.items.find((entry) => entry.id === cartItemId) ?? null;
     const variantId = item?.variant?.id;
+    const productId = item?.product?.id;
     const addOns = canonicalizeAddOns(item?.add_ons);
     const release = variantId ? withPendingVariant(set, variantId) : () => undefined;
 
@@ -435,6 +464,19 @@ export const useCartStore = create<CartState>((set, get) => ({
         const nextItems = removeGuestCartItem(readGuestCartItems(), cartItemId);
         writeGuestCartItems(nextItems);
         applyGuestState(set);
+
+        if (productId) {
+          trackBehaviour({
+            event_type: 'cart_item_removed',
+            product_id: productId,
+            product_variant_id: variantId,
+            metadata: {
+              quantity: item?.quantity ?? 1,
+              variant_id: variantId,
+              addon_count: addOns.length,
+            },
+          });
+        }
 
         return;
       }
@@ -458,6 +500,19 @@ export const useCartStore = create<CartState>((set, get) => ({
       try {
         const response = await removeCartItem(cartItemId);
         applyCartState(set, response);
+
+        if (productId) {
+          trackBehaviour({
+            event_type: 'cart_item_removed',
+            product_id: productId,
+            product_variant_id: variantId,
+            metadata: {
+              quantity: item?.quantity ?? 1,
+              variant_id: variantId,
+              addon_count: addOns.length,
+            },
+          });
+        }
       } catch (error) {
         set(snapshot);
         throw error;
