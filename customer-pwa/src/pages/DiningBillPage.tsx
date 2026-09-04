@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
   DiningSession,
@@ -10,6 +10,8 @@ import {
 import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { PageHeader } from '../components/common/PageHeader';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
+import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
+import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 import { useToastStore } from '../stores/toastStore';
 import { CheckoutPaymentInstructions, CheckoutPaymentMethodOption } from '../types/checkout';
 import { copyTextToClipboard } from '../utils/clipboard';
@@ -17,8 +19,10 @@ import { diningDiscountLines } from '../utils/discounts';
 import { formatCurrency } from '../utils/format';
 import { resolveCatalogMediaUrl } from '../utils/images';
 import {
+  clearOrderingContext,
   diningDraftItemCount,
   diningSessionPath,
+  isDiningSessionTerminal,
   writeOrderingContext,
 } from '../utils/orderingContext';
 
@@ -33,6 +37,7 @@ function isOnlineMethod(method: string | null | undefined): boolean {
 
 export function DiningBillPage() {
   const { sessionId = '' } = useParams();
+  const navigate = useNavigate();
   const toastSuccess = useToastStore((state) => state.success);
   const toastError = useToastStore((state) => state.error);
 
@@ -47,41 +52,104 @@ export function DiningBillPage() {
   const [busy, setBusy] = useState(false);
   const [isSubmittingTxn, setIsSubmittingTxn] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [completionNotice, setCompletionNotice] = useState(false);
+  const leavingTerminalRef = useRef(false);
+  const redirectTimerRef = useRef<number | null>(null);
 
-  async function loadSession(): Promise<void> {
+  const leaveCompletedSession = useCallback(
+    (options?: { celebrate?: boolean }): void => {
+      if (leavingTerminalRef.current) {
+        return;
+      }
+
+      leavingTerminalRef.current = true;
+      clearOrderingContext();
+
+      if (options?.celebrate) {
+        setCompletionNotice(true);
+        if (redirectTimerRef.current !== null) {
+          window.clearTimeout(redirectTimerRef.current);
+        }
+        redirectTimerRef.current = window.setTimeout(() => {
+          navigate('/dining', { replace: true });
+        }, 1200);
+
+        return;
+      }
+
+      navigate('/dining', { replace: true });
+    },
+    [navigate],
+  );
+
+  const applySession = useCallback(
+    (next: DiningSession, meta?: ApiMeta, options?: { celebratePaid?: boolean }): void => {
+      if (isDiningSessionTerminal(next)) {
+        leaveCompletedSession({ celebrate: options?.celebratePaid ?? true });
+
+        return;
+      }
+
+      setSession(next);
+      writeOrderingContext({
+        type: 'dining',
+        diningSessionId: String(next.id),
+        tableLabel: next.table.label,
+        draftItemCount: diningDraftItemCount(next.drafts),
+      });
+
+      if (meta?.payment) {
+        setPayment(meta.payment);
+      }
+
+      if (meta?.payment_methods) {
+        setMethods(meta.payment_methods);
+      }
+
+      const method = next.payment_method ?? '';
+      if (method) {
+        setSelectedMethod(method === 'manual' ? 'manual_upi' : method);
+      }
+
+      if (next.payment_transaction_id) {
+        setTransactionId(next.payment_transaction_id);
+      }
+    },
+    [leaveCompletedSession],
+  );
+
+  const reload = useCallback(async (): Promise<void> => {
     const response = await fetchDiningSession(sessionId);
-    const meta = (response as { meta?: ApiMeta }).meta;
-    applySession(response.data, meta);
-  }
+    applySession(response.data, (response as { meta?: ApiMeta }).meta);
+  }, [applySession, sessionId]);
 
-  function applySession(next: DiningSession, meta?: ApiMeta): void {
-    setSession(next);
-    writeOrderingContext({
-      type: 'dining',
-      diningSessionId: String(next.id),
-      tableLabel: next.table.label,
-      draftItemCount: diningDraftItemCount(next.drafts),
-    });
+  useLiveCanonicalSync(
+    () => {
+      void reload().catch(() => undefined);
+    },
+    (signal) => {
+      if (signal.subject?.type === 'DiningSession' && String(signal.subject.id) === String(sessionId)) {
+        return true;
+      }
 
-    if (meta?.payment) {
-      setPayment(meta.payment);
-    }
+      if (signal.type.startsWith('customer.dining') || signal.type.startsWith('customer.payment')) {
+        return Boolean(signal.action_url && signal.action_url.includes(`/dining/sessions/${sessionId}`));
+      }
 
-    if (meta?.payment_methods) {
-      setMethods(meta.payment_methods);
-    }
+      return false;
+    },
+  );
 
-    const method = next.payment_method ?? '';
-    if (method) {
-      setSelectedMethod(method === 'manual' ? 'manual_upi' : method);
-    }
-
-    if (next.payment_transaction_id) {
-      setTransactionId(next.payment_transaction_id);
-    }
-  }
+  useDiningOpsSync(
+    () => {
+      void reload().catch(() => undefined);
+    },
+    (payload) => String(payload.session_id) === String(sessionId),
+    { sessionId },
+  );
 
   useEffect(() => {
+    leavingTerminalRef.current = false;
     let cancelled = false;
 
     void (async () => {
@@ -91,7 +159,7 @@ export function DiningBillPage() {
           return;
         }
 
-        applySession(response.data, (response as { meta?: ApiMeta }).meta);
+        applySession(response.data, (response as { meta?: ApiMeta }).meta, { celebratePaid: false });
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : 'Unable to load bill.');
@@ -101,8 +169,11 @@ export function DiningBillPage() {
 
     return () => {
       cancelled = true;
+      if (redirectTimerRef.current !== null) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
     };
-  }, [sessionId]);
+  }, [applySession, sessionId]);
 
   useEffect(() => {
     if (!session || selectedMethod || methods.length === 0) {
@@ -114,9 +185,14 @@ export function DiningBillPage() {
     }
   }, [methods, selectedMethod, session]);
 
-  const paid = session?.payment_status === 'confirmed' || session?.status === 'paid';
+  const paid = session?.payment_status === 'confirmed' || session?.status === 'paid' || session?.status === 'closed';
   const awaitingReview = session?.payment_status === 'awaiting_review';
   const rejected = session?.payment_status === 'rejected';
+  const canSubmitTxn = Boolean(session?.capabilities?.can_submit_transaction_id) && !paid;
+  const canResubmitTxn = Boolean(session?.capabilities?.can_resubmit_transaction_id) && !paid;
+  const canChangeMethod = Boolean(session?.capabilities?.can_change_payment_method) && !paid && !awaitingReview;
+  const showUtrForm =
+    selectedMethod === 'manual_upi' && (canSubmitTxn || canResubmitTxn) && !awaitingReview;
   const roundCount = session?.rounds?.length ?? 0;
   const itemCount = useMemo(
     () =>
@@ -129,14 +205,16 @@ export function DiningBillPage() {
 
   const upiId = payment?.upi_id?.trim() ?? '';
   const qrSrc = payment?.qr_image_path ? resolveCatalogMediaUrl(payment.qr_image_path, '') : '';
-  const canSubmitTxn =
-    Boolean(session?.capabilities?.can_submit_transaction_id) &&
-    selectedMethod === 'manual_upi' &&
-    !paid;
 
   async function handleSelectMethod(method: string): Promise<void> {
     if (!session || paid || busy || method === selectedMethod) {
       setSelectedMethod(method);
+
+      return;
+    }
+
+    if (!canChangeMethod && session.payment_method) {
+      setSelectedMethod(session.payment_method === 'manual' ? 'manual_upi' : session.payment_method);
 
       return;
     }
@@ -165,7 +243,7 @@ export function DiningBillPage() {
   async function handleSubmitTransaction(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
-    if (!canSubmitTxn || isSubmittingTxn) {
+    if ((!canSubmitTxn && !canResubmitTxn) || isSubmittingTxn || awaitingReview) {
       return;
     }
 
@@ -201,6 +279,22 @@ export function DiningBillPage() {
     } else {
       toastError('Could not copy. Please copy manually.');
     }
+  }
+
+  if (completionNotice) {
+    return (
+      <div className="page-container dining-bill-page">
+        <div className="dining-content">
+          <PageHeader title="Bill & Payment" showBack={false} />
+          <section className="account-section payment-instructions-card" aria-live="polite">
+            <div className="payment-state-banner is-success">
+              <strong>Payment confirmed</strong>
+              <p>Your table session is complete.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
@@ -269,17 +363,7 @@ export function DiningBillPage() {
           />
         </section>
 
-        {paid ? (
-          <section className="account-section payment-instructions-card" aria-live="polite">
-            <div className="payment-state-banner is-success">
-              <strong>Paid</strong>
-              <p>Thank you. Your dining bill is paid.</p>
-            </div>
-            <Link to={diningSessionPath(sessionId)} className="btn btn-outline-dark rounded-pill w-100">
-              Back to table
-            </Link>
-          </section>
-        ) : (
+        {paid ? null : (
           <>
             <section className="account-section" aria-labelledby="dining-pay-method-title">
               <h2 id="dining-pay-method-title" className="h5 mb-3">
@@ -290,6 +374,7 @@ export function DiningBillPage() {
                 value={selectedMethod}
                 onChange={(value) => void handleSelectMethod(value)}
                 error={methodError}
+                disabled={!canChangeMethod || busy || paid}
               />
             </section>
 
@@ -354,12 +439,12 @@ export function DiningBillPage() {
                   </div>
                 ) : null}
 
-                {rejected && session.payment_proof?.rejection_notes ? (
+                {rejected && (session.payment_rejection_reason || session.payment_proof?.rejection_notes) ? (
                   <div className="payment-reminder" role="status">
                     <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
                     <div>
                       <strong>Not verified</strong>
-                      <p>{session.payment_proof.rejection_notes}</p>
+                      <p>{session.payment_rejection_reason || session.payment_proof?.rejection_notes}</p>
                     </div>
                   </div>
                 ) : null}
@@ -370,15 +455,14 @@ export function DiningBillPage() {
                     <div>
                       <strong>Verification Pending</strong>
                       <p>
-                        We&apos;ve received your transaction ID
+                        Your transaction ID has been submitted and is awaiting verification
                         {session.payment_transaction_id ? ` (${session.payment_transaction_id})` : ''}.
-                        Your payment will be confirmed after verification.
                       </p>
                     </div>
                   </div>
                 ) : null}
 
-                {canSubmitTxn && !awaitingReview ? (
+                {showUtrForm ? (
                   <form className="payment-detail-block" onSubmit={(event) => void handleSubmitTransaction(event)}>
                     <span>After payment</span>
                     <p className="mb-3">Enter the transaction ID / UTR from your UPI app.</p>
@@ -408,33 +492,9 @@ export function DiningBillPage() {
                     >
                       {isSubmittingTxn
                         ? 'Submitting…'
-                        : rejected
-                          ? 'Resubmit for Verification'
+                        : canResubmitTxn
+                          ? 'Submit new transaction ID'
                           : 'Submit for Verification'}
-                    </button>
-                  </form>
-                ) : null}
-
-                {canSubmitTxn && awaitingReview ? (
-                  <form className="payment-detail-block" onSubmit={(event) => void handleSubmitTransaction(event)}>
-                    <label className="form-label" htmlFor={`dining-upi-txn-replace-${sessionId}`}>
-                      Replace Transaction ID / UTR
-                    </label>
-                    <input
-                      id={`dining-upi-txn-replace-${sessionId}`}
-                      type="text"
-                      className="form-control coffee-input mb-3"
-                      value={transactionId}
-                      autoComplete="off"
-                      spellCheck={false}
-                      onChange={(event) => setTransactionId(event.target.value)}
-                    />
-                    <button
-                      type="submit"
-                      className="btn btn-outline-dark rounded-pill w-100"
-                      disabled={isSubmittingTxn || transactionId.trim().length < 6}
-                    >
-                      {isSubmittingTxn ? 'Submitting…' : 'Resubmit for Verification'}
                     </button>
                   </form>
                 ) : null}

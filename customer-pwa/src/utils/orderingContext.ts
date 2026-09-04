@@ -228,6 +228,25 @@ export function clearOrderingContext(): void {
   writeOrderingContext(RETAIL_ORDERING_CONTEXT);
 }
 
+/**
+ * Session is no longer a usable active dining visit (paid/closed/cancelled).
+ * Callers should clear dining orderingContext and leave the active workflow.
+ */
+export function isDiningSessionTerminal(session: {
+  status?: string | null;
+  payment_status?: string | null;
+}): boolean {
+  const status = String(session.status ?? '');
+  const paymentStatus = String(session.payment_status ?? '');
+
+  return (
+    status === 'closed' ||
+    status === 'cancelled' ||
+    status === 'paid' ||
+    paymentStatus === 'confirmed'
+  );
+}
+
 export function isDiningOrderingContext(
   context: OrderingContext = readOrderingContext(),
 ): context is Extract<OrderingContext, { type: 'dining' }> {

@@ -1,7 +1,12 @@
 @php
+    use App\Enums\PaymentMethod;
+    use App\Enums\PaymentStatus;
+
     $showAdminMeta = $showAdminMeta ?? false;
     $invoiceRoute = $invoiceRoute ?? null;
     $showInvoice = $showInvoice ?? filled($invoiceRoute);
+    $actionsView = $actionsView ?? null;
+    $paymentCardView = $paymentCardView ?? null;
     $billFinalized = $bill['finalized'] ?? $session->hasFinalizedBill();
     $billTotal = $billFinalized
         ? number_format((float) $session->total_amount, 2, '.', '')
@@ -16,7 +21,8 @@
                 <div class="fw-bold fs-3 text-gray-900 text-break">
                     {{ $session->session_number }} · {{ $session->tableDisplayLabel() }}
                 </div>
-                <div class="mt-2">
+                <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
+                    <span class="text-muted fs-8 text-uppercase">Session</span>
                     <x-internal.dining-session-status-badge :status="$session->status" />
                 </div>
             </div>
@@ -51,10 +57,18 @@
             </div>
         </div>
 
-        @isset($actions)
+        @if (filled($actionsView))
             <div class="d-flex flex-wrap gap-2 mt-6">
-                {{ $actions }}
+                @include($actionsView, ['session' => $session])
             </div>
-        @endisset
+        @endif
     </div>
 </div>
+
+@if (filled($paymentCardView))
+    @include($paymentCardView, [
+        'session' => $session,
+        'bill' => $bill ?? null,
+        'routePrefix' => $routePrefix ?? 'administrator',
+    ])
+@endif

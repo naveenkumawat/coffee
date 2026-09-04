@@ -44,6 +44,7 @@ class DiningSessionResource extends JsonResource
             'payment_status' => $session->payment_status?->value,
             'payment_status_label' => $session->payment_status?->label(),
             'payment_transaction_id' => $session->payment_reference,
+            'payment_transaction_submitted_at' => $session->payment_proof_uploaded_at?->toIso8601String(),
             'payment_proof' => $session->isCashPayment() || $session->payment_method?->isOnline()
                 ? null
                 : [
@@ -55,6 +56,9 @@ class DiningSessionResource extends JsonResource
                     'size' => $session->payment_proof_size,
                     'rejection_notes' => $session->payment_proof_rejection_notes,
                 ],
+            'payment_rejection_reason' => $session->payment_status?->value === 'rejected'
+                ? $session->payment_proof_rejection_notes
+                : null,
             'totals' => [
                 'subtotal' => $bill['subtotal'],
                 'discount' => $bill['discount'],
@@ -125,9 +129,18 @@ class DiningSessionResource extends JsonResource
                 'can_add_rounds' => $session->allowsNewRounds(),
                 'can_upload_payment_proof' => $session->canSubmitManualPaymentEvidence(),
                 'can_submit_transaction_id' => $session->canSubmitManualPaymentEvidence()
-                    && $session->payment_method?->apiKey() === 'manual_upi',
+                    && ($session->payment_method === null || $session->payment_method?->apiKey() === 'manual_upi'),
+                'can_resubmit_transaction_id' => $session->canResubmitManualPaymentEvidence()
+                    && ($session->payment_method === null || $session->payment_method?->apiKey() === 'manual_upi'),
+                'can_change_payment_method' => $session->canChangePaymentMethod(),
                 'can_pay' => in_array($session->status?->value, ['billing_requested', 'awaiting_payment'], true)
                     && $session->payment_status?->value !== 'confirmed',
+                'can_request_bill' => $session->allowsNewRounds()
+                    && $session->relationLoaded('orders')
+                    ? $session->orders->contains(
+                        static fn ($order): bool => ! in_array($order->status?->value, ['cancelled', 'rejected'], true),
+                    )
+                    : false,
                 'can_call_waiter' => $session->allowsNewRounds()
                     && $session->customer_id !== null
                     && (int) $session->customer_id === (int) $request->user()?->getKey(),

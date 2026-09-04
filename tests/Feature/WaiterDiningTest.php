@@ -65,7 +65,7 @@ class WaiterDiningTest extends TestCase
 
         $this->post(route('waiter.sessions.cash.receive', $session))->assertRedirect();
         $session->refresh();
-        $this->assertSame(DiningSessionStatus::Paid, $session->status);
+        $this->assertSame(DiningSessionStatus::Closed, $session->status);
 
         $this->get(route('administrator.website-settings.edit'))->assertForbidden();
     }

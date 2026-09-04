@@ -496,6 +496,12 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
+            if ($locked->payment_status === PaymentStatus::AwaitingReview || $locked->hasManualPaymentEvidence()) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'Payment method cannot change after a Transaction ID / UTR has been submitted.',
+                ]);
+            }
+
             if (! in_array($locked->status, [
                 DiningSessionStatus::BillingRequested,
                 DiningSessionStatus::AwaitingPayment,
@@ -529,10 +535,7 @@ class DiningSessionService implements DiningSessionServiceInterface
             $attributes = [
                 'payment_method' => $method,
                 'status' => DiningSessionStatus::AwaitingPayment,
-                'payment_status' => $locked->payment_status === PaymentStatus::AwaitingReview
-                    && $method === PaymentMethod::Manual
-                    ? PaymentStatus::AwaitingReview
-                    : PaymentStatus::Pending,
+                'payment_status' => PaymentStatus::Pending,
             ];
 
             if ($previous !== null && $previous !== $method) {
@@ -541,19 +544,7 @@ class DiningSessionService implements DiningSessionServiceInterface
                 $attributes['payment_method_changed_by_id'] = $actor?->getKey();
             }
 
-            if ($method === PaymentMethod::Cash) {
-                $locked->clearPaymentProofFiles();
-                $attributes['payment_proof_path'] = null;
-                $attributes['payment_proof_disk'] = null;
-                $attributes['payment_proof_mime'] = null;
-                $attributes['payment_proof_size'] = null;
-                $attributes['payment_proof_uploaded_at'] = null;
-                $attributes['payment_proof_rejection_notes'] = null;
-                $attributes['payment_reference'] = null;
-                $attributes['payment_status'] = PaymentStatus::Pending;
-            }
-
-            if ($method->isOnline()) {
+            if ($method === PaymentMethod::Cash || $method->isOnline()) {
                 $locked->clearPaymentProofFiles();
                 $attributes['payment_proof_path'] = null;
                 $attributes['payment_proof_disk'] = null;
@@ -670,6 +661,18 @@ class DiningSessionService implements DiningSessionServiceInterface
             ]);
         }
 
+        if ($session->payment_status === PaymentStatus::AwaitingReview) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'A Transaction ID / UTR is already awaiting verification. You can submit again only after staff rejects it.',
+            ]);
+        }
+
+        if ($session->payment_status === PaymentStatus::Confirmed) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'This dining bill is already paid.',
+            ]);
+        }
+
         if (! $session->canSubmitManualPaymentEvidence()) {
             throw ValidationException::withMessages([
                 'transaction_id' => 'Transaction ID can only be submitted while the bill is awaiting payment confirmation.',
@@ -690,7 +693,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         }
 
         $wasResubmission = $session->payment_status === PaymentStatus::Rejected
-            || $session->hasManualPaymentEvidence();
+            || filled($session->payment_reference);
 
         $session->fill([
             'payment_reference' => $normalized,
@@ -741,14 +744,26 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
+            if ($locked->payment_status !== PaymentStatus::AwaitingReview) {
+                throw ValidationException::withMessages([
+                    'payment_proof' => 'Reject only while a Transaction ID / UTR is awaiting verification.',
+                ]);
+            }
+
             if (! $locked->hasManualPaymentEvidence()) {
                 throw ValidationException::withMessages([
                     'payment_proof' => 'This session does not have a submitted Transaction ID or payment screenshot.',
                 ]);
             }
 
-            $reason = filled($notes) ? trim($notes) : 'Please check your UPI Transaction ID / UTR and submit again.';
+            $reason = filled($notes) ? trim((string) $notes) : null;
+            if ($reason === null || $reason === '') {
+                throw ValidationException::withMessages([
+                    'notes' => 'Enter a reason (for example: transaction not found, amount mismatch, or invalid UTR).',
+                ]);
+            }
 
+            // Keep the submitted UTR/screenshot for staff history; customer may replace after rejection.
             $locked->fill([
                 'payment_status' => PaymentStatus::Rejected,
                 'payment_proof_rejection_notes' => $reason,
@@ -774,10 +789,15 @@ class DiningSessionService implements DiningSessionServiceInterface
         return DB::transaction(function () use ($session, $actor): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($locked->status === DiningSessionStatus::Paid || $locked->payment_status === PaymentStatus::Confirmed) {
-                throw ValidationException::withMessages([
-                    'payment' => 'This dining session is already paid.',
-                ]);
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                $closedNow = $this->closeAfterPaymentConfirmed($locked);
+                $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'paymentReceivedBy']) ?? $locked;
+
+                if ($closedNow) {
+                    event(new DiningSessionClosed($fresh));
+                }
+
+                return $fresh;
             }
 
             if (! in_array($locked->status, [
@@ -789,10 +809,18 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
-            if ($locked->payment_method === PaymentMethod::Manual && ! $locked->hasManualPaymentEvidence()) {
-                throw ValidationException::withMessages([
-                    'payment' => 'UPI payment confirmation requires a submitted Transaction ID / UTR (or historical screenshot).',
-                ]);
+            if ($locked->payment_method === PaymentMethod::Manual) {
+                if ($locked->payment_status !== PaymentStatus::AwaitingReview) {
+                    throw ValidationException::withMessages([
+                        'payment' => 'Verify payment only while a Transaction ID / UTR is awaiting review.',
+                    ]);
+                }
+
+                if (! $locked->hasManualPaymentEvidence()) {
+                    throw ValidationException::withMessages([
+                        'payment' => 'UPI payment confirmation requires a submitted Transaction ID / UTR (or historical screenshot).',
+                    ]);
+                }
             }
 
             $locked->fill([
@@ -803,10 +831,13 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'payment_proof_rejection_notes' => null,
             ])->save();
 
+            $this->closeAfterPaymentConfirmed($locked);
+
             $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'paymentReceivedBy']);
             event(new DiningPaymentConfirmed($fresh, $actor));
+            event(new DiningSessionClosed($fresh ?? $locked));
 
-            return $fresh;
+            return $fresh ?? $locked;
         });
     }
 
@@ -821,10 +852,15 @@ class DiningSessionService implements DiningSessionServiceInterface
         return DB::transaction(function () use ($session, $actor): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($locked->status === DiningSessionStatus::Paid || $locked->payment_status === PaymentStatus::Confirmed) {
-                throw ValidationException::withMessages([
-                    'payment' => 'This dining session is already paid.',
-                ]);
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                $closedNow = $this->closeAfterPaymentConfirmed($locked);
+                $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'paymentReceivedBy']) ?? $locked;
+
+                if ($closedNow) {
+                    event(new DiningSessionClosed($fresh));
+                }
+
+                return $fresh;
             }
 
             if (! in_array($locked->status, [
@@ -864,10 +900,13 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'payment_proof_rejection_notes' => null,
             ])->save();
 
+            $this->closeAfterPaymentConfirmed($locked);
+
             $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'paymentReceivedBy']);
             event(new DiningPaymentConfirmed($fresh, $actor));
+            event(new DiningSessionClosed($fresh ?? $locked));
 
-            return $fresh;
+            return $fresh ?? $locked;
         });
     }
 
@@ -1335,6 +1374,26 @@ class DiningSessionService implements DiningSessionServiceInterface
             ])
             ->latest('id')
             ->first();
+    }
+
+    /**
+     * After payment is confirmed, finalize the visit: close session and release the table.
+     * Caller must hold a row lock. Returns true when the session transitioned to closed now.
+     */
+    protected function closeAfterPaymentConfirmed(DiningSession $locked): bool
+    {
+        if ($locked->status === DiningSessionStatus::Closed) {
+            return false;
+        }
+
+        $locked->fill([
+            'status' => DiningSessionStatus::Closed,
+            'closed_at' => $locked->closed_at ?? now(),
+        ])->save();
+
+        DiningRoundDraft::query()->where('dining_session_id', $locked->getKey())->delete();
+
+        return true;
     }
 
     protected function nextSessionNumber(): string

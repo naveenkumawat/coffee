@@ -4,10 +4,11 @@ namespace App\Events\Dining;
 
 use App\Models\DiningSession;
 use App\Models\User;
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DiningPaymentConfirmed
+class DiningPaymentConfirmed implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
     use SerializesModels;

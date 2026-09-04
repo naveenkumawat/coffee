@@ -5,9 +5,16 @@ interface PaymentMethodSelectorProps {
   value: CheckoutPaymentMethod;
   onChange: (value: CheckoutPaymentMethod) => void;
   error?: string | null;
+  disabled?: boolean;
 }
 
-export function PaymentMethodSelector({ methods, value, onChange, error }: PaymentMethodSelectorProps) {
+export function PaymentMethodSelector({
+  methods,
+  value,
+  onChange,
+  error,
+  disabled = false,
+}: PaymentMethodSelectorProps) {
   if (methods.length === 0) {
     return (
       <p className="summary-warning" role="status">
@@ -18,7 +25,7 @@ export function PaymentMethodSelector({ methods, value, onChange, error }: Payme
 
   return (
     <div className="checkout-field-group">
-      <div className="fulfilment-options" role="radiogroup" aria-label="Payment method">
+      <div className="fulfilment-options" role="radiogroup" aria-label="Payment method" aria-disabled={disabled}>
         {methods.map((method) => {
           const key = method.key === 'manual' ? 'manual_upi' : method.key;
           const selected = value === key;
@@ -26,13 +33,20 @@ export function PaymentMethodSelector({ methods, value, onChange, error }: Payme
           return (
             <label
               key={method.key}
-              className={['fulfilment-option', selected ? 'is-selected' : ''].filter(Boolean).join(' ')}
+              className={[
+                'fulfilment-option',
+                selected ? 'is-selected' : '',
+                disabled ? 'is-disabled' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
               <input
                 type="radio"
                 name="payment_method"
                 value={key}
                 checked={selected}
+                disabled={disabled}
                 onChange={() => onChange(key as CheckoutPaymentMethod)}
               />
               <span className="fulfilment-option-copy">

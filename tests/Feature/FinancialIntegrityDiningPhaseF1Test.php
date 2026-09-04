@@ -158,7 +158,7 @@ class FinancialIntegrityDiningPhaseF1Test extends TestCase
             ->post(route('administrator.dining-sessions.payment.confirm', $session))
             ->assertRedirect();
 
-        $this->assertSame(DiningSessionStatus::Paid, $session->fresh()->status);
+        $this->assertSame(DiningSessionStatus::Closed, $session->fresh()->status);
         $this->assertSame(PaymentStatus::Confirmed, $session->fresh()->payment_status);
     }
 

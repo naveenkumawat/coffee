@@ -8,6 +8,7 @@ import {
   startDiningSession,
 } from '../api/dining';
 import { useContentStore } from '../stores/contentStore';
+import { clearOrderingContext } from '../utils/orderingContext';
 
 export function DiningPage() {
   const navigate = useNavigate();
@@ -39,6 +40,8 @@ export function DiningPage() {
           navigate(`/dining/sessions/${active.data.id}`, { replace: true });
           return;
         }
+
+        clearOrderingContext();
 
         const response = await fetchDiningTables();
         if (cancelled) {

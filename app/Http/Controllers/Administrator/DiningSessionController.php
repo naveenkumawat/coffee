@@ -156,16 +156,16 @@ class DiningSessionController extends Controller
         $this->authorize('rejectPaymentProof', $diningSession);
 
         $data = $request->validate([
-            'notes' => ['nullable', 'string', 'max:500'],
+            'notes' => ['required', 'string', 'max:500'],
         ]);
 
         $this->dining->rejectPaymentProof(
             $diningSession,
             $request->user('admin'),
-            $data['notes'] ?? null,
+            $data['notes'],
         );
 
-        return back()->with('status', 'Payment proof replacement requested.');
+        return back()->with('status', 'Payment marked not verified. Customer may submit a new Transaction ID.');
     }
 
     public function paymentProof(DiningSession $diningSession): Response

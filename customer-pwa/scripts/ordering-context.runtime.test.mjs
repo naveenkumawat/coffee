@@ -168,6 +168,16 @@ test('stale persisted shapes normalize safely', async () => {
   assert.equal(fromLegacy.tableLabel, 'Patio 2');
 });
 
+test('isDiningSessionTerminal covers paid closed and cancelled', async () => {
+  const mod = await loadOrderingContextModule();
+
+  assert.equal(mod.isDiningSessionTerminal({ status: 'awaiting_payment', payment_status: 'awaiting_review' }), false);
+  assert.equal(mod.isDiningSessionTerminal({ status: 'awaiting_payment', payment_status: 'confirmed' }), true);
+  assert.equal(mod.isDiningSessionTerminal({ status: 'closed', payment_status: 'confirmed' }), true);
+  assert.equal(mod.isDiningSessionTerminal({ status: 'cancelled', payment_status: 'pending' }), true);
+  assert.equal(mod.isDiningSessionTerminal({ status: 'paid', payment_status: 'confirmed' }), true);
+});
+
 test('hook source uses cached getSnapshot (no unstable retail object)', () => {
   // Keep TypeScript available for runtime tests above; also assert package resolves.
   assert.equal(typeof require('typescript').transpileModule, 'function');

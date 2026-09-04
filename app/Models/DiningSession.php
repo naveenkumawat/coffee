@@ -183,7 +183,46 @@ class DiningSession extends AbstractModel
             return false;
         }
 
-        return $this->payment_status !== PaymentStatus::Confirmed;
+        if ($this->payment_status === PaymentStatus::Confirmed) {
+            return false;
+        }
+
+        // Locked while staff reviews the submitted UTR / historical proof.
+        if ($this->payment_status === PaymentStatus::AwaitingReview) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function canResubmitManualPaymentEvidence(): bool
+    {
+        return $this->canSubmitManualPaymentEvidence()
+            && $this->payment_status === PaymentStatus::Rejected;
+    }
+
+    public function canChangePaymentMethod(): bool
+    {
+        if (! $this->hasFinalizedBill()) {
+            return false;
+        }
+
+        if ($this->payment_status === PaymentStatus::Confirmed) {
+            return false;
+        }
+
+        if ($this->payment_status === PaymentStatus::AwaitingReview) {
+            return false;
+        }
+
+        if ($this->hasManualPaymentEvidence()) {
+            return false;
+        }
+
+        return in_array($this->status, [
+            DiningSessionStatus::BillingRequested,
+            DiningSessionStatus::AwaitingPayment,
+        ], true);
     }
 
     public function clearPaymentProofFiles(): void

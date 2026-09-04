@@ -123,6 +123,8 @@ export interface DiningSession {
   payment_status?: string | null;
   payment_status_label?: string | null;
   payment_transaction_id?: string | null;
+  payment_transaction_submitted_at?: string | null;
+  payment_rejection_reason?: string | null;
   payment_proof?: {
     uploaded?: boolean;
     transaction_id?: string | null;
@@ -135,6 +137,8 @@ export interface DiningSession {
     can_add_rounds: boolean;
     can_upload_payment_proof: boolean;
     can_submit_transaction_id?: boolean;
+    can_resubmit_transaction_id?: boolean;
+    can_change_payment_method?: boolean;
     can_pay?: boolean;
     can_call_waiter?: boolean;
   };

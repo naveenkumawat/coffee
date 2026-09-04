@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
@@ -24,6 +24,7 @@ import {
   clearOrderingContext,
   diningDraftItemCount,
   diningMenuPath,
+  isDiningSessionTerminal,
   writeOrderingContext,
 } from '../utils/orderingContext';
 
@@ -110,17 +111,41 @@ export function DiningSessionPage() {
   const [busy, setBusy] = useState(false);
   const [busyDraftId, setBusyDraftId] = useState<number | null>(null);
   const [expandedRoundIds, setExpandedRoundIds] = useState<number[]>([]);
+  const leavingTerminalRef = useRef(false);
+
+  const leaveCompletedSession = useCallback((): void => {
+    if (leavingTerminalRef.current) {
+      return;
+    }
+
+    leavingTerminalRef.current = true;
+    clearOrderingContext();
+    navigate('/dining', { replace: true });
+  }, [navigate]);
+
+  const applySession = useCallback(
+    (next: DiningSession): void => {
+      if (isDiningSessionTerminal(next)) {
+        leaveCompletedSession();
+
+        return;
+      }
+
+      setSession(next);
+      writeOrderingContext({
+        type: 'dining',
+        diningSessionId: String(next.id),
+        tableLabel: next.table.label,
+        draftItemCount: diningDraftItemCount(next.drafts),
+      });
+    },
+    [leaveCompletedSession],
+  );
 
   const reload = useCallback(async (): Promise<void> => {
     const response = await fetchDiningSession(sessionId);
-    setSession(response.data);
-    writeOrderingContext({
-      type: 'dining',
-      diningSessionId: sessionId,
-      tableLabel: response.data.table.label,
-      draftItemCount: diningDraftItemCount(response.data.drafts),
-    });
-  }, [sessionId]);
+    applySession(response.data);
+  }, [applySession, sessionId]);
 
   useLiveCanonicalSync(
     () => {
@@ -148,6 +173,7 @@ export function DiningSessionPage() {
   );
 
   useEffect(() => {
+    leavingTerminalRef.current = false;
     writeOrderingContext({ type: 'dining', diningSessionId: sessionId });
 
     let cancelled = false;
@@ -156,13 +182,7 @@ export function DiningSessionPage() {
       try {
         const response = await fetchDiningSession(sessionId);
         if (!cancelled) {
-          setSession(response.data);
-          writeOrderingContext({
-            type: 'dining',
-            diningSessionId: sessionId,
-            tableLabel: response.data.table.label,
-            draftItemCount: diningDraftItemCount(response.data.drafts),
-          });
+          applySession(response.data);
         }
       } catch (err) {
         if (!cancelled) {
@@ -174,7 +194,7 @@ export function DiningSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [applySession, sessionId]);
 
   async function run(action: () => Promise<void>): Promise<void> {
     setBusy(true);

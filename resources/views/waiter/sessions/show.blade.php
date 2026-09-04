@@ -24,7 +24,7 @@
         'bill' => $bill,
         'showAdminMeta' => false,
         'invoiceRoute' => route('waiter.sessions.invoice', $session),
-        'actions' => view('waiter.sessions.partials.actions', compact('session')),
+        'actionsView' => 'waiter.sessions.partials.actions',
     ])
 
     @if (($diningTiming['bill_requested_elapsed_seconds'] ?? null) !== null)

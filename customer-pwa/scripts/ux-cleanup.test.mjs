@@ -253,6 +253,7 @@ test('orderingContext caches snapshots and hardens stale dining shapes', () => {
   assert.match(source, /subscribeOrderingContext/);
   assert.match(source, /coffee:ordering-context/);
   assert.match(source, /isDiningOrderingContext/);
+  assert.match(source, /isDiningSessionTerminal/);
   assert.match(source, /normalizeOrderingContext/);
   assert.match(source, /RETAIL_ORDERING_CONTEXT/);
   assert.match(source, /cachedRaw/);
@@ -267,23 +268,49 @@ test('orderingContext caches snapshots and hardens stale dining shapes', () => {
   assert.doesNotMatch(hook, /getSnapshot[\s\S]{0,80}return\s*\{\s*type:\s*['"]retail['"]/);
 });
 
+test('dining session and bill pages leave completed sessions for /dining', () => {
+  const session = readSrc('pages/DiningSessionPage.tsx');
+  assert.match(session, /isDiningSessionTerminal/);
+  assert.match(session, /clearOrderingContext/);
+  assert.match(session, /navigate\(['"`]\/dining['"`],\s*\{\s*replace:\s*true/);
+  assert.match(session, /useDiningOpsSync/);
+  assert.match(session, /useLiveCanonicalSync/);
+
+  const menu = readSrc('pages/DiningMenuPage.tsx');
+  assert.match(menu, /isDiningSessionTerminal/);
+  assert.match(menu, /clearOrderingContext/);
+  assert.match(menu, /navigate\(['"`]\/dining['"`],\s*\{\s*replace:\s*true/);
+});
+
 test('dining bill payment uses catalog methods and UTR not screenshot upload', () => {
   const bill = readSrc('pages/DiningBillPage.tsx');
   assert.match(bill, /PaymentMethodSelector/);
   assert.match(bill, /submitDiningPaymentTransactionId/);
   assert.match(bill, /Transaction ID \/ UTR/);
   assert.match(bill, /Verification Pending/);
-  assert.match(bill, /Back to table/);
   assert.match(bill, /OrderTaxBreakdown/);
   assert.match(bill, /diningDiscountLines/);
+  assert.match(bill, /can_resubmit_transaction_id/);
+  assert.match(bill, /Submit new transaction ID/);
+  assert.match(bill, /showUtrForm/);
+  assert.match(bill, /Payment confirmed/);
+  assert.match(bill, /Your table session is complete/);
+  assert.match(bill, /clearOrderingContext/);
+  assert.match(bill, /isDiningSessionTerminal/);
+  assert.match(bill, /navigate\(['"`]\/dining['"`],\s*\{\s*replace:\s*true/);
+  assert.match(bill, /useDiningOpsSync/);
+  assert.match(bill, /useLiveCanonicalSync/);
+  assert.match(bill, /Back to table/);
   assert.doesNotMatch(bill, /type=["']file["']/);
   assert.doesNotMatch(bill, /Upload proof/i);
   assert.doesNotMatch(bill, /UPI payment proof/i);
-  assert.doesNotMatch(bill, /clearOrderingContext/);
+  assert.doesNotMatch(bill, /Resubmit for Verification/);
+  assert.doesNotMatch(bill, /Replace Transaction ID/);
   assert.doesNotMatch(bill, /<dt>Discount<\/dt>/);
 
   const diningApi = readSrc('api/dining.ts');
   assert.match(diningApi, /submitDiningPaymentTransactionId/);
+  assert.match(diningApi, /can_resubmit_transaction_id/);
   assert.doesNotMatch(diningApi, /uploadDiningPaymentProof/);
   assert.doesNotMatch(diningApi, /FormData/);
 

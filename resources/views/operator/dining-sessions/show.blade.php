@@ -24,7 +24,9 @@
         'bill' => $bill,
         'showAdminMeta' => true,
         'invoiceRoute' => route('operator.dining-sessions.invoice', $session),
-        'actions' => view('operator.dining-sessions.partials.actions', compact('session')),
+        'actionsView' => 'operator.dining-sessions.partials.actions',
+        'paymentCardView' => 'internal.dining.partials.payment-card',
+        'routePrefix' => 'operator',
     ])
 
     @include('internal.dining.partials.rounds-list', ['session' => $session])

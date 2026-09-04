@@ -18,8 +18,10 @@ import { formatCurrency } from '../utils/format';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
 import {
+  clearOrderingContext,
   diningDraftItemCount,
   diningSessionPath,
+  isDiningSessionTerminal,
   writeOrderingContext,
 } from '../utils/orderingContext';
 
@@ -66,6 +68,13 @@ export function DiningMenuPage() {
         ]);
 
         if (cancelled) {
+          return;
+        }
+
+        if (isDiningSessionTerminal(sessionResponse.data)) {
+          clearOrderingContext();
+          navigate('/dining', { replace: true });
+
           return;
         }
 
