@@ -1,4 +1,4 @@
-# Loyalty architecture (P3.1–P3.4)
+# Loyalty architecture (P3.1–P3.5)
 
 Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 
@@ -8,9 +8,11 @@ Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 - **P3.2** Redemption & Reward Rules — **COMPLETE**
 - **P3.3** Customer Loyalty Experience — **COMPLETE**
 - **P3.4** Admin & Operational Reporting — **COMPLETE**
-- **P3.5** Loyalty Intelligence Integration — **NEXT**
+- **P3.5** Loyalty Intelligence Integration — **COMPLETE**
 
-Out of scope through P3.4: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI/auto-tuning, payment gateway, invented production earn rates, automatic historical backfill, monetary valuation of outstanding points. P3.3–P3.4 do **not** change earning/redemption ledger economics.
+**Phase 3 Loyalty & Rewards — DEVELOPMENT COMPLETE / FROZEN**
+
+Out of scope through P3.5: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI/auto-tuning, payment gateway, invented production earn rates, automatic historical backfill, monetary valuation of outstanding points, opaque loyalty score weighting, multi-touch attribution. P3.3–P3.5 do **not** change earning/redemption ledger economics.
 
 ## Flow
 
@@ -152,7 +154,7 @@ When an earn is reversed after points were spent:
 - `next_reward` — server progress toward nearest reachable reward (deterministic by points_cost, id)
 - `available_now` / `locked` / `recently_redeemed` — discovery groups
 - Reward cards: state, `unavailable_message`, `benefit_label`, optional `image_url`
-- `personalisation_summary` — safe fields for future P3.5 (no segment wiring yet)
+- `personalisation_summary` — customer-safe loyalty intelligence signals (wired in P3.5)
 - Activity: customer labels only; may include `order_number`; no metadata/idempotency/source internals
 
 Hub discovery uses a high merchandise basis when the cart is empty so points-based discount rewards can appear before checkout; checkout still recalculates against the real cart.
@@ -182,6 +184,34 @@ Reward ops: activate/pause/archive/duplicate; bulk pause/activate with per-row v
 
 CSV exports (same `streamDownload` pattern as financial reports): ledger, balances, redemptions — no raw idempotency keys.
 
-## Future
+### Loyalty intelligence (P3.5)
 
-- **P3.5** Intelligence / segment integration (wire `personalisation_summary`, audience segments, campaign targeting to loyalty surfaces without changing ledger economics)
+```
+Loyalty Ledger / Rewards
+        ↓
+Loyalty Summary Context  (LoyaltyPersonalisationContextService)
+        ↓
+Profiles / Segments / Targeting
+        ↓
+Campaigns + Merchandising
+        ↓
+Customer Experience
+```
+
+**Boundary: intelligence may READ loyalty; intelligence must NOT mutate loyalty economics.**
+
+Request-scoped `loyalty` actor context (via `SegmentService::buildContext`) exposes safe derived signals only:
+
+- `loyalty_enabled`, `has_loyalty_account`, `available_points` (display), `points_band`
+- `has_affordable_reward`, `affordable_reward_count`, nearest reward + `near_reward`
+- `recent_earner` / `recent_redeemer` from **canonical ledger** lookbacks (not `loyalty_reward_selected`)
+- `loyalty_debt`, `redemption_blocked`
+- `eligible_product_ids` / `eligible_category_ids` for explicit recommendation rails
+
+Points bands and lookbacks are centralized in `config/loyalty.php` → `intelligence.*`.
+
+Targeting rule types (shared evaluator): `loyalty_enabled`, `loyalty_points_gte` / `_lte`, `loyalty_points_band`, `loyalty_reward_available` / `_not_available`, `loyalty_near_reward`, `loyalty_recent_redeemer` / `_earner`, `loyalty_debt`, `loyalty_redemption_blocked`.
+
+Anonymous visitors: empty loyalty context (no pseudo-account). Tracking disabled: ledger-based signals still work. Context failure: loyalty rules fail closed; generic campaigns/sections/recommendations remain.
+
+Recommendations: optional explicit strategy `loyalty_reward_eligible` only — never default warm/cold weighting. No opaque loyalty score. Campaign→loyalty conversion attribution deferred (no inferred multi-touch).

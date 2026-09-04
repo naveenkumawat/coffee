@@ -170,7 +170,11 @@ class CampaignController extends Controller
             'categoryOptions' => ProductCategory::query()->orderBy('name')->pluck('name', 'id')->all(),
             'promotionOptions' => Promotion::query()->orderBy('name')->pluck('name', 'id')->all(),
             'ruleTypeOptions' => collect($this->ruleValidator->allowedRuleTypes())
-                ->mapWithKeys(fn (string $type): array => [$type => str_replace('_', ' ', ucfirst($type))])
+                ->mapWithKeys(function (string $type): array {
+                    $labels = $this->ruleValidator->ruleTypeLabels();
+
+                    return [$type => $labels[$type] ?? str_replace('_', ' ', ucfirst($type))];
+                })
                 ->all(),
             'operatorOptions' => collect($this->ruleValidator->allowedOperators())
                 ->mapWithKeys(fn (string $op): array => [$op => strtoupper($op)])

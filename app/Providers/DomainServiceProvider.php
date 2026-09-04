@@ -48,6 +48,8 @@ use App\Services\Invoice\OrderInvoiceService;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Launch\LaunchReadinessService;
 use App\Services\Launch\LaunchReadinessServiceInterface;
+use App\Services\Loyalty\LoyaltyPersonalisationContextService;
+use App\Services\Loyalty\LoyaltyPersonalisationContextServiceInterface;
 use App\Services\Loyalty\LoyaltyReportingService;
 use App\Services\Loyalty\LoyaltyReportingServiceInterface;
 use App\Services\Loyalty\LoyaltyRewardCatalogService;
@@ -157,6 +159,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(LoyaltyRewardServiceInterface::class, LoyaltyRewardService::class);
         $this->app->bind(LoyaltyRewardCatalogServiceInterface::class, LoyaltyRewardCatalogService::class);
         $this->app->bind(LoyaltyReportingServiceInterface::class, LoyaltyReportingService::class);
+        $this->app->bind(LoyaltyPersonalisationContextServiceInterface::class, LoyaltyPersonalisationContextService::class);
         $this->app->bind(ProductRatingServiceInterface::class, ProductRatingService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);

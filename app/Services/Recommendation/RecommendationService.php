@@ -16,6 +16,7 @@ use App\Services\Recommendation\Strategies\CartContextStrategy;
 use App\Services\Recommendation\Strategies\FavouriteStrategy;
 use App\Services\Recommendation\Strategies\FeaturedStrategy;
 use App\Services\Recommendation\Strategies\FrequentlyBoughtTogetherStrategy;
+use App\Services\Recommendation\Strategies\LoyaltyRewardEligibleStrategy;
 use App\Services\Recommendation\Strategies\NewArrivalStrategy;
 use App\Services\Recommendation\Strategies\PopularStrategy;
 use App\Services\Recommendation\Strategies\RepeatedInterestStrategy;
@@ -45,6 +46,7 @@ class RecommendationService implements RecommendationServiceInterface
         BestsellerStrategy $bestseller,
         FrequentlyBoughtTogetherStrategy $fbt,
         CartContextStrategy $cartContext,
+        LoyaltyRewardEligibleStrategy $loyaltyRewardEligible,
     ) {
         $this->strategies = [
             $buyAgain->key() => $buyAgain,
@@ -59,6 +61,7 @@ class RecommendationService implements RecommendationServiceInterface
             $bestseller->key() => $bestseller,
             $fbt->key() => $fbt,
             $cartContext->key() => $cartContext,
+            $loyaltyRewardEligible->key() => $loyaltyRewardEligible,
         ];
     }
 

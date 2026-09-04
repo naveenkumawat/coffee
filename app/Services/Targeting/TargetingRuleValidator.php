@@ -41,6 +41,73 @@ class TargetingRuleValidator
             'location_city',
             'location_zone',
             'location_available',
+            'loyalty_enabled',
+            'loyalty_points_gte',
+            'loyalty_points_lte',
+            'loyalty_points_band',
+            'loyalty_reward_available',
+            'loyalty_reward_not_available',
+            'loyalty_near_reward',
+            'loyalty_recent_redeemer',
+            'loyalty_recent_earner',
+            'loyalty_debt',
+            'loyalty_redemption_blocked',
+        ];
+    }
+
+    /**
+     * Human-readable labels for Admin rule builders.
+     *
+     * @return array<string, string>
+     */
+    public function ruleTypeLabels(): array
+    {
+        return [
+            'identity' => 'Identity',
+            'has_sufficient_evidence' => 'Has sufficient evidence',
+            'category_affinity' => 'Category affinity',
+            'product_affinity' => 'Product affinity',
+            'flavour_affinity' => 'Flavour affinity',
+            'favourite_product' => 'Favourite product',
+            'has_favourites' => 'Has favourites',
+            'favourite_count' => 'Favourite count',
+            'previous_purchase' => 'Previous purchase',
+            'repeat_purchase' => 'Repeat purchase',
+            'purchased_category' => 'Purchased category',
+            'recent_product' => 'Recent product',
+            'recent_category' => 'Recent category',
+            'min_interactions' => 'Min interactions',
+            'spend_band' => 'Spend band',
+            'time_of_day' => 'Time of day',
+            'completed_orders' => 'Completed orders',
+            'first_order' => 'First order',
+            'returning_buyer' => 'Returning buyer',
+            'last_purchase_days' => 'Last purchase days',
+            'orders_per_30d' => 'Orders per 30d',
+            'days_since_activity' => 'Days since activity',
+            'returning_visitor' => 'Returning visitor',
+            'new_visitor' => 'New visitor',
+            'location_city' => 'Location city',
+            'location_zone' => 'Location zone',
+            'location_available' => 'Location available',
+            'loyalty_enabled' => 'Loyalty enabled',
+            'loyalty_points_gte' => 'Points at least',
+            'loyalty_points_lte' => 'Points at most',
+            'loyalty_points_band' => 'Loyalty points band',
+            'loyalty_reward_available' => 'Reward available',
+            'loyalty_reward_not_available' => 'Reward not available',
+            'loyalty_near_reward' => 'Near next reward',
+            'loyalty_recent_redeemer' => 'Redeemed recently',
+            'loyalty_recent_earner' => 'Earned recently',
+            'loyalty_debt' => 'Loyalty debt',
+            'loyalty_redemption_blocked' => 'Redemption blocked',
+            'current_product' => 'Current product',
+            'current_category' => 'Current category',
+            'cart_contains_product' => 'Cart contains product',
+            'cart_contains_category' => 'Cart contains category',
+            'fulfilment_method' => 'Fulfilment method',
+            'segment_matches' => 'Segment matches',
+            'segment_not_matches' => 'Segment not matches',
         ];
     }
 

@@ -16,6 +16,7 @@ class LoyaltyRewardService implements LoyaltyRewardServiceInterface
 {
     public function __construct(
         protected LoyaltyServiceInterface $loyalty,
+        protected LoyaltyPersonalisationContextServiceInterface $personalisationContext,
     ) {}
 
     public function redemptionEnabled(): bool
@@ -78,6 +79,11 @@ class LoyaltyRewardService implements LoyaltyRewardServiceInterface
         $locked = array_values(array_filter($rewards, static fn (array $reward): bool => ! (bool) $reward['eligible']));
         $nextReward = $this->resolveNextRewardProgress($rewards, $displayPoints, $inDebt, $enabled);
         $recentlyRedeemed = $this->recentlyRedeemedRewards($customer, 5);
+        $signals = $this->personalisationContext->forActor($customer, [
+            'available_now' => $availableNow,
+            'next_reward' => $nextReward,
+            'recently_redeemed_rewards' => $recentlyRedeemed,
+        ]);
 
         return [
             'rewards' => $rewards,
@@ -85,14 +91,7 @@ class LoyaltyRewardService implements LoyaltyRewardServiceInterface
             'locked' => $locked,
             'recently_redeemed' => $recentlyRedeemed,
             'next_reward' => $nextReward,
-            'personalisation_summary' => [
-                'available_points' => $displayPoints,
-                'has_points_debt' => $inDebt,
-                'reward_available' => $availableNow !== [],
-                'nearest_reward_id' => $nextReward['reward_id'] ?? null,
-                'nearest_reward_progress_percent' => $nextReward['progress_percent'] ?? null,
-                'recently_redeemed' => $recentlyRedeemed !== [],
-            ],
+            'personalisation_summary' => $this->personalisationContext->toCustomerSafeSummary($signals),
         ];
     }
 

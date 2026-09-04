@@ -67,4 +67,25 @@ return [
     ),
 
     'history_limit' => (int) env('COFFEE_LOYALTY_HISTORY_LIMIT', 20),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Intelligence (P3.5) — read-only signals for segments/campaigns/merchandising
+    |--------------------------------------------------------------------------
+    |
+    | Intelligence may READ loyalty state. It must never mutate ledger economics.
+    | Thresholds stay centralized here — do not hardcode band meaning in call sites.
+    |
+    */
+    'intelligence' => [
+        'near_reward_max_points_needed' => (int) env('COFFEE_LOYALTY_NEAR_REWARD_MAX', 50),
+        'recent_earn_lookback_days' => (int) env('COFFEE_LOYALTY_RECENT_EARN_DAYS', 14),
+        'recent_redeem_lookback_days' => (int) env('COFFEE_LOYALTY_RECENT_REDEEM_DAYS', 30),
+        'points_bands' => [
+            'none' => ['min' => 0, 'max' => 0],
+            'low' => ['min' => 1, 'max' => 99],
+            'medium' => ['min' => 100, 'max' => 499],
+            'high' => ['min' => 500, 'max' => null],
+        ],
+    ],
 ];

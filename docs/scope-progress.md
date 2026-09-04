@@ -426,7 +426,7 @@ Status: Pending (explicitly deferred; not launch-blocking)
 - [ ] QR menu implemented
 - [x] Table ordering / dine-in order mode implemented (Dining D1–L1.2; Waiter + customer session flow)
 - [x] Delivery order mode implemented (third-party arrangement; café does not collect delivery fee; disclaimer configurable; no courier API)
-- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented (promotions/referrals exist in Phase 1; **P3.1–P3.4 loyalty complete**; wallet/tiers/intelligence still later)
+- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented (promotions/referrals exist in Phase 1; **P3.1–P3.5 loyalty complete / frozen**; wallet/tiers still later)
 - [x] Ratings and reviews implemented
 - [ ] Order scheduling implemented
 - [ ] Advanced purchasing, suppliers, expenses, tax/GST, barcode, printer, and display integrations implemented
@@ -507,4 +507,6 @@ Canonical: `docs/loyalty-architecture.md`.
 - [x] **P3.2** — Redemption & reward rules (complete)
 - [x] **P3.3** — Customer loyalty experience (complete)
 - [x] **P3.4** — Admin & operational reporting (complete)
-- [ ] **P3.5** — Loyalty intelligence integration (next)
+- [x] **P3.5** — Loyalty intelligence integration (complete)
+
+**Phase 3 Loyalty & Rewards — DEVELOPMENT COMPLETE / FROZEN** (ledger/pricing economics unchanged; Phase-1/2 freeze unchanged).

@@ -54,12 +54,25 @@ export interface LoyaltyRecentlyRedeemed {
 }
 
 export interface LoyaltyPersonalisationSummary {
+  loyalty_enabled?: boolean;
+  has_loyalty_account?: boolean;
   available_points: number;
-  has_points_debt: boolean;
+  points_band?: 'none' | 'low' | 'medium' | 'high' | string;
+  has_affordable_reward?: boolean;
+  affordable_reward_count?: number;
   reward_available: boolean;
   nearest_reward_id: number | null;
+  nearest_reward_points_needed?: number | null;
   nearest_reward_progress_percent: number | null;
+  near_reward?: boolean;
+  recent_redeemer?: boolean;
+  recent_earner?: boolean;
   recently_redeemed: boolean;
+  loyalty_debt?: boolean;
+  has_points_debt?: boolean;
+  redemption_blocked?: boolean;
+  eligible_product_ids?: number[];
+  eligible_category_ids?: number[];
 }
 
 export interface LoyaltyPayload {

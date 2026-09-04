@@ -110,6 +110,17 @@ class TargetingRuleEvaluator
             'location_available' => (bool) ($context['location_available'] ?? false),
             'returning_visitor' => (bool) ($context['is_returning_visitor'] ?? false),
             'new_visitor' => ! (bool) ($context['is_returning_visitor'] ?? false),
+            'loyalty_enabled' => (bool) ($this->loyalty($context)['loyalty_enabled'] ?? false),
+            'loyalty_points_gte' => (int) ($this->loyalty($context)['available_points'] ?? 0),
+            'loyalty_points_lte' => (int) ($this->loyalty($context)['available_points'] ?? 0),
+            'loyalty_points_band' => (string) ($this->loyalty($context)['points_band'] ?? 'none'),
+            'loyalty_reward_available' => (bool) ($this->loyalty($context)['has_affordable_reward'] ?? false),
+            'loyalty_reward_not_available' => ! (bool) ($this->loyalty($context)['has_affordable_reward'] ?? false),
+            'loyalty_near_reward' => (bool) ($this->loyalty($context)['near_reward'] ?? false),
+            'loyalty_recent_redeemer' => (bool) ($this->loyalty($context)['recent_redeemer'] ?? false),
+            'loyalty_recent_earner' => (bool) ($this->loyalty($context)['recent_earner'] ?? false),
+            'loyalty_debt' => (bool) ($this->loyalty($context)['loyalty_debt'] ?? false),
+            'loyalty_redemption_blocked' => (bool) ($this->loyalty($context)['redemption_blocked'] ?? false),
             default => null,
         };
 
@@ -133,6 +144,11 @@ class TargetingRuleEvaluator
             return $customer !== null && (int) ($context['completed_order_count'] ?? 0) >= 1;
         }
 
+        // Fail closed when loyalty context failed or is missing for loyalty rules.
+        if (str_starts_with($type, 'loyalty_') && (bool) ($this->loyalty($context)['context_failed'] ?? false)) {
+            return false;
+        }
+
         // Fail closed when required evidence is missing.
         if (in_array($type, ['last_purchase_days', 'orders_per_30d', 'days_since_activity'], true) && $actual === null) {
             return false;
@@ -146,7 +162,24 @@ class TargetingRuleEvaluator
             return false;
         }
 
+        if ($type === 'loyalty_points_gte') {
+            return $this->compare($actual, 'gte', $value);
+        }
+
+        if ($type === 'loyalty_points_lte') {
+            return $this->compare($actual, 'lte', $value);
+        }
+
         return $this->compare($actual, $op, $value);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    protected function loyalty(array $context): array
+    {
+        return is_array($context['loyalty'] ?? null) ? $context['loyalty'] : [];
     }
 
     protected function compare(mixed $actual, string $op, mixed $expected): bool

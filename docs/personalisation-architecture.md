@@ -231,7 +231,9 @@ Campaigns reference active segment ids; they do **not** copy segment rule JSON. 
 
 Thresholds (order counts, lapse days, frequency, etc.) are configured per segment rule — no invented café-wide business defaults.
 
-No `segment_matched` behaviour events (membership is derived state). Tracking-disabled semantics follow P2.1/P2.2 (behaviour omitted; completed-order signals remain). Location-dependent segment rules use the same explicit location context as P2.4 and fail closed when unavailable.
+P3.5 adds loyalty-derived targeting types (points bands, reward available, near reward, debt, recent earn/redeem) via the same evaluator. Actor context is hydrated once per request through `SegmentService::buildContext` → `LoyaltyPersonalisationContextService` (read-only; no ledger mutation). Guests never receive customer loyalty context.
+
+No `segment_matched` behaviour events (membership is derived state). Tracking-disabled semantics follow P2.1/P2.2 (behaviour omitted; completed-order **and canonical loyalty ledger** signals remain). Location-dependent segment rules use the same explicit location context as P2.4 and fail closed when unavailable.
 
 ### Admin
 
@@ -309,11 +311,11 @@ Profiles + Segments + Recommendations + Campaigns
 
 ### Section sources
 
-Curated/manual, recommendation rail, strategy-backed rails (`buy_again`, `favourite`, `repeated_interest`, `affinity`, `trending`, `popular`, `new_arrival`, `featured`, `bestseller`), category, and tag. Recommendation-backed rails reuse `RecommendationService`. Targeting reuses `TargetingRuleEvaluator` + segment ids.
+Curated/manual, recommendation rail, strategy-backed rails (`buy_again`, `favourite`, `repeated_interest`, `affinity`, `trending`, `popular`, `new_arrival`, `featured`, `bestseller`), category, and tag. Recommendation-backed rails reuse `RecommendationService`. Targeting reuses `TargetingRuleEvaluator` + segment ids (including P3.5 loyalty signals). Explicit `loyalty_reward_eligible` strategy may be requested for a “use your reward” rail; it is not part of default warm/cold ranking.
 
 ### Fallback
 
-Tracking disabled / no visitor / no profile / no segments / empty recommendation evidence → existing curated Home/Menu content. Orchestration failures fall back to curated sections and must not yield an empty/broken page.
+Tracking disabled / no visitor / no profile / no segments / empty recommendation evidence / loyalty context failure → existing curated Home/Menu content. Loyalty-targeted sections are skipped when signals fail closed. Orchestration failures fall back to curated sections and must not yield an empty/broken page.
 
 ### Admin
 

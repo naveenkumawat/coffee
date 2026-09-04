@@ -177,7 +177,11 @@ class AudienceSegmentController extends Controller
             'statusOptions' => AudienceSegmentStatus::options(),
             'actorOptions' => AudienceSegmentActor::options(),
             'ruleTypeOptions' => collect($this->ruleValidator->segmentRuleTypes())
-                ->mapWithKeys(fn (string $type): array => [$type => str_replace('_', ' ', ucfirst($type))])
+                ->mapWithKeys(function (string $type): array {
+                    $labels = $this->ruleValidator->ruleTypeLabels();
+
+                    return [$type => $labels[$type] ?? str_replace('_', ' ', ucfirst($type))];
+                })
                 ->all(),
             'operatorOptions' => collect($this->ruleValidator->allowedOperators())
                 ->mapWithKeys(fn (string $op): array => [$op => strtoupper($op)])

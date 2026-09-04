@@ -421,7 +421,7 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Config: `coffee.behaviour.*` including `profile`, `recommendations`, `campaigns`, `segments`, `attribution`, and `merchandising`.
 * Detail: `docs/personalisation-architecture.md`. Phase-1 freeze unchanged.
 
-## Loyalty & rewards (P3.1–P3.4)
+## Loyalty & rewards (P3.1–P3.5)
 
 * `loyalty_accounts` + immutable `loyalty_point_transactions` ledger; cached balances stay transactional with ledger writes.
 * `loyalty_rewards` catalog (separate from Promotions) with order snapshots for historical invoices.
@@ -429,7 +429,8 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Stacking: catalog → promotions → loyalty discount → tax. Debt policy allows negative `available_points` on earn reversal after spend (never silent clamp).
 * P3.3 customer hub: progress, discovery groups, safe activity, cart/checkout clarity, order `loyalty_feedback` (no async earn prediction).
 * P3.4 Admin: Loyalty Operations aggregates/exports, adjustment audit, reward bulk pause/activate; outstanding points labeled as points (not cash liability).
-* Detail: `docs/loyalty-architecture.md`. Phase-1 and Phase-2 freeze unchanged.
+* P3.5: `LoyaltyPersonalisationContextService` feeds safe loyalty signals into shared TargetingRuleEvaluator → segments/campaigns/merchandising; optional explicit `loyalty_reward_eligible` recommendation strategy only. Intelligence reads loyalty; never mutates economics.
+* Detail: `docs/loyalty-architecture.md`. Phase-1 and Phase-2 freeze unchanged. **Phase 3 loyalty track frozen.**
 
 ## Mobile ordering journey hardening (C2)
 

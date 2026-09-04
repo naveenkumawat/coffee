@@ -33,6 +33,14 @@ class CampaignRuleValidator
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function ruleTypeLabels(): array
+    {
+        return $this->targeting->ruleTypeLabels();
+    }
+
+    /**
      * @param  array<string, mixed>  $rules
      * @return array{all: list<array<string, mixed>>, any: list<array<string, mixed>>, exclude: list<array<string, mixed>>}
      */

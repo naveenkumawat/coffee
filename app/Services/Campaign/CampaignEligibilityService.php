@@ -70,30 +70,23 @@ class CampaignEligibilityService implements CampaignEligibilityServiceInterface
             $profile = $this->profiles->profilePayloadForVisitor($visitorKey);
         }
 
-        $context = [
-            'placement' => $placement,
-            'customer' => $customer,
+        $context = $this->segments->buildContext([
             'visitor_key' => $visitorKey,
-            'session_key' => $sessionKey,
-            'product_id' => isset($input['product_id']) ? (int) $input['product_id'] : null,
-            'category_id' => isset($input['category_id']) ? (int) $input['category_id'] : null,
-            'cart_product_ids' => array_values(array_unique(array_filter(array_map('intval', $input['cart_product_ids'] ?? [])))),
-            'fulfilment_method' => isset($input['fulfilment_method']) ? trim((string) $input['fulfilment_method']) : null,
-            'location_city' => isset($input['location_city']) ? trim((string) $input['location_city']) : null,
-            'location_zone' => isset($input['location_zone']) ? trim((string) $input['location_zone']) : null,
-            'location_available' => (bool) ($input['location_available'] ?? false),
-            'profile' => $profile,
-            'completed_order_count' => $this->evaluator->completedOrderCount($customer),
-            'favourite_ids' => $customer !== null
-                ? $this->favourites->productIdsForCustomer($customer)->map(fn ($id): int => (int) $id)->all()
-                : [],
-            'purchased_product_ids' => $this->evaluator->purchasedProductIds($customer),
-            'purchased_category_ids' => $this->evaluator->purchasedCategoryIds($customer),
-            'last_purchase_days' => $this->evaluator->lastPurchaseDays($customer),
-            'is_returning_visitor' => $this->evaluator->isReturningVisitor($visitorKey, $customer),
-        ];
+            'product_id' => $input['product_id'] ?? null,
+            'category_id' => $input['category_id'] ?? null,
+            'cart_product_ids' => $input['cart_product_ids'] ?? [],
+            'fulfilment_method' => $input['fulfilment_method'] ?? null,
+            'location_city' => $input['location_city'] ?? null,
+            'location_zone' => $input['location_zone'] ?? null,
+            'location_available' => $input['location_available'] ?? false,
+        ], $customer);
 
-        $context['cart_category_ids'] = $this->evaluator->cartCategoryIds($context['cart_product_ids']);
+        $context['placement'] = $placement;
+        $context['session_key'] = $sessionKey;
+        // Preserve any profile already loaded for campaign-specific reads.
+        if ($profile !== null) {
+            $context['profile'] = $profile;
+        }
 
         $candidates = $this->activeCampaigns($surface)
             ->filter(fn (Campaign $campaign): bool => $campaign->isSchedulableNow())

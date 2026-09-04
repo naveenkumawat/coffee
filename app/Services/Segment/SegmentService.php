@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Models\AudienceSegment;
 use App\Models\User;
 use App\Services\Favourite\FavouriteServiceInterface;
+use App\Services\Loyalty\LoyaltyPersonalisationContextServiceInterface;
 use App\Services\Personalisation\PersonalisationProfileServiceInterface;
 use App\Services\Targeting\TargetingRuleEvaluator;
 use Illuminate\Support\Collection;
@@ -19,6 +20,7 @@ class SegmentService implements SegmentServiceInterface
         protected PersonalisationProfileServiceInterface $profiles,
         protected FavouriteServiceInterface $favourites,
         protected TargetingRuleEvaluator $evaluator,
+        protected LoyaltyPersonalisationContextServiceInterface $loyaltyContext,
     ) {}
 
     /**
@@ -243,6 +245,7 @@ class SegmentService implements SegmentServiceInterface
             'purchased_category_ids' => $this->evaluator->purchasedCategoryIds($customer),
             'last_purchase_days' => $this->evaluator->lastPurchaseDays($customer),
             'is_returning_visitor' => $this->evaluator->isReturningVisitor($visitorKey, $customer),
+            'loyalty' => $this->loyaltyContext->forActor($customer),
         ];
     }
 }

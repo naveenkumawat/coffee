@@ -16,6 +16,7 @@ enum RecommendationReason: string
     case NewArrival = 'new_arrival';
     case Featured = 'featured';
     case CompleteYourOrder = 'complete_your_order';
+    case UseLoyaltyReward = 'use_loyalty_reward';
 
     /**
      * @return list<string>
