@@ -22,6 +22,7 @@ class Order extends AbstractModel
         'order_date',
         'daily_sequence',
         'customer_id',
+        'placed_by_user_id',
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -127,6 +128,11 @@ class Order extends AbstractModel
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id')->withTrashed();
+    }
+
+    public function placedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'placed_by_user_id')->withTrashed();
     }
 
     public function assignedBarista(): BelongsTo

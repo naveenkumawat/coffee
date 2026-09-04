@@ -10,6 +10,7 @@ use App\Models\Campaign;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerReferral;
+use App\Models\DiningServiceRequest;
 use App\Models\DiningSession;
 use App\Models\HomeSection;
 use App\Models\Ingredient;
@@ -41,6 +42,7 @@ use App\Policies\CampaignPolicy;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
 use App\Policies\CustomerReferralPolicy;
+use App\Policies\DiningServiceRequestPolicy;
 use App\Policies\DiningSessionPolicy;
 use App\Policies\HomeSectionPolicy;
 use App\Policies\IngredientBrandPolicy;
@@ -78,6 +80,7 @@ class AuthServiceProvider extends ServiceProvider
         Campaign::class => CampaignPolicy::class,
         CafeTable::class => CafeTablePolicy::class,
         DiningSession::class => DiningSessionPolicy::class,
+        DiningServiceRequest::class => DiningServiceRequestPolicy::class,
         HomeSection::class => HomeSectionPolicy::class,
         Ingredient::class => IngredientPolicy::class,
         IngredientBrand::class => IngredientBrandPolicy::class,

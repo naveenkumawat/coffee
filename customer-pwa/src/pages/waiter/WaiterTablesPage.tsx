@@ -14,6 +14,7 @@ import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { useDiningOpsSync } from '../../notifications/useDiningOpsSync';
 import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
+import { AppIcons } from '../../utils/icons';
 import { formatCurrency } from '../../utils/format';
 import { clearRememberedWaiterSession, rememberWaiterSession } from '../../utils/waiterSession';
 
@@ -27,6 +28,23 @@ const STATE_ORDER: WaiterTableDisplayState[] = [
   'available',
   'inactive',
 ];
+
+function serviceRequestPriority(table: WaiterTable): number {
+  const request = table.session?.service_request;
+  if (!request || (request.status !== 'pending' && request.status !== 'claimed')) {
+    return 3;
+  }
+
+  if (request.status === 'pending' && request.is_escalated) {
+    return 0;
+  }
+
+  if (request.status === 'pending') {
+    return 1;
+  }
+
+  return 2;
+}
 
 function displayStateClass(state: WaiterTableDisplayState): string {
   switch (state) {
@@ -66,6 +84,11 @@ export function WaiterTablesPage() {
     try {
       const response = await fetchWaiterTables();
       const sorted = [...response.data].sort((a, b) => {
+        const serviceDelta = serviceRequestPriority(a) - serviceRequestPriority(b);
+        if (serviceDelta !== 0) {
+          return serviceDelta;
+        }
+
         const ai = STATE_ORDER.indexOf(a.display_state);
         const bi = STATE_ORDER.indexOf(b.display_state);
 
@@ -173,6 +196,10 @@ export function WaiterTablesPage() {
           {tables.map((table) => {
             const session = table.session;
             const ready = Boolean(session?.ready_to_serve) || table.display_state === 'ready_to_serve';
+            const serviceRequest = session?.service_request;
+            const hasServiceCall =
+              serviceRequest &&
+              (serviceRequest.status === 'pending' || serviceRequest.status === 'claimed');
 
             return (
               <button
@@ -182,6 +209,7 @@ export function WaiterTablesPage() {
                   'waiter-table-card',
                   displayStateClass(table.display_state),
                   ready ? 'is-ready-highlight' : '',
+                  hasServiceCall ? 'has-service-call' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
@@ -190,7 +218,15 @@ export function WaiterTablesPage() {
                 onClick={() => handleTableTap(table)}
               >
                 <div className="waiter-table-card-top">
-                  <strong>{table.label}</strong>
+                  <strong>
+                    {table.label}
+                    {hasServiceCall ? (
+                      <i
+                        className={`bi ${AppIcons.notification} waiter-table-bell`}
+                        aria-label="Service call pending"
+                      ></i>
+                    ) : null}
+                  </strong>
                   <span className={`waiter-state-chip ${displayStateClass(table.display_state)}`}>
                     {table.display_state_label}
                   </span>
@@ -201,6 +237,7 @@ export function WaiterTablesPage() {
                     <span>
                       {session.round_count} round{session.round_count === 1 ? '' : 's'}
                       {session.has_unsent_draft ? ' · draft' : ''}
+                      {hasServiceCall ? ' · assistance' : ''}
                     </span>
                     <strong>{formatCurrency(session.running_total)}</strong>
                   </div>

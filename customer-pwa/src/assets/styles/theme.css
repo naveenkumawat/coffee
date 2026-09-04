@@ -6872,6 +6872,79 @@ body.product-overlay-open .bottom-navigation {
   color: #1b5e20;
 }
 
+.waiter-service-request-banner {
+  margin-bottom: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.1rem;
+  background: rgba(4, 118, 78, 0.1);
+  border: 1px solid rgba(4, 118, 78, 0.28);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.waiter-service-request-banner strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.waiter-service-request-banner p {
+  margin: 0.3rem 0 0;
+  color: var(--coffee-muted);
+  font-size: 0.9rem;
+}
+
+.waiter-service-request-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.4rem;
+}
+
+.waiter-table-bell {
+  margin-left: 0.35rem;
+  color: var(--brand-primary);
+}
+
+.waiter-table-card.has-service-call {
+  border-color: rgba(4, 118, 78, 0.35);
+}
+
+.dining-waiter-call {
+  margin: 0.75rem 0 1rem;
+}
+
+.dining-waiter-call-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.dining-waiter-call-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1.05rem;
+  background: rgba(4, 118, 78, 0.08);
+  border: 1px solid rgba(4, 118, 78, 0.2);
+}
+
+.dining-waiter-call-status > i {
+  margin-top: 0.15rem;
+  color: var(--brand-primary);
+}
+
+.dining-waiter-call-status strong {
+  display: block;
+}
+
+.dining-waiter-call-status .btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .waiter-ready-banner strong {
   display: block;
   font-size: 1rem;

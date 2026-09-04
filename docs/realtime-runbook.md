@@ -170,6 +170,34 @@ stopwaitsecs=10
 3. After reconnect, Orders/Detail/Dining pages REST-reconcile
 4. Background Web Push is **not** implemented (deferred past R1.7 hardening)
 
+## Customer Call Waiter
+
+Customer with an active open dining session can create a `dining_service_requests` row (`order_assistance`).
+
+```
+First request:
+Customer → Service Request → All Waiters → One Waiter Claims
+
+Later request (latest waiter-assisted round placer):
+Customer → Service Request → Preferred Waiter → 60s → No claim? → All Waiters
+```
+
+Important invariant:
+
+**PREFERRED WAITER ≠ TABLE OWNER**
+
+```
+DINING SESSION
+ ├─ Round 1 — Waiter A
+ ├─ Round 2 — Waiter B
+ ├─ Round 3 — Customer
+ └─ Round 4 — Waiter C
+```
+
+All rounds share the same running bill. Service-request preference is routing only.
+
+DB is canonical. Delayed `EscalateDiningServiceRequestJob` + minute scheduler `coffee:escalate-dining-service-requests` escalate idempotently. Operational notifications: `dining.service_requested` / `dining.service_escalated`. Dining `.dining.ops` signals: `service.requested|claimed|escalated|completed|cancelled`.
+
 ## Served / Delivered-to-table (L1.1)
 
 **Current:** Waiter/Operator/Admin mark a dining **round** Served after all required preparation tickets are Ready (`orders.served_at` / `served_by_user_id`). Preparation Ready ≠ Served; Served ≠ session/order Completed.

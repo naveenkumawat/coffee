@@ -9,6 +9,8 @@ export const REMINDER_ELIGIBLE_TYPES = new Set([
   'order.payment_proof_review',
   'preparation.ticket_pending',
   'dining.ready_to_serve',
+  'dining.service_requested',
+  'dining.service_escalated',
   'escalation.no_barista_online',
   'escalation.no_chef_online',
   'escalation.no_waiter_online',

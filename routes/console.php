@@ -19,3 +19,7 @@ Schedule::command('coffee:personalisation-profiles-rebuild --stale --limit=200')
 Schedule::command('coffee:expire-pending-orders')
     ->everyFifteenMinutes()
     ->withoutOverlapping();
+
+Schedule::command('coffee:escalate-dining-service-requests')
+    ->everyMinute()
+    ->withoutOverlapping();

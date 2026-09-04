@@ -71,6 +71,10 @@ export function notificationActionLabel(path: string | null): string | null {
     return 'View Referral';
   }
 
+  if (path.startsWith('/waiter')) {
+    return 'View Table';
+  }
+
   if (path.startsWith('/dining')) {
     return 'View Dining';
   }

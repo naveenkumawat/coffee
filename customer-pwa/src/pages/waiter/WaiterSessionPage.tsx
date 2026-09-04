@@ -4,7 +4,9 @@ import { ApiError } from '../../api/client';
 import {
   WaiterDiningSession,
   cancelWaiterRound,
+  claimWaiterServiceRequest,
   closeWaiterSession,
+  completeWaiterServiceRequest,
   fetchWaiterSession,
   markWaiterCashReceived,
   markWaiterRoundServed,
@@ -18,6 +20,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { StickyActionBar } from '../../components/common/StickyActionBar';
 import { useDiningOpsSync } from '../../notifications/useDiningOpsSync';
 import { useToastStore } from '../../stores/toastStore';
+import { AppIcons } from '../../utils/icons';
 import { formatCurrency } from '../../utils/format';
 import {
   clearRememberedWaiterSession,
@@ -162,6 +165,13 @@ export function WaiterSessionPage() {
 
   const readyRounds = session.rounds.filter((round) => round.ready_to_serve);
   const closeBlockedReason = caps.close_blocked_reason ?? null;
+  const serviceRequest = session.service_request ?? null;
+  const openServiceRequest =
+    serviceRequest &&
+    (serviceRequest.status === 'pending' || serviceRequest.status === 'claimed')
+      ? serviceRequest
+      : null;
+
   return (
     <div className="page-container waiter-page has-sticky-cta is-sticky-stack">
       <PageHeader
@@ -169,6 +179,55 @@ export function WaiterSessionPage() {
         description={`${session.session_number} · ${session.status_label ?? session.status}`}
         showBack
       />
+
+      {openServiceRequest ? (
+        <section className="waiter-service-request-banner motion-enter" role="status">
+          <div>
+            <strong>
+              <i className={`bi ${AppIcons.notification}`} aria-hidden="true"></i>{' '}
+              {openServiceRequest.is_escalated
+                ? `${session.table.label} still needs assistance`
+                : `${session.table.label} needs assistance`}
+            </strong>
+            <p className="mb-0">
+              {openServiceRequest.status === 'claimed'
+                ? 'Accepted — add a round or mark done when finished.'
+                : 'Customer asked for order assistance.'}
+            </p>
+          </div>
+          <div className="waiter-service-request-actions">
+            {openServiceRequest.status === 'pending' ? (
+              <button
+                type="button"
+                className="btn btn-sm btn-dark rounded-pill"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await claimWaiterServiceRequest(openServiceRequest.id);
+                    return (await fetchWaiterSession(sessionId)).data;
+                  }, 'Request accepted')
+                }
+              >
+                Accept
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-dark rounded-pill"
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await completeWaiterServiceRequest(openServiceRequest.id);
+                    return (await fetchWaiterSession(sessionId)).data;
+                  }, 'Assistance completed')
+                }
+              >
+                Done
+              </button>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {readyRounds.length > 0 ? (
         <section className="waiter-ready-banner motion-enter" role="status" aria-live="polite">

@@ -259,6 +259,11 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             event(new DiningRoundPlaced($order, $locked));
 
+            app(DiningServiceRequestServiceInterface::class)
+                ->completeOpenOrderAssistanceForWaiterRound($locked, $actor);
+            app(DiningServiceRequestServiceInterface::class)
+                ->resolveOpenOrderAssistanceForCustomerSelfOrder($locked, $actor);
+
             return $order;
         });
     }
@@ -1030,6 +1035,7 @@ class DiningSessionService implements DiningSessionServiceInterface
                 'drafts',
                 'orders.items',
                 'orders.preparations',
+                'serviceRequests',
             ])
             ->whereIn('status', [
                 DiningSessionStatus::Open->value,
@@ -1053,6 +1059,8 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             [$displayState, $displayLabel] = $this->waiterDisplayState($table, $session, $state);
             $bill = $session ? $this->displayBill($session) : null;
+            $serviceRequest = $session?->serviceRequests
+                ?->first(static fn ($row): bool => in_array($row->status?->value, ['pending', 'claimed'], true));
 
             return [
                 'table' => $table,
@@ -1075,6 +1083,14 @@ class DiningSessionService implements DiningSessionServiceInterface
                     'ready_to_serve' => $displayState === 'ready_to_serve',
                     'is_preparing' => $displayState === 'preparing',
                     'station_summary' => $this->waiterStationSummary($session),
+                    'service_request' => $serviceRequest ? [
+                        'id' => $serviceRequest->getKey(),
+                        'status' => $serviceRequest->status?->value,
+                        'type' => $serviceRequest->type?->value,
+                        'is_escalated' => $serviceRequest->escalated_at !== null,
+                        'preferred_waiter_user_id' => $serviceRequest->preferred_waiter_user_id,
+                        'claimed_by_user_id' => $serviceRequest->claimed_by_user_id,
+                    ] : null,
                 ] : null,
             ];
         });

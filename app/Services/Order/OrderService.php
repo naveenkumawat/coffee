@@ -1363,6 +1363,7 @@ class OrderService implements OrderServiceInterface
                 'order_date' => $placedAt->toDateString(),
                 'daily_sequence' => $dailySequence,
                 'customer_id' => $session->customer_id,
+                'placed_by_user_id' => $actor->getKey(),
                 'customer_name' => $session->customer_name_snapshot ?: $customer?->name,
                 'customer_email' => $customer?->email,
                 'customer_phone' => $session->customer_phone_snapshot ?: $customer?->phone,

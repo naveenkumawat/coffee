@@ -315,6 +315,8 @@ class OperationalNotificationService implements OperationalNotificationServiceIn
             OperationalNotificationType::OrderPaymentProofReview->value,
             OperationalNotificationType::PreparationTicketPending->value,
             OperationalNotificationType::DiningReadyToServe->value,
+            OperationalNotificationType::DiningServiceRequested->value,
+            OperationalNotificationType::DiningServiceEscalated->value,
             OperationalNotificationType::EscalationNoBaristaOnline->value,
             OperationalNotificationType::EscalationNoChefOnline->value,
             OperationalNotificationType::EscalationNoWaiterOnline->value,

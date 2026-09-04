@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDeliveryAddressController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
+use App\Http\Controllers\Api\V1\Customer\CustomerDiningServiceRequestController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerLoyaltyController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Api\V1\Home\HomeController;
 use App\Http\Controllers\Api\V1\Notification\OperationalNotificationController;
 use App\Http\Controllers\Api\V1\Realtime\RealtimePresenceController;
 use App\Http\Controllers\Api\V1\Waiter\WaiterDiningController;
+use App\Http\Controllers\Api\V1\Waiter\WaiterDiningServiceRequestController;
 use App\Http\Controllers\Api\Webhooks\PaymentWebhookController;
 use App\Http\Middleware\AuthenticateNotificationRequest;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +108,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
     Route::middleware(['auth:sanctum', 'role:waiter'])->prefix('waiter')->name('waiter.')->group(function (): void {
         Route::get('/tables', [WaiterDiningController::class, 'tables'])->name('tables.index');
+        Route::get('/service-requests', [WaiterDiningServiceRequestController::class, 'index'])->name('service-requests.index');
+        Route::post('/service-requests/{serviceRequest}/claim', [WaiterDiningServiceRequestController::class, 'claim'])->name('service-requests.claim');
+        Route::post('/service-requests/{serviceRequest}/complete', [WaiterDiningServiceRequestController::class, 'complete'])->name('service-requests.complete');
         Route::post('/sessions', [WaiterDiningController::class, 'storeSession'])->name('sessions.store');
         Route::get('/sessions/{session}', [WaiterDiningController::class, 'showSession'])->name('sessions.show');
         Route::post('/sessions/{session}/drafts', [WaiterDiningController::class, 'storeDraft'])->name('sessions.drafts.store');
@@ -194,6 +199,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('/sessions/{session}/drafts/{draft}', [CustomerDiningController::class, 'destroyDraft'])->name('sessions.drafts.destroy');
             Route::delete('/sessions/{session}/drafts', [CustomerDiningController::class, 'clearDrafts'])->name('sessions.drafts.clear');
             Route::post('/sessions/{session}/rounds', [CustomerDiningController::class, 'placeRound'])->name('sessions.rounds.store');
+            Route::post('/sessions/{session}/service-requests', [CustomerDiningServiceRequestController::class, 'store'])->name('sessions.service-requests.store');
+            Route::get('/sessions/{session}/service-requests/current', [CustomerDiningServiceRequestController::class, 'current'])->name('sessions.service-requests.current');
+            Route::post('/service-requests/{serviceRequest}/cancel', [CustomerDiningServiceRequestController::class, 'cancel'])->name('service-requests.cancel');
             Route::post('/sessions/{session}/request-bill', [CustomerDiningController::class, 'requestBill'])->name('sessions.request-bill');
             Route::post('/sessions/{session}/payment-method', [CustomerDiningController::class, 'setPaymentMethod'])->name('sessions.payment-method');
             Route::post('/sessions/{session}/payment-proof', [CustomerDiningController::class, 'uploadPaymentProof'])

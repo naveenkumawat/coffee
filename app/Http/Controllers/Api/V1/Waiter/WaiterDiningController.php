@@ -357,6 +357,7 @@ class WaiterDiningController extends Controller
             'drafts.draftAddOns.addOn',
             'orders.items.addOns',
             'orders.preparations',
+            'serviceRequests',
         ]);
     }
 

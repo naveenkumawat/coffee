@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1\Dining;
 
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Models\DiningSession;
+use App\Services\Dining\DiningServiceRequestServiceInterface;
 use App\Services\Dining\DiningSessionServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -96,7 +97,34 @@ class DiningSessionResource extends JsonResource
             'capabilities' => [
                 'can_add_rounds' => $session->allowsNewRounds(),
                 'can_upload_payment_proof' => $session->canUploadPaymentProof(),
+                'can_call_waiter' => $session->allowsNewRounds()
+                    && $session->customer_id !== null
+                    && (int) $session->customer_id === (int) $request->user()?->getKey(),
             ],
+            'service_request' => $this->currentServiceRequestPayload($session),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function currentServiceRequestPayload(DiningSession $session): ?array
+    {
+        $open = null;
+
+        if ($session->relationLoaded('serviceRequests')) {
+            $open = $session->serviceRequests->first(
+                static fn ($row): bool => in_array($row->status?->value, ['pending', 'claimed'], true),
+            );
+        } else {
+            $open = app(DiningServiceRequestServiceInterface::class)
+                ->currentForSession($session);
+        }
+
+        if ($open === null) {
+            return null;
+        }
+
+        return (new DiningServiceRequestResource($open))->resolve();
     }
 }

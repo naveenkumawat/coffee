@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
   DiningSession,
+  callWaiter,
+  cancelWaiterCall,
   clearDiningDrafts,
   fetchDiningSession,
   placeDiningRound,
@@ -14,6 +16,7 @@ import {
 import { fetchMenuCatalogue } from '../api/catalog';
 import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
 import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
+import { AppIcons } from '../utils/icons';
 
 export function DiningSessionPage() {
   const { sessionId = '' } = useParams();
@@ -127,6 +130,8 @@ export function DiningSessionPage() {
   }
 
   const canOrder = session.capabilities?.can_add_rounds ?? session.status === 'open';
+  const canCallWaiter = Boolean(session.capabilities?.can_call_waiter) && canOrder;
+  const serviceRequest = session.service_request ?? null;
   const billTotal = session.totals?.total ?? session.running_bill?.total ?? '0.00';
 
   return (
@@ -143,6 +148,56 @@ export function DiningSessionPage() {
         <p className="form-error-text" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {canCallWaiter || serviceRequest ? (
+        <section className="dining-waiter-call" aria-label="Call a waiter">
+          {serviceRequest && (serviceRequest.status === 'pending' || serviceRequest.status === 'claimed') ? (
+            <div className="dining-waiter-call-status">
+              <i className={`bi ${AppIcons.notification}`} aria-hidden="true"></i>
+              <div>
+                <strong>
+                  {serviceRequest.status === 'claimed' ? 'A waiter is on the way.' : 'Waiter called'}
+                </strong>
+                <p className="muted mb-0">
+                  {serviceRequest.customer_message ??
+                    (serviceRequest.status === 'claimed'
+                      ? 'A waiter is on the way.'
+                      : 'We’ve notified a waiter.')}
+                </p>
+              </div>
+              {serviceRequest.status === 'pending' ? (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-dark rounded-pill"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      await cancelWaiterCall(serviceRequest.id);
+                    })
+                  }
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-outline-dark rounded-pill dining-waiter-call-btn"
+              aria-label="Call a waiter"
+              disabled={busy}
+              onClick={() =>
+                void run(async () => {
+                  await callWaiter(sessionId);
+                })
+              }
+            >
+              <i className={`bi ${AppIcons.notification}`} aria-hidden="true"></i>
+              Call waiter
+            </button>
+          )}
+        </section>
       ) : null}
 
       {canOrder ? (

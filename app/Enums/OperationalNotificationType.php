@@ -25,6 +25,12 @@ enum OperationalNotificationType: string
     /** Dining round: all required station tickets Ready. */
     case DiningReadyToServe = 'dining.ready_to_serve';
 
+    /** Customer called for waiter assistance at a dining table. */
+    case DiningServiceRequested = 'dining.service_requested';
+
+    /** Preferred waiter did not claim — broadcast to all waiters. */
+    case DiningServiceEscalated = 'dining.service_escalated';
+
     case OrderCancelled = 'order.cancelled';
     case OrderRejected = 'order.rejected';
     case PreparationTicketCancelled = 'preparation.ticket_cancelled';

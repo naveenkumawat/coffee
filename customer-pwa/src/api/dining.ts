@@ -29,6 +29,27 @@ export interface DiningDraftItem {
   add_ons?: DiningDraftAddOn[];
 }
 
+export interface DiningServiceRequest {
+  id: number;
+  dining_session_id: number;
+  table_id: number;
+  table_label?: string | null;
+  type: string;
+  type_label?: string;
+  status: 'pending' | 'claimed' | 'completed' | 'cancelled' | string;
+  status_label?: string;
+  preferred_waiter_user_id?: number | null;
+  claimed_by_user_id?: number | null;
+  acknowledged_at?: string | null;
+  escalated_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  created_at?: string | null;
+  customer_message?: string | null;
+  is_escalated?: boolean;
+  action_url?: string | null;
+}
+
 export interface DiningSession {
   id: number;
   session_number: string;
@@ -55,7 +76,9 @@ export interface DiningSession {
   capabilities?: {
     can_add_rounds: boolean;
     can_upload_payment_proof: boolean;
+    can_call_waiter?: boolean;
   };
+  service_request?: DiningServiceRequest | null;
 }
 
 export function fetchDiningTables(): Promise<ApiEnvelope<DiningTableOption[]>> {
@@ -111,6 +134,28 @@ export function placeDiningRound(
   payload: { customer_notes?: string } = {},
 ): Promise<ApiEnvelope<DiningSession>> {
   return post<ApiEnvelope<DiningSession>, typeof payload>(`/dining/sessions/${sessionId}/rounds`, payload);
+}
+
+export function callWaiter(sessionId: number | string): Promise<ApiEnvelope<DiningServiceRequest>> {
+  return post<ApiEnvelope<DiningServiceRequest>, Record<string, never>>(
+    `/dining/sessions/${sessionId}/service-requests`,
+    {},
+  );
+}
+
+export function fetchCurrentWaiterCall(
+  sessionId: number | string,
+): Promise<ApiEnvelope<DiningServiceRequest | null>> {
+  return get<ApiEnvelope<DiningServiceRequest | null>>(`/dining/sessions/${sessionId}/service-requests/current`);
+}
+
+export function cancelWaiterCall(
+  serviceRequestId: number | string,
+): Promise<ApiEnvelope<DiningServiceRequest>> {
+  return post<ApiEnvelope<DiningServiceRequest>, Record<string, never>>(
+    `/dining/service-requests/${serviceRequestId}/cancel`,
+    {},
+  );
 }
 
 export function requestDiningBill(sessionId: number | string): Promise<ApiEnvelope<DiningSession>> {

@@ -29,6 +29,14 @@ export interface WaiterTableSessionSummary {
     status: string;
     status_label?: string;
   }>;
+  service_request?: {
+    id: number;
+    status: string;
+    type?: string;
+    is_escalated?: boolean;
+    preferred_waiter_user_id?: number | null;
+    claimed_by_user_id?: number | null;
+  } | null;
 }
 
 export interface WaiterTable {
@@ -152,10 +160,46 @@ export interface WaiterDiningSession {
     has_unsent_draft?: boolean;
     draft_item_count?: number;
   };
+  service_request?: {
+    id: number;
+    status: string;
+    type?: string;
+    is_escalated?: boolean;
+    preferred_waiter_user_id?: number | null;
+    claimed_by_user_id?: number | null;
+    customer_message?: string | null;
+    table_label?: string | null;
+  } | null;
 }
 
 export function fetchWaiterTables(): Promise<ApiEnvelope<WaiterTable[]>> {
   return get<ApiEnvelope<WaiterTable[]>>('/waiter/tables');
+}
+
+export function fetchWaiterServiceRequests(): Promise<
+  ApiEnvelope<{ pending_count: number; requests: Array<Record<string, unknown>> }>
+> {
+  return get<ApiEnvelope<{ pending_count: number; requests: Array<Record<string, unknown>> }>>(
+    '/waiter/service-requests',
+  );
+}
+
+export function claimWaiterServiceRequest(
+  serviceRequestId: number | string,
+): Promise<ApiEnvelope<Record<string, unknown>>> {
+  return post<ApiEnvelope<Record<string, unknown>>, Record<string, never>>(
+    `/waiter/service-requests/${serviceRequestId}/claim`,
+    {},
+  );
+}
+
+export function completeWaiterServiceRequest(
+  serviceRequestId: number | string,
+): Promise<ApiEnvelope<Record<string, unknown>>> {
+  return post<ApiEnvelope<Record<string, unknown>>, Record<string, never>>(
+    `/waiter/service-requests/${serviceRequestId}/complete`,
+    {},
+  );
 }
 
 export function fetchWaiterSession(sessionId: number | string): Promise<ApiEnvelope<WaiterDiningSession>> {

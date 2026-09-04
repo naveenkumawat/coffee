@@ -121,6 +121,11 @@ class DiningSession extends AbstractModel
         return $this->hasMany(DiningRoundDraft::class)->orderBy('id');
     }
 
+    public function serviceRequests(): HasMany
+    {
+        return $this->hasMany(DiningServiceRequest::class)->orderByDesc('id');
+    }
+
     public function hasFinalizedBill(): bool
     {
         return $this->bill_generated_at !== null && $this->total_amount !== null;

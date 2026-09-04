@@ -28,6 +28,8 @@ use App\Services\Checkout\CheckoutServiceInterface;
 use App\Services\CustomerDeliveryAddress\CustomerDeliveryAddressService;
 use App\Services\CustomerDeliveryAddress\CustomerDeliveryAddressServiceInterface;
 use App\Services\Dining\DiningRealtimePublisher;
+use App\Services\Dining\DiningServiceRequestService;
+use App\Services\Dining\DiningServiceRequestServiceInterface;
 use App\Services\Dining\DiningSessionService;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Favourite\FavouriteService;
@@ -159,6 +161,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(CheckoutServiceInterface::class, CheckoutService::class);
         $this->app->bind(CustomerDeliveryAddressServiceInterface::class, CustomerDeliveryAddressService::class);
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);
+        $this->app->bind(DiningServiceRequestServiceInterface::class, DiningServiceRequestService::class);
         $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
         $this->app->bind(HomeSectionServiceInterface::class, HomeSectionService::class);
         $this->app->bind(MerchandisingServiceInterface::class, MerchandisingService::class);
