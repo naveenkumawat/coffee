@@ -5,6 +5,7 @@
     $fontSize = $widthMm === '58' ? '10px' : '12px';
     $brandSize = $widthMm === '58' ? '12px' : '14px';
     $showDiscount = bccomp($invoice->discountTotal, '0', 2) > 0;
+    $showLoyaltyDiscount = bccomp($invoice->loyaltyDiscountAmount, '0', 2) > 0;
     $showFreeDrink = bccomp($invoice->freeDrinkBenefit, '0', 2) > 0;
     $isCashPayment = strcasecmp($invoice->paymentMethodLabel, 'Cash') === 0;
     $paymentPaid = strcasecmp($invoice->paymentStatusLabel, 'Confirmed') === 0;
@@ -214,6 +215,12 @@
             <tr>
                 <td>Discount</td>
                 <td class="num">− Rs {{ $invoice->discountTotal }}</td>
+            </tr>
+        @endif
+        @if ($showLoyaltyDiscount)
+            <tr>
+                <td>Loyalty reward</td>
+                <td class="num">− Rs {{ $invoice->loyaltyDiscountAmount }}</td>
             </tr>
         @endif
         @if ($showFreeDrink)

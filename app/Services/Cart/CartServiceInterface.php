@@ -38,6 +38,10 @@ interface CartServiceInterface
      *     referral_coupon_discount: string,
      *     referral_rewards: list<array<string, mixed>>,
      *     reward_error: ?string,
+     *     loyalty_discount: string,
+     *     loyalty_reward: ?array<string, mixed>,
+     *     loyalty_rewards: list<array<string, mixed>>,
+     *     loyalty_error: ?string,
      *     total: string,
      *     tax: array<string, mixed>,
      *     has_unavailable_items: bool
@@ -54,4 +58,8 @@ interface CartServiceInterface
     public function applyReferralCouponReward(User $customer, string $code, ?string $fulfilmentMethod = null): Cart;
 
     public function clearReferralRewards(User $customer): Cart;
+
+    public function applyLoyaltyReward(User $customer, int $rewardId, ?string $fulfilmentMethod = null): Cart;
+
+    public function clearLoyaltyReward(User $customer): Cart;
 }

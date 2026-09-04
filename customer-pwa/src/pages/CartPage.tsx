@@ -41,6 +41,8 @@ export function CartPage() {
   const applyFreeDrinkReward = useCartStore((state) => state.applyFreeDrinkReward);
   const applyReferralCoupon = useCartStore((state) => state.applyReferralCoupon);
   const clearReferralRewards = useCartStore((state) => state.clearReferralRewards);
+  const applyLoyaltyReward = useCartStore((state) => state.applyLoyaltyReward);
+  const clearLoyaltyReward = useCartStore((state) => state.clearLoyaltyReward);
   const authStatus = useAuthStore((state) => state.status);
   const availability = useContentStore((state) => selectAvailability(state.content));
   const orderingClosed = Boolean(availability && !availability.available);
@@ -213,6 +215,14 @@ export function CartPage() {
               onClearReferralRewards={async () => {
                 await clearReferralRewards();
                 toastSuccess('Referral reward removed');
+              }}
+              onApplyLoyaltyReward={async (rewardId) => {
+                await applyLoyaltyReward(rewardId);
+                toastSuccess('Loyalty reward applied');
+              }}
+              onClearLoyaltyReward={async () => {
+                await clearLoyaltyReward();
+                toastSuccess('Loyalty reward removed');
               }}
             />
           ) : (

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\CartGuestMergeRequest;
 use App\Http\Requests\Cart\CartItemStoreRequest;
 use App\Http\Requests\Cart\CartItemUpdateRequest;
+use App\Http\Requests\Cart\CartLoyaltyRewardRequest;
 use App\Http\Requests\Cart\CartPromoCodeRequest;
 use App\Http\Resources\Api\V1\CartResource;
 use App\Models\Cart;
@@ -153,6 +154,47 @@ class CustomerCartController extends Controller
         return $this->respondWithResource(
             new CartResource($cart),
             'Promo code removed.',
+            200,
+            [
+                'summary' => $this->cartService->summarize($cart, $fulfilmentMethod),
+            ],
+        );
+    }
+
+    public function applyLoyaltyReward(CartLoyaltyRewardRequest $request): JsonResponse
+    {
+        $cart = $this->cartService->getForCustomer($request->user());
+        $this->authorize('view', $cart);
+
+        $validated = $request->validated();
+        $cart = $this->cartService->applyLoyaltyReward(
+            $request->user(),
+            (int) $validated['loyalty_reward_id'],
+            $validated['fulfilment_method'] ?? null,
+        );
+
+        return $this->respondWithResource(
+            new CartResource($cart),
+            'Loyalty reward applied.',
+            200,
+            [
+                'summary' => $this->cartService->summarize($cart, $validated['fulfilment_method'] ?? null),
+            ],
+        );
+    }
+
+    public function clearLoyaltyReward(Request $request): JsonResponse
+    {
+        $cart = $this->cartService->getForCustomer($request->user());
+        $this->authorize('view', $cart);
+
+        $cart = $this->cartService->clearLoyaltyReward($request->user());
+        $fulfilmentMethod = $request->query('fulfilment_method');
+        $fulfilmentMethod = is_string($fulfilmentMethod) && $fulfilmentMethod !== '' ? $fulfilmentMethod : null;
+
+        return $this->respondWithResource(
+            new CartResource($cart),
+            'Loyalty reward removed.',
             200,
             [
                 'summary' => $this->cartService->summarize($cart, $fulfilmentMethod),

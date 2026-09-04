@@ -15,6 +15,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class LoyaltyService implements LoyaltyServiceInterface
@@ -37,6 +38,7 @@ class LoyaltyService implements LoyaltyServiceInterface
                 'available_points' => 0,
                 'lifetime_earned_points' => 0,
                 'lifetime_redeemed_points' => 0,
+                'lifetime_adjusted_points' => 0,
                 'version' => 1,
             ],
         );
@@ -46,12 +48,18 @@ class LoyaltyService implements LoyaltyServiceInterface
     {
         $account = $this->ensureAccount($customer);
         $limit = max(1, min(50, $historyLimit));
+        $available = (int) $account->available_points;
+        $inDebt = $available < 0;
 
         return [
-            'available_points' => (int) $account->available_points,
+            'available_points' => $available,
             'lifetime_earned_points' => (int) $account->lifetime_earned_points,
             'lifetime_redeemed_points' => (int) $account->lifetime_redeemed_points,
+            'lifetime_adjusted_points' => (int) $account->lifetime_adjusted_points,
+            'has_points_debt' => $inDebt,
+            'debt_message' => $inDebt ? 'Points adjustment pending' : null,
             'earning_enabled' => $this->isEnabled(),
+            'redemption_enabled' => $this->isEnabled() && (bool) config('loyalty.redemption.enabled', true),
             'earning_explanation' => $this->customerExplanation(),
             'recent_transactions' => collect($this->recentTransactions($customer, $limit))
                 ->map(fn (LoyaltyPointTransaction $txn): array => $this->toCustomerTransaction($txn))
@@ -301,12 +309,8 @@ class LoyaltyService implements LoyaltyServiceInterface
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // P3.1 / P3.2 invariant: never silently clamp. Without redemption,
-                // available should cover the earn; reject if it would go negative.
-                if ((int) $account->available_points < $points) {
-                    throw new \RuntimeException('loyalty.reversal_would_go_negative');
-                }
-
+                // P3.2 debt policy: earn reversals may drive available_points negative
+                // when points were already spent. Never silently clamp.
                 $transaction = LoyaltyPointTransaction::query()->create([
                     'loyalty_account_id' => $account->getKey(),
                     'customer_id' => $earn->customer_id,
@@ -320,13 +324,14 @@ class LoyaltyService implements LoyaltyServiceInterface
                     'metadata' => [
                         'reversed_transaction_id' => (int) $earn->getKey(),
                         'order_number' => $order->order_number,
+                        'created_debt' => (int) $account->available_points < $points,
                     ],
                     'occurred_at' => now(),
                 ]);
 
+                // lifetime_earned_points is historical and is not reduced by reversals.
                 $account->forceFill([
                     'available_points' => (int) $account->available_points - $points,
-                    'lifetime_earned_points' => max(0, (int) $account->lifetime_earned_points - $points),
                     'version' => (int) $account->version + 1,
                 ])->save();
 
@@ -341,18 +346,304 @@ class LoyaltyService implements LoyaltyServiceInterface
                 return $this->reversalResult(true, abs((int) $existing->points), (int) $existing->getKey(), 'idempotent');
             }
 
-            if ($exception->getMessage() === 'loyalty.reversal_would_go_negative') {
-                Log::warning('loyalty.reversal_rejected_negative', [
-                    'order_id' => $orderId,
+            throw $exception;
+        }
+
+        return $this->reversalResult(true, $points, (int) $transaction->getKey(), 'reversed');
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return array{redeemed: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function redeemForOrder(Order $order, int $pointsCost, array $snapshot = []): array
+    {
+        $orderId = (int) $order->getKey();
+        $rewardId = (int) ($snapshot['reward_id'] ?? $order->loyalty_reward_id ?? 0);
+        $idempotencyKey = $this->redeemIdempotencyKey($orderId, $rewardId);
+
+        $existing = LoyaltyPointTransaction::query()->where('idempotency_key', $idempotencyKey)->first();
+
+        if ($existing !== null) {
+            return $this->redeemResult(true, abs((int) $existing->points), (int) $existing->getKey(), 'idempotent');
+        }
+
+        if ($order->customer_id === null) {
+            return $this->redeemResult(false, 0, null, 'guest');
+        }
+
+        if ($pointsCost <= 0 || $rewardId <= 0) {
+            return $this->redeemResult(false, 0, null, 'invalid');
+        }
+
+        $customer = User::query()->find($order->customer_id);
+
+        if ($customer === null || ! $customer->hasRole(UserRole::Customer)) {
+            return $this->redeemResult(false, 0, null, 'invalid_customer');
+        }
+
+        try {
+            $transaction = DB::transaction(function () use ($customer, $order, $pointsCost, $rewardId, $idempotencyKey, $snapshot): LoyaltyPointTransaction {
+                $duplicate = LoyaltyPointTransaction::query()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($duplicate !== null) {
+                    return $duplicate;
+                }
+
+                $account = LoyaltyAccount::query()
+                    ->where('customer_id', $customer->getKey())
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($account === null) {
+                    $this->ensureAccount($customer);
+                    $account = LoyaltyAccount::query()
+                        ->where('customer_id', $customer->getKey())
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
+
+                if ((int) $account->available_points < $pointsCost) {
+                    throw new \RuntimeException('loyalty.insufficient_points');
+                }
+
+                $transaction = LoyaltyPointTransaction::query()->create([
+                    'loyalty_account_id' => $account->getKey(),
+                    'customer_id' => $customer->getKey(),
+                    'type' => LoyaltyTransactionType::Redeem,
+                    'points' => -$pointsCost,
+                    'source_type' => LoyaltyTransactionSourceType::Order,
+                    'source_id' => (int) $order->getKey(),
+                    'idempotency_key' => $idempotencyKey,
+                    'reason_code' => 'order_loyalty_redeem',
+                    'description' => sprintf(
+                        'Redeemed for %s on order %s',
+                        (string) ($snapshot['name'] ?? 'reward'),
+                        $order->order_number ?? $order->getKey(),
+                    ),
+                    'metadata' => [
+                        'reward_id' => $rewardId,
+                        'discount_amount' => $snapshot['discount_amount'] ?? null,
+                        'reward_type' => $snapshot['reward_type'] ?? null,
+                        'order_number' => $order->order_number,
+                    ],
+                    'occurred_at' => $order->placed_at ?? now(),
                 ]);
 
-                return $this->reversalResult(false, 0, null, 'would_go_negative');
+                $account->forceFill([
+                    'available_points' => (int) $account->available_points - $pointsCost,
+                    'lifetime_redeemed_points' => (int) $account->lifetime_redeemed_points + $pointsCost,
+                    'version' => (int) $account->version + 1,
+                ])->save();
+
+                return $transaction;
+            });
+        } catch (Throwable $exception) {
+            $existing = LoyaltyPointTransaction::query()->where('idempotency_key', $idempotencyKey)->first();
+
+            if ($existing !== null) {
+                return $this->redeemResult(true, abs((int) $existing->points), (int) $existing->getKey(), 'idempotent');
+            }
+
+            if ($exception->getMessage() === 'loyalty.insufficient_points') {
+                return $this->redeemResult(false, 0, null, 'insufficient_points');
             }
 
             throw $exception;
         }
 
-        return $this->reversalResult(true, $points, (int) $transaction->getKey(), 'reversed');
+        return $this->redeemResult(true, $pointsCost, (int) $transaction->getKey(), 'redeemed');
+    }
+
+    /**
+     * @return array{restored: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function restoreRedemptionForOrder(Order $order, ?string $reasonCode = null): array
+    {
+        $orderId = (int) $order->getKey();
+        $rewardId = (int) ($order->loyalty_reward_id ?? 0);
+
+        if ($rewardId <= 0 && is_array($order->loyalty_reward_snapshot)) {
+            $rewardId = (int) ($order->loyalty_reward_snapshot['reward_id'] ?? 0);
+        }
+
+        if ($rewardId <= 0) {
+            return $this->restoreResult(false, 0, null, 'no_reward');
+        }
+
+        $redeemKey = $this->redeemIdempotencyKey($orderId, $rewardId);
+        $restoreKey = $this->restoreIdempotencyKey($orderId, $rewardId);
+
+        $existingRestore = LoyaltyPointTransaction::query()->where('idempotency_key', $restoreKey)->first();
+
+        if ($existingRestore !== null) {
+            return $this->restoreResult(true, abs((int) $existingRestore->points), (int) $existingRestore->getKey(), 'idempotent');
+        }
+
+        $redeem = LoyaltyPointTransaction::query()
+            ->where('idempotency_key', $redeemKey)
+            ->where('type', LoyaltyTransactionType::Redeem->value)
+            ->first();
+
+        if ($redeem === null) {
+            return $this->restoreResult(false, 0, null, 'no_redeem');
+        }
+
+        $points = abs((int) $redeem->points);
+
+        if ($points <= 0) {
+            return $this->restoreResult(false, 0, null, 'zero_points');
+        }
+
+        try {
+            $transaction = DB::transaction(function () use ($redeem, $order, $points, $restoreKey, $reasonCode, $rewardId): LoyaltyPointTransaction {
+                $duplicate = LoyaltyPointTransaction::query()
+                    ->where('idempotency_key', $restoreKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($duplicate !== null) {
+                    return $duplicate;
+                }
+
+                $account = LoyaltyAccount::query()
+                    ->whereKey($redeem->loyalty_account_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $transaction = LoyaltyPointTransaction::query()->create([
+                    'loyalty_account_id' => $account->getKey(),
+                    'customer_id' => $redeem->customer_id,
+                    'type' => LoyaltyTransactionType::Reversal,
+                    'points' => $points,
+                    'source_type' => LoyaltyTransactionSourceType::Order,
+                    'source_id' => (int) $order->getKey(),
+                    'idempotency_key' => $restoreKey,
+                    'reason_code' => $reasonCode ?: 'order_loyalty_restore',
+                    'description' => sprintf('Restored points for order %s', $order->order_number ?? $order->getKey()),
+                    'metadata' => [
+                        'reward_id' => $rewardId,
+                        'restored_transaction_id' => (int) $redeem->getKey(),
+                        'order_number' => $order->order_number,
+                    ],
+                    'occurred_at' => now(),
+                ]);
+
+                // lifetime_redeemed_points is historical and is not reduced by restores.
+                $account->forceFill([
+                    'available_points' => (int) $account->available_points + $points,
+                    'version' => (int) $account->version + 1,
+                ])->save();
+
+                return $transaction;
+            });
+        } catch (Throwable $exception) {
+            $existing = LoyaltyPointTransaction::query()->where('idempotency_key', $restoreKey)->first();
+
+            if ($existing !== null) {
+                return $this->restoreResult(true, abs((int) $existing->points), (int) $existing->getKey(), 'idempotent');
+            }
+
+            throw $exception;
+        }
+
+        return $this->restoreResult(true, $points, (int) $transaction->getKey(), 'restored');
+    }
+
+    /**
+     * @return array{adjusted: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function adjustPoints(
+        User $customer,
+        User $actor,
+        int $points,
+        string $reason,
+        ?string $idempotencyKey = null,
+    ): array {
+        if (! $customer->hasRole(UserRole::Customer)) {
+            throw new \InvalidArgumentException('Adjustments are only available for customers.');
+        }
+
+        $reason = trim($reason);
+
+        if ($reason === '') {
+            throw ValidationException::withMessages([
+                'reason' => 'A reason is required for loyalty adjustments.',
+            ]);
+        }
+
+        if ($points === 0) {
+            throw ValidationException::withMessages([
+                'points' => 'Adjustment points must be a non-zero integer.',
+            ]);
+        }
+
+        $key = $idempotencyKey ?: sprintf(
+            'adjustment:admin:%d:customer:%d:%s',
+            (int) $actor->getKey(),
+            (int) $customer->getKey(),
+            hash('sha256', $points.'|'.$reason.'|'.now()->format('YmdHis')),
+        );
+
+        $existing = LoyaltyPointTransaction::query()->where('idempotency_key', $key)->first();
+
+        if ($existing !== null) {
+            return $this->adjustResult(true, (int) $existing->points, (int) $existing->getKey(), 'idempotent');
+        }
+
+        $transaction = DB::transaction(function () use ($customer, $actor, $points, $reason, $key): LoyaltyPointTransaction {
+            $duplicate = LoyaltyPointTransaction::query()
+                ->where('idempotency_key', $key)
+                ->lockForUpdate()
+                ->first();
+
+            if ($duplicate !== null) {
+                return $duplicate;
+            }
+
+            $account = LoyaltyAccount::query()
+                ->where('customer_id', $customer->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if ($account === null) {
+                $this->ensureAccount($customer);
+                $account = LoyaltyAccount::query()
+                    ->where('customer_id', $customer->getKey())
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            $transaction = LoyaltyPointTransaction::query()->create([
+                'loyalty_account_id' => $account->getKey(),
+                'customer_id' => $customer->getKey(),
+                'type' => LoyaltyTransactionType::Adjustment,
+                'points' => $points,
+                'source_type' => LoyaltyTransactionSourceType::Admin,
+                'source_id' => (int) $actor->getKey(),
+                'idempotency_key' => $key,
+                'reason_code' => 'admin_adjustment',
+                'description' => $reason,
+                'metadata' => [
+                    'actor_id' => (int) $actor->getKey(),
+                    'actor_name' => $actor->name,
+                ],
+                'occurred_at' => now(),
+            ]);
+
+            $account->forceFill([
+                'available_points' => (int) $account->available_points + $points,
+                'lifetime_adjusted_points' => (int) $account->lifetime_adjusted_points + $points,
+                'version' => (int) $account->version + 1,
+            ])->save();
+
+            return $transaction;
+        });
+
+        return $this->adjustResult(true, (int) $transaction->points, (int) $transaction->getKey(), 'adjusted');
     }
 
     public function recentTransactions(User $customer, int $limit = 20): array
@@ -450,6 +741,16 @@ class LoyaltyService implements LoyaltyServiceInterface
         return 'reversal:order:'.$orderId;
     }
 
+    protected function redeemIdempotencyKey(int $orderId, int $rewardId): string
+    {
+        return 'redeem:order:'.$orderId.':reward:'.$rewardId;
+    }
+
+    protected function restoreIdempotencyKey(int $orderId, int $rewardId): string
+    {
+        return 'restore:order:'.$orderId.':reward:'.$rewardId;
+    }
+
     /**
      * @return array{awarded: bool, points: int, transaction_id: int|null, reason: string}
      */
@@ -470,6 +771,45 @@ class LoyaltyService implements LoyaltyServiceInterface
     {
         return [
             'reversed' => $reversed,
+            'points' => $points,
+            'transaction_id' => $transactionId,
+            'reason' => $reason,
+        ];
+    }
+
+    /**
+     * @return array{redeemed: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    protected function redeemResult(bool $redeemed, int $points, ?int $transactionId, string $reason): array
+    {
+        return [
+            'redeemed' => $redeemed,
+            'points' => $points,
+            'transaction_id' => $transactionId,
+            'reason' => $reason,
+        ];
+    }
+
+    /**
+     * @return array{restored: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    protected function restoreResult(bool $restored, int $points, ?int $transactionId, string $reason): array
+    {
+        return [
+            'restored' => $restored,
+            'points' => $points,
+            'transaction_id' => $transactionId,
+            'reason' => $reason,
+        ];
+    }
+
+    /**
+     * @return array{adjusted: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    protected function adjustResult(bool $adjusted, int $points, ?int $transactionId, string $reason): array
+    {
+        return [
+            'adjusted' => $adjusted,
             'points' => $points,
             'transaction_id' => $transactionId,
             'reason' => $reason,

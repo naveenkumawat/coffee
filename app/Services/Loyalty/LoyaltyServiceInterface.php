@@ -16,7 +16,11 @@ interface LoyaltyServiceInterface
      *     available_points: int,
      *     lifetime_earned_points: int,
      *     lifetime_redeemed_points: int,
+     *     lifetime_adjusted_points: int,
+     *     has_points_debt: bool,
+     *     debt_message: string|null,
      *     earning_enabled: bool,
+     *     redemption_enabled: bool,
      *     earning_explanation: string|null,
      *     recent_transactions: list<array<string, mixed>>
      * }
@@ -41,6 +45,28 @@ interface LoyaltyServiceInterface
      * @return array{reversed: bool, points: int, transaction_id: int|null, reason: string}
      */
     public function reverseOrderAward(Order $order, ?string $reasonCode = null): array;
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @return array{redeemed: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function redeemForOrder(Order $order, int $pointsCost, array $snapshot = []): array;
+
+    /**
+     * @return array{restored: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function restoreRedemptionForOrder(Order $order, ?string $reasonCode = null): array;
+
+    /**
+     * @return array{adjusted: bool, points: int, transaction_id: int|null, reason: string}
+     */
+    public function adjustPoints(
+        User $customer,
+        User $actor,
+        int $points,
+        string $reason,
+        ?string $idempotencyKey = null,
+    ): array;
 
     /**
      * @return list<LoyaltyPointTransaction>

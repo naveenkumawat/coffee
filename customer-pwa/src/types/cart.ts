@@ -72,6 +72,27 @@ export interface CartSummary {
     code?: string | null;
   }>;
   reward_error?: string | null;
+  loyalty_discount?: string;
+  loyalty_reward?: {
+    id: number;
+    name: string;
+    description: string;
+    reward_type: string;
+    points_cost: number;
+    discount_amount: string;
+  } | null;
+  loyalty_rewards?: Array<{
+    id: number;
+    name: string;
+    description: string;
+    reward_type: string;
+    points_cost: number;
+    eligible: boolean;
+    unavailable_reason: string | null;
+    preview_discount_amount: string;
+    minimum_spend: string | null;
+  }>;
+  loyalty_error?: string | null;
   total: string;
   has_unavailable_items: boolean;
   tax?: {

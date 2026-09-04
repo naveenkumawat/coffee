@@ -28,6 +28,19 @@ export function clearCartPromoCode(): Promise<ApiEnvelope<Cart>> {
   return destroy<ApiEnvelope<Cart>>('/cart/promo-code');
 }
 
+export function applyCartLoyaltyReward(payload: {
+  loyalty_reward_id: number;
+  fulfilment_method?: CheckoutFulfilmentMethod;
+}): Promise<ApiEnvelope<Cart>> {
+  return post<ApiEnvelope<Cart>, typeof payload>('/cart/loyalty-reward', payload);
+}
+
+export function clearCartLoyaltyReward(fulfilmentMethod?: CheckoutFulfilmentMethod | null): Promise<ApiEnvelope<Cart>> {
+  const query = fulfilmentMethod ? `?fulfilment_method=${encodeURIComponent(fulfilmentMethod)}` : '';
+
+  return destroy<ApiEnvelope<Cart>>(`/cart/loyalty-reward${query}`);
+}
+
 export function fetchActiveRewards(): Promise<ApiEnvelope<{ rewards: Array<{
   id: number;
   reward_type: string;

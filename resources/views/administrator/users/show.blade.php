@@ -206,6 +206,49 @@
                         @endif
                     </div>
                 </div>
+
+                @can('update', $managedUser)
+                    <div class="card card-flush internal-card mb-5">
+                        <div class="card-header pt-7">
+                            <div class="card-title">
+                                <h3 class="fw-bold text-gray-900">Adjust points</h3>
+                            </div>
+                        </div>
+                        <div class="card-body pt-5">
+                            <form method="POST" action="{{ route('administrator.users.loyalty-adjust', $managedUser) }}">
+                                @csrf
+                                <label for="loyalty_points" class="form-label fs-7 text-muted">Points (+ earn / − deduct)</label>
+                                <input
+                                    id="loyalty_points"
+                                    name="points"
+                                    type="number"
+                                    step="1"
+                                    class="form-control form-control-sm mb-3 @error('points') is-invalid @enderror"
+                                    value="{{ old('points') }}"
+                                    required
+                                />
+                                @error('points')
+                                    <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                @enderror
+                                <label for="loyalty_reason" class="form-label fs-7 text-muted">Reason</label>
+                                <textarea
+                                    id="loyalty_reason"
+                                    name="reason"
+                                    rows="2"
+                                    maxlength="500"
+                                    class="form-control form-control-sm mb-3 @error('reason') is-invalid @enderror"
+                                    required
+                                >{{ old('reason') }}</textarea>
+                                @error('reason')
+                                    <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                @enderror
+                                <button type="submit" class="btn btn-sm btn-light-primary">
+                                    Apply adjustment
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endcan
             @endif
 
             <div class="card card-flush internal-card">

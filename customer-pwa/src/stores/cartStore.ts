@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import {
   addCartItem,
   applyCartPromoCode,
+  applyCartLoyaltyReward,
   applyFreeDrinkReward,
   applyReferralCouponReward,
   clearCart,
   clearCartPromoCode,
+  clearCartLoyaltyReward,
   clearReferralRewards,
   fetchCart,
   fetchCartCount,
@@ -81,6 +83,11 @@ interface CartState {
     fulfilmentMethod?: CheckoutFulfilmentMethod | null,
   ) => Promise<void>;
   clearReferralRewards: (fulfilmentMethod?: CheckoutFulfilmentMethod | null) => Promise<void>;
+  applyLoyaltyReward: (
+    rewardId: number,
+    fulfilmentMethod?: CheckoutFulfilmentMethod | null,
+  ) => Promise<void>;
+  clearLoyaltyReward: (fulfilmentMethod?: CheckoutFulfilmentMethod | null) => Promise<void>;
   reset: () => void;
   clear: () => Promise<void>;
 }
@@ -639,6 +646,25 @@ export const useCartStore = create<CartState>((set, get) => ({
     }
 
     const response = await clearReferralRewards(fulfilmentMethod);
+    applyCartState(set, response);
+  },
+  applyLoyaltyReward: async (rewardId, fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to apply loyalty rewards.', 401);
+    }
+
+    const response = await applyCartLoyaltyReward({
+      loyalty_reward_id: rewardId,
+      ...(fulfilmentMethod ? { fulfilment_method: fulfilmentMethod } : {}),
+    });
+    applyCartState(set, response);
+  },
+  clearLoyaltyReward: async (fulfilmentMethod = null) => {
+    if (!isSessionAuthenticated()) {
+      throw new ApiError('Sign in to manage loyalty rewards.', 401);
+    }
+
+    const response = await clearCartLoyaltyReward(fulfilmentMethod);
     applyCartState(set, response);
   },
   reset: () => {

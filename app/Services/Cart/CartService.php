@@ -3,15 +3,19 @@
 namespace App\Services\Cart;
 
 use App\Enums\CustomerRewardType;
+use App\Enums\LoyaltyRewardType;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CartItemAddOn;
 use App\Models\CustomerReward;
+use App\Models\LoyaltyReward;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Cart\CartRepositoryInterface;
 use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Attribution\AttributionServiceInterface;
+use App\Services\Loyalty\LoyaltyRewardServiceInterface;
+use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
@@ -31,6 +35,8 @@ class CartService implements CartServiceInterface
         protected ReferralServiceInterface $referrals,
         protected AddOnServiceInterface $addOns,
         protected AttributionServiceInterface $attribution,
+        protected LoyaltyRewardServiceInterface $loyaltyRewards,
+        protected LoyaltyServiceInterface $loyalty,
     ) {}
 
     public function getForCustomer(User $customer): Cart
@@ -183,6 +189,7 @@ class CartService implements CartServiceInterface
                 'promo_code' => null,
                 'referral_free_drink_reward_id' => null,
                 'referral_coupon_reward_id' => null,
+                'loyalty_reward_id' => null,
             ])->save();
 
             return $this->carts->refreshCart($cart);
@@ -401,8 +408,71 @@ class CartService implements CartServiceInterface
         // discount_total = promo + referral coupon (free drink benefit is separate)
         $discountTotal = bcadd($promoDiscount, $referralCouponDiscount, 2);
 
-        // GST basis = merchandise after normal promotions and referral coupon (NOT reduced by free drink)
-        $gstBasis = bcsub($subtotal, $discountTotal, 2);
+        // GST basis before loyalty = merchandise after normal promotions and referral coupon (NOT reduced by free drink)
+        $gstBasisBeforeLoyalty = bcsub($subtotal, $discountTotal, 2);
+        if (bccomp($gstBasisBeforeLoyalty, '0', 2) < 0) {
+            $gstBasisBeforeLoyalty = '0.00';
+        }
+
+        $loyaltyDiscount = '0.00';
+        $loyaltyRewardSummary = null;
+        $loyaltyError = null;
+        $loyaltyRewardsAvailable = [];
+
+        if ($cart->customer !== null && $this->loyaltyRewards->redemptionEnabled()) {
+            $loyaltyRewardsAvailable = $this->loyaltyRewards->availableRewardsForCustomer(
+                $cart->customer,
+                $gstBasisBeforeLoyalty,
+                $pricedItems,
+            );
+
+            if ($cart->loyalty_reward_id !== null) {
+                $loyaltyReward = LoyaltyReward::query()
+                    ->with(['products', 'productCategories', 'addOns'])
+                    ->find($cart->loyalty_reward_id);
+
+                if ($loyaltyReward === null) {
+                    $cart->forceFill(['loyalty_reward_id' => null])->save();
+                    $loyaltyError = $loyaltyError ?? 'reward_unavailable';
+                } else {
+                    $hasPromotionDiscount = bccomp($promoDiscount, '0', 2) > 0;
+
+                    if ($hasPromotionDiscount && ! (bool) config('loyalty.redemption.allow_with_promotions', true)) {
+                        $evaluation = [
+                            'eligible' => false,
+                            'reason' => 'promotion_conflict',
+                            'discount_amount' => '0.00',
+                        ];
+                    } else {
+                        $evaluation = $this->loyaltyRewards->evaluateReward(
+                            $loyaltyReward,
+                            $cart->customer,
+                            $gstBasisBeforeLoyalty,
+                            $pricedItems,
+                        );
+                    }
+
+                    if (! $evaluation['eligible'] || bccomp($evaluation['discount_amount'], '0', 2) <= 0) {
+                        $loyaltyError = $loyaltyError ?? ($evaluation['reason'] ?? 'reward_unavailable');
+                        $cart->forceFill(['loyalty_reward_id' => null])->save();
+                    } else {
+                        $loyaltyDiscount = $evaluation['discount_amount'];
+                        $loyaltyRewardSummary = [
+                            'id' => (int) $loyaltyReward->getKey(),
+                            'name' => (string) $loyaltyReward->name,
+                            'description' => $loyaltyReward->displayDescription(),
+                            'reward_type' => $loyaltyReward->reward_type instanceof LoyaltyRewardType
+                                ? $loyaltyReward->reward_type->value
+                                : (string) $loyaltyReward->reward_type,
+                            'points_cost' => (int) $evaluation['points_cost'],
+                            'discount_amount' => $loyaltyDiscount,
+                        ];
+                    }
+                }
+            }
+        }
+
+        $gstBasis = bcsub($gstBasisBeforeLoyalty, $loyaltyDiscount, 2);
         if (bccomp($gstBasis, '0', 2) < 0) {
             $gstBasis = '0.00';
         }
@@ -425,6 +495,10 @@ class CartService implements CartServiceInterface
             'referral_coupon_discount' => $referralCouponDiscount,
             'referral_rewards' => $referralRewards,
             'reward_error' => $rewardError,
+            'loyalty_discount' => $loyaltyDiscount,
+            'loyalty_reward' => $loyaltyRewardSummary,
+            'loyalty_rewards' => $loyaltyRewardsAvailable,
+            'loyalty_error' => $loyaltyError,
             'total' => $tax->cafeTotal,
             'tax' => $tax->toCustomerArray(),
             'has_unavailable_items' => $hasUnavailableItems,
@@ -547,6 +621,47 @@ class CartService implements CartServiceInterface
         return $this->carts->refreshCart($cart);
     }
 
+    public function applyLoyaltyReward(User $customer, int $rewardId, ?string $fulfilmentMethod = null): Cart
+    {
+        if (! $this->loyaltyRewards->redemptionEnabled()) {
+            throw ValidationException::withMessages([
+                'loyalty_reward_id' => 'Loyalty rewards are not available right now.',
+            ]);
+        }
+
+        $reward = LoyaltyReward::query()->find($rewardId);
+
+        if ($reward === null) {
+            throw ValidationException::withMessages([
+                'loyalty_reward_id' => 'That loyalty reward is not available.',
+            ]);
+        }
+
+        $cart = $this->getForCustomer($customer);
+        $cart->forceFill(['loyalty_reward_id' => $reward->getKey()])->save();
+        $cart = $this->carts->refreshCart($cart);
+
+        $summary = $this->summarize($cart, $fulfilmentMethod);
+
+        if (($summary['loyalty_error'] ?? null) !== null || bccomp((string) ($summary['loyalty_discount'] ?? '0'), '0', 2) <= 0) {
+            $cart->forceFill(['loyalty_reward_id' => null])->save();
+
+            throw ValidationException::withMessages([
+                'loyalty_reward_id' => $this->loyaltyRewards->customerFacingReason($summary['loyalty_error'] ?? null),
+            ]);
+        }
+
+        return $this->carts->refreshCart($cart);
+    }
+
+    public function clearLoyaltyReward(User $customer): Cart
+    {
+        $cart = $this->getForCustomer($customer);
+        $cart->forceFill(['loyalty_reward_id' => null])->save();
+
+        return $this->carts->refreshCart($cart);
+    }
+
     protected function clearExpiredRewardsFromCart(Cart $cart): ?string
     {
         $changed = false;
@@ -580,6 +695,15 @@ class CartService implements CartServiceInterface
 
         if ($changed) {
             $cart->save();
+        }
+
+        if ($cart->loyalty_reward_id !== null) {
+            $loyaltyReward = LoyaltyReward::query()->find($cart->loyalty_reward_id);
+
+            if ($loyaltyReward === null || ! $loyaltyReward->isRedeemable() || ! $this->loyaltyRewards->redemptionEnabled()) {
+                $cart->forceFill(['loyalty_reward_id' => null])->save();
+                $error = $error ?? 'reward_unavailable';
+            }
         }
 
         return $error;

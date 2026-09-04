@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administrator;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\UserCreateRequest;
 use App\Http\Requests\User\UserIndexRequest;
+use App\Http\Requests\User\UserLoyaltyAdjustRequest;
 use App\Http\Requests\User\UserOrderingBlockRequest;
 use App\Http\Requests\User\UserUpdateRequest;
 use App\Models\User;
@@ -151,5 +152,26 @@ class UserController extends Controller
         return redirect()
             ->route('administrator.users.show', $user)
             ->with('status', 'Customer ordering has been unblocked.');
+    }
+
+    public function adjustLoyalty(UserLoyaltyAdjustRequest $request, User $user): RedirectResponse
+    {
+        $this->authorize('update', $user);
+
+        if (! $user->hasRole('customer')) {
+            abort(404);
+        }
+
+        $validated = $request->validated();
+        $this->loyalty->adjustPoints(
+            $user,
+            $request->user('admin'),
+            (int) $validated['points'],
+            (string) $validated['reason'],
+        );
+
+        return redirect()
+            ->route('administrator.users.show', $user)
+            ->with('status', 'Loyalty points adjusted successfully.');
     }
 }

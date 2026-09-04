@@ -80,6 +80,10 @@ interface OrderTransferInterface
 
     public function setReferralCouponRewardId(?int $referralCouponRewardId): void;
 
+    public function getLoyaltyRewardId(): ?int;
+
+    public function setLoyaltyRewardId(?int $loyaltyRewardId): void;
+
     public function getItems(): array;
 
     public function setItems(array $items): void;

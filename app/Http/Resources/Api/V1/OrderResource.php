@@ -51,6 +51,17 @@ class OrderResource extends JsonResource
                 : null,
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
+            'loyalty_discount_amount' => $order->loyalty_discount_amount ?? '0.00',
+            'loyalty_reward' => bccomp((string) ($order->loyalty_discount_amount ?? '0'), '0', 2) > 0
+                ? [
+                    'id' => $order->loyalty_reward_id,
+                    'name' => $order->loyalty_reward_name_snapshot,
+                    'reward_type' => $order->loyalty_reward_type_snapshot,
+                    'points_cost' => $order->loyalty_reward_points_cost_snapshot,
+                    'discount_amount' => $order->loyalty_discount_amount,
+                    'description' => $order->loyalty_reward_description_snapshot,
+                ]
+                : null,
             'promotions' => $order->relationLoaded('promotions')
                 ? $order->promotions->map(static fn ($promotion): array => [
                     'name' => $promotion->name_snapshot,

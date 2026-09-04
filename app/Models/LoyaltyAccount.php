@@ -17,6 +17,7 @@ class LoyaltyAccount extends AbstractModel
         'available_points',
         'lifetime_earned_points',
         'lifetime_redeemed_points',
+        'lifetime_adjusted_points',
         'version',
     ];
 
@@ -27,6 +28,7 @@ class LoyaltyAccount extends AbstractModel
             'available_points' => 'integer',
             'lifetime_earned_points' => 'integer',
             'lifetime_redeemed_points' => 'integer',
+            'lifetime_adjusted_points' => 'integer',
             'version' => 'integer',
         ];
     }

@@ -1,27 +1,35 @@
-# Loyalty architecture (P3.1)
+# Loyalty architecture (P3.1 + P3.2)
 
 Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 
 ## Status
 
-**P3.1 Loyalty & Rewards Foundation — COMPLETE**
+- **P3.1** Loyalty & Rewards Foundation — **COMPLETE**
+- **P3.2** Redemption & Reward Rules — **COMPLETE**
+- **P3.3** Loyalty Experience — **NEXT**
 
-Out of scope for P3.1: redemption, expiry automation, tiers, wallet/store credit, subscriptions, gamification, payment gateway, invented production earn rates, and automatic historical backfill.
+Out of scope through P3.2: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI, payment gateway, invented production earn rates, automatic historical backfill.
 
 ## Flow
 
 ```
-Canonical Paid Completed Order
-          ↓
-   Loyalty Eligibility
-          ↓
-     Earning Rule
-          ↓
- Immutable Points Ledger
-          ↓
-    Cached Account Balance
-          ↓
- Customer/Admin Read Models
+Earn
+ ↓
+Immutable Ledger
+ ↓
+Available Balance
+ ↓
+Reward Eligibility
+ ↓
+Checkout Reward Selection
+ ↓
+Canonical Order Snapshot
+ ↓
+Redeem Ledger Entry
+ ↓
+Cancel/Correction
+ ↓
+Compensating Restore/Reversal
 ```
 
 ## Domain
@@ -30,109 +38,112 @@ Canonical Paid Completed Order
 
 One row per authenticated customer (`customer_id` unique).
 
-Cached counters (must stay transactionally consistent with ledger writes):
-
-- `available_points`
-- `lifetime_earned_points`
-- `lifetime_redeemed_points` (always 0 until P3.2 redemption)
-- `version` (optimistic concurrency hint)
+| Field | Semantics |
+| --- | --- |
+| `available_points` | Running balance (**may be negative** = loyalty debt) |
+| `lifetime_earned_points` | Sum of earn credits (not reduced by earn reversals) |
+| `lifetime_redeemed_points` | Sum of redeem debits (not reduced by restores) |
+| `lifetime_adjusted_points` | Net admin adjustments |
+| `version` | Concurrency hint |
 
 ### `loyalty_point_transactions` (immutable ledger)
 
-Authoritative history. Never edit/delete earn rows to “fix” balance.
+Authoritative history. Never edit/delete rows to “fix” balance.
 
-| Field | Notes |
-| --- | --- |
-| `type` | `earn`, `redeem` (future), `reversal`, `adjustment` (future), `expiry` (future) |
-| `points` | Signed integer (`earn` positive, `reversal` negative) |
-| `source_type` / `source_id` | e.g. `order` + order id |
-| `idempotency_key` | Unique durable key |
-| `reason_code`, `description` | Customer/admin safe labels |
-| `metadata` | Minimal internal snapshot (eligible amount, order number) — not exposed on customer API |
-| `occurred_at` | Business time |
+| Type | Points sign | Notes |
+| --- | --- | --- |
+| `earn` | + | Completed paid order |
+| `redeem` | − | Order loyalty reward |
+| `reversal` | − (earn) / + (restore) | Compensating entry |
+| `adjustment` | ± | Admin-only, mandatory reason |
+| `expiry` | − | Future |
+
+Idempotency keys:
+
+- `earn:order:{id}`
+- `reversal:order:{id}`
+- `redeem:order:{id}:reward:{reward_id}`
+- `restore:order:{id}:reward:{reward_id}`
+
+### `loyalty_rewards`
+
+Configurable catalog (separate from Promotions):
+
+Types: `fixed_order_discount`, `percentage_order_discount`, `free_base_product`, `free_add_on`, `specific_product_reward`, `category_product_reward`.
+
+Status: `active` / `paused` / `archived` (soft delete).
+
+Limits: global, per-customer, optional per-customer period days. Schedule via `starts_at` / `ends_at`. Min spend optional.
+
+### Order snapshot columns
+
+Historical orders keep reward name/type/points/discount/description/config JSON. Live reward edits do not change past invoices.
 
 ## Earning (V1)
 
-Config: `config/loyalty.php` (`COFFEE_LOYALTY_*` env).
+Config: `config/loyalty.php` (`COFFEE_LOYALTY_*`). Production default: **`enabled=false`**.
 
-Production default: **`enabled=false`** until the café chooses real economics.
+Eligible amount: merchandise after discounts (prefer `taxable_amount`), excluding delivery fee & tax.
 
-Eligible amount policy (`merchandise_after_discount_ex_tax_ex_delivery`):
+Points: `floor(eligible / currency_unit) × points_per_currency_unit`.
 
-1. Prefer canonical `orders.taxable_amount` (merchandise after promotions/referral coupon).
-2. Else `max(0, subtotal − discount_total)`.
-3. **Exclude** `delivery_fee_amount` and `tax_amount` (pre-tax earning).
+Guests earn nothing. Effective boundary: `loyalty.effective_at`.
 
-Points:
+## Redemption (V1)
 
-`floor(eligible_amount / currency_unit) × points_per_currency_unit`
+- Selection on cart (`loyalty_reward_id`) is **not** a spend.
+- Final redeem ledger write happens atomically inside successful `OrderService::store`.
+- Abandoned/failed checkout does not spend points.
+- Unpaid cancel/reject restores via compensating ledger entry (idempotent).
+- One loyalty reward per order.
+- Server recalculates value; client submits only reward id.
 
-Optional `minimum_eligible_amount`. Deterministic floor rounding only.
+### Stacking
 
-### Order eligibility
+```
+catalog prices
+→ promotions + referral coupon (`discount_total`)
+→ loyalty reward (`loyalty_discount_amount`)
+→ tax
+```
 
-- Authenticated `customer_id` present (guest orders earn nothing)
-- Order `status = completed`
-- Payment confirmed:
-  - Retail: `orders.payment_status = confirmed`
-  - Dining: parent `dining_sessions.payment_status = confirmed`
-- `completed_at` (or fallback timestamp) on/after `loyalty.effective_at` when set
+Referral free-drink benefit remains outside GST basis (unchanged). Config `loyalty.redemption.allow_with_promotions` can disallow promo+loyalty.
 
-Takeaway, Delivery, and Dining (paid session semantics) are supported.
+Loyalty discount cannot reduce merchandise below zero.
 
-## Integration & consistency
-
-Listeners (after commit; do **not** fail order/payment):
-
-- `OrderStatusChanged` → `Completed` → `AwardLoyaltyPointsForOrderJob`
-- `DiningPaymentConfirmed` → dispatch job per session order
-
-Jobs are unique per order id, retryable, and call idempotent `LoyaltyService::awardForOrder()`.
-
-**Boundary:** order/payment success is independent of loyalty. Loyalty failures are logged/retryable; ledger uniqueness prevents double awards.
-
-## Idempotency
-
-- Earn key: `earn:order:{order_id}`
-- Reversal key: `reversal:order:{order_id}`
-
-Row locks on account + unique key handle concurrency/retries.
-
-## Reversal
-
-`LoyaltyService::reverseOrderAward()` creates a compensating `reversal` row. Original earn remains immutable.
-
-Phase-1 cannot cancel a completed order, so reversal is service-ready and covered by direct tests (no new cancel/refund workflow).
-
-### Negative balance invariant (for P3.2)
+## Debt invariant
 
 Ledger arithmetic is **never silently clamped**.
 
-P3.1: a reversal that would drive `available_points` below zero is **rejected** (`would_go_negative`). With no redemption this should not occur in normal earn→reverse flows.
+When an earn is reversed after points were spent:
 
-P3.2 must define redemption/reversal debt rules explicitly if redemptions can leave insufficient available points for later reversals.
+1. `available_points` may go **negative** (loyalty debt).
+2. Customer sees “Points adjustment pending”.
+3. Further redemption is blocked while `available_points < points_cost`.
+4. Future earnings reduce the debt naturally.
+5. Debt is **never** money owed by the customer.
+
+## Integration
+
+- Earn: `OrderStatusChanged→Completed` / `DiningPaymentConfirmed` → unique job.
+- Redeem: same DB transaction as order create.
+- Restore: unpaid `Cancelled` / `Rejected` transitions.
+- Order/payment success is not rolled back by async earn failures; redeem failures abort order create (atomic).
 
 ## Referral / promotion separation
 
-- Referral rewards remain `ReferralService` / `customer_rewards` — unchanged.
-- Promotions continue to price orders; loyalty only consumes the final eligible snapshot.
-- Future optional: P3.2 may emit loyalty ledger rows from approved referral outcomes without rewriting referral economics.
+- Referral rewards unchanged (`customer_rewards`). Optional bridge `loyalty.referral_bridge.enabled` default **off**.
+- Promotions continue to price orders; loyalty consumes post-promotion merchandise.
 
-## APIs & surfaces
+## Surfaces
 
-- Customer: `GET /api/v1/account/loyalty` (+ alias `GET /api/v1/customer/loyalty`)
-- PWA: Account → Loyalty points (`/account/loyalty`) — balance, lifetime earned, recent activity, safe explanation; **no redemption UI**
-- Admin: User show (customers) — balance + transaction history (Actions/authorization unchanged)
-
-No client-submitted balances. No guest loyalty endpoint.
-
-## Historical orders
-
-No automatic backfill. Use `loyalty.effective_at` (and `enabled`) as the activation boundary. Explicit backfill command is future work if needed.
+- Customer API: `GET /account/loyalty`, `GET /account/loyalty/rewards`, cart `POST/DELETE /cart/loyalty-reward`
+- PWA: Loyalty page + cart reward selector
+- Admin: Loyalty Rewards CRUD; user show balance/ledger + manual adjustment
+- Invoices: separate loyalty discount line (not cash/payment)
 
 ## Future
 
-- **P3.2** Redemption & reward rules (+ optional admin adjustment; referral→loyalty bridge)
 - **P3.3** Loyalty customer UX polish
 - **P3.4** Admin/operations controls
-- **P3.5** Intelligence integration
+- **P3.5** Intelligence / segment integration

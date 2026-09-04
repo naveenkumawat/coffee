@@ -17,6 +17,7 @@ class Cart extends AbstractModel
         'promo_code',
         'referral_free_drink_reward_id',
         'referral_coupon_reward_id',
+        'loyalty_reward_id',
     ];
 
     public function customer(): BelongsTo
@@ -37,5 +38,10 @@ class Cart extends AbstractModel
     public function referralCouponReward(): BelongsTo
     {
         return $this->belongsTo(CustomerReward::class, 'referral_coupon_reward_id');
+    }
+
+    public function loyaltyReward(): BelongsTo
+    {
+        return $this->belongsTo(LoyaltyReward::class, 'loyalty_reward_id');
     }
 }

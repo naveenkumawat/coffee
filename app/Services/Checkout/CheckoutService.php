@@ -118,6 +118,9 @@ class CheckoutService implements CheckoutServiceInterface
             $orderTransfer->setReferralCouponRewardId(
                 $cart->referral_coupon_reward_id !== null ? (int) $cart->referral_coupon_reward_id : null,
             );
+            $orderTransfer->setLoyaltyRewardId(
+                $cart->loyalty_reward_id !== null ? (int) $cart->loyalty_reward_id : null,
+            );
             $orderTransfer->setItems(
                 $cart->items
                     ->map(function (CartItem $item): array {

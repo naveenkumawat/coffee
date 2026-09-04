@@ -17,6 +17,7 @@ use App\Models\IngredientBrand;
 use App\Models\IngredientCategory;
 use App\Models\InventoryRefillRequest;
 use App\Models\InventoryTransaction;
+use App\Models\LoyaltyReward;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use App\Models\Order;
@@ -47,6 +48,7 @@ use App\Policies\IngredientCategoryPolicy;
 use App\Policies\IngredientPolicy;
 use App\Policies\InventoryRefillRequestPolicy;
 use App\Policies\InventoryTransactionPolicy;
+use App\Policies\LoyaltyRewardPolicy;
 use App\Policies\MenuCategoryPolicy;
 use App\Policies\MenuItemPolicy;
 use App\Policies\OrderPolicy;
@@ -94,6 +96,7 @@ class AuthServiceProvider extends ServiceProvider
         AddOn::class => AddOnPolicy::class,
         ProductTag::class => ProductTagPolicy::class,
         Promotion::class => PromotionPolicy::class,
+        LoyaltyReward::class => LoyaltyRewardPolicy::class,
         Recipe::class => RecipePolicy::class,
         SocialLink::class => SocialLinkPolicy::class,
         User::class => UserPolicy::class,

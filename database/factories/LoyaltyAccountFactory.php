@@ -20,6 +20,7 @@ class LoyaltyAccountFactory extends Factory
             'available_points' => 0,
             'lifetime_earned_points' => 0,
             'lifetime_redeemed_points' => 0,
+            'lifetime_adjusted_points' => 0,
             'version' => 1,
         ];
     }

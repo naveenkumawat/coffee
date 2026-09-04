@@ -44,6 +44,8 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
 
     protected ?int $referralCouponRewardId = null;
 
+    protected ?int $loyaltyRewardId = null;
+
     protected array $items = [];
 
     public function getCustomerId(): ?int
@@ -236,6 +238,16 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
         $this->referralCouponRewardId = $referralCouponRewardId;
     }
 
+    public function getLoyaltyRewardId(): ?int
+    {
+        return $this->loyaltyRewardId;
+    }
+
+    public function setLoyaltyRewardId(?int $loyaltyRewardId): void
+    {
+        $this->loyaltyRewardId = $loyaltyRewardId;
+    }
+
     public function getItems(): array
     {
         return $this->items;
@@ -268,6 +280,7 @@ class OrderTransfer extends AbstractTransfer implements OrderTransferInterface
             'promo_code' => $this->promoCode,
             'referral_free_drink_reward_id' => $this->referralFreeDrinkRewardId,
             'referral_coupon_reward_id' => $this->referralCouponRewardId,
+            'loyalty_reward_id' => $this->loyaltyRewardId,
             'items' => $this->items,
         ];
     }

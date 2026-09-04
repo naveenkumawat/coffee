@@ -16,6 +16,7 @@ use App\Http\Controllers\Administrator\IngredientController;
 use App\Http\Controllers\Administrator\InventoryController;
 use App\Http\Controllers\Administrator\InventoryProductReportController;
 use App\Http\Controllers\Administrator\InventoryRefillRequestController;
+use App\Http\Controllers\Administrator\LoyaltyRewardController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
 use App\Http\Controllers\Administrator\OperationalPerformanceReportController;
@@ -179,6 +180,7 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::resource('users', UserController::class);
     Route::post('users/{user}/block-ordering', [UserController::class, 'blockOrdering'])->name('users.block-ordering');
     Route::post('users/{user}/unblock-ordering', [UserController::class, 'unblockOrdering'])->name('users.unblock-ordering');
+    Route::post('users/{user}/loyalty-adjust', [UserController::class, 'adjustLoyalty'])->name('users.loyalty-adjust');
 
     Route::get('website-settings', [WebsiteSettingController::class, 'edit'])->name('website-settings.edit');
     Route::put('website-settings', [WebsiteSettingController::class, 'update'])->name('website-settings.update');
@@ -210,6 +212,13 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::put('promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
     Route::delete('promotions/{promotion}', [PromotionController::class, 'destroy'])->name('promotions.destroy');
     Route::patch('promotions/{promotion}/toggle', [PromotionController::class, 'toggle'])->name('promotions.toggle');
+    Route::get('loyalty-rewards', [LoyaltyRewardController::class, 'index'])->name('loyalty-rewards.index');
+    Route::get('loyalty-rewards/create', [LoyaltyRewardController::class, 'create'])->name('loyalty-rewards.create');
+    Route::post('loyalty-rewards', [LoyaltyRewardController::class, 'store'])->name('loyalty-rewards.store');
+    Route::get('loyalty-rewards/{loyalty_reward}/edit', [LoyaltyRewardController::class, 'edit'])->name('loyalty-rewards.edit');
+    Route::put('loyalty-rewards/{loyalty_reward}', [LoyaltyRewardController::class, 'update'])->name('loyalty-rewards.update');
+    Route::delete('loyalty-rewards/{loyalty_reward}', [LoyaltyRewardController::class, 'destroy'])->name('loyalty-rewards.destroy');
+    Route::patch('loyalty-rewards/{loyalty_reward}/status/{status}', [LoyaltyRewardController::class, 'setStatus'])->name('loyalty-rewards.status');
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::get('campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');

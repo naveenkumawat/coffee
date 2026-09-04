@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchLoyalty, LoyaltyPayload } from '../api/loyalty';
+import { fetchLoyalty, fetchLoyaltyRewards, LoyaltyPayload, LoyaltyRewardOption } from '../api/loyalty';
 import { ApiError } from '../api/client';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { formatCurrency } from '../utils/format';
 
 export function LoyaltyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loyalty, setLoyalty] = useState<LoyaltyPayload | null>(null);
+  const [rewards, setRewards] = useState<LoyaltyRewardOption[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,9 +21,14 @@ export function LoyaltyPage() {
       setErrorMessage(null);
 
       try {
-        const response = await fetchLoyalty();
+        const [loyaltyResponse, rewardsResponse] = await Promise.all([
+          fetchLoyalty(),
+          fetchLoyaltyRewards().catch(() => ({ data: { rewards: [] } })),
+        ]);
+
         if (!cancelled) {
-          setLoyalty(response.data);
+          setLoyalty(loyaltyResponse.data);
+          setRewards(rewardsResponse.data.rewards ?? []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -55,6 +62,8 @@ export function LoyaltyPage() {
     );
   }
 
+  const redeemedTransactions = loyalty.recent_transactions.filter((txn) => txn.points < 0);
+
   return (
     <div className="page-container account-page">
       <section className="account-hero account-hero-clean motion-enter">
@@ -64,6 +73,9 @@ export function LoyaltyPage() {
           Lifetime earned: {loyalty.lifetime_earned_points}
           {loyalty.lifetime_redeemed_points > 0 ? ` · Redeemed: ${loyalty.lifetime_redeemed_points}` : ''}
         </p>
+        {loyalty.has_points_debt && loyalty.debt_message ? (
+          <p className="summary-warning">{loyalty.debt_message}</p>
+        ) : null}
       </section>
 
       {loyalty.earning_explanation ? (
@@ -81,12 +93,51 @@ export function LoyaltyPage() {
         </section>
       ) : null}
 
+      {loyalty.redemption_enabled !== false ? (
+        <section className="account-section motion-enter">
+          <div className="account-section-heading">
+            <div>
+              <span className="auth-badge">Rewards</span>
+              <h2>Available rewards</h2>
+              <p>Apply these from your cart when you checkout.</p>
+            </div>
+          </div>
+
+          {rewards.length === 0 ? (
+            <p className="text-muted">No rewards are available for your cart right now.</p>
+          ) : (
+            <div className="account-link-list">
+              {rewards.map((reward) => (
+                <div key={reward.id} className="account-link-row">
+                  <span>
+                    <strong>{reward.name}</strong>
+                    <br />
+                    <span className="text-muted">
+                      {reward.description}
+                      {reward.minimum_spend ? ` · Min spend ${formatCurrency(reward.minimum_spend)}` : ''}
+                    </span>
+                  </span>
+                  <span className="text-end">
+                    <strong>{reward.points_cost} pts</strong>
+                    <br />
+                    <span className="text-muted">
+                      {reward.eligible
+                        ? `Save ${formatCurrency(reward.preview_discount_amount)}`
+                        : 'Not eligible'}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+
       <section className="account-section motion-enter">
         <div className="account-section-heading">
           <div>
             <span className="auth-badge">Activity</span>
             <h2>Recent points</h2>
-            <p>Redemption is coming soon.</p>
           </div>
         </div>
 
@@ -117,6 +168,32 @@ export function LoyaltyPage() {
           </div>
         )}
       </section>
+
+      {redeemedTransactions.length > 0 ? (
+        <section className="account-section motion-enter">
+          <div className="account-section-heading">
+            <div>
+              <span className="auth-badge">Redemptions</span>
+              <h2>Redeemed history</h2>
+            </div>
+          </div>
+          <div className="account-link-list">
+            {redeemedTransactions.map((txn) => (
+              <div key={`redeemed-${txn.id}`} className="account-link-row">
+                <span>
+                  <strong>{txn.label}</strong>
+                  <br />
+                  <span className="text-muted">
+                    {txn.description ?? ''}
+                    {txn.occurred_at ? ` · ${new Date(txn.occurred_at).toLocaleString()}` : ''}
+                  </span>
+                </span>
+                <strong className="text-danger">{txn.points}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <p className="mt-4">
         <Link to="/account" className="text-link">

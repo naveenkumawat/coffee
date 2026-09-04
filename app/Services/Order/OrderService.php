@@ -16,6 +16,7 @@ use App\Events\Order\OrderPlaced;
 use App\Events\Order\OrderStatusChanged;
 use App\Models\CustomerReward;
 use App\Models\DiningSession;
+use App\Models\LoyaltyReward;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -24,6 +25,8 @@ use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Attribution\AttributionServiceInterface;
 use App\Services\Dining\DiningRoundCancellationPolicy;
+use App\Services\Loyalty\LoyaltyRewardServiceInterface;
+use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
@@ -57,6 +60,8 @@ class OrderService implements OrderServiceInterface
         protected AddOnServiceInterface $addOns,
         protected DiningRoundCancellationPolicy $diningCancellation,
         protected AttributionServiceInterface $attribution,
+        protected LoyaltyServiceInterface $loyalty,
+        protected LoyaltyRewardServiceInterface $loyaltyRewards,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -98,6 +103,14 @@ class OrderService implements OrderServiceInterface
                 'base_unit_price' => (string) ($item['base_unit_price'] ?? $item['unit_price']),
                 'base_line_subtotal' => (string) ($item['base_line_subtotal'] ?? $item['line_subtotal']),
                 'addon_line_subtotal' => (string) ($item['addon_line_subtotal'] ?? '0.00'),
+                'add_ons' => array_map(static function (array $addOn) use ($item): array {
+                    $qty = (int) ($item['quantity'] ?? 1);
+
+                    return [
+                        'add_on_id' => isset($addOn['add_on_id']) ? (int) $addOn['add_on_id'] : null,
+                        'line_subtotal' => bcmul((string) ($addOn['line_total'] ?? '0'), (string) $qty, 2),
+                    ];
+                }, is_array($item['add_ons'] ?? null) ? $item['add_ons'] : []),
             ], $preparedItems);
 
             $freeDrinkBenefit = '0.00';
@@ -179,7 +192,42 @@ class OrderService implements OrderServiceInterface
             // discount_total includes promo + referral coupon; free drink benefit is separate (does not reduce GST basis)
             $discountTotal = bcadd($promoDiscount, $referralCouponDiscount, 2);
 
-            $gstBasis = bcsub($subtotal, $discountTotal, 2);
+            $gstBasisBeforeLoyalty = bcsub($subtotal, $discountTotal, 2);
+            if (bccomp($gstBasisBeforeLoyalty, '0', 2) < 0) {
+                $gstBasisBeforeLoyalty = '0.00';
+            }
+
+            $loyaltyDiscount = '0.00';
+            $loyaltySnapshot = null;
+            $loyaltyRewardId = null;
+            $loyaltyPointsCost = null;
+
+            if ($customer instanceof User && $data->getLoyaltyRewardId() !== null) {
+                $reward = LoyaltyReward::query()
+                    ->with(['products', 'productCategories', 'addOns'])
+                    ->find($data->getLoyaltyRewardId());
+
+                if ($reward === null) {
+                    throw ValidationException::withMessages([
+                        'loyalty_reward_id' => 'That loyalty reward is not available.',
+                    ]);
+                }
+
+                $loyaltyEvaluation = $this->loyaltyRewards->assertAndEvaluateForCheckout(
+                    $reward,
+                    $customer,
+                    $gstBasisBeforeLoyalty,
+                    $pricedItems,
+                    bccomp($promoDiscount, '0', 2) > 0,
+                );
+
+                $loyaltyDiscount = $loyaltyEvaluation['discount_amount'];
+                $loyaltySnapshot = $loyaltyEvaluation['snapshot'];
+                $loyaltyRewardId = (int) $reward->getKey();
+                $loyaltyPointsCost = (int) $loyaltyEvaluation['points_cost'];
+            }
+
+            $gstBasis = bcsub($gstBasisBeforeLoyalty, $loyaltyDiscount, 2);
             if (bccomp($gstBasis, '0', 2) < 0) {
                 $gstBasis = '0.00';
             }
@@ -246,6 +294,13 @@ class OrderService implements OrderServiceInterface
                 'status' => OrderStatus::PendingPayment->value,
                 'subtotal' => $subtotal,
                 'discount_total' => $discountTotal,
+                'loyalty_reward_id' => $loyaltyRewardId,
+                'loyalty_reward_name_snapshot' => is_array($loyaltySnapshot) ? ($loyaltySnapshot['name'] ?? null) : null,
+                'loyalty_reward_type_snapshot' => is_array($loyaltySnapshot) ? ($loyaltySnapshot['reward_type'] ?? null) : null,
+                'loyalty_reward_points_cost_snapshot' => $loyaltyPointsCost,
+                'loyalty_discount_amount' => $loyaltyDiscount,
+                'loyalty_reward_description_snapshot' => is_array($loyaltySnapshot) ? ($loyaltySnapshot['description'] ?? null) : null,
+                'loyalty_reward_snapshot' => $loyaltySnapshot,
                 'tax_enabled_snapshot' => $tax->enabled,
                 'tax_label_snapshot' => $tax->enabled ? $tax->label : null,
                 'tax_percent_snapshot' => $tax->enabled ? $tax->percent : null,
@@ -294,6 +349,17 @@ class OrderService implements OrderServiceInterface
                 $lockedCoupon,
                 $referralCouponDiscount,
             );
+
+            if ($loyaltyRewardId !== null && $loyaltyPointsCost !== null && $loyaltySnapshot !== null) {
+                $redeemResult = $this->loyalty->redeemForOrder($order, $loyaltyPointsCost, $loyaltySnapshot);
+
+                if (! $redeemResult['redeemed']) {
+                    throw ValidationException::withMessages([
+                        'loyalty_reward_id' => 'Unable to redeem loyalty points for this reward. Please try again.',
+                    ]);
+                }
+            }
+
             $this->orders->createStatusHistory($order, [
                 'from_status' => null,
                 'to_status' => OrderStatus::PendingPayment->value,
@@ -450,6 +516,7 @@ class OrderService implements OrderServiceInterface
 
                 if ($wasUnpaid) {
                     $this->restoreRewardsForUnpaidTerminalOrder($locked);
+                    $this->loyalty->restoreRedemptionForOrder($locked);
                 }
             }
 
@@ -531,6 +598,7 @@ class OrderService implements OrderServiceInterface
 
             if ($wasUnpaid) {
                 $this->restoreRewardsForUnpaidTerminalOrder($locked);
+                $this->loyalty->restoreRedemptionForOrder($locked);
             }
 
             $locked = $locked->fresh([

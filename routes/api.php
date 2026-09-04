@@ -121,9 +121,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/referral', [CustomerReferralController::class, 'show'])->name('referral.show');
             Route::get('/rewards', [CustomerRewardController::class, 'index'])->name('rewards.index');
             Route::get('/loyalty', [CustomerLoyaltyController::class, 'show'])->name('loyalty.show');
+            Route::get('/loyalty/rewards', [CustomerLoyaltyController::class, 'rewards'])->name('loyalty.rewards');
         });
 
         Route::get('/account/loyalty', [CustomerLoyaltyController::class, 'show'])->name('account.loyalty.show');
+        Route::get('/account/loyalty/rewards', [CustomerLoyaltyController::class, 'rewards'])->name('account.loyalty.rewards');
 
         Route::prefix('cart')->name('cart.')->group(function (): void {
             Route::get('/', [CustomerCartController::class, 'show'])->name('show');
@@ -134,6 +136,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('/items/{cartItem}', [CustomerCartController::class, 'destroy'])->name('items.destroy');
             Route::post('/promo-code', [CustomerCartController::class, 'applyPromoCode'])->name('promo-code.apply');
             Route::delete('/promo-code', [CustomerCartController::class, 'clearPromoCode'])->name('promo-code.clear');
+            Route::post('/loyalty-reward', [CustomerCartController::class, 'applyLoyaltyReward'])->name('loyalty-reward.apply');
+            Route::delete('/loyalty-reward', [CustomerCartController::class, 'clearLoyaltyReward'])->name('loyalty-reward.clear');
             Route::post('/referral-rewards/free-drink', [CustomerRewardController::class, 'addFreeDrinkToCart'])->name('referral-rewards.free-drink');
             Route::post('/referral-rewards/coupon', [CustomerRewardController::class, 'applyCoupon'])->name('referral-rewards.coupon.apply');
             Route::delete('/referral-rewards', [CustomerRewardController::class, 'clear'])->name('referral-rewards.clear');

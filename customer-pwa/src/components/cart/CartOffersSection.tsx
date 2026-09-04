@@ -23,6 +23,8 @@ interface CartOffersSectionProps {
   onApplyFreeDrink?: (rewardId: number) => Promise<void>;
   onApplyReferralCoupon?: (code: string) => Promise<void>;
   onClearReferralRewards?: () => Promise<void>;
+  onApplyLoyaltyReward?: (rewardId: number) => Promise<void>;
+  onClearLoyaltyReward?: () => Promise<void>;
 }
 
 export function CartOffersSection({
@@ -33,20 +35,27 @@ export function CartOffersSection({
   onApplyFreeDrink,
   onApplyReferralCoupon,
   onClearReferralRewards,
+  onApplyLoyaltyReward,
+  onClearLoyaltyReward,
 }: CartOffersSectionProps) {
   const discounts = cartDiscounts(summary);
   const appliedPromoCode = summary?.promo_code?.trim() || null;
   const referralRewards = summary?.referral_rewards ?? [];
+  const loyaltyReward = summary?.loyalty_reward ?? null;
+  const loyaltyRewards = summary?.loyalty_rewards ?? [];
+  const eligibleLoyaltyRewards = loyaltyRewards.filter((reward) => reward.eligible);
   const [promoCode, setPromoCode] = useState(appliedPromoCode ?? '');
-  const [errorMessage, setErrorMessage] = useState<string | null>(summary?.promo_error ?? summary?.reward_error ?? null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    summary?.promo_error ?? summary?.reward_error ?? summary?.loyalty_error ?? null,
+  );
   const [isApplying, setIsApplying] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [activeRewards, setActiveRewards] = useState<ActiveReward[]>([]);
 
   useEffect(() => {
     setPromoCode(appliedPromoCode ?? '');
-    setErrorMessage(summary?.promo_error ?? summary?.reward_error ?? null);
-  }, [appliedPromoCode, summary?.promo_error, summary?.reward_error]);
+    setErrorMessage(summary?.promo_error ?? summary?.reward_error ?? summary?.loyalty_error ?? null);
+  }, [appliedPromoCode, summary?.promo_error, summary?.reward_error, summary?.loyalty_error]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,15 +131,17 @@ export function CartOffersSection({
   }
 
   const freeDrinkBenefit = Number(summary?.free_drink_benefit ?? 0);
+  const loyaltyDiscount = Number(summary?.loyalty_discount ?? 0);
 
   return (
     <section className="cart-offers" aria-labelledby="cart-offers-heading">
       <div className="cart-offers-heading">
         <h2 id="cart-offers-heading">Offers & rewards</h2>
-        {hasDiscountSavings(summary?.discount_total) || freeDrinkBenefit > 0 ? (
+        {hasDiscountSavings(summary?.discount_total) || freeDrinkBenefit > 0 || loyaltyDiscount > 0 ? (
           <p>
             Savings applied
             {freeDrinkBenefit > 0 ? ` · free drink ${formatCurrency(summary?.free_drink_benefit)}` : ''}
+            {loyaltyDiscount > 0 ? ` · loyalty ${formatCurrency(summary?.loyalty_discount)}` : ''}
           </p>
         ) : (
           <p>Apply a coupon or referral reward</p>
@@ -206,6 +217,65 @@ export function CartOffersSection({
                 Use {reward.title}
               </button>
             ))}
+        </div>
+      ) : null}
+
+      {loyaltyReward ? (
+        <div className="cart-promo-applied">
+          <div>
+            <span className="cart-promo-code">{loyaltyReward.name}</span>
+            <small>Loyalty reward · {loyaltyReward.points_cost} pts · −{formatCurrency(loyaltyReward.discount_amount)}</small>
+          </div>
+          {onClearLoyaltyReward ? (
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => void onClearLoyaltyReward()}
+              disabled={isRemoving || isApplying}
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
+      ) : onApplyLoyaltyReward && eligibleLoyaltyRewards.length > 0 ? (
+        <div className="cart-offer-list">
+          <label className="form-label" htmlFor="cart-loyalty-reward">Use loyalty reward</label>
+          <select
+            id="cart-loyalty-reward"
+            className="form-select form-select-sm mb-2"
+            defaultValue=""
+            disabled={isApplying}
+            onChange={(event) => {
+              const rewardId = Number(event.target.value);
+              if (!rewardId) {
+                return;
+              }
+
+              void (async () => {
+                setIsApplying(true);
+                setErrorMessage(null);
+                try {
+                  await onApplyLoyaltyReward(rewardId);
+                } catch (error) {
+                  setErrorMessage(
+                    error instanceof ApiError
+                      ? getFieldError(error.errors, 'loyalty_reward_id') ?? error.message
+                      : 'Unable to apply loyalty reward.',
+                  );
+                } finally {
+                  setIsApplying(false);
+                  event.target.value = '';
+                }
+              })();
+            }}
+          >
+            <option value="">Select a reward…</option>
+            {eligibleLoyaltyRewards.map((reward) => (
+              <option key={reward.id} value={reward.id}>
+                {reward.name} ({reward.points_cost} pts · save {formatCurrency(reward.preview_discount_amount)})
+              </option>
+            ))}
+          </select>
         </div>
       ) : null}
 

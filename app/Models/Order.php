@@ -32,6 +32,13 @@ class Order extends AbstractModel
         'status',
         'subtotal',
         'discount_total',
+        'loyalty_reward_id',
+        'loyalty_reward_name_snapshot',
+        'loyalty_reward_type_snapshot',
+        'loyalty_reward_points_cost_snapshot',
+        'loyalty_discount_amount',
+        'loyalty_reward_description_snapshot',
+        'loyalty_reward_snapshot',
         'tax_enabled_snapshot',
         'tax_label_snapshot',
         'tax_percent_snapshot',
@@ -88,6 +95,9 @@ class Order extends AbstractModel
             'dining_round_number' => 'integer',
             'subtotal' => 'decimal:2',
             'discount_total' => 'decimal:2',
+            'loyalty_reward_points_cost_snapshot' => 'integer',
+            'loyalty_discount_amount' => 'decimal:2',
+            'loyalty_reward_snapshot' => 'array',
             'tax_enabled_snapshot' => 'boolean',
             'tax_percent_snapshot' => 'decimal:2',
             'tax_inclusive_snapshot' => 'boolean',
@@ -172,6 +182,11 @@ class Order extends AbstractModel
     public function rewardRedemptions(): HasMany
     {
         return $this->hasMany(OrderRewardRedemption::class)->orderBy('id');
+    }
+
+    public function loyaltyReward(): BelongsTo
+    {
+        return $this->belongsTo(LoyaltyReward::class, 'loyalty_reward_id');
     }
 
     public function statusHistory(): HasMany

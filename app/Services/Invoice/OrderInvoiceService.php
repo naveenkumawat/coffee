@@ -127,6 +127,7 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
             lines: $lines,
             subtotal: number_format((float) $order->subtotal, 2, '.', ''),
             discountTotal: number_format((float) $order->discount_total, 2, '.', ''),
+            loyaltyDiscountAmount: number_format((float) ($order->loyalty_discount_amount ?? 0), 2, '.', ''),
             freeDrinkBenefit: number_format((float) $freeDrinkBenefit, 2, '.', ''),
             taxEnabled: $tax->enabled,
             taxLabel: $tax->label,
