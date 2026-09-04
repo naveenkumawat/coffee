@@ -147,6 +147,67 @@
                 </div>
             @endif
 
+            @if ($managedUser->hasRole('customer'))
+                <div class="card card-flush internal-card mb-5">
+                    <div class="card-header pt-7">
+                        <div class="card-title">
+                            <h3 class="fw-bold text-gray-900">Loyalty</h3>
+                        </div>
+                    </div>
+                    <div class="card-body pt-5">
+                        <div class="row g-4 mb-6">
+                            <div class="col-4">
+                                <div class="text-muted fs-7 mb-1">Available</div>
+                                <div class="fw-bold text-gray-900 fs-3">{{ $loyaltyAccount?->available_points ?? 0 }}</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-muted fs-7 mb-1">Lifetime earned</div>
+                                <div class="fw-bold text-gray-900">{{ $loyaltyAccount?->lifetime_earned_points ?? 0 }}</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-muted fs-7 mb-1">Lifetime redeemed</div>
+                                <div class="fw-bold text-gray-900">{{ $loyaltyAccount?->lifetime_redeemed_points ?? 0 }}</div>
+                            </div>
+                        </div>
+
+                        @if ($loyaltyTransactions === null || $loyaltyTransactions->isEmpty())
+                            <div class="text-muted">No loyalty transactions yet.</div>
+                        @else
+                            <div class="table-responsive internal-table-wrapper">
+                                <table class="table align-middle table-row-dashed fs-7 gy-3 internal-table">
+                                    <thead>
+                                        <tr class="text-start text-muted fw-bold text-uppercase gs-0">
+                                            <th>When</th>
+                                            <th>Type</th>
+                                            <th>Points</th>
+                                            <th>Source</th>
+                                            <th>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="fw-semibold text-gray-700">
+                                        @foreach ($loyaltyTransactions as $txn)
+                                            <tr>
+                                                <td>{{ $txn->occurred_at?->format('d M Y, h:i A') }}</td>
+                                                <td>{{ $txn->type?->label() ?? $txn->type }}</td>
+                                                <td>{{ $txn->points > 0 ? '+'.$txn->points : $txn->points }}</td>
+                                                <td>
+                                                    {{ $txn->source_type?->label() ?? '—' }}
+                                                    @if ($txn->source_id)
+                                                        #{{ $txn->source_id }}
+                                                    @endif
+                                                </td>
+                                                <td>{{ $txn->reason_code ?: ($txn->description ?: '—') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            {{ $loyaltyTransactions->links('components.internal.pagination') }}
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <div class="card card-flush internal-card">
                 <div class="card-header pt-7">
                     <div class="card-title">

@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
+use App\Http\Controllers\Api\V1\Customer\CustomerLoyaltyController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRecommendationController;
@@ -119,7 +120,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::put('/password', [CustomerAccountController::class, 'updatePassword'])->name('password.update');
             Route::get('/referral', [CustomerReferralController::class, 'show'])->name('referral.show');
             Route::get('/rewards', [CustomerRewardController::class, 'index'])->name('rewards.index');
+            Route::get('/loyalty', [CustomerLoyaltyController::class, 'show'])->name('loyalty.show');
         });
+
+        Route::get('/account/loyalty', [CustomerLoyaltyController::class, 'show'])->name('account.loyalty.show');
 
         Route::prefix('cart')->name('cart.')->group(function (): void {
             Route::get('/', [CustomerCartController::class, 'show'])->name('show');

@@ -421,6 +421,14 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * Config: `coffee.behaviour.*` including `profile`, `recommendations`, `campaigns`, `segments`, `attribution`, and `merchandising`.
 * Detail: `docs/personalisation-architecture.md`. Phase-1 freeze unchanged.
 
+## Loyalty & rewards foundation (P3.1)
+
+* `loyalty_accounts` + immutable `loyalty_point_transactions` ledger; cached balances stay transactional with ledger writes.
+* `LoyaltyService` earns on eligible completed paid orders (takeaway/delivery/dining session payment semantics); configurable rate; production default off.
+* Side effect via after-commit job (unique/idempotent); order/payment success never depends on loyalty.
+* Customer `GET /api/v1/account/loyalty`; Admin user show history; PWA Account → Loyalty (no redemption yet).
+* Detail: `docs/loyalty-architecture.md`. Phase-1 and Phase-2 freeze unchanged.
+
 ## Mobile ordering journey hardening (C2)
 
 * Guest cart merge preserves add-on `configuration_hash` lines; login returns to intended checkout path.

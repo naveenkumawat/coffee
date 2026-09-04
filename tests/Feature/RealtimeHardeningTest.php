@@ -41,7 +41,7 @@ class RealtimeHardeningTest extends TestCase
 
         $cases = [
             OrderPlaced::class => 3,
-            OrderStatusChanged::class => 7,
+            OrderStatusChanged::class => 8,
             OrderPreparationStatusChanged::class => 3,
             DiningRoundPlaced::class => 2,
             DiningBillReady::class => 3,

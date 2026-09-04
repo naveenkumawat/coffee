@@ -172,6 +172,13 @@ export function AccountPage() {
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
+          <Link to="/account/loyalty" className="account-link-row is-emphasis">
+            <span>
+              <i className="bi bi-star" aria-hidden="true"></i>
+              Loyalty points
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
           <Link to="/account/rewards" className="account-link-row is-emphasis">
             <span>
               <i className="bi bi-gift" aria-hidden="true"></i>

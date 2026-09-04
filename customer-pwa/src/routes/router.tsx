@@ -39,6 +39,7 @@ const OrderDetailPage = lazyPage(() =>
 const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage').then((module) => ({ default: module.ReferralPage })));
 const RewardsPage = lazyPage(() => import('../pages/RewardsPage').then((module) => ({ default: module.RewardsPage })));
+const LoyaltyPage = lazyPage(() => import('../pages/LoyaltyPage').then((module) => ({ default: module.LoyaltyPage })));
 const DiningPage = lazyPage(() => import('../pages/DiningPage').then((module) => ({ default: module.DiningPage })));
 const DiningSessionPage = lazyPage(() =>
   import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningSessionPage })),
@@ -192,6 +193,10 @@ export const router = createBrowserRouter([
           {
             path: 'account/rewards',
             element: <RewardsPage />,
+          },
+          {
+            path: 'account/loyalty',
+            element: <LoyaltyPage />,
           },
         ],
       },

@@ -426,7 +426,7 @@ Status: Pending (explicitly deferred; not launch-blocking)
 - [ ] QR menu implemented
 - [x] Table ordering / dine-in order mode implemented (Dining D1–L1.2; Waiter + customer session flow)
 - [x] Delivery order mode implemented (third-party arrangement; café does not collect delivery fee; disclaimer configurable; no courier API)
-- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented (promotions/referrals exist in Phase 1; wallet/loyalty still Phase 2)
+- [ ] Coupons, offers, loyalty, wallet, and gift cards implemented (promotions/referrals exist in Phase 1; **P3.1 loyalty foundation complete**; wallet/redemption still later)
 - [x] Ratings and reviews implemented
 - [ ] Order scheduling implemented
 - [ ] Advanced purchasing, suppliers, expenses, tax/GST, barcode, printer, and display integrations implemented
@@ -498,3 +498,13 @@ Canonical: `docs/personalisation-architecture.md`.
 - [x] P2.5 reusable audience segments: dynamic segment definitions + shared targeting evaluator + campaign `segment_matches` / `segment_not_matches`; Phase-1 freeze unchanged
 - [x] P2.6 attribution analytics: cart/order attribution snapshots + conversion funnel + Admin recommendation/campaign performance; Phase-1 freeze unchanged
 - [x] P2.7 personalised landing/merchandising: HomeSection orchestration + `/api/v1/home` placement payload + Admin config + PWA Home/Menu rendering; Phase-1 freeze unchanged
+
+## Phase 3 loyalty track (outside Phase-1/2 freeze)
+
+Canonical: `docs/loyalty-architecture.md`.
+
+- [x] **P3.1** — Loyalty & rewards foundation (complete)
+- [ ] **P3.2** — Redemption & reward rules
+- [ ] **P3.3** — Loyalty customer UX
+- [ ] **P3.4** — Admin/operations controls
+- [ ] **P3.5** — Intelligence integration

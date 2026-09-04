@@ -32,6 +32,7 @@ use App\Listeners\Dining\QualifyReferralOnDiningPaymentConfirmed;
 use App\Listeners\Dining\SendDiningBillReadyNotification;
 use App\Listeners\Dining\SendDiningPaymentConfirmedNotification;
 use App\Listeners\Dining\WireDiningRealtimeSignals;
+use App\Listeners\Loyalty\AwardLoyaltyOnOrderCompleted;
 use App\Listeners\Menu\FlushMenuCatalogCache;
 use App\Listeners\OperationalNotification\WireOperationalDiningBillReady;
 use App\Listeners\OperationalNotification\WireOperationalDiningPaymentConfirmed;
@@ -106,6 +107,7 @@ class EventServiceProvider extends ServiceProvider
             QualifyReferralOnPaymentConfirmed::class,
             RecordOrderCompletedBehaviourEvent::class,
             [RecordAttributionConversions::class, 'handleOrderStatusChanged'],
+            [AwardLoyaltyOnOrderCompleted::class, 'handleOrderStatusChanged'],
             WireOperationalOrderStatusChanged::class,
             [WireDiningRealtimeSignals::class, 'handleOrderStatusChanged'],
         ],
@@ -141,6 +143,7 @@ class EventServiceProvider extends ServiceProvider
             QualifyReferralOnDiningPaymentConfirmed::class,
             WireOperationalDiningPaymentConfirmed::class,
             [RecordAttributionConversions::class, 'handleDiningPaymentConfirmed'],
+            [AwardLoyaltyOnOrderCompleted::class, 'handleDiningPaymentConfirmed'],
             [WireDiningRealtimeSignals::class, 'handlePaymentConfirmed'],
         ],
         DiningPaymentProofReceived::class => [

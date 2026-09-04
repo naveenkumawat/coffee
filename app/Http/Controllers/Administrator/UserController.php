@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Parsers\User\UserParserInterface;
 use App\Repositories\User\UserRepositoryInterface;
 use App\Services\Auth\RoleServiceInterface;
+use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\User\UserServiceInterface;
 use Illuminate\Contracts\View\View;
@@ -25,6 +26,7 @@ class UserController extends Controller
         protected UserServiceInterface $service,
         protected RoleServiceInterface $roles,
         protected OrderSecurityServiceInterface $orderSecurity,
+        protected LoyaltyServiceInterface $loyalty,
     ) {}
 
     public function index(UserIndexRequest $request): View
@@ -73,10 +75,18 @@ class UserController extends Controller
             ? $this->orderSecurity->countOpenUnpaidOrders($user)
             : 0;
 
+        $loyalty = null;
+
+        if ($user->hasRole('customer')) {
+            $loyalty = $this->loyalty->adminHistoryForCustomer($user, 20);
+        }
+
         return view('administrator.users.show', [
             'managedUser' => $user,
             'selectedRole' => $this->roles->normalizeUserManagementRoleValue($user->role),
             'openUnpaidOrders' => $openUnpaidOrders,
+            'loyaltyAccount' => $loyalty['account'] ?? null,
+            'loyaltyTransactions' => $loyalty['transactions'] ?? null,
         ]);
     }
 
