@@ -272,6 +272,47 @@ Checkout protection is layered server-side (CAPTCHA / Turnstile intentionally de
 
 Limits live in Website Settings → Order Security. Trusted cash (`cash_takeaway_allowed`) is independent and never bypasses these controls.
 
+Open unpaid pending-payment limit counts **only live** unpaid `Pending Payment` retail orders whose payment window has not expired (`payment_expires_at`, or legacy `placed_at` + config window). Cancelled / rejected / paid / completed / expired orders do not count. Before enforcing the limit, due pending orders for that customer are expired through the canonical order workflow.
+
+## Customer pending-payment cancellation & expiry
+
+Retail takeaway/delivery only (Dining round cancellation is unchanged):
+
+```
+CUSTOMER:
+Pending Payment + unpaid
+        ↓
+     Cancel allowed  (source=customer, reason=customer_cancelled_before_payment)
+
+Payment confirmed OR Accepted+
+        ↓
+ Customer cancellation forbidden
+
+SYSTEM:
+Pending Payment + unpaid + payment_expires_at reached
+        ↓
+ Auto Cancel (source=system, reason=payment_timeout)
+```
+
+- Snapshot `payment_expires_at` at checkout create from `coffee.orders.pending_payment_expiry_minutes` (default 120). Config changes do not rewrite existing windows.
+- Canonical helpers: `Order::canCustomerCancel` / `OrderService::canCustomerCancel` / `cancelPendingPaymentByCustomer` / `expirePendingPaymentOrder`.
+- Scheduler: `coffee:expire-pending-orders` every 15 minutes. Never mass-update status; recheck payment/status under lock.
+- Canonical orders are **never** physically deleted on cancel/expiry.
+
+## Saved delivery addresses
+
+`customer_delivery_addresses` are reusable, customer-owned, max one `is_default` per customer. Checkout may select `delivery_address_id` or submit inline fields (optionally `save_delivery_address` / `make_default_address`).
+
+```
+Saved Address
+     ↓ checkout selection
+Order Address Snapshot
+     ↓
+Historical order independent from saved address
+```
+
+Editing/deleting a saved address must not change order/invoice delivery history.
+
 ## Promotions / discounts
 
 `PromotionService` is the sole discount engine. Cart, checkout, order creation, invoices, and the PWA must consume its results — never recompute discounts in React or Blade.

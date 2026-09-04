@@ -56,6 +56,46 @@ interface CheckoutTransferInterface
 
     public function setDeliveryNotes(?string $deliveryNotes): void;
 
+    public function getDeliveryAddressId(): ?int;
+
+    public function setDeliveryAddressId(?int $deliveryAddressId): void;
+
+    public function getAddressLine1(): ?string;
+
+    public function setAddressLine1(?string $addressLine1): void;
+
+    public function getAddressLine2(): ?string;
+
+    public function setAddressLine2(?string $addressLine2): void;
+
+    public function getLandmark(): ?string;
+
+    public function setLandmark(?string $landmark): void;
+
+    public function getCity(): ?string;
+
+    public function setCity(?string $city): void;
+
+    public function getState(): ?string;
+
+    public function setState(?string $state): void;
+
+    public function getPostalCode(): ?string;
+
+    public function setPostalCode(?string $postalCode): void;
+
+    public function getAddressLabel(): ?string;
+
+    public function setAddressLabel(?string $addressLabel): void;
+
+    public function getSaveDeliveryAddress(): bool;
+
+    public function setSaveDeliveryAddress(bool $saveDeliveryAddress): void;
+
+    public function getMakeDefaultAddress(): bool;
+
+    public function setMakeDefaultAddress(bool $makeDefaultAddress): void;
+
     public function getCafeTableId(): ?int;
 
     public function setCafeTableId(?int $cafeTableId): void;

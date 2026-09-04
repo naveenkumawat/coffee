@@ -41,6 +41,20 @@ export interface CheckoutSummaryMeta extends Record<string, unknown> {
   fulfilment?: CheckoutFulfilmentMeta;
   payment_methods?: Partial<Record<CheckoutFulfilmentMethod, CheckoutPaymentMethodOption[]>>;
   payment?: CheckoutPaymentInstructions;
+  delivery_addresses?: Array<{
+    id: number;
+    label: string | null;
+    recipient_name: string;
+    phone: string;
+    address_line_1: string;
+    address_line_2: string | null;
+    landmark: string | null;
+    city: string;
+    state: string;
+    postal_code: string;
+    is_default: boolean;
+    formatted_address: string;
+  }>;
 }
 
 export interface CheckoutSummaryResponse extends ApiEnvelope<Cart> {
@@ -58,10 +72,20 @@ export interface CheckoutSubmitPayload {
   pickup_phone?: string | null;
   customer_notes?: string | null;
   pickup_notes?: string | null;
+  delivery_address_id?: number | null;
   delivery_address?: string | null;
   delivery_phone?: string | null;
   delivery_contact_name?: string | null;
   delivery_notes?: string | null;
+  address_label?: string | null;
+  address_line_1?: string | null;
+  address_line_2?: string | null;
+  landmark?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal_code?: string | null;
+  save_delivery_address?: boolean;
+  make_default_address?: boolean;
   cafe_table_id?: number | null;
 }
 

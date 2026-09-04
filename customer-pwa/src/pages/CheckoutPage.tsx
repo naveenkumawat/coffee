@@ -56,6 +56,9 @@ export function CheckoutPage() {
     delivery_notes: '',
   });
   const [sameAsContact, setSameAsContact] = useState(true);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | 'new' | null>(null);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [makeDefaultAddress, setMakeDefaultAddress] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<ApiValidationErrors>({});
@@ -119,6 +122,16 @@ export function CheckoutPage() {
         setSameAsContact(true);
         didHydrateDefaults.current = true;
       }
+
+      const addresses = response.meta.delivery_addresses ?? [];
+      const defaultAddress = addresses.find((row) => row.is_default) ?? addresses[0] ?? null;
+      setSelectedAddressId((current) => {
+        if (current !== null) {
+          return current;
+        }
+
+        return defaultAddress ? defaultAddress.id : addresses.length > 0 ? 'new' : 'new';
+      });
     } catch (error) {
       if (error instanceof ApiError && error.status === 422) {
         const cartMessage = error.errors.cart?.[0] ?? error.message;
@@ -251,11 +264,21 @@ export function CheckoutPage() {
               pickup_phone: pickupPhone,
               pickup_notes: form.pickup_notes.trim() || null,
             }
-          : {
+          : selectedAddressId !== null && selectedAddressId !== 'new'
+            ? {
+                delivery_address_id: selectedAddressId,
+                delivery_phone: deliveryPhone,
+                delivery_contact_name: deliveryContactName.trim() || null,
+                delivery_notes: form.delivery_notes.trim() || null,
+                make_default_address: makeDefaultAddress,
+              }
+            : {
                 delivery_address: form.delivery_address.trim(),
                 delivery_phone: deliveryPhone,
                 delivery_contact_name: deliveryContactName.trim() || null,
                 delivery_notes: form.delivery_notes.trim() || null,
+                save_delivery_address: saveAddress,
+                make_default_address: saveAddress && makeDefaultAddress,
               }),
       });
 
@@ -427,8 +450,8 @@ export function CheckoutPage() {
 
         <section className="checkout-section" aria-labelledby="checkout-contact-heading">
           <div className="checkout-section-heading">
-            <h2 id="checkout-contact-heading">Contact</h2>
-            <p>For order updates</p>
+            <h2 id="checkout-contact-heading">Contact & Delivery</h2>
+            <p>{fulfilmentMethod === 'delivery' ? 'Who receives this order, and where' : 'Contact details for updates'}</p>
           </div>
 
           <div className="checkout-field-group">
@@ -541,7 +564,7 @@ export function CheckoutPage() {
         {fulfilmentMethod === 'delivery' ? (
           <section className="checkout-section" aria-labelledby="checkout-delivery-heading">
             <div className="checkout-section-heading">
-              <h2 id="checkout-delivery-heading">Delivery</h2>
+              <h2 id="checkout-delivery-heading">Delivery address</h2>
               <p>Third-party delivery — charges paid separately.</p>
             </div>
 
@@ -549,6 +572,52 @@ export function CheckoutPage() {
               <div className="checkout-inline-note" role="note">
                 {deliveryDisclaimer}
               </div>
+            ) : null}
+
+            {(summaryMeta.delivery_addresses ?? []).length > 0 ? (
+              <div className="checkout-field-group">
+                {(summaryMeta.delivery_addresses ?? []).map((address) => (
+                  <label key={address.id} className="choice-row checkout-choice">
+                    <input
+                      type="radio"
+                      name="delivery_address_choice"
+                      checked={selectedAddressId === address.id}
+                      onChange={() => {
+                        setSelectedAddressId(address.id);
+                        setSaveAddress(false);
+                      }}
+                    />
+                    <span>
+                      <strong>
+                        {address.label || 'Saved address'}
+                        {address.is_default ? ' (Default)' : ''}
+                      </strong>
+                      <br />
+                      <span className="checkout-prewrap">{address.formatted_address}</span>
+                    </span>
+                  </label>
+                ))}
+                <label className="choice-row checkout-choice">
+                  <input
+                    type="radio"
+                    name="delivery_address_choice"
+                    checked={selectedAddressId === 'new'}
+                    onChange={() => setSelectedAddressId('new')}
+                  />
+                  <span>+ Add new address</span>
+                </label>
+              </div>
+            ) : null}
+
+            {selectedAddressId !== null && selectedAddressId !== 'new' ? (
+              <label className="choice-row checkout-choice">
+                <input
+                  type="checkbox"
+                  checked={makeDefaultAddress}
+                  onChange={(event) => setMakeDefaultAddress(event.target.checked)}
+                />
+                <span>Make this my default address</span>
+              </label>
             ) : null}
 
             <label className="choice-row checkout-choice">
@@ -584,16 +653,44 @@ export function CheckoutPage() {
               </div>
             ) : null}
 
+            {selectedAddressId === 'new' || (summaryMeta.delivery_addresses ?? []).length === 0 ? (
+              <div className="checkout-field-group">
+                <FormTextarea
+                  label="Delivery address"
+                  name="delivery_address"
+                  rows={3}
+                  placeholder="Full address with landmark…"
+                  value={form.delivery_address}
+                  onChange={(event) => updateField('delivery_address', event.target.value)}
+                  error={getFieldError(errors, 'delivery_address')}
+                />
+                <label className="choice-row checkout-choice">
+                  <input
+                    type="checkbox"
+                    checked={saveAddress}
+                    onChange={(event) => {
+                      setSaveAddress(event.target.checked);
+                      if (!event.target.checked) {
+                        setMakeDefaultAddress(false);
+                      }
+                    }}
+                  />
+                  <span>Save this address for future orders</span>
+                </label>
+                {saveAddress ? (
+                  <label className="choice-row checkout-choice">
+                    <input
+                      type="checkbox"
+                      checked={makeDefaultAddress}
+                      onChange={(event) => setMakeDefaultAddress(event.target.checked)}
+                    />
+                    <span>Make this my default address</span>
+                  </label>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="checkout-field-group">
-              <FormTextarea
-                label="Delivery address"
-                name="delivery_address"
-                rows={3}
-                placeholder="Full address with landmark…"
-                value={form.delivery_address}
-                onChange={(event) => updateField('delivery_address', event.target.value)}
-                error={getFieldError(errors, 'delivery_address')}
-              />
               <FormTextarea
                 label="Notes for the cafe (optional)"
                 name="customer_notes"

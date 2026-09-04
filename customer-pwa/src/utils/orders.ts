@@ -189,10 +189,14 @@ export function sortOrdersForDisplay(orders: Order[]): Order[] {
 }
 
 export function orderListActionLabel(
-  order: Pick<Order, 'status' | 'fulfilment_method' | 'payment_method'>,
+  order: Pick<Order, 'status' | 'fulfilment_method' | 'payment_method' | 'can_cancel'>,
 ): string {
   if (isPendingPayment(order.status)) {
-    return isCashPayment(order) ? 'Track' : 'Pay now';
+    if (isCashPayment(order)) {
+      return order.can_cancel ? 'Cancel' : 'Track';
+    }
+
+    return order.can_cancel ? 'Pay · Cancel' : 'Pay now';
   }
 
   if (isReadyForPickup(order.status)) {

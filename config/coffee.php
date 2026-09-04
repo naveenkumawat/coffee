@@ -16,6 +16,13 @@ return [
         'session_token_key' => 'customer_checkout.token',
         'api_token_cache_prefix' => 'customer_api_checkout_token:',
     ],
+    'orders' => [
+        /*
+        | Retail unpaid Pending Payment window (takeaway/delivery).
+        | Snapshotted onto orders.payment_expires_at at checkout create time.
+        */
+        'pending_payment_expiry_minutes' => (int) env('COFFEE_PENDING_PAYMENT_EXPIRY_MINUTES', 120),
+    ],
     'media' => [
         'disk' => env('COFFEE_MEDIA_DISK', 'public'),
         /** Soft target ~50–150KB; hard cap for uploads (kilobytes). */

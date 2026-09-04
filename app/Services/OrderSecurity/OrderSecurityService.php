@@ -11,7 +11,9 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\User;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\Order\OrderServiceInterface;
 use App\Transfers\Checkout\CheckoutTransferInterface;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -84,6 +86,9 @@ class OrderSecurityService implements OrderSecurityServiceInterface
             return;
         }
 
+        App::make(OrderServiceInterface::class)
+            ->expireDuePendingPaymentOrdersForCustomer($customer);
+
         $max = $config['max_open_unpaid_orders'];
         $count = $this->countOpenUnpaidOrders($customer);
 
@@ -124,15 +129,27 @@ class OrderSecurityService implements OrderSecurityServiceInterface
 
     public function countOpenUnpaidOrders(User $customer): int
     {
+        $minutes = max(1, (int) config('coffee.orders.pending_payment_expiry_minutes', 120));
+        $legacyCutoff = now()->subMinutes($minutes);
+
         return (int) Order::query()
             ->where('customer_id', $customer->getKey())
             ->whereNull('dining_session_id')
+            ->where('status', OrderStatus::PendingPayment->value)
             ->where('payment_status', '!=', PaymentStatus::Confirmed->value)
-            ->whereNotIn('status', [
-                OrderStatus::Cancelled->value,
-                OrderStatus::Rejected->value,
-                OrderStatus::Completed->value,
-            ])
+            ->whereNull('payment_confirmed_at')
+            ->where(function ($query) use ($legacyCutoff): void {
+                $query->where(function ($inner): void {
+                    $inner->whereNotNull('payment_expires_at')
+                        ->where('payment_expires_at', '>', now());
+                })->orWhere(function ($inner) use ($legacyCutoff): void {
+                    $inner->whereNull('payment_expires_at')
+                        ->where(function ($placed) use ($legacyCutoff): void {
+                            $placed->whereNull('placed_at')
+                                ->orWhere('placed_at', '>', $legacyCutoff);
+                        });
+                });
+            })
             ->count();
     }
 

@@ -15,3 +15,7 @@ Schedule::command('coffee:behaviour-events-prune')
 Schedule::command('coffee:personalisation-profiles-rebuild --stale --limit=200')
     ->hourly()
     ->withoutOverlapping();
+
+Schedule::command('coffee:expire-pending-orders')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();

@@ -32,6 +32,26 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
 
     protected ?string $deliveryNotes = null;
 
+    protected ?int $deliveryAddressId = null;
+
+    protected ?string $addressLine1 = null;
+
+    protected ?string $addressLine2 = null;
+
+    protected ?string $landmark = null;
+
+    protected ?string $city = null;
+
+    protected ?string $state = null;
+
+    protected ?string $postalCode = null;
+
+    protected ?string $addressLabel = null;
+
+    protected bool $saveDeliveryAddress = false;
+
+    protected bool $makeDefaultAddress = false;
+
     protected ?int $cafeTableId = null;
 
     protected ?string $paymentMethod = null;
@@ -166,6 +186,106 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
         $this->deliveryNotes = $deliveryNotes;
     }
 
+    public function getDeliveryAddressId(): ?int
+    {
+        return $this->deliveryAddressId;
+    }
+
+    public function setDeliveryAddressId(?int $deliveryAddressId): void
+    {
+        $this->deliveryAddressId = $deliveryAddressId;
+    }
+
+    public function getAddressLine1(): ?string
+    {
+        return $this->addressLine1;
+    }
+
+    public function setAddressLine1(?string $addressLine1): void
+    {
+        $this->addressLine1 = $addressLine1;
+    }
+
+    public function getAddressLine2(): ?string
+    {
+        return $this->addressLine2;
+    }
+
+    public function setAddressLine2(?string $addressLine2): void
+    {
+        $this->addressLine2 = $addressLine2;
+    }
+
+    public function getLandmark(): ?string
+    {
+        return $this->landmark;
+    }
+
+    public function setLandmark(?string $landmark): void
+    {
+        $this->landmark = $landmark;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): void
+    {
+        $this->city = $city;
+    }
+
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
+    public function setState(?string $state): void
+    {
+        $this->state = $state;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(?string $postalCode): void
+    {
+        $this->postalCode = $postalCode;
+    }
+
+    public function getAddressLabel(): ?string
+    {
+        return $this->addressLabel;
+    }
+
+    public function setAddressLabel(?string $addressLabel): void
+    {
+        $this->addressLabel = $addressLabel;
+    }
+
+    public function getSaveDeliveryAddress(): bool
+    {
+        return $this->saveDeliveryAddress;
+    }
+
+    public function setSaveDeliveryAddress(bool $saveDeliveryAddress): void
+    {
+        $this->saveDeliveryAddress = $saveDeliveryAddress;
+    }
+
+    public function getMakeDefaultAddress(): bool
+    {
+        return $this->makeDefaultAddress;
+    }
+
+    public function setMakeDefaultAddress(bool $makeDefaultAddress): void
+    {
+        $this->makeDefaultAddress = $makeDefaultAddress;
+    }
+
     public function getCafeTableId(): ?int
     {
         return $this->cafeTableId;
@@ -202,6 +322,16 @@ class CheckoutTransfer extends AbstractTransfer implements CheckoutTransferInter
             'delivery_phone' => $this->deliveryPhone,
             'delivery_contact_name' => $this->deliveryContactName,
             'delivery_notes' => $this->deliveryNotes,
+            'delivery_address_id' => $this->deliveryAddressId,
+            'address_line_1' => $this->addressLine1,
+            'address_line_2' => $this->addressLine2,
+            'landmark' => $this->landmark,
+            'city' => $this->city,
+            'state' => $this->state,
+            'postal_code' => $this->postalCode,
+            'address_label' => $this->addressLabel,
+            'save_delivery_address' => $this->saveDeliveryAddress,
+            'make_default_address' => $this->makeDefaultAddress,
             'cafe_table_id' => $this->cafeTableId,
             'payment_method' => $this->paymentMethod,
         ];

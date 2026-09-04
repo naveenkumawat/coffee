@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { fetchOrder } from '../api/orders';
+import { cancelOrder, fetchOrder } from '../api/orders';
 import { ApiError } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
@@ -89,6 +89,8 @@ export function OrderConfirmationPage() {
   );
   const [isLoading, setIsLoading] = useState(order === null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (locationState?.payment && orderId) {
@@ -131,6 +133,29 @@ export function OrderConfirmationPage() {
 
     void loadOrder();
   }, [order, orderId, payment]);
+
+  async function handleCancelOrder(): Promise<void> {
+    if (!order || !order.can_cancel) {
+      return;
+    }
+
+    if (!window.confirm('Cancel this unpaid order?')) {
+      return;
+    }
+
+    setIsCancelling(true);
+    setCancelMessage(null);
+
+    try {
+      const response = await cancelOrder(String(order.id));
+      setOrder(response.data);
+      setCancelMessage('Order cancelled.');
+    } catch (error) {
+      setCancelMessage(error instanceof ApiError ? error.message : 'Unable to cancel this order.');
+    } finally {
+      setIsCancelling(false);
+    }
+  }
 
   const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
   const fulfilmentLabel = useMemo(() => fulfilmentChipLabel(order), [order]);
@@ -234,6 +259,20 @@ export function OrderConfirmationPage() {
           </Link>
         </div>
       )}
+
+      {order.can_cancel && isPendingPayment(order.status) ? (
+        <section className="account-section">
+          {cancelMessage ? <p className="form-feedback is-error">{cancelMessage}</p> : null}
+          <button
+            type="button"
+            className="btn btn-outline-dark rounded-pill w-100"
+            disabled={isCancelling}
+            onClick={() => void handleCancelOrder()}
+          >
+            {isCancelling ? 'Cancelling…' : 'Cancel Order'}
+          </button>
+        </section>
+      ) : null}
 
       {isDeliveryOrder(order) ? (
         <section className="checkout-section" aria-labelledby="confirmation-delivery-heading">

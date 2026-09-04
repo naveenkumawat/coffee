@@ -129,6 +129,7 @@ export interface Order {
   payment_reference: string | null;
   payment_proof: OrderPaymentProof | null;
   placed_at: string | null;
+  payment_expires_at?: string | null;
   payment_confirmed_at: string | null;
   cash_received_at: string | null;
   accepted_at: string | null;
@@ -137,6 +138,7 @@ export interface Order {
   completed_at: string | null;
   cancelled_at: string | null;
   rejected_at: string | null;
+  can_cancel?: boolean;
   items: OrderItem[];
   status_timeline: OrderStatusTimelineItem[];
   invoice_available: boolean;

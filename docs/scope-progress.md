@@ -511,3 +511,9 @@ Canonical: `docs/loyalty-architecture.md`.
 - [x] **P3.5** — Loyalty intelligence integration (complete)
 
 **Phase 3 Loyalty & Rewards — DEVELOPMENT COMPLETE / FROZEN** (ledger/pricing economics unchanged; Phase-1/2 freeze unchanged).
+
+## Corrective checkout hardening (outside Phase-1/2/3 freeze)
+
+- [x] Customer cancel unpaid Pending Payment retail orders (`POST /api/v1/orders/{order}/cancel`) + PWA Cancel CTA
+- [x] Pending payment expiry snapshot (`payment_expires_at`) + `coffee:expire-pending-orders` (15m) + pending-limit excludes cancelled/expired
+- [x] Saved customer delivery addresses API + Account screen; checkout Contact & Delivery merge with snapshot independence

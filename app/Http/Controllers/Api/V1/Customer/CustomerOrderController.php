@@ -59,6 +59,22 @@ class CustomerOrderController extends Controller
         );
     }
 
+    public function cancel(Order $order): JsonResponse
+    {
+        $this->authorize('cancel', $order);
+
+        $order = $this->orderService->cancelPendingPaymentByCustomer($order, request()->user());
+
+        return $this->respondWithResource(
+            new OrderResource($order->loadMissing(['items.addOns', 'statusHistory', 'promotions', 'rewardRedemptions'])),
+            'Order cancelled successfully.',
+            200,
+            [
+                'payment' => $this->websiteSettings->paymentInstructions(),
+            ],
+        );
+    }
+
     public function uploadPaymentProof(OrderPaymentProofUploadRequest $request, Order $order): JsonResponse
     {
         $this->authorize('uploadPaymentProof', $order);

@@ -1,4 +1,4 @@
-import { downloadFile, get, postForm } from './client';
+import { downloadFile, get, post, postForm } from './client';
 import { OrderDetailResponse, OrderListResponse } from '../types/order';
 
 export function fetchOrders(page = 1, perPage = 20): Promise<OrderListResponse> {
@@ -12,6 +12,10 @@ export function fetchOrders(page = 1, perPage = 20): Promise<OrderListResponse> 
 
 export function fetchOrder(orderId: number | string): Promise<OrderDetailResponse> {
   return get<OrderDetailResponse>(`/orders/${orderId}`);
+}
+
+export function cancelOrder(orderId: number | string): Promise<OrderDetailResponse> {
+  return post<OrderDetailResponse, Record<string, never>>(`/orders/${orderId}/cancel`, {});
 }
 
 export function uploadPaymentProof(orderId: number | string, file: File): Promise<OrderDetailResponse> {

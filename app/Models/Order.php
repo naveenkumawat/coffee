@@ -71,6 +71,7 @@ class Order extends AbstractModel
         'payment_proof_uploaded_at',
         'payment_proof_rejection_notes',
         'placed_at',
+        'payment_expires_at',
         'payment_confirmed_at',
         'payment_received_by_id',
         'accepted_at',
@@ -80,6 +81,8 @@ class Order extends AbstractModel
         'served_by_user_id',
         'completed_at',
         'cancelled_at',
+        'cancellation_source',
+        'cancellation_reason',
         'rejected_at',
     ];
 
@@ -107,6 +110,7 @@ class Order extends AbstractModel
             'delivery_fee_amount' => 'decimal:2',
             'payment_proof_size' => 'integer',
             'placed_at' => 'datetime',
+            'payment_expires_at' => 'datetime',
             'payment_proof_uploaded_at' => 'datetime',
             'payment_confirmed_at' => 'datetime',
             'accepted_at' => 'datetime',
@@ -225,7 +229,53 @@ class Order extends AbstractModel
 
     public function customerStatusLabel(): string
     {
+        if (
+            $this->status === OrderStatus::Cancelled
+            && $this->cancellation_reason === 'payment_timeout'
+        ) {
+            return 'Cancelled — payment window expired';
+        }
+
         return $this->customerLabelForStatus($this->status instanceof OrderStatus ? $this->status : null);
+    }
+
+    /**
+     * Customer may cancel own unpaid retail Pending Payment order only.
+     */
+    public function canCustomerCancel(?User $customer = null): bool
+    {
+        if ($customer !== null && (int) $this->customer_id !== (int) $customer->getKey()) {
+            return false;
+        }
+
+        if ($this->isDiningRound() || $this->fulfilment_method === OrderFulfilmentMethod::DineIn) {
+            return false;
+        }
+
+        if ($this->status !== OrderStatus::PendingPayment) {
+            return false;
+        }
+
+        if ($this->payment_status === PaymentStatus::Confirmed || $this->payment_confirmed_at !== null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function isPaymentWindowExpired(): bool
+    {
+        if ($this->payment_expires_at !== null) {
+            return $this->payment_expires_at->isPast();
+        }
+
+        if ($this->placed_at === null) {
+            return false;
+        }
+
+        $minutes = max(1, (int) config('coffee.orders.pending_payment_expiry_minutes', 120));
+
+        return $this->placed_at->copy()->addMinutes($minutes)->isPast();
     }
 
     public function isCashPayment(): bool

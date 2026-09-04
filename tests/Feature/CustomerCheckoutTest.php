@@ -204,6 +204,7 @@ class CustomerCheckoutTest extends TestCase
         $checkoutToken = (string) session(config('coffee.checkout.session_token_key'));
 
         $mock = \Mockery::mock(OrderServiceInterface::class);
+        $mock->shouldReceive('expireDuePendingPaymentOrdersForCustomer')->zeroOrMoreTimes()->andReturn(0);
         $mock->shouldReceive('store')
             ->once()
             ->andReturnUsing(function () use ($customer): never {

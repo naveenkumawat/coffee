@@ -26,6 +26,20 @@ class CheckoutParser implements CheckoutParserInterface
         $transfer->setDeliveryPhone(filled($checkoutData['delivery_phone'] ?? null) ? trim((string) $checkoutData['delivery_phone']) : null);
         $transfer->setDeliveryContactName(filled($checkoutData['delivery_contact_name'] ?? null) ? trim((string) $checkoutData['delivery_contact_name']) : null);
         $transfer->setDeliveryNotes(filled($checkoutData['delivery_notes'] ?? null) ? trim((string) $checkoutData['delivery_notes']) : null);
+        $transfer->setDeliveryAddressId(
+            filled($checkoutData['delivery_address_id'] ?? null)
+                ? (int) $checkoutData['delivery_address_id']
+                : null,
+        );
+        $transfer->setAddressLabel(filled($checkoutData['address_label'] ?? null) ? trim((string) $checkoutData['address_label']) : null);
+        $transfer->setAddressLine1(filled($checkoutData['address_line_1'] ?? null) ? trim((string) $checkoutData['address_line_1']) : null);
+        $transfer->setAddressLine2(filled($checkoutData['address_line_2'] ?? null) ? trim((string) $checkoutData['address_line_2']) : null);
+        $transfer->setLandmark(filled($checkoutData['landmark'] ?? null) ? trim((string) $checkoutData['landmark']) : null);
+        $transfer->setCity(filled($checkoutData['city'] ?? null) ? trim((string) $checkoutData['city']) : null);
+        $transfer->setState(filled($checkoutData['state'] ?? null) ? trim((string) $checkoutData['state']) : null);
+        $transfer->setPostalCode(filled($checkoutData['postal_code'] ?? null) ? trim((string) $checkoutData['postal_code']) : null);
+        $transfer->setSaveDeliveryAddress((bool) ($checkoutData['save_delivery_address'] ?? false));
+        $transfer->setMakeDefaultAddress((bool) ($checkoutData['make_default_address'] ?? false));
         $transfer->setCafeTableId(
             filled($checkoutData['cafe_table_id'] ?? null)
                 ? (int) $checkoutData['cafe_table_id']

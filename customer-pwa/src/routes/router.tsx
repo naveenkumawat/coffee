@@ -37,6 +37,9 @@ const OrderDetailPage = lazyPage(() =>
   import('../pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
 );
 const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
+const DeliveryAddressesPage = lazyPage(() =>
+  import('../pages/DeliveryAddressesPage').then((module) => ({ default: module.DeliveryAddressesPage })),
+);
 const ReferralPage = lazyPage(() => import('../pages/ReferralPage').then((module) => ({ default: module.ReferralPage })));
 const RewardsPage = lazyPage(() => import('../pages/RewardsPage').then((module) => ({ default: module.RewardsPage })));
 const LoyaltyPage = lazyPage(() => import('../pages/LoyaltyPage').then((module) => ({ default: module.LoyaltyPage })));
@@ -185,6 +188,10 @@ export const router = createBrowserRouter([
           {
             path: 'account',
             element: <AccountPage />,
+          },
+          {
+            path: 'account/delivery-addresses',
+            element: <DeliveryAddressesPage />,
           },
           {
             path: 'account/referral',

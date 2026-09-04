@@ -117,6 +117,7 @@ class OrderResource extends JsonResource
                     'rejection_notes' => $order->payment_proof_rejection_notes,
                 ],
             'payment_confirmed_at' => $order->payment_confirmed_at?->toIso8601String(),
+            'payment_expires_at' => $order->payment_expires_at?->toIso8601String(),
             'cash_received_at' => $order->isCashPayment()
                 ? $order->payment_confirmed_at?->toIso8601String()
                 : null,
@@ -129,6 +130,9 @@ class OrderResource extends JsonResource
             'completed_at' => $order->completed_at?->toIso8601String(),
             'cancelled_at' => $order->cancelled_at?->toIso8601String(),
             'rejected_at' => $order->rejected_at?->toIso8601String(),
+            'can_cancel' => $request->user()
+                ? $order->canCustomerCancel($request->user())
+                : false,
             'items' => OrderItemResource::collection($order->items),
             'status_timeline' => OrderStatusHistoryResource::collection(
                 $order->statusHistory->each->setRelation('order', $order),

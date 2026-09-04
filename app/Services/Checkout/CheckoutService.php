@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\Cart\CartServiceInterface;
+use App\Services\CustomerDeliveryAddress\CustomerDeliveryAddressServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Transfers\Checkout\CheckoutTransferInterface;
@@ -26,6 +27,7 @@ class CheckoutService implements CheckoutServiceInterface
         protected OrderTransferInterface $orderTransfer,
         protected OrderSecurityServiceInterface $orderSecurity,
         protected CafeAvailabilityServiceInterface $cafeAvailability,
+        protected CustomerDeliveryAddressServiceInterface $deliveryAddresses,
     ) {}
 
     public function getCheckoutContext(User $customer, ?string $fulfilmentMethod = null): array
@@ -38,6 +40,7 @@ class CheckoutService implements CheckoutServiceInterface
         return [
             'cart' => $cart,
             'summary' => $summary,
+            'delivery_addresses' => $this->deliveryAddresses->listForCustomer($customer)->values()->all(),
         ];
     }
 
@@ -105,10 +108,7 @@ class CheckoutService implements CheckoutServiceInterface
             $orderTransfer->setCustomerNotes($data->getCustomerNotes());
             $orderTransfer->setPickupNotes($data->getPickupNotes());
             $orderTransfer->setFulfilmentMethod($data->getFulfilmentMethod());
-            $orderTransfer->setDeliveryAddress($data->getDeliveryAddress());
-            $orderTransfer->setDeliveryPhone($data->getDeliveryPhone());
-            $orderTransfer->setDeliveryContactName($data->getDeliveryContactName());
-            $orderTransfer->setDeliveryNotes($data->getDeliveryNotes());
+            $this->applyDeliverySnapshot($lockedCustomer, $data, $orderTransfer);
             $orderTransfer->setCafeTableId($data->getCafeTableId());
             $orderTransfer->setPaymentMethod($data->getPaymentMethod());
             $orderTransfer->setPromoCode($cart->promo_code);
@@ -163,6 +163,76 @@ class CheckoutService implements CheckoutServiceInterface
 
             return $order;
         });
+    }
+
+    protected function applyDeliverySnapshot(
+        User $customer,
+        CheckoutTransferInterface $data,
+        OrderTransferInterface $orderTransfer,
+    ): void {
+        if ($data->getFulfilmentMethod() !== 'delivery') {
+            $orderTransfer->setDeliveryAddress(null);
+            $orderTransfer->setDeliveryPhone(null);
+            $orderTransfer->setDeliveryContactName(null);
+            $orderTransfer->setDeliveryNotes(null);
+
+            return;
+        }
+
+        $deliveryNotes = $data->getDeliveryNotes();
+
+        if ($data->getDeliveryAddressId() !== null) {
+            $saved = $this->deliveryAddresses->findOwned($customer, (int) $data->getDeliveryAddressId());
+
+            $orderTransfer->setDeliveryAddress($saved->formattedAddress());
+            $orderTransfer->setDeliveryPhone($data->getDeliveryPhone() ?: $saved->phone);
+            $orderTransfer->setDeliveryContactName($data->getDeliveryContactName() ?: $saved->recipient_name);
+            $orderTransfer->setDeliveryNotes($deliveryNotes);
+
+            if ($data->getMakeDefaultAddress() && ! $saved->is_default) {
+                $this->deliveryAddresses->makeDefault($customer, $saved);
+            }
+
+            return;
+        }
+
+        $structured = filled($data->getAddressLine1());
+        $snapshot = $structured
+            ? $this->deliveryAddresses->formatSnapshot([
+                'address_line_1' => $data->getAddressLine1(),
+                'address_line_2' => $data->getAddressLine2(),
+                'landmark' => $data->getLandmark(),
+                'city' => $data->getCity(),
+                'state' => $data->getState(),
+                'postal_code' => $data->getPostalCode(),
+            ])
+            : $data->getDeliveryAddress();
+
+        $contactName = $data->getDeliveryContactName() ?: $data->getCustomerName();
+        $phone = $data->getDeliveryPhone() ?: $data->getCustomerPhone();
+
+        $orderTransfer->setDeliveryAddress($snapshot);
+        $orderTransfer->setDeliveryPhone($phone);
+        $orderTransfer->setDeliveryContactName($contactName);
+        $orderTransfer->setDeliveryNotes($deliveryNotes);
+
+        if ($data->getSaveDeliveryAddress()) {
+            $line1 = $data->getAddressLine1() ?: $data->getDeliveryAddress();
+            if (filled($line1)) {
+                $this->deliveryAddresses->store($customer, [
+                    'label' => $data->getAddressLabel(),
+                    'recipient_name' => $contactName,
+                    'phone' => $phone,
+                    'address_line_1' => $line1,
+                    'address_line_2' => $data->getAddressLine2(),
+                    'landmark' => $data->getLandmark(),
+                    'city' => $data->getCity() ?: '—',
+                    'state' => $data->getState() ?: '—',
+                    'postal_code' => $data->getPostalCode() ?: '000000',
+                    'is_default' => $data->getMakeDefaultAddress(),
+                ]);
+            }
+        }
     }
 
     protected function ensureCartIsCheckoutReady(Cart $cart, array $summary): void

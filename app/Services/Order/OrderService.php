@@ -38,6 +38,7 @@ use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Support\AddOnConfiguration;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -325,6 +326,14 @@ class OrderService implements OrderServiceInterface
                 'payment_method' => $paymentMethod->value,
                 'payment_status' => PaymentStatus::Pending->value,
                 'placed_at' => $placedAt,
+                'payment_expires_at' => in_array($fulfilmentMethod, [
+                    OrderFulfilmentMethod::Takeaway,
+                    OrderFulfilmentMethod::Delivery,
+                ], true)
+                    ? Carbon::instance($placedAt)->addMinutes(
+                        max(1, (int) config('coffee.orders.pending_payment_expiry_minutes', 120)),
+                    )
+                    : null,
             ]);
 
             $this->orders->createItems($order, array_map(static fn (array $item): array => [
@@ -538,6 +547,261 @@ class OrderService implements OrderServiceInterface
 
             return $locked;
         });
+    }
+
+    public function canCustomerCancel(Order $order, User $customer): bool
+    {
+        return $customer->hasRole('customer') && $order->canCustomerCancel($customer);
+    }
+
+    public function cancelPendingPaymentByCustomer(Order $order, User $customer): Order
+    {
+        return DB::transaction(function () use ($order, $customer): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if (
+                $locked->status === OrderStatus::Cancelled
+                && (int) $locked->customer_id === (int) $customer->getKey()
+                && ! $locked->isDiningRound()
+            ) {
+                return $this->freshCancelledOrder($locked);
+            }
+
+            if (! $this->canCustomerCancel($locked, $customer)) {
+                throw ValidationException::withMessages([
+                    'order' => 'This order can no longer be cancelled.',
+                ]);
+            }
+
+            return $this->cancelUnpaidPendingRetail(
+                $locked,
+                $customer,
+                source: 'customer',
+                reason: 'customer_cancelled_before_payment',
+                notes: 'customer_cancelled_before_payment',
+            );
+        });
+    }
+
+    public function expirePendingPaymentOrder(Order $order): Order
+    {
+        return DB::transaction(function () use ($order): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === OrderStatus::Cancelled) {
+                return $this->freshCancelledOrder($locked);
+            }
+
+            if (! $this->isEligibleForPendingPaymentExpiry($locked)) {
+                return $locked->fresh([
+                    'customer',
+                    'items',
+                    'statusHistory.changedBy',
+                    'rewardRedemptions',
+                ]) ?? $locked;
+            }
+
+            return $this->cancelUnpaidPendingRetail(
+                $locked,
+                actor: null,
+                source: 'system',
+                reason: 'payment_timeout',
+                notes: 'payment_timeout',
+            );
+        });
+    }
+
+    public function expireDuePendingPaymentOrders(int $limit = 100): int
+    {
+        $ids = $this->duePendingPaymentOrderQuery()
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->pluck('id');
+
+        $cancelled = 0;
+
+        foreach ($ids as $id) {
+            $order = Order::query()->find($id);
+            if ($order === null) {
+                continue;
+            }
+
+            $before = $order->status;
+            $result = $this->expirePendingPaymentOrder($order);
+            if ($before !== OrderStatus::Cancelled && $result->status === OrderStatus::Cancelled) {
+                $cancelled++;
+            }
+        }
+
+        return $cancelled;
+    }
+
+    public function expireDuePendingPaymentOrdersForCustomer(User $customer): int
+    {
+        $ids = $this->duePendingPaymentOrderQuery()
+            ->where('customer_id', $customer->getKey())
+            ->orderBy('id')
+            ->limit(50)
+            ->pluck('id');
+
+        $cancelled = 0;
+
+        foreach ($ids as $id) {
+            $order = Order::query()->find($id);
+            if ($order === null) {
+                continue;
+            }
+
+            $before = $order->status;
+            $result = $this->expirePendingPaymentOrder($order);
+            if ($before !== OrderStatus::Cancelled && $result->status === OrderStatus::Cancelled) {
+                $cancelled++;
+            }
+        }
+
+        return $cancelled;
+    }
+
+    /**
+     * @param  Order  $locked  Must already be lockForUpdate()'d inside a transaction
+     */
+    protected function cancelUnpaidPendingRetail(
+        Order $locked,
+        ?User $actor,
+        string $source,
+        string $reason,
+        ?string $notes,
+    ): Order {
+        $currentStatus = $locked->status;
+        if (! $currentStatus instanceof OrderStatus) {
+            throw ValidationException::withMessages([
+                'status' => 'The current order status is invalid.',
+            ]);
+        }
+
+        if ($currentStatus !== OrderStatus::PendingPayment) {
+            throw ValidationException::withMessages([
+                'order' => 'Only unpaid pending payment orders can use this cancellation path.',
+            ]);
+        }
+
+        if ($locked->payment_status === PaymentStatus::Confirmed || $locked->payment_confirmed_at !== null) {
+            throw ValidationException::withMessages([
+                'order' => 'Paid orders cannot be cancelled through this path.',
+            ]);
+        }
+
+        if ($locked->isDiningRound()) {
+            throw ValidationException::withMessages([
+                'order' => 'Dining rounds cannot use retail pending-payment cancellation.',
+            ]);
+        }
+
+        $wasUnpaid = $locked->payment_status !== PaymentStatus::Confirmed;
+
+        $locked = $this->orders->update($locked, [
+            'status' => OrderStatus::Cancelled->value,
+            'cancelled_at' => $locked->cancelled_at ?: now(),
+            'cancellation_source' => $source,
+            'cancellation_reason' => $reason,
+        ]);
+
+        $this->orders->createStatusHistory($locked, [
+            'from_status' => $currentStatus->value,
+            'to_status' => OrderStatus::Cancelled->value,
+            'changed_by' => $actor?->getKey(),
+            'notes' => $notes,
+        ]);
+
+        $terminal = $locked->fresh(['preparations', 'items']);
+        $mayReverseInventory = ! $this->inventoryConsumption->hasMaterialPreparationStarted($terminal);
+        $this->preparations->cancelTicketsForOrder($terminal, $actor);
+
+        if ($mayReverseInventory) {
+            $this->inventoryConsumption->reverseForCancelledOrder($terminal, $actor);
+        }
+
+        if ($wasUnpaid) {
+            $this->restoreRewardsForUnpaidTerminalOrder($locked);
+            $this->loyalty->restoreRedemptionForOrder($locked);
+        }
+
+        $locked = $this->freshCancelledOrder($locked);
+
+        OrderStatusChanged::dispatch(
+            $locked,
+            $currentStatus,
+            OrderStatus::Cancelled,
+            $notes,
+        );
+
+        return $locked;
+    }
+
+    protected function isEligibleForPendingPaymentExpiry(Order $order): bool
+    {
+        if ($order->isDiningRound()) {
+            return false;
+        }
+
+        if ($order->status !== OrderStatus::PendingPayment) {
+            return false;
+        }
+
+        if ($order->payment_status === PaymentStatus::Confirmed || $order->payment_confirmed_at !== null) {
+            return false;
+        }
+
+        if (! in_array($order->fulfilment_method, [
+            OrderFulfilmentMethod::Takeaway,
+            OrderFulfilmentMethod::Delivery,
+        ], true)) {
+            return false;
+        }
+
+        return $order->isPaymentWindowExpired();
+    }
+
+    /**
+     * @return Builder<Order>
+     */
+    protected function duePendingPaymentOrderQuery()
+    {
+        $minutes = max(1, (int) config('coffee.orders.pending_payment_expiry_minutes', 120));
+        $legacyCutoff = now()->subMinutes($minutes);
+
+        return Order::query()
+            ->whereNull('dining_session_id')
+            ->where('status', OrderStatus::PendingPayment->value)
+            ->where('payment_status', '!=', PaymentStatus::Confirmed->value)
+            ->whereNull('payment_confirmed_at')
+            ->whereIn('fulfilment_method', [
+                OrderFulfilmentMethod::Takeaway->value,
+                OrderFulfilmentMethod::Delivery->value,
+            ])
+            ->where(function ($query) use ($legacyCutoff): void {
+                $query->where(function ($inner): void {
+                    $inner->whereNotNull('payment_expires_at')
+                        ->where('payment_expires_at', '<=', now());
+                })->orWhere(function ($inner) use ($legacyCutoff): void {
+                    $inner->whereNull('payment_expires_at')
+                        ->where('placed_at', '<=', $legacyCutoff);
+                });
+            });
+    }
+
+    protected function freshCancelledOrder(Order $order): Order
+    {
+        return $order->fresh([
+            'customer',
+            'assignedBarista',
+            'items.recipe.lines.ingredient.brand',
+            'statusHistory.changedBy',
+            'preparations',
+            'rewardRedemptions',
+        ]) ?? $order;
     }
 
     public function cancelDiningRound(Order $order, User $actor, ?string $notes = null): Order

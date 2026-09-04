@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
-import { fetchOrder } from '../api/orders';
+import { cancelOrder, fetchOrder } from '../api/orders';
 import { RatingSheet } from '../components/catalog/RatingSheet';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
@@ -34,6 +34,8 @@ export function OrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ratingTarget, setRatingTarget] = useState<RatingTarget | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null);
 
   const loadOrder = useCallback(async (soft = false): Promise<void> => {
     if (!orderId) {
@@ -77,6 +79,32 @@ export function OrderDetailPage() {
       return Boolean(signal.action_url && signal.action_url.includes(`/orders/${orderId}`));
     },
   );
+
+  async function handleCancelOrder(): Promise<void> {
+    if (!order || isCancelling) {
+      return;
+    }
+
+    const confirmed = window.confirm('Cancel this unpaid order? You can place a new order anytime.');
+    if (!confirmed) {
+      return;
+    }
+
+    setIsCancelling(true);
+    setCancelMessage(null);
+
+    try {
+      const response = await cancelOrder(order.id);
+      setOrder(response.data);
+      setPayment(response.meta?.payment ?? null);
+      setCancelMessage('Order cancelled.');
+    } catch (error) {
+      setCancelMessage(error instanceof ApiError ? error.message : 'Unable to cancel this order.');
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   const ratedProductIds = useMemo(() => {
     if (!order || order.status !== 'completed') {
       return new Set<number>();
@@ -209,6 +237,20 @@ export function OrderDetailPage() {
           showSecondaryAction={false}
           onOrderUpdated={setOrder}
         />
+      ) : null}
+
+      {order.can_cancel && isPendingPayment(order.status) ? (
+        <section className="account-section">
+          {cancelMessage ? <p className="form-feedback is-error">{cancelMessage}</p> : null}
+          <button
+            type="button"
+            className="btn btn-outline-dark rounded-pill w-100"
+            disabled={isCancelling}
+            onClick={() => void handleCancelOrder()}
+          >
+            {isCancelling ? 'Cancelling…' : 'Cancel Order'}
+          </button>
+        </section>
       ) : null}
 
       <OrderStatusTimeline order={order} />

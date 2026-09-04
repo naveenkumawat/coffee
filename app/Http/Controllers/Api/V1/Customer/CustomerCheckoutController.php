@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Checkout\CheckoutStoreRequest;
 use App\Http\Resources\Api\V1\CartResource;
+use App\Http\Resources\Api\V1\CustomerDeliveryAddressResource;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Parsers\Checkout\CheckoutParserInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
@@ -61,6 +62,9 @@ class CustomerCheckoutController extends Controller
                 ],
                 'payment_methods' => $this->paymentEligibility->methodsByFulfilment($request->user()),
                 'payment' => $this->paymentInstructions(),
+                'delivery_addresses' => CustomerDeliveryAddressResource::collection(
+                    $context['delivery_addresses'] ?? [],
+                )->resolve(),
             ],
         );
     }

@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\OrderFulfilmentMethod;
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
@@ -31,6 +33,22 @@ class OrderPolicy
     public function transition(User $user, Order $order): bool
     {
         return $user->canManageOrders() || $user->canOperateOrders();
+    }
+
+    public function cancel(User $user, Order $order): bool
+    {
+        if (! $user->hasRole('customer') || (int) $order->customer_id !== (int) $user->getKey()) {
+            return false;
+        }
+
+        if ($order->canCustomerCancel($user)) {
+            return true;
+        }
+
+        // Idempotent re-cancel for already cancelled unpaid retail orders.
+        return $order->status === OrderStatus::Cancelled
+            && ! $order->isDiningRound()
+            && $order->fulfilment_method !== OrderFulfilmentMethod::DineIn;
     }
 
     public function uploadPaymentProof(User $user, Order $order): bool

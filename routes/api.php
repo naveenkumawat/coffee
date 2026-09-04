@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerBehaviourEventController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCampaignController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCartController;
 use App\Http\Controllers\Api\V1\Customer\CustomerCheckoutController;
+use App\Http\Controllers\Api\V1\Customer\CustomerDeliveryAddressController;
 use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerLoyaltyController;
@@ -127,6 +128,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/account/loyalty', [CustomerLoyaltyController::class, 'show'])->name('account.loyalty.show');
         Route::get('/account/loyalty/rewards', [CustomerLoyaltyController::class, 'rewards'])->name('account.loyalty.rewards');
 
+        Route::prefix('account/delivery-addresses')->name('account.delivery-addresses.')->group(function (): void {
+            Route::get('/', [CustomerDeliveryAddressController::class, 'index'])->name('index');
+            Route::post('/', [CustomerDeliveryAddressController::class, 'store'])->name('store');
+            Route::put('/{deliveryAddress}', [CustomerDeliveryAddressController::class, 'update'])->name('update');
+            Route::delete('/{deliveryAddress}', [CustomerDeliveryAddressController::class, 'destroy'])->name('destroy');
+            Route::post('/{deliveryAddress}/default', [CustomerDeliveryAddressController::class, 'makeDefault'])->name('default');
+        });
+
         Route::prefix('cart')->name('cart.')->group(function (): void {
             Route::get('/', [CustomerCartController::class, 'show'])->name('show');
             Route::get('/count', [CustomerCartController::class, 'count'])->name('count');
@@ -187,6 +196,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('orders')->name('orders.')->group(function (): void {
             Route::get('/', [CustomerOrderController::class, 'index'])->name('index');
             Route::get('/{order}', [CustomerOrderController::class, 'show'])->name('show');
+            Route::post('/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('cancel');
             Route::post('/{order}/payment-proof', [CustomerOrderController::class, 'uploadPaymentProof'])
                 ->middleware('throttle:payment-proof')
                 ->name('payment-proof.upload');

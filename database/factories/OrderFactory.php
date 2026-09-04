@@ -20,7 +20,10 @@ class OrderFactory extends Factory
 
     public function definition(): array
     {
-        $placedAt = fake()->dateTimeBetween('-7 days');
+        // Keep unpaid Pending Payment factories inside the live payment window so
+        // abuse/limit tests are not flaky against pending-payment expiry rules.
+        $placedAt = now()->subMinutes(fake()->numberBetween(1, 30));
+        $expiryMinutes = max(1, (int) config('coffee.orders.pending_payment_expiry_minutes', 120));
 
         return [
             'order_number' => 'CC-'.$placedAt->format('dmy').'-'.str_pad((string) fake()->numberBetween(1, 9999), 4, '0', STR_PAD_LEFT),
@@ -50,6 +53,7 @@ class OrderFactory extends Factory
             'customer_notes' => fake()->optional()->sentence(),
             'pickup_notes' => fake()->optional()->sentence(),
             'placed_at' => $placedAt,
+            'payment_expires_at' => $placedAt->copy()->addMinutes($expiryMinutes),
             'payment_confirmed_at' => null,
             'accepted_at' => null,
             'preparing_at' => null,

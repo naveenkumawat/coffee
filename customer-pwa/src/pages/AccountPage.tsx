@@ -181,6 +181,13 @@ export function AccountPage() {
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
+          <Link to="/account/delivery-addresses" className="account-link-row is-emphasis">
+            <span>
+              <i className="bi bi-geo-alt" aria-hidden="true"></i>
+              Delivery Addresses
+            </span>
+            <i className="bi bi-chevron-right" aria-hidden="true"></i>
+          </Link>
           <Link to="/favourites" className="account-link-row is-emphasis">
             <span>
               <i className="bi bi-heart" aria-hidden="true"></i>
