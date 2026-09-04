@@ -163,15 +163,20 @@ class UserController extends Controller
         }
 
         $validated = $request->validated();
-        $this->loyalty->adjustPoints(
+        $result = $this->loyalty->adjustPoints(
             $user,
             $request->user('admin'),
             (int) $validated['points'],
             (string) $validated['reason'],
+            (string) $validated['idempotency_key'],
         );
+
+        $status = ($result['reason'] ?? null) === 'idempotent'
+            ? 'Loyalty adjustment already applied (idempotent).'
+            : 'Loyalty points adjusted successfully.';
 
         return redirect()
             ->route('administrator.users.show', $user)
-            ->with('status', 'Loyalty points adjusted successfully.');
+            ->with('status', $status);
     }
 }

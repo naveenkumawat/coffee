@@ -148,6 +148,11 @@
             @endif
 
             @if ($managedUser->hasRole('customer'))
+                @php
+                    $availablePoints = (int) ($loyaltyAccount?->available_points ?? 0);
+                    $inLoyaltyDebt = $availablePoints < 0;
+                    $adjustmentIdempotencyKey = old('idempotency_key', (string) \Illuminate\Support\Str::uuid());
+                @endphp
                 <div class="card card-flush internal-card mb-5">
                     <div class="card-header pt-7">
                         <div class="card-title">
@@ -155,19 +160,36 @@
                         </div>
                     </div>
                     <div class="card-body pt-5">
-                        <div class="row g-4 mb-6">
-                            <div class="col-4">
-                                <div class="text-muted fs-7 mb-1">Available</div>
-                                <div class="fw-bold text-gray-900 fs-3">{{ $loyaltyAccount?->available_points ?? 0 }}</div>
+                        @if ($inLoyaltyDebt)
+                            <div class="alert alert-danger mb-6">
+                                <div class="fw-bold mb-1">Loyalty debt</div>
+                                <div>Current balance {{ $availablePoints }} points ({{ abs($availablePoints) }} in debt). Redemption is blocked until a compensating positive adjustment or future earn recovers the balance. Use a normal positive adjustment — there is no separate forgive action.</div>
                             </div>
-                            <div class="col-4">
+                        @endif
+
+                        <div class="row g-4 mb-6">
+                            <div class="col-md-3 col-6">
+                                <div class="text-muted fs-7 mb-1">Available</div>
+                                <div class="fw-bold text-gray-900 fs-3 {{ $inLoyaltyDebt ? 'text-danger' : '' }}">{{ $availablePoints }}</div>
+                            </div>
+                            <div class="col-md-3 col-6">
                                 <div class="text-muted fs-7 mb-1">Lifetime earned</div>
                                 <div class="fw-bold text-gray-900">{{ $loyaltyAccount?->lifetime_earned_points ?? 0 }}</div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-md-3 col-6">
                                 <div class="text-muted fs-7 mb-1">Lifetime redeemed</div>
                                 <div class="fw-bold text-gray-900">{{ $loyaltyAccount?->lifetime_redeemed_points ?? 0 }}</div>
                             </div>
+                            <div class="col-md-3 col-6">
+                                <div class="text-muted fs-7 mb-1">Lifetime adjusted</div>
+                                <div class="fw-bold text-gray-900">{{ $loyaltyAccount?->lifetime_adjusted_points ?? 0 }}</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <a href="{{ route('administrator.loyalty-operations.ledger', ['q' => $managedUser->email, 'preset' => 'this_month']) }}" class="btn btn-sm btn-light">
+                                View in loyalty ledger
+                            </a>
                         </div>
 
                         @if ($loyaltyTransactions === null || $loyaltyTransactions->isEmpty())
@@ -208,46 +230,66 @@
                 </div>
 
                 @can('update', $managedUser)
-                    <div class="card card-flush internal-card mb-5">
-                        <div class="card-header pt-7">
-                            <div class="card-title">
-                                <h3 class="fw-bold text-gray-900">Adjust points</h3>
+                    @if (auth('admin')->user()?->canManageWebsiteSettings())
+                        <div class="card card-flush internal-card mb-5">
+                            <div class="card-header pt-7">
+                                <div class="card-title">
+                                    <h3 class="fw-bold text-gray-900">Adjust points</h3>
+                                </div>
+                            </div>
+                            <div class="card-body pt-5">
+                                <div class="text-muted fs-7 mb-4">
+                                    Creates an immutable adjustment ledger row. Negative adjustments may create loyalty debt. Adjustments cannot be edited or deleted — use a compensating adjustment if needed.
+                                </div>
+                                <form
+                                    method="POST"
+                                    action="{{ route('administrator.users.loyalty-adjust', $managedUser) }}"
+                                    onsubmit="return confirm('Apply this loyalty point adjustment? This cannot be edited later.');"
+                                >
+                                    @csrf
+                                    <input type="hidden" name="idempotency_key" value="{{ $adjustmentIdempotencyKey }}" />
+                                    <label for="loyalty_points" class="form-label fs-7 text-muted">Points (+ credit / − deduct)</label>
+                                    <input
+                                        id="loyalty_points"
+                                        name="points"
+                                        type="number"
+                                        step="1"
+                                        class="form-control form-control-sm mb-3 @error('points') is-invalid @enderror"
+                                        value="{{ old('points') }}"
+                                        required
+                                    />
+                                    @error('points')
+                                        <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                    @enderror
+                                    <label for="loyalty_reason" class="form-label fs-7 text-muted">Reason (required, internal audit)</label>
+                                    <textarea
+                                        id="loyalty_reason"
+                                        name="reason"
+                                        rows="2"
+                                        maxlength="500"
+                                        class="form-control form-control-sm mb-3 @error('reason') is-invalid @enderror"
+                                        required
+                                    >{{ old('reason') }}</textarea>
+                                    @error('reason')
+                                        <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-check form-check-custom form-check-solid mb-4">
+                                        <input class="form-check-input @error('confirmed') is-invalid @enderror" type="checkbox" value="1" id="loyalty_confirmed" name="confirmed" @checked(old('confirmed')) required />
+                                        <label class="form-check-label" for="loyalty_confirmed">I confirm this adjustment</label>
+                                    </div>
+                                    @error('confirmed')
+                                        <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                    @enderror
+                                    @error('idempotency_key')
+                                        <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
+                                    @enderror
+                                    <button type="submit" class="btn btn-sm btn-light-primary">
+                                        Apply adjustment
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                        <div class="card-body pt-5">
-                            <form method="POST" action="{{ route('administrator.users.loyalty-adjust', $managedUser) }}">
-                                @csrf
-                                <label for="loyalty_points" class="form-label fs-7 text-muted">Points (+ earn / − deduct)</label>
-                                <input
-                                    id="loyalty_points"
-                                    name="points"
-                                    type="number"
-                                    step="1"
-                                    class="form-control form-control-sm mb-3 @error('points') is-invalid @enderror"
-                                    value="{{ old('points') }}"
-                                    required
-                                />
-                                @error('points')
-                                    <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
-                                @enderror
-                                <label for="loyalty_reason" class="form-label fs-7 text-muted">Reason</label>
-                                <textarea
-                                    id="loyalty_reason"
-                                    name="reason"
-                                    rows="2"
-                                    maxlength="500"
-                                    class="form-control form-control-sm mb-3 @error('reason') is-invalid @enderror"
-                                    required
-                                >{{ old('reason') }}</textarea>
-                                @error('reason')
-                                    <div class="invalid-feedback d-block mb-3">{{ $message }}</div>
-                                @enderror
-                                <button type="submit" class="btn btn-sm btn-light-primary">
-                                    Apply adjustment
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+                    @endif
                 @endcan
             @endif
 

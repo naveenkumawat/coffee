@@ -5,28 +5,45 @@ namespace App\Http\Controllers\Administrator;
 use App\Enums\LoyaltyRewardStatus;
 use App\Enums\LoyaltyRewardType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoyaltyReward\LoyaltyRewardBulkStatusRequest;
 use App\Http\Requests\LoyaltyReward\LoyaltyRewardStoreRequest;
 use App\Http\Requests\LoyaltyReward\LoyaltyRewardUpdateRequest;
 use App\Models\AddOn;
 use App\Models\LoyaltyReward;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Services\Loyalty\LoyaltyReportingServiceInterface;
 use App\Services\Loyalty\LoyaltyRewardCatalogServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class LoyaltyRewardController extends Controller
 {
     public function __construct(
         protected LoyaltyRewardCatalogServiceInterface $catalog,
+        protected LoyaltyReportingServiceInterface $reporting,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', LoyaltyReward::class);
 
+        $status = trim((string) $request->query('status', 'all'));
+        $includeArchived = $request->boolean('include_archived');
+
         return view('administrator.loyalty-rewards.index', [
-            'rewards' => $this->catalog->paginateForAdmin(),
+            'rewards' => $this->catalog->paginateForAdmin(30, [
+                'status' => $status,
+                'include_archived' => $includeArchived,
+            ]),
+            'filters' => [
+                'status' => $status !== '' ? $status : 'all',
+                'include_archived' => $includeArchived,
+            ],
+            'statusOptions' => collect(LoyaltyRewardStatus::cases())
+                ->mapWithKeys(fn (LoyaltyRewardStatus $case): array => [$case->value => $case->label()])
+                ->all(),
         ]);
     }
 
@@ -60,9 +77,20 @@ class LoyaltyRewardController extends Controller
         $this->authorize('update', $loyaltyReward);
 
         $loyaltyReward->load(['products', 'productCategories', 'addOns']);
+        $dashboard = $this->reporting->buildOperationsDashboard([
+            'preset' => 'last_7_days',
+        ]);
+        $performance = collect($dashboard['reward_performance'] ?? [])
+            ->firstWhere('reward_id', (int) $loyaltyReward->getKey());
 
         return view('administrator.loyalty-rewards.edit', [
             'reward' => $loyaltyReward,
+            'performance' => $performance,
+            'performancePeriod' => [
+                'start_local' => $dashboard['start_local'],
+                'end_local' => $dashboard['end_local'],
+                'timezone' => $dashboard['timezone'],
+            ],
             ...$this->formOptions($loyaltyReward),
         ]);
     }
@@ -98,6 +126,41 @@ class LoyaltyRewardController extends Controller
         return redirect()
             ->route('administrator.loyalty-rewards.index')
             ->with('status', 'Loyalty reward status updated.');
+    }
+
+    public function duplicate(LoyaltyReward $loyaltyReward): RedirectResponse
+    {
+        $this->authorize('create', LoyaltyReward::class);
+
+        $copy = $this->catalog->duplicate($loyaltyReward);
+
+        return redirect()
+            ->route('administrator.loyalty-rewards.edit', $copy)
+            ->with('status', 'Loyalty reward duplicated as paused draft.');
+    }
+
+    public function bulkStatus(LoyaltyRewardBulkStatusRequest $request): RedirectResponse
+    {
+        $this->authorize('viewAny', LoyaltyReward::class);
+
+        $validated = $request->validated();
+        $result = $this->catalog->bulkSetStatus(
+            $validated['reward_ids'],
+            LoyaltyRewardStatus::from((string) $validated['status']),
+        );
+
+        $message = sprintf(
+            'Updated %d reward(s).',
+            (int) $result['updated'],
+        );
+
+        if ($result['failed'] !== []) {
+            $message .= ' '.count($result['failed']).' could not be updated (missing or archived).';
+        }
+
+        return redirect()
+            ->route('administrator.loyalty-rewards.index')
+            ->with('status', $message);
     }
 
     /**

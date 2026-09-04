@@ -16,6 +16,7 @@ use App\Http\Controllers\Administrator\IngredientController;
 use App\Http\Controllers\Administrator\InventoryController;
 use App\Http\Controllers\Administrator\InventoryProductReportController;
 use App\Http\Controllers\Administrator\InventoryRefillRequestController;
+use App\Http\Controllers\Administrator\LoyaltyOperationsController;
 use App\Http\Controllers\Administrator\LoyaltyRewardController;
 use App\Http\Controllers\Administrator\MenuCategoryController;
 use App\Http\Controllers\Administrator\MenuItemController;
@@ -70,6 +71,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::get('reports/operational-performance', [OperationalPerformanceReportController::class, 'index'])->name('reports.operational-performance.index');
     Route::get('reports/operational-performance/export/preparations', [OperationalPerformanceReportController::class, 'exportPreparations'])->name('reports.operational-performance.export.preparations');
     Route::get('reports/operational-performance/export/dining', [OperationalPerformanceReportController::class, 'exportDining'])->name('reports.operational-performance.export.dining');
+    Route::get('loyalty-operations', [LoyaltyOperationsController::class, 'index'])->name('loyalty-operations.index');
+    Route::get('loyalty-operations/ledger', [LoyaltyOperationsController::class, 'ledger'])->name('loyalty-operations.ledger');
+    Route::get('loyalty-operations/adjustments', [LoyaltyOperationsController::class, 'adjustments'])->name('loyalty-operations.adjustments');
+    Route::get('loyalty-operations/export/ledger', [LoyaltyOperationsController::class, 'exportLedger'])->name('loyalty-operations.export.ledger');
+    Route::get('loyalty-operations/export/balances', [LoyaltyOperationsController::class, 'exportBalances'])->name('loyalty-operations.export.balances');
+    Route::get('loyalty-operations/export/redemptions', [LoyaltyOperationsController::class, 'exportRedemptions'])->name('loyalty-operations.export.redemptions');
 
     Route::get('home-sections', [HomeSectionController::class, 'index'])->name('home-sections.index');
     Route::get('home-sections/create', [HomeSectionController::class, 'create'])->name('home-sections.create');
@@ -215,10 +222,12 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::get('loyalty-rewards', [LoyaltyRewardController::class, 'index'])->name('loyalty-rewards.index');
     Route::get('loyalty-rewards/create', [LoyaltyRewardController::class, 'create'])->name('loyalty-rewards.create');
     Route::post('loyalty-rewards', [LoyaltyRewardController::class, 'store'])->name('loyalty-rewards.store');
+    Route::post('loyalty-rewards/bulk-status', [LoyaltyRewardController::class, 'bulkStatus'])->name('loyalty-rewards.bulk-status');
     Route::get('loyalty-rewards/{loyalty_reward}/edit', [LoyaltyRewardController::class, 'edit'])->name('loyalty-rewards.edit');
     Route::put('loyalty-rewards/{loyalty_reward}', [LoyaltyRewardController::class, 'update'])->name('loyalty-rewards.update');
     Route::delete('loyalty-rewards/{loyalty_reward}', [LoyaltyRewardController::class, 'destroy'])->name('loyalty-rewards.destroy');
     Route::patch('loyalty-rewards/{loyalty_reward}/status/{status}', [LoyaltyRewardController::class, 'setStatus'])->name('loyalty-rewards.status');
+    Route::post('loyalty-rewards/{loyalty_reward}/duplicate', [LoyaltyRewardController::class, 'duplicate'])->name('loyalty-rewards.duplicate');
     Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
     Route::get('campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
     Route::post('campaigns', [CampaignController::class, 'store'])->name('campaigns.store');

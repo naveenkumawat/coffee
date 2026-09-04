@@ -11,10 +11,20 @@ use Illuminate\Validation\ValidationException;
 
 class LoyaltyRewardCatalogService implements LoyaltyRewardCatalogServiceInterface
 {
-    public function paginateForAdmin(int $perPage = 30): LengthAwarePaginator
+    public function paginateForAdmin(int $perPage = 30, array $filters = []): LengthAwarePaginator
     {
+        $status = trim((string) ($filters['status'] ?? ''));
+
         return LoyaltyReward::query()
             ->withCount('orders')
+            ->when(
+                $status !== '' && $status !== 'all',
+                fn ($query) => $query->where('status', $status),
+            )
+            ->when(
+                ($filters['include_archived'] ?? false) === true,
+                fn ($query) => $query->withTrashed(),
+            )
             ->orderByDesc('priority')
             ->orderBy('points_cost')
             ->orderBy('name')
@@ -56,6 +66,77 @@ class LoyaltyRewardCatalogService implements LoyaltyRewardCatalogServiceInterfac
             $reward->forceFill(['status' => LoyaltyRewardStatus::Archived])->save();
             $reward->delete();
         });
+    }
+
+    public function duplicate(LoyaltyReward $reward): LoyaltyReward
+    {
+        return DB::transaction(function () use ($reward): LoyaltyReward {
+            $reward->loadMissing(['products', 'productCategories', 'addOns']);
+
+            $copy = $reward->replicate(['deleted_at']);
+            $copy->name = trim((string) $reward->name).' (Copy)';
+            $copy->status = LoyaltyRewardStatus::Paused;
+            $copy->save();
+
+            $copy->products()->sync($reward->products->modelKeys());
+            $copy->productCategories()->sync($reward->productCategories->modelKeys());
+            $copy->addOns()->sync($reward->addOns->modelKeys());
+
+            return $copy->fresh(['products', 'productCategories', 'addOns']) ?? $copy;
+        });
+    }
+
+    /**
+     * @param  list<int>  $rewardIds
+     * @return array{updated: int, failed: list<array{id: int, reason: string}>}
+     */
+    public function bulkSetStatus(array $rewardIds, LoyaltyRewardStatus $status): array
+    {
+        $ids = collect($rewardIds)
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            throw ValidationException::withMessages([
+                'reward_ids' => 'Select at least one loyalty reward.',
+            ]);
+        }
+
+        if (! in_array($status, [LoyaltyRewardStatus::Active, LoyaltyRewardStatus::Paused], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Bulk status updates only support activate or pause.',
+            ]);
+        }
+
+        $updated = 0;
+        $failed = [];
+
+        foreach ($ids as $id) {
+            $reward = LoyaltyReward::query()->find($id);
+
+            if ($reward === null) {
+                $failed[] = ['id' => $id, 'reason' => 'not_found'];
+
+                continue;
+            }
+
+            if ($reward->status === LoyaltyRewardStatus::Archived) {
+                $failed[] = ['id' => $id, 'reason' => 'archived'];
+
+                continue;
+            }
+
+            $this->setStatus($reward, $status);
+            $updated++;
+        }
+
+        return [
+            'updated' => $updated,
+            'failed' => $failed,
+        ];
     }
 
     /**

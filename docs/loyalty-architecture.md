@@ -1,4 +1,4 @@
-# Loyalty architecture (P3.1–P3.3)
+# Loyalty architecture (P3.1–P3.4)
 
 Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 
@@ -7,9 +7,10 @@ Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 - **P3.1** Loyalty & Rewards Foundation — **COMPLETE**
 - **P3.2** Redemption & Reward Rules — **COMPLETE**
 - **P3.3** Customer Loyalty Experience — **COMPLETE**
-- **P3.4** Admin/Operations Loyalty Controls — **NEXT**
+- **P3.4** Admin & Operational Reporting — **COMPLETE**
+- **P3.5** Loyalty Intelligence Integration — **NEXT**
 
-Out of scope through P3.3: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI, payment gateway, invented production earn rates, automatic historical backfill. P3.3 does **not** change earning/redemption economics.
+Out of scope through P3.4: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI/auto-tuning, payment gateway, invented production earn rates, automatic historical backfill, monetary valuation of outstanding points. P3.3–P3.4 do **not** change earning/redemption ledger economics.
 
 ## Flow
 
@@ -141,7 +142,7 @@ When an earn is reversed after points were spent:
 - Customer API: `GET /account/loyalty` (hub + progress + discovery), `GET /account/loyalty/rewards`, cart `POST/DELETE /cart/loyalty-reward`
 - Order API: `loyalty_feedback` (earned only when ledger exists; `earning_pending` when async award not yet written)
 - PWA: Loyalty rewards hub, progress, reward cards, cart/checkout clarity, debt messaging, order feedback
-- Admin: Loyalty Rewards CRUD; user show balance/ledger + manual adjustment
+- Admin: Loyalty Operations dashboard/ledger/adjustments/CSV exports; Loyalty Rewards CRUD + bulk pause/activate + duplicate; user show balance/ledger/debt + confirmed idempotent adjustment
 - Invoices: separate loyalty discount line (not cash/payment)
 - Behaviour (allowlisted): `loyalty_reward_viewed`, `loyalty_reward_selected` (client); `loyalty_reward_redeemed` reserved server-side
 
@@ -156,7 +157,31 @@ When an earn is reversed after points were spent:
 
 Hub discovery uses a high merchandise basis when the cart is empty so points-based discount rewards can appear before checkout; checkout still recalculates against the real cart.
 
+### Admin operations reporting (P3.4)
+
+Owner/Manager only (`canManageWebsiteSettings`). Operator/Barista/Chef/Waiter denied.
+
+Aggregate metrics (cafe timezone date presets) via `LoyaltyReportingService`:
+
+| Metric | Definition |
+| --- | --- |
+| `earned_points` | Sum of positive canonical earn transactions in range (not reduced by later reversals) |
+| `redeemed_points` | Absolute sum of canonical redeem transactions in range |
+| `restored_points` | Sum of redemption restore transactions in range |
+| `reversed_earn_points` | Absolute sum of earn-reversal transactions in range |
+| `adjustment_positive` / `negative` / `net` | Adjustment ledger in range, presented separately from earn/redeem |
+| `outstanding_points` | Sum of `max(available_points, 0)` across accounts (points, **not** cash liability) |
+| `debt_points` | Absolute sum of `min(available_points, 0)` |
+| `redemption_rate` | Redemptions ÷ qualifying earn orders in range; zero denominator ⇒ `—` |
+
+Reward performance merges behaviour views/selections with canonical redeem ledger + order discount attribution. Missing events are not inferred. Server redemption is truth.
+
+Adjustments: mandatory reason, confirmation, idempotency key, actor metadata, DB transaction + row lock, no edit/delete (compensating adjustment only). Negative adjustments may create debt per P3.2.
+
+Reward ops: activate/pause/archive/duplicate; bulk pause/activate with per-row validation and partial failure reporting. Prefer archive; historical order snapshots never mutated.
+
+CSV exports (same `streamDownload` pattern as financial reports): ledger, balances, redemptions — no raw idempotency keys.
+
 ## Future
 
-- **P3.4** Admin/operations controls
-- **P3.5** Intelligence / segment integration
+- **P3.5** Intelligence / segment integration (wire `personalisation_summary`, audience segments, campaign targeting to loyalty surfaces without changing ledger economics)

@@ -87,6 +87,9 @@
                         ? ['label' => 'Offers & Promotions', 'route' => 'administrator.promotions.index', 'pattern' => 'administrator.promotions.*', 'icon' => 'ki-discount']
                         : null,
                     $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Loyalty Operations', 'route' => 'administrator.loyalty-operations.index', 'pattern' => 'administrator.loyalty-operations.*', 'icon' => 'ki-chart-pie-4']
+                        : null,
+                    $user?->canManageWebsiteSettings()
                         ? ['label' => 'Loyalty Rewards', 'route' => 'administrator.loyalty-rewards.index', 'pattern' => 'administrator.loyalty-rewards.*', 'icon' => 'ki-gift']
                         : null,
                     $user?->canManageWebsiteSettings()

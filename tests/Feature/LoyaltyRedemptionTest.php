@@ -275,6 +275,7 @@ class LoyaltyRedemptionTest extends TestCase
                 'points' => 5,
                 'reason' => 'Admin top-up',
                 'idempotency_key' => 'adj:http:1',
+                'confirmed' => '1',
             ])
             ->assertRedirect();
     }
