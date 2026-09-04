@@ -251,7 +251,7 @@ export function DiningSessionPage() {
     const needsConfirm =
       drafts.length > 1 || drafts.some((draft) => (draft.add_ons?.length ?? 0) > 0 || draft.quantity > 1);
 
-    if (needsConfirm && !window.confirm('Clear your next round? This removes all items you have not placed yet.')) {
+    if (needsConfirm && !window.confirm('Clear these items? This removes everything you have not placed yet.')) {
       return;
     }
 
@@ -276,7 +276,7 @@ export function DiningSessionPage() {
     }
 
     const confirmed = window.confirm(
-      'Ready to request your bill?\nYou won’t be able to add another round after the bill is requested.',
+      'Ready to request your bill?\nYou won’t be able to add another order after the bill is requested.',
     );
 
     if (!confirmed) {
@@ -398,14 +398,14 @@ export function DiningSessionPage() {
             <h2 id="dining-order-more-title">Order more</h2>
             {draftCount > 0 ? (
               <span className="dining-pill">
-                {draftCount} item{draftCount === 1 ? '' : 's'} in next round
+                {draftCount} item{draftCount === 1 ? '' : 's'} in next order
               </span>
             ) : null}
           </div>
 
           {drafts.length === 0 ? (
             <div className="dining-empty-draft">
-              <p className="muted">Add anything you’d like for your next round.</p>
+              <p className="muted">Add anything you’d like for your next order.</p>
               <Link
                 to={diningMenuPath(sessionId)}
                 className="btn btn-primary rounded-pill"
@@ -425,7 +425,7 @@ export function DiningSessionPage() {
           ) : (
             <>
               <div className="dining-section-head dining-next-round-head">
-                <h3>Your next round</h3>
+                <h3>Your next order</h3>
                 <Link
                   to={diningMenuPath(sessionId)}
                   className="btn btn-sm btn-outline-dark rounded-pill"
@@ -481,7 +481,7 @@ export function DiningSessionPage() {
               </ul>
 
               <div className="dining-round-total-row">
-                <span>Round total</span>
+                <span>Order total</span>
                 <strong>{formatCurrency(draftTotal)}</strong>
               </div>
 
@@ -495,7 +495,7 @@ export function DiningSessionPage() {
                   disabled={busy || busyDraftId !== null}
                   onClick={() => void handleClearRound()}
                 >
-                  Clear round
+                  Clear items
                 </button>
               </div>
             </>
@@ -504,7 +504,7 @@ export function DiningSessionPage() {
       ) : (
         <section className="dining-bill-requested" aria-live="polite">
           <h2>Bill requested</h2>
-          <p className="muted">Your bill is being prepared. You can’t add another round right now.</p>
+          <p className="muted">Your bill is being prepared. You can’t add another order right now.</p>
           <Link className="btn btn-primary rounded-pill" to={`/dining/sessions/${sessionId}/bill`}>
             Open bill / payment
           </Link>
@@ -528,7 +528,10 @@ export function DiningSessionPage() {
               <article key={round.id} className="dining-round-card">
                 <div className="dining-round-card-top">
                   <div>
-                    <strong>Round {round.displayNumber}</strong>
+                    <strong>
+                      Order {round.displayNumber}
+                      {round.order_number ? ` · ${round.order_number}` : ''}
+                    </strong>
                     <p className="muted mb-0">
                       {itemCount} item{itemCount === 1 ? '' : 's'}
                       {placed ? ` · Placed ${placed}` : ''}
@@ -544,6 +547,11 @@ export function DiningSessionPage() {
                   type="button"
                   className="btn btn-text dining-round-toggle"
                   aria-expanded={expanded}
+                  aria-label={
+                    expanded
+                      ? `Hide details for order ${round.displayNumber}`
+                      : `View details for order ${round.displayNumber}`
+                  }
                   onClick={() => toggleRound(round.id)}
                 >
                   {expanded ? 'Hide details' : 'View details'}
@@ -551,9 +559,6 @@ export function DiningSessionPage() {
 
                 {expanded ? (
                   <div className="dining-round-details">
-                    {round.order_number ? (
-                      <p className="dining-round-ref muted">Order {round.order_number}</p>
-                    ) : null}
                     <ul className="dining-round-items">
                       {(round.items ?? []).map((item) => {
                         const addOns = (item.add_ons ?? [])
@@ -593,7 +598,7 @@ export function DiningSessionPage() {
             <div>
               <span className="muted">Running bill</span>
               <p className="dining-finish-summary muted mb-0">
-                {rounds.length} round{rounds.length === 1 ? '' : 's'}
+                {rounds.length} order{rounds.length === 1 ? '' : 's'}
                 {totalRoundItems > 0 ? ` · ${totalRoundItems} item${totalRoundItems === 1 ? '' : 's'}` : ''}
               </p>
             </div>

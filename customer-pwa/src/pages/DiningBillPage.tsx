@@ -336,7 +336,7 @@ export function DiningBillPage() {
 
           {(roundCount > 0 || itemCount > 0) && (
             <p className="muted mb-0">
-              {roundCount} round{roundCount === 1 ? '' : 's'}
+              {roundCount} order{roundCount === 1 ? '' : 's'}
               {itemCount > 0 ? ` · ${itemCount} item${itemCount === 1 ? '' : 's'}` : ''}
             </p>
           )}

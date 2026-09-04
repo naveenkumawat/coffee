@@ -106,18 +106,28 @@ test('dining session UI removes raw item select and qty form', () => {
   assert.doesNotMatch(source, /<select/);
   assert.doesNotMatch(source, /Add to draft/);
   assert.doesNotMatch(source, /Place round/);
+  assert.doesNotMatch(source, /Your next round/);
+  assert.doesNotMatch(source, /Clear round/);
+  assert.doesNotMatch(source, /Round total/);
+  assert.doesNotMatch(source, /Round \{/);
+  assert.doesNotMatch(source, /another round/);
+  assert.doesNotMatch(source, /in next round/);
+  assert.doesNotMatch(source, /\} round\{/);
   assert.match(source, /Table \{session\.table\.label\}/);
   assert.match(source, /Running bill/);
   assert.match(source, /formatCurrency\(billTotal\)/);
   assert.match(source, /Add items/);
-  assert.match(source, /Your next round/);
+  assert.match(source, /Your next order/);
   assert.match(source, /Place order/);
-  assert.match(source, /Clear round/);
+  assert.match(source, /Clear items/);
+  assert.match(source, /Order total/);
+  assert.match(source, /Order \{round\.displayNumber\}/);
   assert.match(source, /Your orders/);
   assert.match(source, /Request bill/);
   assert.match(source, /Call waiter/);
   assert.match(source, /diningMenuPath/);
   assert.match(source, /aria-expanded/);
+  assert.match(source, /order\{rounds\.length === 1 \? '' : 's'\}/);
 });
 
 test('dining menu reuses ProductCard customization into dining draft', () => {
@@ -125,11 +135,15 @@ test('dining menu reuses ProductCard customization into dining draft', () => {
   assert.match(source, /ProductCard/);
   assert.match(source, /orderHandler/);
   assert.match(source, /addDiningDraft/);
-  assert.match(source, /Add to round/);
+  assert.match(source, /Add to order/);
   assert.match(source, /writeOrderingContext/);
-  assert.match(source, /View round/);
+  assert.match(source, /View order/);
   assert.match(source, /Back to table/);
-  assert.match(source, /No items in next round/);
+  assert.match(source, /No items yet/);
+  assert.match(source, /in next order/);
+  assert.doesNotMatch(source, /Add to round/);
+  assert.doesNotMatch(source, /View round/);
+  assert.doesNotMatch(source, /next round/);
   assert.doesNotMatch(source, /useCartStore/);
 });
 
@@ -249,13 +263,46 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with dining-awa
 
 test('dining add-items sticky bar has table return actions without retail cart', () => {
   const source = readSrc('pages/DiningMenuPage.tsx');
-  assert.match(source, /No items in next round/);
+  assert.match(source, /No items yet/);
   assert.match(source, /Back to table/);
-  assert.match(source, /View round/);
+  assert.match(source, /View order/);
   assert.match(source, /tableLabel:/);
   assert.doesNotMatch(source, /Book table/i);
   assert.doesNotMatch(source, /useCartStore/);
   assert.doesNotMatch(source, /to="\/cart"/);
+});
+
+test('customer dining copy uses Order instead of Round', () => {
+  const session = readSrc('pages/DiningSessionPage.tsx');
+  const menu = readSrc('pages/DiningMenuPage.tsx');
+  const bill = readSrc('pages/DiningBillPage.tsx');
+  const nav = readSrc('components/navigation/BottomNavigation.tsx');
+
+  assert.match(session, /Order \{round\.displayNumber\}/);
+  assert.match(session, /Your next order/);
+  assert.match(session, /Place order/);
+  assert.match(session, /Clear items/);
+  assert.match(menu, /Add to order/);
+  assert.match(menu, /View order/);
+  assert.match(bill, /order\{roundCount === 1 \? '' : 's'\}/);
+  assert.match(nav, /in next order/);
+
+  for (const [label, source] of [
+    ['session', session],
+    ['menu', menu],
+    ['bill', bill],
+    ['nav', nav],
+  ]) {
+    assert.doesNotMatch(source, /Your next round/, `${label} still says next round`);
+    assert.doesNotMatch(source, /Place round/, `${label} still says Place round`);
+    assert.doesNotMatch(source, /Add to round/, `${label} still says Add to round`);
+    assert.doesNotMatch(source, /Clear round/, `${label} still says Clear round`);
+    assert.doesNotMatch(source, /View round/, `${label} still says View round`);
+    assert.doesNotMatch(source, /Round total/, `${label} still says Round total`);
+    assert.doesNotMatch(source, /Round \{/, `${label} still says Round {`);
+    assert.doesNotMatch(source, / in next round/, `${label} still says in next round`);
+    assert.doesNotMatch(source, /\} round\{/, `${label} still counts rounds in copy`);
+  }
 });
 
 test('retail menu and cart redirect into dining when dining context is active', () => {

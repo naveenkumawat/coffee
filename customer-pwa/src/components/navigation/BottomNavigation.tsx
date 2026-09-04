@@ -78,8 +78,8 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const cartTo = diningContext ? diningSessionPath(diningContext.diningSessionId) : '/cart';
   const cartAriaLabel = diningContext
     ? cartCount > 0
-      ? `Cart, ${cartCount} item${cartCount === 1 ? '' : 's'} in next round`
-      : 'Cart, dining next round'
+      ? `Cart, ${cartCount} item${cartCount === 1 ? '' : 's'} in next order`
+      : 'Cart, dining next order'
     : cartBadgeAriaLabel(retailCartCount);
 
   useEffect(() => {

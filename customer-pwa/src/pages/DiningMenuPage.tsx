@@ -156,7 +156,7 @@ export function DiningMenuPage() {
             tableLabel: response.data.table.label,
             draftItemCount: diningDraftItemCount(response.data.drafts),
           });
-          toastSuccess('Added to your next round');
+          toastSuccess('Added to your next order');
         } catch (error) {
           toastError(error instanceof ApiError ? error.message : 'Unable to add item.');
           throw error;
@@ -226,7 +226,7 @@ export function DiningMenuPage() {
       {session ? (
         <p className="dining-menu-context" aria-live="polite">
           Ordering for <strong>Table {session.table.label}</strong>
-          <span className="muted"> · Adds to your next round</span>
+          <span className="muted"> · Adds to your next order</span>
         </p>
       ) : null}
 
@@ -338,7 +338,7 @@ export function DiningMenuPage() {
                     product={product}
                     showFavouriteToggle={false}
                     orderHandler={orderHandler}
-                    sheetCtaLabel="Add to round"
+                    sheetCtaLabel="Add to order"
                   />
                 ))}
               </div>
@@ -348,11 +348,11 @@ export function DiningMenuPage() {
       )}
 
       <StickyActionBar
-        eyebrow={session ? `Table ${session.table.label}` : 'Next round'}
+        eyebrow={session ? `Table ${session.table.label}` : 'Next order'}
         title={
           draftCount > 0
-            ? `${draftCount} item${draftCount === 1 ? '' : 's'} in next round`
-            : 'No items in next round'
+            ? `${draftCount} item${draftCount === 1 ? '' : 's'} in next order`
+            : 'No items yet'
         }
         value={formatCurrency(draftTotal)}
       >
@@ -360,7 +360,7 @@ export function DiningMenuPage() {
           to={diningSessionPath(sessionId)}
           className="btn btn-primary btn-lg rounded-pill w-100"
         >
-          {draftCount > 0 ? 'View round' : 'Back to table'}
+          {draftCount > 0 ? 'View order' : 'Back to table'}
         </Link>
       </StickyActionBar>
     </div>
