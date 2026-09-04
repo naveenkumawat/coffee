@@ -776,12 +776,12 @@ class InventoryProductReportingService implements InventoryProductReportingServi
 
         $rows = OrderItem::query()
             ->whereHas('order', function (Builder $query) use ($from, $to): void {
-                $query->whereNotIn('status', [OrderStatus::Cancelled, OrderStatus::Rejected])
+                $query->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
                     ->whereBetween('placed_at', [$from, $to]);
             })
             ->selectRaw('preparation_station')
             ->selectRaw('COALESCE(SUM(quantity), 0) as units')
-            ->selectRaw('COUNT(*) as lines')
+            ->selectRaw('COUNT(*) as item_lines')
             ->groupBy('preparation_station')
             ->get()
             ->keyBy(function ($row): string {
@@ -793,8 +793,8 @@ class InventoryProductReportingService implements InventoryProductReportingServi
         return [
             'bar_units' => (int) ($rows[PreparationStation::Bar->value]->units ?? 0),
             'kitchen_units' => (int) ($rows[PreparationStation::Kitchen->value]->units ?? 0),
-            'bar_item_lines' => (int) ($rows[PreparationStation::Bar->value]->lines ?? 0),
-            'kitchen_item_lines' => (int) ($rows[PreparationStation::Kitchen->value]->lines ?? 0),
+            'bar_item_lines' => (int) ($rows[PreparationStation::Bar->value]->item_lines ?? 0),
+            'kitchen_item_lines' => (int) ($rows[PreparationStation::Kitchen->value]->item_lines ?? 0),
         ];
     }
 

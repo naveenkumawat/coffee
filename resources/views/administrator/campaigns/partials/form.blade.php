@@ -189,6 +189,7 @@
                 Rule types: {{ implode(', ', array_keys($ruleTypeOptions)) }}.
                 Operators: {{ implode(', ', array_keys($operatorOptions)) }}.
                 Use <code>all</code> / <code>any</code> / <code>exclude</code> groups. Location rules fail closed when location context is unavailable.
+                Reference reusable audiences with <code>segment_matches</code> / <code>segment_not_matches</code> and an active segment id (do not paste segment rule JSON here).
             </div>
             <div class="row g-6">
                 <div class="col-md-12">

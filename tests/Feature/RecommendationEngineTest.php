@@ -129,8 +129,10 @@ class RecommendationEngineTest extends TestCase
         $this->recordEvent(null, $visitor, BehaviourEventType::ProductViewed, $multiDay, occurredAt: now()->subDay());
         $this->recordEvent(null, $visitor, BehaviourEventType::CartItemAdded, $multiDay, occurredAt: now()->subHours(2));
 
+        $sameDayAnchor = now()->startOfDay()->addHours(12);
+
         for ($i = 0; $i < 12; $i++) {
-            $this->recordEvent(null, $visitor, BehaviourEventType::ProductViewed, $sameDaySpam, occurredAt: now()->subMinutes($i));
+            $this->recordEvent(null, $visitor, BehaviourEventType::ProductViewed, $sameDaySpam, occurredAt: $sameDayAnchor->copy()->subMinutes($i));
         }
 
         $strategy = app(RepeatedInterestStrategy::class);

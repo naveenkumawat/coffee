@@ -196,5 +196,14 @@ return [
             'cache_ttl_seconds' => (int) env('COFFEE_CAMPAIGNS_CACHE_TTL', 120),
             'popup_max_per_page' => 1,
         ],
+
+        /*
+        | P2.5 reusable audience segments (dynamic evaluation; optional short TTL cache).
+        */
+        'segments' => [
+            'cache_ttl_seconds' => (int) env('COFFEE_SEGMENTS_MATCH_CACHE_TTL', 60),
+            'definition_cache_ttl_seconds' => (int) env('COFFEE_SEGMENTS_DEFINITION_CACHE_TTL', 120),
+            'preview_scan_limit' => (int) env('COFFEE_SEGMENTS_PREVIEW_SCAN_LIMIT', 200),
+        ],
     ],
 ];

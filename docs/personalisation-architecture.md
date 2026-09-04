@@ -9,20 +9,15 @@ Phase-1 launch software remains **FROZEN**; this is Phase-2 work on top of that 
 Behaviour Events + Canonical Completed Orders
         ↓
 Derived Personalisation Profile (P2.2)
-        +
-Current Context (placement / cart / product / optional location)
-        +
-Campaign Rules (Admin)
         ↓
-Campaign Targeting Engine
+Reusable Audience Segment Definitions (P2.5)
         ↓
-Priority / Frequency / Collision
+Segment Evaluator (dynamic; optional bounded TTL cache ≠ truth)
         ↓
-Popup / future Banner / Inline / Landing surfaces
-        ↓
-Impression / Click / Dismiss
-        ↓
-P2.6 Conversion Analytics
+Campaign Targeting (P2.4 + segment_matches / segment_not_matches)
+        ├─ future recommendation boosts
+        ├─ future personalised landing content
+        └─ P2.6 analytics / conversion feedback
 ```
 
 (Also parallel: Recommendation Candidate Strategies → Surfaces → Impression/Click → P2.6)
@@ -33,8 +28,8 @@ P2.6 Conversion Analytics
 | **P2.2** Personalisation Profiles | **COMPLETE** | Derived customer/visitor profiles from events + completed orders |
 | **P2.3** Recommendation Engine | **COMPLETE** | Hybrid strategy pipeline; guest/customer/cold-start; API + PWA rails |
 | **P2.4** Campaign/Popup Engine | **COMPLETE** | Admin campaigns; targeting/frequency; eligible API; PWA popup |
-| **P2.5** Segmentation/Targeting | **NEXT** | Reusable visitor/customer segments for campaigns |
-| **P2.6** Analytics | Planned | Recommendation/campaign impression→conversion reporting |
+| **P2.5** Segmentation | **COMPLETE** | Reusable named segments; shared rule evaluator; campaign segment operators |
+| **P2.6** Analytics / Conversion Feedback | **NEXT** | Recommendation/campaign impression→conversion reporting |
 
 ## P2.1 collection
 
@@ -216,6 +211,44 @@ Rules reuse P2.2 `profilePayloadFor*` plus canonical completed-order / favourite
 
 ### Out of scope (later)
 
-- P2.5 reusable segments
 - P2.6 impression→purchase attribution dashboard
 - Aggressive exit-intent / dark-pattern triggers
+
+## P2.5 reusable audience segments
+
+Canonical model: `audience_segments` (name, description, status, actor_scope visitor/customer/both, dynamic `rules` JSON, `stable_key`).
+
+Membership is **derived** from current authoritative data (profiles, completed orders, favourites, visitor behaviour counts). No permanent manually maintained customer-id lists as the primary architecture. No segment→segment nesting in V1.
+
+### Shared targeting language
+
+`TargetingRuleValidator` / `TargetingRuleEvaluator` — same safe ALL / ANY / EXCLUDE vocabulary for segments and campaigns. Campaigns add context operators (`current_product`, cart, fulfilment) plus:
+
+- `segment_matches`
+- `segment_not_matches`
+
+Campaigns reference active segment ids; they do **not** copy segment rule JSON. Inactive/archived/missing segments fail closed at evaluation; Admin validation rejects non-active references on save.
+
+### Evaluation
+
+`SegmentService`: `matches(segment, actor)`, `matchingSegments(actor)` (read contract for future recommendations/landing), `matchesCached` (short identity-safe TTL; version-bumped on segment edits — cache is never canonical truth). Dynamic evaluation first; no warehouse/CDP.
+
+Thresholds (order counts, lapse days, frequency, etc.) are configured per segment rule — no invented café-wide business defaults.
+
+No `segment_matched` behaviour events (membership is derived state). Tracking-disabled semantics follow P2.1/P2.2 (behaviour omitted; completed-order signals remain). Location-dependent segment rules use the same explicit location context as P2.4 and fail closed when unavailable.
+
+### Admin
+
+Administrator → **Audience Segments**: list/filter, create/edit, activate/pause/archive, rule JSON + readable summary, explicit actor/count preview (capped scan — not on every form render).
+
+### Config
+
+`coffee.behaviour.segments.*` — match cache TTL, definition cache TTL, preview scan limit.
+
+### Out of scope (later)
+
+- Nested segments
+- Materialized membership warehouse
+- Recommendation ranking changes (P2.3 may optionally consume `matchingSegments` later)
+- Personalised landing surfaces using segment ids
+- P2.6 analytics / conversion feedback

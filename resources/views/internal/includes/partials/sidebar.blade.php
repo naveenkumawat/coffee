@@ -88,6 +88,9 @@
                         ? ['label' => 'Campaigns', 'route' => 'administrator.campaigns.index', 'pattern' => 'administrator.campaigns.*', 'icon' => 'ki-notification-on']
                         : null,
                     $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Audience Segments', 'route' => 'administrator.segments.index', 'pattern' => 'administrator.segments.*', 'icon' => 'ki-people']
+                        : null,
+                    $user?->canManageWebsiteSettings()
                         ? ['label' => 'Referrals', 'route' => 'administrator.referrals.index', 'pattern' => 'administrator.referrals.*', 'icon' => 'ki-people']
                         : null,
                     $user?->canManageWebsiteSettings()

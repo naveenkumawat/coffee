@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Administrator\AddOnController;
+use App\Http\Controllers\Administrator\AudienceSegmentController;
 use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\CampaignController;
@@ -212,6 +213,14 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::put('campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
     Route::delete('campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
     Route::patch('campaigns/{campaign}/status/{status}', [CampaignController::class, 'setStatus'])->name('campaigns.status');
+    Route::get('segments', [AudienceSegmentController::class, 'index'])->name('segments.index');
+    Route::get('segments/create', [AudienceSegmentController::class, 'create'])->name('segments.create');
+    Route::post('segments', [AudienceSegmentController::class, 'store'])->name('segments.store');
+    Route::get('segments/{audience_segment}/edit', [AudienceSegmentController::class, 'edit'])->name('segments.edit');
+    Route::put('segments/{audience_segment}', [AudienceSegmentController::class, 'update'])->name('segments.update');
+    Route::delete('segments/{audience_segment}', [AudienceSegmentController::class, 'destroy'])->name('segments.destroy');
+    Route::patch('segments/{audience_segment}/status/{status}', [AudienceSegmentController::class, 'setStatus'])->name('segments.status');
+    Route::post('segments/{audience_segment}/preview', [AudienceSegmentController::class, 'preview'])->name('segments.preview');
     Route::get('referrals', [ReferralController::class, 'index'])->name('referrals.index');
 
     Route::get('cafe-schedule', [CafeScheduleController::class, 'index'])->name('cafe-schedule.index');

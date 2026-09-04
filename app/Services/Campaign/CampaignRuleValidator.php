@@ -2,46 +2,26 @@
 
 namespace App\Services\Campaign;
 
+use App\Enums\AudienceSegmentStatus;
 use App\Enums\CampaignCtaType;
 use App\Enums\CampaignPlacement;
 use App\Enums\CampaignTriggerType;
+use App\Models\AudienceSegment;
+use App\Services\Targeting\TargetingRuleValidator;
 use Illuminate\Validation\ValidationException;
 
 class CampaignRuleValidator
 {
+    public function __construct(
+        protected TargetingRuleValidator $targeting,
+    ) {}
+
     /**
      * @return list<string>
      */
     public function allowedRuleTypes(): array
     {
-        return [
-            'identity',
-            'has_sufficient_evidence',
-            'category_affinity',
-            'product_affinity',
-            'flavour_affinity',
-            'favourite_product',
-            'previous_purchase',
-            'repeat_purchase',
-            'recent_product',
-            'recent_category',
-            'min_interactions',
-            'spend_band',
-            'time_of_day',
-            'completed_orders',
-            'first_order',
-            'returning_buyer',
-            'current_product',
-            'current_category',
-            'cart_contains_product',
-            'cart_contains_category',
-            'fulfilment_method',
-            'location_city',
-            'location_zone',
-            'location_available',
-            'returning_visitor',
-            'new_visitor',
-        ];
+        return $this->targeting->campaignRuleTypes();
     }
 
     /**
@@ -49,7 +29,7 @@ class CampaignRuleValidator
      */
     public function allowedOperators(): array
     {
-        return ['eq', 'neq', 'gte', 'lte', 'gt', 'lt', 'includes', 'excludes', 'in', 'not_in'];
+        return $this->targeting->allowedOperators();
     }
 
     /**
@@ -58,11 +38,13 @@ class CampaignRuleValidator
      */
     public function validateTargetingRules(array $rules): array
     {
-        $normalized = [
-            'all' => $this->normalizeRuleGroup($rules['all'] ?? [], 'targeting_rules.all'),
-            'any' => $this->normalizeRuleGroup($rules['any'] ?? [], 'targeting_rules.any'),
-            'exclude' => $this->normalizeRuleGroup($rules['exclude'] ?? [], 'targeting_rules.exclude'),
-        ];
+        $normalized = $this->targeting->validateRuleGroups(
+            $rules,
+            $this->allowedRuleTypes(),
+            'targeting_rules',
+        );
+
+        $this->assertSegmentReferencesExist($normalized);
 
         return $normalized;
     }
@@ -181,60 +163,36 @@ class CampaignRuleValidator
     }
 
     /**
-     * @return list<array{type: string, op: string, value: mixed}>
+     * @param  array{all: list<array<string, mixed>>, any: list<array<string, mixed>>, exclude: list<array<string, mixed>>}  $rules
      */
-    protected function normalizeRuleGroup(mixed $group, string $field): array
+    protected function assertSegmentReferencesExist(array $rules): void
     {
-        if ($group === null || $group === []) {
-            return [];
+        $ids = [];
+
+        foreach (['all', 'any', 'exclude'] as $group) {
+            foreach ($rules[$group] as $rule) {
+                if (in_array($rule['type'], ['segment_matches', 'segment_not_matches'], true)) {
+                    $ids[] = (int) $rule['value'];
+                }
+            }
         }
 
-        if (! is_array($group)) {
+        $ids = array_values(array_unique(array_filter($ids)));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $activeCount = AudienceSegment::query()
+            ->whereIn('id', $ids)
+            ->where('status', AudienceSegmentStatus::Active->value)
+            ->count();
+
+        if ($activeCount !== count($ids)) {
             throw ValidationException::withMessages([
-                $field => 'Rule group must be an array.',
+                'targeting_rules' => 'Campaigns may only reference active audience segments.',
             ]);
         }
-
-        $allowedTypes = $this->allowedRuleTypes();
-        $allowedOps = $this->allowedOperators();
-        $normalized = [];
-
-        foreach ($group as $index => $rule) {
-            if (! is_array($rule)) {
-                throw ValidationException::withMessages([
-                    "{$field}.{$index}" => 'Each rule must be an object.',
-                ]);
-            }
-
-            $type = (string) ($rule['type'] ?? '');
-            $op = (string) ($rule['op'] ?? 'eq');
-
-            if (! in_array($type, $allowedTypes, true)) {
-                throw ValidationException::withMessages([
-                    "{$field}.{$index}.type" => 'Unsupported rule type.',
-                ]);
-            }
-
-            if (! in_array($op, $allowedOps, true)) {
-                throw ValidationException::withMessages([
-                    "{$field}.{$index}.op" => 'Unsupported operator.',
-                ]);
-            }
-
-            if (! array_key_exists('value', $rule)) {
-                throw ValidationException::withMessages([
-                    "{$field}.{$index}.value" => 'Rule value is required.',
-                ]);
-            }
-
-            $normalized[] = [
-                'type' => $type,
-                'op' => $op,
-                'value' => $rule['value'],
-            ];
-        }
-
-        return $normalized;
     }
 
     /**
@@ -288,24 +246,10 @@ class CampaignRuleValidator
             ]);
         }
 
-        $allowedPrefixes = ['/menu', '/cart', '/checkout', '/account', '/orders', '/favourites', '/rewards', '/referral', '/dining', '/'];
-
-        $ok = false;
-
-        foreach ($allowedPrefixes as $prefix) {
-            if ($path === $prefix || str_starts_with($path, rtrim($prefix, '/').'/') || ($prefix === '/' && $path === '/')) {
-                $ok = true;
-                break;
-            }
-        }
-
-        if (! $ok && $path !== '/') {
-            // Allow exact known roots already covered; reject unknown absolute hosts already blocked.
-            if (! preg_match('#^/[a-z0-9/_\\-?=&]*$#i', $path)) {
-                throw ValidationException::withMessages([
-                    'cta_internal_path' => 'Internal path contains invalid characters.',
-                ]);
-            }
+        if (! preg_match('#^/[a-z0-9/_\\-?=&]*$#i', $path)) {
+            throw ValidationException::withMessages([
+                'cta_internal_path' => 'Internal path contains invalid characters.',
+            ]);
         }
     }
 }

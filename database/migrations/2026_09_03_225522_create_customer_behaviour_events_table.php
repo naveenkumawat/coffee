@@ -41,13 +41,13 @@ return new class extends Migration
             $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
 
             $table->unique('idempotency_key');
-            $table->index(['visitor_key', 'occurred_at']);
-            $table->index(['customer_id', 'occurred_at']);
-            $table->index(['event_type', 'occurred_at']);
-            $table->index(['product_id', 'event_type', 'occurred_at']);
-            $table->index(['product_category_id', 'event_type', 'occurred_at']);
-            $table->index(['order_id', 'event_type']);
-            $table->index('occurred_at');
+            $table->index(['visitor_key', 'occurred_at'], 'cbe_visitor_occurred_idx');
+            $table->index(['customer_id', 'occurred_at'], 'cbe_customer_occurred_idx');
+            $table->index(['event_type', 'occurred_at'], 'cbe_event_occurred_idx');
+            $table->index(['product_id', 'event_type', 'occurred_at'], 'cbe_product_event_occurred_idx');
+            $table->index(['product_category_id', 'event_type', 'occurred_at'], 'cbe_category_event_occurred_idx');
+            $table->index(['order_id', 'event_type'], 'cbe_order_event_idx');
+            $table->index('occurred_at', 'cbe_occurred_at_idx');
         });
     }
 
