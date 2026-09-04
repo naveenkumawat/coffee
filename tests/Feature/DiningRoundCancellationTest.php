@@ -208,7 +208,11 @@ class DiningRoundCancellationTest extends TestCase
         $this->postJson(route('api.v1.waiter.sessions.rounds.cancel', [$session->id, $order->id]))
             ->assertStatus(422);
 
-        $session = app(DiningSessionServiceInterface::class)->reopenSession($session->fresh(), $waiter);
+        $session = app(DiningSessionServiceInterface::class)->reopenSession(
+            $session->fresh(),
+            $waiter,
+            'Resume after mistaken bill request',
+        );
         $this->assertSame(DiningSessionStatus::Open, $session->status);
 
         app(DiningSessionServiceInterface::class)->requestBill($session, $waiter);

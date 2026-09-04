@@ -66,7 +66,15 @@
                         @endif
                     @endif
                     @if ($canAccept && $acceptRoute)
-                        <form method="POST" action="{{ $acceptRoute }}" class="d-inline">
+                        <form
+                            method="POST"
+                            action="{{ $acceptRoute }}"
+                            class="d-inline"
+                            data-confirm-title="Accept Round {{ $order->dining_round_number }}?"
+                            data-confirm-body="Accepting will send this round into preparation and consume required stock."
+                            data-confirm-label="Accept round"
+                            data-confirm-class="btn-primary"
+                        >
                             @csrf
                             <x-internal.button label="Accept" type="submit" variant="primary" icon="ki-check" />
                         </form>
@@ -81,7 +89,15 @@
                             };
                         @endphp
                         @if ($servedRoute)
-                            <form method="POST" action="{{ $servedRoute }}" class="d-inline">
+                            <form
+                                method="POST"
+                                action="{{ $servedRoute }}"
+                                class="d-inline"
+                                data-confirm-title="Mark Round {{ $order->dining_round_number }} served?"
+                                data-confirm-body="Confirm this round has been delivered to the table."
+                                data-confirm-label="Mark served"
+                                data-confirm-class="btn-success"
+                            >
                                 @csrf
                                 <x-internal.button label="Mark Served" type="submit" variant="success" icon="ki-check" />
                             </form>
@@ -98,7 +114,15 @@
                 @endif
 
                 @if ($cancellation['can_cancel'] && $cancelRoute)
-                    <form method="POST" action="{{ $cancelRoute }}" class="mb-3 p-3 bg-light rounded">
+                    <form
+                        method="POST"
+                        action="{{ $cancelRoute }}"
+                        class="mb-3 p-3 bg-light rounded"
+                        data-confirm-title="Cancel Round {{ $order->dining_round_number }}?"
+                        data-confirm-body="Cancelling may reverse eligible stock consumption where allowed."
+                        data-confirm-label="Cancel round"
+                        data-confirm-class="btn-danger"
+                    >
                         @csrf
                         <div class="d-flex flex-wrap align-items-end gap-3">
                             @if ($cancellation['cancel_requires_reason'])

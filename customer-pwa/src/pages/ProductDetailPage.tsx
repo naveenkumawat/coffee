@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { fetchProductRatings } from '../api/ratings';
 import { FavouriteToggle } from '../components/catalog/FavouriteToggle';
+import { OrderingModeSwitcher } from '../components/catalog/OrderingModeSwitcher';
 import { ProductOrderControl } from '../components/catalog/ProductOrderControl';
 import { ProductReviewsBlock } from '../components/catalog/ProductReviewsBlock';
 import { ProductTags } from '../components/catalog/ProductTags';
@@ -16,7 +17,7 @@ import { RecommendationSection } from '../components/recommendations/Recommendat
 import { useOrderingContext } from '../hooks/useOrderingContext';
 import { Product } from '../types/catalog';
 import { PublicProductReview, RatingSummary } from '../types/rating';
-import { diningMenuPath, isDiningOrderingContext } from '../utils/orderingContext';
+import { hasActiveDiningSession } from '../utils/orderingContext';
 import { getProductVariants, isProductUnavailable } from '../utils/productActions';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
@@ -59,10 +60,6 @@ export function ProductDetailPage() {
     void load();
   }, [productId]);
 
-  if (isDiningOrderingContext(orderingContext)) {
-    return <Navigate to={diningMenuPath(orderingContext.diningSessionId)} replace />;
-  }
-
   if (isLoading) {
     return (
       <div className="page-container">
@@ -97,15 +94,22 @@ export function ProductDetailPage() {
 
   const unavailable = isProductUnavailable(product);
   const variants = getProductVariants(product);
+  const diningActive = hasActiveDiningSession(orderingContext);
 
   return (
     <div className="page-container detail-page">
       <PageHeader
         title={product.category?.name ?? 'Menu'}
-        description="Choose size and add to cart"
+        description={
+          orderingContext.mode === 'dining' && diningActive
+            ? 'Choose size and add to your table order'
+            : 'Choose size and add to cart'
+        }
         showBack
         rightSlot={<FavouriteToggle productId={product.id} />}
       />
+
+      {diningActive ? <OrderingModeSwitcher /> : null}
 
       {errorMessage ? <p className="form-feedback form-feedback-error">{errorMessage}</p> : null}
 

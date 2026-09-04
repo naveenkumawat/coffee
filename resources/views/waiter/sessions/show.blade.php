@@ -51,11 +51,20 @@
                 </div>
             </div>
             <div class="card-body pt-4">
-                <form method="POST" action="{{ route('waiter.sessions.rounds.store', $session) }}" class="row g-4 align-items-end">
+                <form
+                    method="POST"
+                    action="{{ route('waiter.sessions.rounds.store', $session) }}"
+                    class="row g-4 align-items-end"
+                    data-confirm-title="Place round?"
+                    data-confirm-body="This places the selected item as a new dining round for preparation."
+                    data-confirm-label="Place round"
+                    data-confirm-class="btn-success"
+                >
                     @csrf
                     <div class="col-md-6">
                         <label class="form-label" for="product_variant_id">Item</label>
-                        <select id="product_variant_id" name="product_variant_id" class="form-select" required>
+                        <select id="product_variant_id" name="product_variant_id" class="form-select" required data-control="select2" data-placeholder="Select an item">
+                            <option></option>
                             @foreach ($variants as $variant)
                                 <option value="{{ $variant->getKey() }}">{{ $variant->product?->name }} — {{ $variant->name }}</option>
                             @endforeach

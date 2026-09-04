@@ -212,14 +212,16 @@ class MobileOrderingJourneyPhaseC2Test extends TestCase
         ])->assertOk();
         $this->postJson(route('api.v1.waiter.sessions.cash.receive', $sessionId))->assertOk();
 
+        // Payment confirmation auto-closes the session and releases the table.
         $paid = collect($this->getJson(route('api.v1.waiter.tables.index'))->json('data'))
             ->firstWhere('id', $table->id);
-        $this->assertSame('paid', $paid['display_state']);
-        $this->assertSame('Paid', $paid['display_state_label']);
+        $this->assertSame('available', $paid['display_state']);
+        $this->assertNull($paid['session']);
 
         $this->getJson(route('api.v1.waiter.sessions.show', $sessionId))
             ->assertOk()
-            ->assertJsonPath('data.capabilities.can_close', true)
+            ->assertJsonPath('data.status', DiningSessionStatus::Closed->value)
+            ->assertJsonPath('data.capabilities.can_close', false)
             ->assertJsonPath('data.capabilities.can_change_payment_method', false);
     }
 

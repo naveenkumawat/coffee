@@ -4,6 +4,7 @@ import { cancelOrder, fetchOrder } from '../api/orders';
 import { ApiError } from '../api/client';
 import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
+import { confirmYes } from '../components/common/ConfirmDialog';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -139,7 +140,14 @@ export function OrderConfirmationPage() {
       return;
     }
 
-    if (!window.confirm('Cancel this unpaid order?')) {
+    const confirmed = await confirmYes({
+      title: 'Cancel this unpaid order?',
+      body: 'This cancels the order before payment is confirmed.',
+      confirmLabel: 'Cancel order',
+      tone: 'danger',
+    });
+
+    if (!confirmed) {
       return;
     }
 

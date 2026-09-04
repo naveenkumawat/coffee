@@ -87,7 +87,15 @@
                         method="POST"
                         action="{{ $item['url'] }}"
                         @if (! empty($item['confirm']))
-                            onsubmit="return confirm(@js($item['confirm']))"
+                            data-confirm-title="{{ $item['confirm_title'] ?? 'Confirm' }}"
+                            data-confirm-body="{{ $item['confirm'] }}"
+                            data-confirm-label="{{ $item['confirm_label'] ?? $item['label'] }}"
+                            data-confirm-class="{{ ($item['danger'] ?? false) ? 'btn-danger' : 'btn-primary' }}"
+                            @if (! empty($item['confirm_require_reason']))
+                                data-confirm-require-reason="1"
+                                data-confirm-reason-field="{{ $item['confirm_reason_field'] ?? 'note' }}"
+                                data-confirm-reason-label="{{ $item['confirm_reason_label'] ?? 'Reason' }}"
+                            @endif
                         @endif
                     >
                         @csrf

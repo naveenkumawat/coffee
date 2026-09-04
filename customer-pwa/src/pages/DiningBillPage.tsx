@@ -8,6 +8,7 @@ import {
   submitDiningPaymentTransactionId,
 } from '../api/dining';
 import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
+import { confirmYes } from '../components/common/ConfirmDialog';
 import { PageHeader } from '../components/common/PageHeader';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
@@ -244,6 +245,17 @@ export function DiningBillPage() {
     event.preventDefault();
 
     if ((!canSubmitTxn && !canResubmitTxn) || isSubmittingTxn || awaitingReview) {
+      return;
+    }
+
+    const confirmed = await confirmYes({
+      title: canResubmitTxn ? 'Submit a new Transaction ID?' : 'Submit Transaction ID?',
+      body: `Submit ${transactionId.trim()} for staff verification of this dining bill.`,
+      confirmLabel: canResubmitTxn ? 'Submit new ID' : 'Submit Transaction ID',
+      tone: 'primary',
+    });
+
+    if (!confirmed) {
       return;
     }
 

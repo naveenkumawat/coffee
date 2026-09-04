@@ -71,7 +71,10 @@ class DiningSessionController extends Controller
     public function close(Request $request, DiningSession $diningSession): RedirectResponse
     {
         $this->authorize('close', $diningSession);
-        $this->dining->closeSession($diningSession, $request->user('admin'));
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $this->dining->closeSession($diningSession, $request->user('admin'), $data['reason'] ?? null);
 
         return back()->with('status', 'Dining session closed.');
     }
@@ -81,13 +84,13 @@ class DiningSessionController extends Controller
         $this->authorize('reopen', $diningSession);
 
         $data = $request->validate([
-            'note' => ['nullable', 'string', 'max:500'],
+            'note' => ['required', 'string', 'max:500'],
         ]);
 
         $this->dining->reopenSession(
             $diningSession,
             $request->user('admin'),
-            $data['note'] ?? 'Reopened by administrator.',
+            $data['note'],
         );
 
         return back()->with('status', 'Dining session reopened.');

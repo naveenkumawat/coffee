@@ -154,6 +154,25 @@ class EntityActions {
             button.dataset.confirmMessage ||
             `Are you sure you want to remove the ${entityName} avatar?`;
 
+        const proceed = () => {
+            window.location.href = removeUrl;
+        };
+
+        if (window.InternalConfirm) {
+            window.InternalConfirm.open({
+                title,
+                body: text,
+                confirmLabel: "Remove",
+                confirmClass: "btn-danger",
+            }).then((result) => {
+                if (result.confirmed) {
+                    proceed();
+                }
+            });
+
+            return;
+        }
+
         if (typeof Swal !== "undefined") {
             Swal.fire({
                 title: title,
@@ -166,13 +185,9 @@ class EntityActions {
                 cancelButtonText: "Cancel",
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = removeUrl;
+                    proceed();
                 }
             });
-        } else {
-            if (confirm(text)) {
-                window.location.href = removeUrl;
-            }
         }
     }
 
@@ -198,6 +213,29 @@ class EntityActions {
             button.dataset.confirmMessage ||
             `Are you sure you want to delete this ${entityName}? This action cannot be undone!`;
 
+        const proceed = () => {
+            if (useForm) {
+                this.submitDeleteForm(deleteUrl);
+            } else {
+                window.location.href = deleteUrl;
+            }
+        };
+
+        if (window.InternalConfirm) {
+            window.InternalConfirm.open({
+                title,
+                body: text,
+                confirmLabel: "Delete",
+                confirmClass: "btn-danger",
+            }).then((result) => {
+                if (result.confirmed) {
+                    proceed();
+                }
+            });
+
+            return;
+        }
+
         if (typeof Swal !== "undefined") {
             Swal.fire({
                 title: title,
@@ -210,21 +248,9 @@ class EntityActions {
                 cancelButtonText: "Cancel",
             }).then((result) => {
                 if (result.isConfirmed) {
-                    if (useForm) {
-                        this.submitDeleteForm(deleteUrl);
-                    } else {
-                        window.location.href = deleteUrl;
-                    }
+                    proceed();
                 }
             });
-        } else {
-            if (confirm(text)) {
-                if (useForm) {
-                    this.submitDeleteForm(deleteUrl);
-                } else {
-                    window.location.href = deleteUrl;
-                }
-            }
         }
     }
 

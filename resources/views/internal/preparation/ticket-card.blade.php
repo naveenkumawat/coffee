@@ -92,19 +92,40 @@
     @if ($canTransition)
         <div class="d-flex flex-wrap gap-2">
             @if ($ticket->status === OrderPreparationStatus::Pending && $acceptRouteName)
-                <form method="POST" action="{{ route($acceptRouteName, $ticket) }}">
+                <form
+                    method="POST"
+                    action="{{ route($acceptRouteName, $ticket) }}"
+                    data-confirm-title="Accept ticket?"
+                    data-confirm-body="Accepting starts preparation for this station ticket."
+                    data-confirm-label="Accept"
+                    data-confirm-class="btn-info"
+                >
                     @csrf
                     <x-internal.button label="Accept" type="submit" variant="info" />
                 </form>
             @endif
             @if ($ticket->status === OrderPreparationStatus::Accepted && $preparingRouteName)
-                <form method="POST" action="{{ route($preparingRouteName, $ticket) }}">
+                <form
+                    method="POST"
+                    action="{{ route($preparingRouteName, $ticket) }}"
+                    data-confirm-title="Start preparing?"
+                    data-confirm-body="Mark this station ticket as actively preparing."
+                    data-confirm-label="Start preparing"
+                    data-confirm-class="btn-dark"
+                >
                     @csrf
                     <x-internal.button label="Start preparing" type="submit" variant="dark" />
                 </form>
             @endif
             @if ($ticket->status === OrderPreparationStatus::Preparing && $readyRouteName)
-                <form method="POST" action="{{ route($readyRouteName, $ticket) }}">
+                <form
+                    method="POST"
+                    action="{{ route($readyRouteName, $ticket) }}"
+                    data-confirm-title="Mark as Ready?"
+                    data-confirm-body="Confirm all items for this station are ready."
+                    data-confirm-label="Mark ready"
+                    data-confirm-class="btn-success"
+                >
                     @csrf
                     <x-internal.button label="Mark ready" type="submit" variant="success" />
                 </form>

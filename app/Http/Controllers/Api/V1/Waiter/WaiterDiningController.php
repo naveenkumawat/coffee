@@ -322,7 +322,10 @@ class WaiterDiningController extends Controller
     public function close(Request $request, DiningSession $session): JsonResponse
     {
         $this->authorize('close', $session);
-        $session = $this->dining->closeSession($session, $request->user());
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $session = $this->dining->closeSession($session, $request->user(), $data['reason'] ?? null);
 
         return $this->respondWithResource(
             new WaiterDiningSessionResource($this->loadSession($session)),
@@ -335,14 +338,14 @@ class WaiterDiningController extends Controller
         $this->authorize('reopen', $session);
 
         $data = $request->validate([
-            'note' => ['nullable', 'string', 'max:240'],
+            'note' => ['required', 'string', 'max:500'],
         ]);
 
-        $session = $this->dining->reopenSession($session, $request->user(), $data['note'] ?? null);
+        $session = $this->dining->reopenSession($session, $request->user(), $data['note']);
 
         return $this->respondWithResource(
             new WaiterDiningSessionResource($this->loadSession($session)),
-            'Dining session reopened.',
+            'Ordering resumed.',
         );
     }
 

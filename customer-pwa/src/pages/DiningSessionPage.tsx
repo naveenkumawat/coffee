@@ -14,6 +14,7 @@ import {
   requestDiningBill,
   updateDiningDraft,
 } from '../api/dining';
+import { confirmYes } from '../components/common/ConfirmDialog';
 import { CompactDiningRoundBar } from '../components/common/CompactActionBars';
 import { QuantityStepper } from '../components/common/QuantityStepper';
 import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
@@ -251,8 +252,17 @@ export function DiningSessionPage() {
     const needsConfirm =
       drafts.length > 1 || drafts.some((draft) => (draft.add_ons?.length ?? 0) > 0 || draft.quantity > 1);
 
-    if (needsConfirm && !window.confirm('Clear these items? This removes everything you have not placed yet.')) {
-      return;
+    if (needsConfirm) {
+      const confirmed = await confirmYes({
+        title: 'Clear these items?',
+        body: 'This removes everything you have not placed yet.',
+        confirmLabel: 'Clear items',
+        tone: 'danger',
+      });
+
+      if (!confirmed) {
+        return;
+      }
     }
 
     await run(async () => {
@@ -262,6 +272,16 @@ export function DiningSessionPage() {
 
   async function handlePlaceOrder(): Promise<void> {
     if (drafts.length === 0) {
+      return;
+    }
+
+    const confirmed = await confirmYes({
+      title: 'Place this order?',
+      body: 'Your items will be sent to the café and await staff acceptance.',
+      confirmLabel: 'Place order',
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -275,9 +295,11 @@ export function DiningSessionPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      'Ready to request your bill?\nYou won’t be able to add another order after the bill is requested.',
-    );
+    const confirmed = await confirmYes({
+      title: 'Request the bill?',
+      body: "Once the bill is requested, you won't be able to add more orders to this dining session.",
+      confirmLabel: 'Request bill',
+    });
 
     if (!confirmed) {
       return;
@@ -406,21 +428,39 @@ export function DiningSessionPage() {
           {drafts.length === 0 ? (
             <div className="dining-empty-draft">
               <p className="muted">Add anything you’d like for your next order.</p>
-              <Link
-                to={diningMenuPath(sessionId)}
-                className="btn btn-primary rounded-pill"
-                onClick={() =>
-                  writeOrderingContext({
-                    type: 'dining',
-                    diningSessionId: sessionId,
-                    tableLabel: session.table.label,
-                    draftItemCount: diningDraftItemCount(session.drafts),
-                  })
-                }
-              >
-                <i className="bi bi-plus-lg" aria-hidden="true"></i>
-                Add items
-              </Link>
+              <div className="dining-order-more-actions">
+                <Link
+                  to={diningMenuPath(sessionId)}
+                  className="btn btn-primary rounded-pill"
+                  onClick={() =>
+                    writeOrderingContext({
+                      mode: 'dining',
+                      type: 'dining',
+                      diningSessionId: sessionId,
+                      tableLabel: session.table.label,
+                      draftItemCount: diningDraftItemCount(session.drafts),
+                    })
+                  }
+                >
+                  <i className="bi bi-plus-lg" aria-hidden="true"></i>
+                  Order more for Table {session.table.label}
+                </Link>
+                <Link
+                  to="/menu"
+                  className="btn btn-text rounded-pill"
+                  onClick={() =>
+                    writeOrderingContext({
+                      mode: 'takeaway',
+                      type: 'dining',
+                      diningSessionId: sessionId,
+                      tableLabel: session.table.label,
+                      draftItemCount: diningDraftItemCount(session.drafts),
+                    })
+                  }
+                >
+                  Order takeaway
+                </Link>
+              </div>
             </div>
           ) : (
             <>
@@ -431,6 +471,7 @@ export function DiningSessionPage() {
                   className="btn btn-sm btn-outline-dark rounded-pill"
                   onClick={() =>
                     writeOrderingContext({
+                      mode: 'dining',
                       type: 'dining',
                       diningSessionId: sessionId,
                       tableLabel: session.table.label,
@@ -498,6 +539,21 @@ export function DiningSessionPage() {
                   Clear items
                 </button>
               </div>
+              <Link
+                to="/menu"
+                className="btn btn-text rounded-pill dining-takeaway-link"
+                onClick={() =>
+                  writeOrderingContext({
+                    mode: 'takeaway',
+                    type: 'dining',
+                    diningSessionId: sessionId,
+                    tableLabel: session.table.label,
+                    draftItemCount: diningDraftItemCount(session.drafts),
+                  })
+                }
+              >
+                Order takeaway
+              </Link>
             </>
           )}
         </section>

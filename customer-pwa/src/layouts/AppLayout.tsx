@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { CampaignPopupController } from '../components/campaigns/CampaignPopupController';
 import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
+import { ConfirmDialogHost } from '../components/common/ConfirmDialog';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpdateBanner';
 import { ToastHost } from '../components/common/ToastHost';
@@ -104,6 +105,7 @@ export function AppLayout() {
         {!hasStickyCta ? <SiteFooter /> : null}
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
+      <ConfirmDialogHost />
       {waiterMode ? <NotificationDrawer /> : null}
       <CampaignPopupController />
       <BottomNavigation realtimeState={realtimeState} />

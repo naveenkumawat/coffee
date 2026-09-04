@@ -185,7 +185,21 @@ class UIInteractions {
             }
         };
 
-        // Use SweetAlert if available
+        if (window.InternalConfirm) {
+            window.InternalConfirm.open({
+                title: trigger.dataset.confirmTitle || "Confirm",
+                body: message || "Continue with this action?",
+                confirmLabel: trigger.dataset.confirmLabel || "Confirm",
+                confirmClass: trigger.dataset.confirmClass || "btn-primary",
+            }).then((result) => {
+                if (result.confirmed) {
+                    confirmAction();
+                }
+            });
+
+            return;
+        }
+
         if (typeof Swal !== "undefined") {
             Swal.fire({
                 title: "Are you sure?",
@@ -201,11 +215,6 @@ class UIInteractions {
                     confirmAction();
                 }
             });
-        } else {
-            // Fallback to native confirm
-            if (confirm(message)) {
-                confirmAction();
-            }
         }
     }
 

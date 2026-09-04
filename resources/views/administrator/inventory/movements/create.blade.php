@@ -105,7 +105,7 @@
                     <div class="row g-6 mb-8 internal-form-grid">
                         <div class="col-md-6">
                             <label for="inventory_refill_request_id" class="form-label">Approved Refill Request</label>
-                            <select id="inventory_refill_request_id" name="inventory_refill_request_id" class="form-select @error('inventory_refill_request_id') is-invalid @enderror">
+                            <select id="inventory_refill_request_id" name="inventory_refill_request_id" class="form-select @error('inventory_refill_request_id') is-invalid @enderror" data-control="select2" data-placeholder="Optional linked refill" data-allow-clear="true">
                                 <option value="">No linked refill request</option>
                                 @foreach ($approvedRefillRequestOptions as $id => $label)
                                     <option value="{{ $id }}" @selected((string) old('inventory_refill_request_id', $selectedRefillRequestId) === (string) $id)>{{ $label }}</option>

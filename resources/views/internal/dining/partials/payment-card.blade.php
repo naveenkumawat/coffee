@@ -88,11 +88,29 @@
 
                     @if ($canVerify)
                         <div class="d-flex flex-column flex-lg-row gap-3">
-                            <form method="POST" action="{{ route($prefix.'.dining-sessions.payment.confirm', $session) }}">
+                            <form
+                                method="POST"
+                                action="{{ route($prefix.'.dining-sessions.payment.confirm', $session) }}"
+                                data-confirm-title="Verify Payment?"
+                                data-confirm-body="Confirm transaction {{ $session->payment_reference }} has been received for ₹{{ $amount }}."
+                                data-confirm-label="Verify payment"
+                                data-confirm-class="btn-success"
+                            >
                                 @csrf
                                 <x-internal.button label="Verify Payment" type="submit" variant="success" icon="ki-check" />
                             </form>
-                            <form method="POST" action="{{ route($prefix.'.dining-sessions.payment-proof.reject', $session) }}" class="flex-grow-1">
+                            <form
+                                method="POST"
+                                action="{{ route($prefix.'.dining-sessions.payment-proof.reject', $session) }}"
+                                class="flex-grow-1"
+                                data-confirm-title="Reject payment?"
+                                data-confirm-body="This marks Transaction ID {{ $session->payment_reference }} as not found / not verified."
+                                data-confirm-label="Reject payment"
+                                data-confirm-class="btn-danger"
+                                data-confirm-require-reason="1"
+                                data-confirm-reason-field="notes"
+                                data-confirm-reason-label="Rejection reason"
+                            >
                                 @csrf
                                 <div class="d-flex flex-column flex-sm-row gap-2">
                                     <input
@@ -101,7 +119,6 @@
                                         class="form-control form-control-sm"
                                         placeholder="Reject / not found reason (required)"
                                         value="{{ old('notes') }}"
-                                        required
                                         maxlength="500"
                                     />
                                     <x-internal.button label="Reject / Not Found" type="submit" variant="danger" icon="ki-cross" />

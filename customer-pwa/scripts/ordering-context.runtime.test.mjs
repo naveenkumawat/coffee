@@ -53,119 +53,133 @@ async function loadOrderingContextModule() {
   const file = join(dir, 'orderingContext.mjs');
   writeFileSync(file, outputText);
 
-  return import(pathToFileURL(file).href);
+  return import(`${pathToFileURL(file).href}?t=${Date.now()}-${Math.random()}`);
 }
 
-test('ordering context boots retail with stable snapshots', async () => {
+test('ordering context boots takeaway with stable snapshots', async () => {
   const mod = await loadOrderingContextModule();
   mod.resetOrderingContextCacheForTests();
 
   const first = mod.readOrderingContext();
   const second = mod.readOrderingContext();
 
-  assert.equal(first.type, 'retail');
+  assert.equal(first.mode, 'takeaway');
+  assert.equal(first.diningSession, null);
   assert.equal(first, second);
   assert.equal(first, mod.RETAIL_ORDERING_CONTEXT);
-  assert.equal(mod.isDiningOrderingContext(first), false);
+  assert.equal(mod.hasActiveDiningSession(first), false);
+  assert.equal(mod.isDiningOrderingMode(first), false);
 });
 
-test('valid dining context keeps identity until mutated', async () => {
+test('active dining session and takeaway mode can coexist', async () => {
   const mod = await loadOrderingContextModule();
   mod.resetOrderingContextCacheForTests();
-
-  mod.writeOrderingContext({ type: 'dining', diningSessionId: '42', tableLabel: 'T1' });
-  const first = mod.readOrderingContext();
-  const second = mod.readOrderingContext();
-
-  assert.equal(first.type, 'dining');
-  assert.equal(first.diningSessionId, '42');
-  assert.equal(first.tableLabel, 'T1');
-  assert.equal(first, second);
-  assert.equal(mod.isDiningOrderingContext(first), true);
-});
-
-test('missing tableLabel does not crash or invalidate dining context', async () => {
-  const mod = await loadOrderingContextModule();
-  mod.resetOrderingContextCacheForTests();
-
-  mod.writeOrderingContext({ type: 'dining', diningSessionId: '7' });
-  const context = mod.readOrderingContext();
-
-  assert.equal(context.type, 'dining');
-  assert.equal(context.diningSessionId, '7');
-  assert.equal(context.tableLabel, undefined);
-  assert.equal(mod.isDiningOrderingContext(context), true);
-});
-
-test('draftItemCount is preserved and used for dining cart badge', async () => {
-  const mod = await loadOrderingContextModule();
-  mod.resetOrderingContextCacheForTests();
-
-  assert.equal(mod.diningDraftItemCount([{ quantity: 2 }, { quantity: 1 }]), 3);
-  assert.equal(mod.diningDraftItemCount([]), 0);
 
   mod.writeOrderingContext({
-    type: 'dining',
+    mode: 'dining',
+    diningSessionId: '42',
+    tableLabel: 'T1',
+    draftItemCount: 1,
+  });
+
+  let context = mod.readOrderingContext();
+  assert.equal(context.mode, 'dining');
+  assert.equal(context.diningSession.diningSessionId, '42');
+  assert.equal(mod.isDiningOrderingMode(context), true);
+
+  mod.setOrderingMode('takeaway');
+  context = mod.readOrderingContext();
+  assert.equal(context.mode, 'takeaway');
+  assert.equal(context.diningSession.diningSessionId, '42');
+  assert.equal(context.diningSession.draftItemCount, 1);
+  assert.equal(mod.hasActiveDiningSession(context), true);
+  assert.equal(mod.isDiningOrderingMode(context), false);
+});
+
+test('session metadata refresh does not yank takeaway mode', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  mod.writeOrderingContext({
+    mode: 'takeaway',
     diningSessionId: '42',
     tableLabel: 'T1',
     draftItemCount: 2,
   });
-  const first = mod.readOrderingContext();
-  assert.equal(first.type, 'dining');
-  assert.equal(first.draftItemCount, 2);
-
-  // Partial write for same session must not wipe draft badge.
-  mod.writeOrderingContext({ type: 'dining', diningSessionId: '42' });
-  const second = mod.readOrderingContext();
-  assert.equal(second.type, 'dining');
-  assert.equal(second.tableLabel, 'T1');
-  assert.equal(second.draftItemCount, 2);
-});
-
-test('missing diningSessionId resets to retail', async () => {
-  const mod = await loadOrderingContextModule();
-  mod.resetOrderingContextCacheForTests();
-
-  assert.deepEqual(mod.normalizeOrderingContext({ type: 'dining' }), mod.RETAIL_ORDERING_CONTEXT);
-  assert.deepEqual(
-    mod.normalizeOrderingContext({ type: 'dining', diningSessionId: '' }),
-    mod.RETAIL_ORDERING_CONTEXT,
-  );
-  assert.deepEqual(
-    mod.normalizeOrderingContext({ type: 'dining', diningSessionId: '   ' }),
-    mod.RETAIL_ORDERING_CONTEXT,
-  );
-
-  window.sessionStorage.setItem(
-    'coffee.ordering_context.v1',
-    JSON.stringify({ type: 'dining', diningSessionId: '' }),
-  );
-  mod.resetOrderingContextCacheForTests();
+  mod.writeOrderingContext({ type: 'dining', diningSessionId: '42', draftItemCount: 3 });
 
   const context = mod.readOrderingContext();
-  assert.equal(context.type, 'retail');
-  assert.equal(window.sessionStorage.getItem('coffee.ordering_context.v1'), null);
+  assert.equal(context.mode, 'takeaway');
+  assert.equal(context.diningSession.draftItemCount, 3);
+  assert.equal(context.diningSession.tableLabel, 'T1');
 });
 
-test('stale persisted shapes normalize safely', async () => {
+test('legacy dining shapes normalize into mode + diningSession', async () => {
   const mod = await loadOrderingContextModule();
-
-  assert.equal(mod.normalizeOrderingContext(null).type, 'retail');
-  assert.equal(mod.normalizeOrderingContext({}).type, 'retail');
-  assert.equal(mod.normalizeOrderingContext({ type: 'takeaway' }).type, 'retail');
-
-  const fromNumber = mod.normalizeOrderingContext({ type: 'dining', diningSessionId: 99 });
-  assert.equal(fromNumber.type, 'dining');
-  assert.equal(fromNumber.diningSessionId, '99');
 
   const fromLegacy = mod.normalizeOrderingContext({
     type: 'dining',
     sessionId: '55',
     table: { label: 'Patio 2' },
   });
-  assert.equal(fromLegacy.type, 'dining');
-  assert.equal(fromLegacy.diningSessionId, '55');
-  assert.equal(fromLegacy.tableLabel, 'Patio 2');
+  assert.equal(fromLegacy.mode, 'dining');
+  assert.equal(fromLegacy.diningSession.diningSessionId, '55');
+  assert.equal(fromLegacy.diningSession.tableLabel, 'Patio 2');
+
+  assert.equal(mod.normalizeOrderingContext({ type: 'retail' }), mod.RETAIL_ORDERING_CONTEXT);
+  assert.equal(mod.normalizeOrderingContext({ type: 'dining' }), mod.RETAIL_ORDERING_CONTEXT);
+});
+
+test('clearing dining session keeps takeaway cart independent', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  mod.writeOrderingContext({
+    mode: 'takeaway',
+    diningSessionId: '9',
+    tableLabel: 'T9',
+  });
+  mod.clearOrderingContext();
+
+  const context = mod.readOrderingContext();
+  assert.equal(context.mode, 'takeaway');
+  assert.equal(context.diningSession, null);
+  assert.equal(context, mod.RETAIL_ORDERING_CONTEXT);
+});
+
+test('missing diningSessionId resets to takeaway', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  window.sessionStorage.setItem(
+    'coffee.ordering_context.v2',
+    JSON.stringify({ mode: 'dining', diningSession: { diningSessionId: '' } }),
+  );
+  mod.resetOrderingContextCacheForTests();
+
+  const context = mod.readOrderingContext();
+  assert.equal(context.mode, 'takeaway');
+  assert.equal(window.sessionStorage.getItem('coffee.ordering_context.v2'), null);
+});
+
+test('legacy v1 storage migrates on read', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  window.sessionStorage.setItem(
+    'coffee.ordering_context.v1',
+    JSON.stringify({ type: 'dining', diningSessionId: '77', tableLabel: 'T7', draftItemCount: 4 }),
+  );
+
+  const context = mod.readOrderingContext();
+  assert.equal(context.mode, 'dining');
+  assert.equal(context.diningSession.diningSessionId, '77');
+  assert.equal(context.diningSession.draftItemCount, 4);
+
+  // Next write persists v2 and drops v1.
+  mod.writeOrderingContext({ mode: 'takeaway' });
+  assert.equal(window.sessionStorage.getItem('coffee.ordering_context.v1'), null);
+  assert.ok(window.sessionStorage.getItem('coffee.ordering_context.v2'));
 });
 
 test('isDiningSessionTerminal covers paid closed and cancelled', async () => {
@@ -179,6 +193,5 @@ test('isDiningSessionTerminal covers paid closed and cancelled', async () => {
 });
 
 test('hook source uses cached getSnapshot (no unstable retail object)', () => {
-  // Keep TypeScript available for runtime tests above; also assert package resolves.
   assert.equal(typeof require('typescript').transpileModule, 'function');
 });

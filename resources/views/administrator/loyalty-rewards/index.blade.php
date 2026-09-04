@@ -49,7 +49,15 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('administrator.loyalty-rewards.bulk-status') }}" id="loyalty-rewards-bulk-form">
+    <form
+        method="POST"
+        action="{{ route('administrator.loyalty-rewards.bulk-status') }}"
+        id="loyalty-rewards-bulk-form"
+        data-confirm-title="Apply bulk status?"
+        data-confirm-body="This updates the status for all selected loyalty rewards."
+        data-confirm-label="Apply to selected"
+        data-confirm-class="btn-warning"
+    >
         @csrf
         <div class="card card-flush internal-card mb-5">
             <div class="card-body pt-5">
@@ -68,7 +76,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <button type="submit" class="btn btn-sm btn-light-warning" onclick="return confirm('Apply bulk status to selected rewards?');">
+                        <button type="submit" class="btn btn-sm btn-light-warning">
                             Apply to selected
                         </button>
                     </div>

@@ -22,6 +22,29 @@ $(document).ready(function(){
     //     });
     // }
 
+    // Searchable selects: opt-in via data-control="select2" (dynamic entity lists).
+    // Tiny static enums should omit data-control and stay native.
+    if (typeof $ !== 'undefined' && $.fn && typeof $.fn.select2 === 'function') {
+        $('select[data-control="select2"]').each(function () {
+            var $select = $(this);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                return;
+            }
+
+            var placeholder = $select.data('placeholder') || 'Select an option';
+            var allowClear = $select.data('allow-clear') !== false && ! $select.prop('required');
+
+            $select.select2({
+                width: '100%',
+                placeholder: placeholder,
+                allowClear: allowClear,
+                dropdownParent: $select.closest('.modal').length
+                    ? $select.closest('.modal')
+                    : $(document.body),
+            });
+        });
+    }
+
     if($(".divDateRangePicker").length > 0){
         $(".divDateRangePicker").each(function(){
             var id = $(this).attr("id");

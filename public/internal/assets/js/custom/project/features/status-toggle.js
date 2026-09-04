@@ -128,26 +128,33 @@ class StatusToggle {
             config.confirmMessage ||
             `Are you sure you want to ${action} this ${config.entityType}?`;
 
-        return new Promise((resolve) => {
-            if (window.Swal) {
-                // Use SweetAlert2 if available
-                Swal.fire({
-                    title: "Confirm Action",
-                    text: message,
-                    icon: "question",
-                    showCancelButton: true,
-                    confirmButtonColor: "#3085d6",
-                    cancelButtonColor: "#d33",
-                    confirmButtonText: `Yes, ${action}!`,
-                    cancelButtonText: "Cancel",
-                }).then((result) => {
-                    resolve(result.isConfirmed);
-                });
-            } else {
-                // Fallback to native confirm
-                resolve(confirm(message));
-            }
-        });
+        if (window.InternalConfirm) {
+            const result = await window.InternalConfirm.open({
+                title: "Confirm status change",
+                body: message,
+                confirmLabel: `Yes, ${action}`,
+                confirmClass: action === "deactivate" ? "btn-warning" : "btn-primary",
+            });
+
+            return result.confirmed;
+        }
+
+        if (window.Swal) {
+            const result = await Swal.fire({
+                title: "Confirm Action",
+                text: message,
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: `Yes, ${action}!`,
+                cancelButtonText: "Cancel",
+            });
+
+            return result.isConfirmed;
+        }
+
+        return false;
     }
 
     /**

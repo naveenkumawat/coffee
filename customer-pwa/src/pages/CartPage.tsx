@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { CartItemCard } from '../components/cart/CartItemCard';
@@ -12,7 +12,6 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
-import { useOrderingContext } from '../hooks/useOrderingContext';
 import { useAuthStore } from '../stores/authStore';
 import { useCartStore } from '../stores/cartStore';
 import { selectAvailability, useContentStore } from '../stores/contentStore';
@@ -23,7 +22,6 @@ import { selectionFromCartItem } from '../utils/cartQuantity';
 import { cartDiscounts } from '../utils/discounts';
 import { formatCurrency } from '../utils/format';
 import { buildLoginRedirect } from '../utils/navigation';
-import { diningSessionPath, isDiningOrderingContext } from '../utils/orderingContext';
 
 interface EditingCartItem {
   item: CartItem;
@@ -31,7 +29,6 @@ interface EditingCartItem {
 }
 
 export function CartPage() {
-  const orderingContext = useOrderingContext();
   const cart = useCartStore((state) => state.cart);
   const summary = useCartStore((state) => state.summary);
   const isLoading = useCartStore((state) => state.isLoading);
@@ -70,10 +67,6 @@ export function CartPage() {
   useEffect(() => {
     void loadCartState();
   }, [loadCart, authStatus]);
-
-  if (isDiningOrderingContext(orderingContext)) {
-    return <Navigate to={diningSessionPath(orderingContext.diningSessionId)} replace />;
-  }
 
   async function handleQuantityChange(cartItemId: number, quantity: number): Promise<void> {
     setPendingItemId(cartItemId);

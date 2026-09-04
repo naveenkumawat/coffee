@@ -13,7 +13,7 @@
         <div class="row g-4 mb-4">
             <div class="col-lg-4">
                 <label class="required form-label">Add-on</label>
-                <select name="add_ons[{{ $index }}][add_on_id]" class="form-select @error("add_ons.$index.add_on_id") is-invalid @enderror">
+                <select name="add_ons[{{ $index }}][add_on_id]" class="form-select @error("add_ons.$index.add_on_id") is-invalid @enderror" data-control="select2" data-placeholder="Select…">
                     <option value="">Select…</option>
                     @foreach ($addOnOptions as $id => $label)
                         <option value="{{ $id }}" @selected((string) ($addOnRow['add_on_id'] ?? '') === (string) $id)>{{ $label }}</option>
@@ -66,7 +66,7 @@
                                 @if (!empty($line['id']))
                                     <input type="hidden" name="add_ons[{{ $index }}][lines][{{ $lineIndex }}][id]" value="{{ $line['id'] }}" />
                                 @endif
-                                <select name="add_ons[{{ $index }}][lines][{{ $lineIndex }}][ingredient_id]" class="form-select">
+                                <select name="add_ons[{{ $index }}][lines][{{ $lineIndex }}][ingredient_id]" class="form-select" data-control="select2" data-placeholder="Select…">
                                     <option value="">Select…</option>
                                     @foreach ($ingredientOptions as $id => $label)
                                         <option value="{{ $id }}" @selected((string) ($line['ingredient_id'] ?? '') === (string) $id)>{{ $label }}</option>

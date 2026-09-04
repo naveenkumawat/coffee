@@ -116,7 +116,7 @@
                 </div>
                 <div class="col-md-4">
                     <label for="cta_product_id" class="form-label">CTA product</label>
-                    <select id="cta_product_id" name="cta_product_id" class="form-select @error('cta_product_id') is-invalid @enderror">
+                    <select id="cta_product_id" name="cta_product_id" class="form-select @error('cta_product_id') is-invalid @enderror" data-control="select2" data-placeholder="—" data-allow-clear="true">
                         <option value="">—</option>
                         @foreach ($productOptions as $id => $label)
                             <option value="{{ $id }}" @selected((string) old('cta_product_id', $campaign->cta_product_id) === (string) $id)>{{ $label }}</option>
@@ -126,7 +126,7 @@
                 </div>
                 <div class="col-md-4">
                     <label for="cta_category_id" class="form-label">CTA category</label>
-                    <select id="cta_category_id" name="cta_category_id" class="form-select @error('cta_category_id') is-invalid @enderror">
+                    <select id="cta_category_id" name="cta_category_id" class="form-select @error('cta_category_id') is-invalid @enderror" data-control="select2" data-placeholder="—" data-allow-clear="true">
                         <option value="">—</option>
                         @foreach ($categoryOptions as $id => $label)
                             <option value="{{ $id }}" @selected((string) old('cta_category_id', $campaign->cta_category_id) === (string) $id)>{{ $label }}</option>
@@ -136,7 +136,7 @@
                 </div>
                 <div class="col-md-4">
                     <label for="cta_promotion_id" class="form-label">CTA promotion</label>
-                    <select id="cta_promotion_id" name="cta_promotion_id" class="form-select @error('cta_promotion_id') is-invalid @enderror">
+                    <select id="cta_promotion_id" name="cta_promotion_id" class="form-select @error('cta_promotion_id') is-invalid @enderror" data-control="select2" data-placeholder="—" data-allow-clear="true">
                         <option value="">—</option>
                         @foreach ($promotionOptions as $id => $label)
                             <option value="{{ $id }}" @selected((string) old('cta_promotion_id', $campaign->cta_promotion_id) === (string) $id)>{{ $label }}</option>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useOrderingAddHandler } from '../../hooks/useOrderingAddHandler';
 import { Product } from '../../types/catalog';
 import { formatCurrency } from '../../utils/format';
 import {
@@ -42,6 +43,9 @@ export function ProductOrderControl({
   const variants = getProductVariants(product);
   const unavailable = isProductUnavailable(product);
   const [open, setOpen] = useState(false);
+  const autoOrdering = useOrderingAddHandler();
+  const effectiveHandler = orderHandler ?? autoOrdering.orderHandler;
+  const effectiveCta = sheetCtaLabel ?? autoOrdering.sheetCtaLabel;
 
   if (unavailable || variants.length === 0) {
     return (
@@ -51,7 +55,7 @@ export function ProductOrderControl({
 
   const isCompact = mode === 'compact';
   const price = startingPrice(product);
-  const destination = orderHandler ? 'order' : 'cart';
+  const destination = effectiveHandler ? 'order' : 'cart';
 
   return (
     <>
@@ -77,7 +81,7 @@ export function ProductOrderControl({
           ) : (
             <>
               <i className="bi bi-bag-plus" aria-hidden="true"></i>
-              <span>{sheetCtaLabel ?? (orderHandler ? 'Add to order' : 'Add to cart')}</span>
+              <span>{effectiveCta ?? (effectiveHandler ? 'Add to order' : 'Add to cart')}</span>
             </>
           )}
         </button>
@@ -88,9 +92,9 @@ export function ProductOrderControl({
         open={open}
         onClose={() => setOpen(false)}
         onSaved={onAdded}
-        submitMode={orderHandler ? 'callback' : 'cart'}
-        onSubmitConfigured={orderHandler?.add}
-        ctaLabel={sheetCtaLabel ?? (orderHandler ? 'Add to order' : undefined)}
+        submitMode={effectiveHandler ? 'callback' : 'cart'}
+        onSubmitConfigured={effectiveHandler?.add}
+        ctaLabel={effectiveCta ?? (effectiveHandler ? 'Add to order' : undefined)}
       />
     </>
   );

@@ -65,7 +65,9 @@ class WaiterDiningSessionResource extends JsonResource
             'can_mark_cash_received' => ($actor?->can('markCashReceived', $session) ?? false)
                 && $billReady
                 && ! $paymentConfirmed,
-            'can_close' => ($actor?->can('close', $session) ?? false) && $paymentConfirmed,
+            'can_close' => ($actor?->can('close', $session) ?? false)
+                && $paymentConfirmed
+                && $session->status !== DiningSessionStatus::Closed,
             'can_reopen' => ($actor?->can('reopen', $session) ?? false) && $canReopenStatus,
             'can_confirm_upi' => false,
             'can_reject_upi_proof' => false,

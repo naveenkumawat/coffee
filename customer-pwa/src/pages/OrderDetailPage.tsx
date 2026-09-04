@@ -7,6 +7,7 @@ import { CheckoutItemCard } from '../components/checkout/CheckoutItemCard';
 import { PaymentInstructionsCard } from '../components/checkout/PaymentInstructionsCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
+import { confirmYes } from '../components/common/ConfirmDialog';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButton';
@@ -85,7 +86,12 @@ export function OrderDetailPage() {
       return;
     }
 
-    const confirmed = window.confirm('Cancel this unpaid order? You can place a new order anytime.');
+    const confirmed = await confirmYes({
+      title: 'Cancel this unpaid order?',
+      body: 'You can place a new order anytime.',
+      confirmLabel: 'Cancel order',
+      tone: 'danger',
+    });
     if (!confirmed) {
       return;
     }

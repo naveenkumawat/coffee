@@ -1073,31 +1073,52 @@ class DiningSessionService implements DiningSessionServiceInterface
         return implode(' — ', $parts);
     }
 
-    public function closeSession(DiningSession $session, User $actor): DiningSession
+    public function closeSession(DiningSession $session, User $actor, ?string $reason = null): DiningSession
     {
-        if (! $actor->canOperateDining() && ! $actor->canManageOrders()) {
+        if (! $actor->canOperateDining() && ! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
             throw ValidationException::withMessages([
                 'session' => 'You are not allowed to close this dining session.',
             ]);
         }
 
-        return DB::transaction(function () use ($session): DiningSession {
+        return DB::transaction(function () use ($session, $actor, $reason): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
 
             if ($locked->status === DiningSessionStatus::Closed) {
                 return $locked->fresh(['cafeTable', 'customer', 'orders.items']) ?? $locked;
             }
 
-            if ($locked->status !== DiningSessionStatus::Paid && $locked->payment_status !== PaymentStatus::Confirmed) {
-                throw ValidationException::withMessages([
-                    'session' => 'Close the session only after payment is confirmed.',
-                ]);
-            }
+            $paymentConfirmed = $locked->status === DiningSessionStatus::Paid
+                || $locked->payment_status === PaymentStatus::Confirmed;
 
-            $locked->fill([
-                'status' => DiningSessionStatus::Closed,
-                'closed_at' => now(),
-            ])->save();
+            if ($paymentConfirmed) {
+                $locked->fill([
+                    'status' => DiningSessionStatus::Closed,
+                    'closed_at' => $locked->closed_at ?? now(),
+                ])->save();
+            } else {
+                // Manual abort before payment finalization — Admin/Operator only.
+                if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+                    throw ValidationException::withMessages([
+                        'session' => 'Close the session only after payment is confirmed.',
+                    ]);
+                }
+
+                $trimmedReason = trim((string) $reason);
+
+                if ($trimmedReason === '') {
+                    throw ValidationException::withMessages([
+                        'reason' => 'A reason is required to manually close this dining session before payment is confirmed.',
+                    ]);
+                }
+
+                $locked->fill([
+                    'status' => DiningSessionStatus::Closed,
+                    'closed_at' => now(),
+                    // Keep UTR field clean; store operational close reason separately.
+                    'payment_proof_rejection_notes' => Str::limit('Manual close: '.$trimmedReason, 500),
+                ])->save();
+            }
 
             DiningRoundDraft::query()->where('dining_session_id', $locked->getKey())->delete();
 
@@ -1110,59 +1131,137 @@ class DiningSessionService implements DiningSessionServiceInterface
 
     public function reopenSession(DiningSession $session, User $actor, ?string $note = null): DiningSession
     {
-        if (! $actor->canOperateDining() && ! $actor->canManageOrders()) {
+        if (! $actor->canOperateDining() && ! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
             throw ValidationException::withMessages([
                 'session' => 'You are not allowed to reopen this dining session.',
             ]);
         }
 
-        return DB::transaction(function () use ($session, $note): DiningSession {
+        return DB::transaction(function () use ($session, $actor, $note): DiningSession {
             $locked = DiningSession::query()->whereKey($session->getKey())->lockForUpdate()->firstOrFail();
+            $trimmedNote = trim((string) $note);
 
-            if (! in_array($locked->status, [
+            // Resume ordering after bill request (unpaid).
+            if (in_array($locked->status, [
                 DiningSessionStatus::BillingRequested,
                 DiningSessionStatus::AwaitingPayment,
             ], true)) {
-                throw ValidationException::withMessages([
-                    'session' => 'Only unpaid bill-requested sessions can be reopened for more orders.',
-                ]);
+                if ($locked->payment_status === PaymentStatus::Confirmed) {
+                    throw ValidationException::withMessages([
+                        'session' => 'A paid session cannot be reopened.',
+                    ]);
+                }
+
+                if ($trimmedNote === '') {
+                    throw ValidationException::withMessages([
+                        'note' => 'A reason is required to resume ordering on this session.',
+                    ]);
+                }
+
+                $locked->fill([
+                    'status' => DiningSessionStatus::Open,
+                    'billing_requested_at' => null,
+                    'bill_generated_at' => null,
+                    'subtotal_amount' => null,
+                    'discount_amount' => null,
+                    'tax_amount' => null,
+                    'taxable_amount' => null,
+                    'tax_enabled_snapshot' => null,
+                    'tax_label_snapshot' => null,
+                    'tax_percent_snapshot' => null,
+                    'tax_inclusive_snapshot' => null,
+                    'total_amount' => null,
+                    'payment_method' => null,
+                    'payment_method_previous' => null,
+                    'payment_method_changed_at' => null,
+                    'payment_method_changed_by_id' => null,
+                    'payment_status' => null,
+                    // Do not store operational notes in payment_reference (UTR field).
+                    'payment_reference' => null,
+                    'payment_proof_rejection_notes' => null,
+                ])->save();
+
+                $locked->promotions()->delete();
+
+                $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
+                event(new DiningSessionReopened($fresh ?? $locked));
+
+                return $fresh ?? $locked;
             }
 
-            if ($locked->payment_status === PaymentStatus::Confirmed) {
-                throw ValidationException::withMessages([
-                    'session' => 'A paid session cannot be reopened.',
-                ]);
+            // Recover a manually closed unpaid session — Admin/Operator only.
+            if ($locked->status === DiningSessionStatus::Closed) {
+                if ($locked->payment_status === PaymentStatus::Confirmed || $locked->paid_at !== null) {
+                    throw ValidationException::withMessages([
+                        'session' => 'A paid or finalized dining session cannot be reopened.',
+                    ]);
+                }
+
+                if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+                    throw ValidationException::withMessages([
+                        'session' => 'Only administrators or operators can reopen a closed dining session.',
+                    ]);
+                }
+
+                if ($trimmedNote === '') {
+                    throw ValidationException::withMessages([
+                        'note' => 'A reason is required to reopen a closed dining session.',
+                    ]);
+                }
+
+                $conflict = DiningSession::query()
+                    ->where('cafe_table_id', $locked->cafe_table_id)
+                    ->whereKeyNot($locked->getKey())
+                    ->whereIn('status', [
+                        DiningSessionStatus::Open->value,
+                        DiningSessionStatus::BillingRequested->value,
+                        DiningSessionStatus::AwaitingPayment->value,
+                        DiningSessionStatus::Paid->value,
+                    ])
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($conflict) {
+                    throw ValidationException::withMessages([
+                        'session' => 'That table already has an active dining session.',
+                    ]);
+                }
+
+                $locked->fill([
+                    'status' => DiningSessionStatus::Open,
+                    'closed_at' => null,
+                    'billing_requested_at' => null,
+                    'bill_generated_at' => null,
+                    'subtotal_amount' => null,
+                    'discount_amount' => null,
+                    'tax_amount' => null,
+                    'taxable_amount' => null,
+                    'tax_enabled_snapshot' => null,
+                    'tax_label_snapshot' => null,
+                    'tax_percent_snapshot' => null,
+                    'tax_inclusive_snapshot' => null,
+                    'total_amount' => null,
+                    'payment_method' => null,
+                    'payment_method_previous' => null,
+                    'payment_method_changed_at' => null,
+                    'payment_method_changed_by_id' => null,
+                    'payment_status' => null,
+                    // Clear any prior UTR / manual-close marker so payment can proceed again.
+                    'payment_reference' => null,
+                    'payment_proof_rejection_notes' => null,
+                ])->save();
+
+                $locked->promotions()->delete();
+
+                $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
+                event(new DiningSessionReopened($fresh ?? $locked));
+
+                return $fresh ?? $locked;
             }
 
-            $locked->fill([
-                'status' => DiningSessionStatus::Open,
-                'billing_requested_at' => null,
-                'bill_generated_at' => null,
-                'subtotal_amount' => null,
-                'discount_amount' => null,
-                'tax_amount' => null,
-                'taxable_amount' => null,
-                'tax_enabled_snapshot' => null,
-                'tax_label_snapshot' => null,
-                'tax_percent_snapshot' => null,
-                'tax_inclusive_snapshot' => null,
-                'total_amount' => null,
-                'payment_method' => null,
-                'payment_method_previous' => null,
-                'payment_method_changed_at' => null,
-                'payment_method_changed_by_id' => null,
-                'payment_status' => null,
-                'payment_reference' => $note !== null && $note !== ''
-                    ? Str::limit('Reopened: '.$note, 240)
-                    : $locked->payment_reference,
-            ])->save();
-
-            $locked->promotions()->delete();
-
-            $fresh = $locked->fresh(['cafeTable', 'customer', 'orders.items', 'drafts', 'promotions']);
-            event(new DiningSessionReopened($fresh ?? $locked));
-
-            return $fresh ?? $locked;
+            throw ValidationException::withMessages([
+                'session' => 'Only unpaid bill-requested or manually closed unpaid sessions can be reopened.',
+            ]);
         });
     }
 

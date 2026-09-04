@@ -1,24 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchCategories, fetchFlavours, fetchMenuCatalogue } from '../api/catalog';
 import { ApiError } from '../api/client';
+import { fetchDiningSession } from '../api/dining';
 import { fetchHome } from '../api/home';
 import { LandingCampaignSurface } from '../components/campaigns/LandingCampaignSurface';
 import { CategoryPills } from '../components/catalog/CategoryPills';
 import { FlavourPills } from '../components/catalog/FlavourPills';
 import { HomeProductSection } from '../components/catalog/HomeProductSection';
+import { OrderingModeSwitcher } from '../components/catalog/OrderingModeSwitcher';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { StickyActionBar } from '../components/common/StickyActionBar';
 import { useOrderingContext } from '../hooks/useOrderingContext';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
 import { HomeCampaigns, HomeSection } from '../types/home';
+import { formatCurrency } from '../utils/format';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
 import { getOrCreateCampaignSessionKey } from '../utils/campaignSession';
 import { getOrCreateVisitorId } from '../utils/visitorId';
-import { diningMenuPath, isDiningOrderingContext } from '../utils/orderingContext';
+import {
+  diningSessionPath,
+  hasActiveDiningSession,
+  isDiningOrderingMode,
+} from '../utils/orderingContext';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -45,6 +53,11 @@ function toggleId(ids: number[], id: number): number[] {
 
 export function MenuPage() {
   const orderingContext = useOrderingContext();
+  const diningActive = hasActiveDiningSession(orderingContext);
+  const diningMode = isDiningOrderingMode(orderingContext);
+  const diningSessionId = orderingContext.diningSession?.diningSessionId;
+  const diningTableLabel = orderingContext.diningSession?.tableLabel;
+  const diningDraftCount = orderingContext.diningSession?.draftItemCount ?? 0;
   const [searchParams, setSearchParams] = useSearchParams();
   const [catalogue, setCatalogue] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -53,6 +66,7 @@ export function MenuPage() {
   const [landingCampaigns, setLandingCampaigns] = useState<HomeCampaigns>({ banner: null, inline: null });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [diningDraftTotal, setDiningDraftTotal] = useState('0.00');
 
   const selectedCategoryIds = useMemo(() => {
     const fromList = parseIdList(searchParams.get('categories'));
@@ -107,6 +121,37 @@ export function MenuPage() {
   useEffect(() => {
     setSearchInput(activeSearch);
   }, [activeSearch]);
+
+  useEffect(() => {
+    if (!diningMode || !diningSessionId) {
+      setDiningDraftTotal('0.00');
+
+      return;
+    }
+
+    let cancelled = false;
+
+    void fetchDiningSession(diningSessionId)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const total = response.data.drafts
+          .reduce((sum, draft) => sum + Number(draft.line_total ?? 0), 0)
+          .toFixed(2);
+        setDiningDraftTotal(total);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDiningDraftTotal('0.00');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [diningMode, diningSessionId, diningDraftCount]);
 
   useEffect(() => {
     if (!activeSearch) {
@@ -309,13 +354,13 @@ export function MenuPage() {
   const resultsLabel =
     filteredProducts.length === 1 ? '1 drink' : `${filteredProducts.length} drinks`;
 
-  if (isDiningOrderingContext(orderingContext)) {
-    return <Navigate to={diningMenuPath(orderingContext.diningSessionId)} replace />;
-  }
-
   return (
-    <div className="page-container menu-page">
+    <div
+      className={`page-container menu-page${diningMode ? ' has-sticky-cta is-sticky-stack' : ''}`.trim()}
+    >
       <h1 className="visually-hidden">Menu</h1>
+
+      {diningActive ? <OrderingModeSwitcher /> : null}
 
       <div className="menu-discovery">
         <label className="menu-search-field">
@@ -446,6 +491,25 @@ export function MenuPage() {
             </section>
           ))}
         </div>
+      ) : null}
+
+      {diningMode && diningSessionId ? (
+        <StickyActionBar
+          eyebrow={diningTableLabel ? `Table ${diningTableLabel}` : 'Next order'}
+          title={
+            diningDraftCount > 0
+              ? `${diningDraftCount} item${diningDraftCount === 1 ? '' : 's'} in next order`
+              : 'No items yet'
+          }
+          value={formatCurrency(diningDraftTotal)}
+        >
+          <Link
+            to={diningSessionPath(diningSessionId)}
+            className="btn btn-primary btn-lg rounded-pill w-100"
+          >
+            {diningDraftCount > 0 ? 'View order' : 'Back to table'}
+          </Link>
+        </StickyActionBar>
       ) : null}
     </div>
   );

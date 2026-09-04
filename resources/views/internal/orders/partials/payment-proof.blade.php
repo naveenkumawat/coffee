@@ -127,22 +127,41 @@
 
                 @if ($canVerifyManual)
                     <div class="d-flex flex-wrap gap-2">
-                        <form method="POST" action="{{ route($verifyRoute, $order) }}">
+                        <form
+                            method="POST"
+                            action="{{ route($verifyRoute, $order) }}"
+                            data-confirm-title="Verify Payment?"
+                            data-confirm-body="Confirm this Manual UPI payment has been received for this order."
+                            data-confirm-label="Verify payment"
+                            data-confirm-class="btn-success"
+                        >
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="{{ OrderStatus::PaymentConfirmed->value }}" />
                             <input type="hidden" name="notes" value="Manual UPI Transaction ID verified." />
                             <button type="submit" class="btn btn-sm btn-success">Verify Payment</button>
                         </form>
-                        <form method="POST" action="{{ route($rejectRoute, $order) }}" class="flex-grow-1">
+                        <form
+                            method="POST"
+                            action="{{ route($rejectRoute, $order) }}"
+                            class="flex-grow-1"
+                            data-confirm-title="Reject payment?"
+                            data-confirm-body="This marks the submitted payment proof as not found / not verified."
+                            data-confirm-label="Reject payment"
+                            data-confirm-class="btn-danger"
+                            data-confirm-require-reason="1"
+                            data-confirm-reason-field="notes"
+                            data-confirm-reason-label="Rejection reason"
+                        >
                             @csrf
                             <div class="d-flex flex-column flex-sm-row gap-2">
                                 <input
                                     type="text"
                                     name="notes"
                                     class="form-control form-control-sm"
-                                    placeholder="Reject / not found reason (optional)"
+                                    placeholder="Reject / not found reason (required)"
                                     value="{{ old('notes') }}"
+                                    maxlength="500"
                                 />
                                 <button type="submit" class="btn btn-sm btn-light-warning text-nowrap">Reject / Not Found</button>
                             </div>

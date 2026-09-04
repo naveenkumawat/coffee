@@ -30,7 +30,7 @@
                 <div class="row g-6">
                     <div class="col-xl-6">
                         <label for="customer_id" class="form-label">Customer</label>
-                        <select id="customer_id" name="customer_id" class="form-select @error('customer_id') is-invalid @enderror">
+                        <select id="customer_id" name="customer_id" class="form-select @error('customer_id') is-invalid @enderror" data-control="select2" data-placeholder="Walk-in / internal order" data-allow-clear="true">
                             <option value="">Walk-in / internal order</option>
                             @foreach ($customerOptions as $id => $name)
                                 <option value="{{ $id }}" @selected((string) old('customer_id') === (string) $id)>{{ $name }}</option>
@@ -64,7 +64,7 @@
                             <div class="row g-5 align-items-end">
                                 <div class="col-xl-9">
                                     <label for="items_{{ $index }}_product_variant_id" class="form-label">Product Variant</label>
-                                    <select id="items_{{ $index }}_product_variant_id" name="items[{{ $index }}][product_variant_id]" class="form-select @error("items.$index.product_variant_id") is-invalid @enderror">
+                                    <select id="items_{{ $index }}_product_variant_id" name="items[{{ $index }}][product_variant_id]" class="form-select @error("items.$index.product_variant_id") is-invalid @enderror" data-control="select2" data-placeholder="Select a sellable variant">
                                         <option value="">Select a sellable variant</option>
                                         @foreach ($variantOptions as $id => $label)
                                             <option value="{{ $id }}" @selected((string) data_get($item, 'product_variant_id') === (string) $id)>{{ $label }}</option>

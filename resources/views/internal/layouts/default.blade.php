@@ -108,6 +108,7 @@
         <script src="{{ asset('internal/assets/js/scripts.bundle.js') }}"></script>
         <script src="{{ asset('internal/assets/plugins/custom/ckeditor/ckeditor-classic.bundle.js') }}"></script>
         <script src="{{ asset('internal/assets/js/custom.js') }}"></script>
+        <script src="{{ asset('internal/assets/js/confirm-modal.js') }}"></script>
         <script src="{{ asset('internal/assets/js/config/app-config.js') }}"></script>
         @include('internal.partials.realtime-bootstrap', ['panel' => $panel])
         @include('internal.partials.operational-notification-ui', [
@@ -126,6 +127,7 @@
                 default => route('barista.notifications.read-all'),
             },
         ])
+        <x-internal.confirm-modal />
         @stack('scripts')
         @include('components.flash-toast')
     </body>

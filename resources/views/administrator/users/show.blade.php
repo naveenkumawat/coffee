@@ -244,7 +244,10 @@
                                 <form
                                     method="POST"
                                     action="{{ route('administrator.users.loyalty-adjust', $managedUser) }}"
-                                    onsubmit="return confirm('Apply this loyalty point adjustment? This cannot be edited later.');"
+                                    data-confirm-title="Apply loyalty adjustment?"
+                                    data-confirm-body="This creates an immutable adjustment ledger row and cannot be edited later."
+                                    data-confirm-label="Apply adjustment"
+                                    data-confirm-class="btn-warning"
                                 >
                                     @csrf
                                     <input type="hidden" name="idempotency_key" value="{{ $adjustmentIdempotencyKey }}" />

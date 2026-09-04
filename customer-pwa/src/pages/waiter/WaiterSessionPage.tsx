@@ -15,6 +15,7 @@ import {
   requestWaiterBill,
   setWaiterPaymentMethod,
 } from '../../api/waiterDining';
+import { confirmAction, confirmYes } from '../../components/common/ConfirmDialog';
 import { ErrorState } from '../../components/common/ErrorState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -119,6 +120,19 @@ export function WaiterSessionPage() {
 
   async function handleRequestBill(discardDraft = false): Promise<void> {
     setBillConfirmOpen(false);
+
+    if (!discardDraft) {
+      const confirmed = await confirmYes({
+        title: 'Request the bill?',
+        body: "Once the bill is requested, guests won't be able to add more orders to this session.",
+        confirmLabel: 'Request bill',
+      });
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
     await run(
       async () => (await requestWaiterBill(sessionId, { discard_draft: discardDraft })).data,
       'Bill requested',
@@ -339,10 +353,22 @@ export function WaiterSessionPage() {
                   className="btn btn-primary rounded-pill"
                   disabled={busy}
                   onClick={() =>
-                    void run(
-                      async () => (await acceptWaiterRound(sessionId, round.id)).data,
-                      `Round ${round.round_number} accepted`,
-                    )
+                    void (async () => {
+                      const confirmed = await confirmYes({
+                        title: `Accept Round ${round.round_number}?`,
+                        body: 'Accepting sends this round into preparation and consumes required stock.',
+                        confirmLabel: 'Accept',
+                      });
+
+                      if (!confirmed) {
+                        return;
+                      }
+
+                      await run(
+                        async () => (await acceptWaiterRound(sessionId, round.id)).data,
+                        `Round ${round.round_number} accepted`,
+                      );
+                    })()
                   }
                 >
                   Accept
@@ -354,10 +380,23 @@ export function WaiterSessionPage() {
                   className="btn btn-primary rounded-pill waiter-mark-served"
                   disabled={busy}
                   onClick={() =>
-                    void run(
-                      async () => (await markWaiterRoundServed(sessionId, round.id)).data,
-                      `Round ${round.round_number} marked served`,
-                    )
+                    void (async () => {
+                      const confirmed = await confirmYes({
+                        title: `Mark Round ${round.round_number} served?`,
+                        body: 'Confirm this round has been delivered to the table.',
+                        confirmLabel: 'Mark Served',
+                        tone: 'success',
+                      });
+
+                      if (!confirmed) {
+                        return;
+                      }
+
+                      await run(
+                        async () => (await markWaiterRoundServed(sessionId, round.id)).data,
+                        `Round ${round.round_number} marked served`,
+                      );
+                    })()
                   }
                 >
                   Mark Served
@@ -369,10 +408,23 @@ export function WaiterSessionPage() {
                   className="btn btn-secondary rounded-pill"
                   disabled={busy}
                   onClick={() =>
-                    void run(
-                      async () => (await cancelWaiterRound(sessionId, round.id)).data,
-                      `Round ${round.round_number} cancelled`,
-                    )
+                    void (async () => {
+                      const confirmed = await confirmYes({
+                        title: `Cancel Round ${round.round_number}?`,
+                        body: 'This cancels the round before preparation progresses further.',
+                        confirmLabel: 'Cancel Round',
+                        tone: 'danger',
+                      });
+
+                      if (!confirmed) {
+                        return;
+                      }
+
+                      await run(
+                        async () => (await cancelWaiterRound(sessionId, round.id)).data,
+                        `Round ${round.round_number} cancelled`,
+                      );
+                    })()
                   }
                 >
                   Cancel Round
@@ -446,7 +498,23 @@ export function WaiterSessionPage() {
                 className="btn btn-primary rounded-pill"
                 disabled={busy}
                 onClick={() =>
-                  void run(async () => (await markWaiterCashReceived(sessionId)).data, 'Cash received')
+                  void (async () => {
+                    const confirmed = await confirmYes({
+                      title: 'Mark cash received?',
+                      body: `Confirm cash payment has been collected for ${session.table.label}.`,
+                      confirmLabel: 'Mark cash received',
+                      tone: 'success',
+                    });
+
+                    if (!confirmed) {
+                      return;
+                    }
+
+                    await run(
+                      async () => (await markWaiterCashReceived(sessionId)).data,
+                      'Cash received',
+                    );
+                  })()
                 }
               >
                 Mark cash received
@@ -458,13 +526,25 @@ export function WaiterSessionPage() {
                 className="btn btn-primary rounded-pill"
                 disabled={busy}
                 onClick={() =>
-                  void run(async () => {
-                    const next = (await closeWaiterSession(sessionId)).data;
-                    clearRememberedWaiterSession();
-                    navigate('/waiter');
+                  void (async () => {
+                    const confirmed = await confirmYes({
+                      title: 'Close dining session?',
+                      body: `This will end the session and release ${session.table.label}. No more orders can be added.`,
+                      confirmLabel: 'Close session',
+                    });
 
-                    return next;
-                  }, 'Session closed')
+                    if (!confirmed) {
+                      return;
+                    }
+
+                    await run(async () => {
+                      const next = (await closeWaiterSession(sessionId)).data;
+                      clearRememberedWaiterSession();
+                      navigate('/waiter');
+
+                      return next;
+                    }, 'Session closed');
+                  })()
                 }
               >
                 Close table
@@ -485,15 +565,35 @@ export function WaiterSessionPage() {
                 className="btn btn-secondary rounded-pill"
                 disabled={busy}
                 onClick={() =>
-                  void run(async () => {
-                    const next = (await reopenWaiterSession(sessionId)).data;
-                    rememberWaiterSession(sessionId);
+                  void (async () => {
+                    const result = await confirmAction({
+                      title: 'Resume ordering?',
+                      body: `This reopens the unpaid bill for ${session.table.label} so more orders can be added.`,
+                      confirmLabel: 'Resume ordering',
+                      requireReason: true,
+                      reasonLabel: 'Reason',
+                      reasonPlaceholder: 'Why is ordering being resumed?',
+                    });
 
-                    return next;
-                  }, 'Session reopened')
+                    if (!result.confirmed) {
+                      return;
+                    }
+
+                    const note = result.reason?.trim() ?? '';
+                    if (note === '') {
+                      return;
+                    }
+
+                    await run(async () => {
+                      const next = (await reopenWaiterSession(sessionId, note)).data;
+                      rememberWaiterSession(sessionId);
+
+                      return next;
+                    }, 'Ordering resumed');
+                  })()
                 }
               >
-                Reopen session
+                Resume ordering
               </button>
             ) : null}
           </div>

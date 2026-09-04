@@ -4990,6 +4990,62 @@ button.loyalty-reward-card:focus-visible {
   overflow-x: clip;
 }
 
+.ordering-mode-switcher {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.75rem;
+}
+
+.ordering-mode-switcher-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--coffee-muted, #6b5b4f);
+}
+
+.ordering-mode-switcher-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(92, 64, 38, 0.08);
+}
+
+.ordering-mode-option {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.75rem;
+  background: transparent;
+  color: var(--coffee-ink, #2a211c);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ordering-mode-option.is-selected {
+  background: var(--coffee-surface, #fff);
+  color: var(--coffee-accent, #7c5a3b);
+  box-shadow: 0 1px 2px rgba(42, 33, 28, 0.12);
+}
+
+.dining-order-more-actions {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.dining-takeaway-link {
+  margin-top: 0.35rem;
+  padding-inline: 0;
+}
+
 .menu-page .menu-discovery {
   position: static;
   gap: 0.45rem;
@@ -7574,4 +7630,134 @@ body.product-overlay-open .bottom-navigation {
   .ops-notification-drawer {
     width: 100vw;
   }
+}
+
+/* Shared confirmation dialog (business actions — not browser confirm) */
+.confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(42, 33, 24, 0.45);
+}
+
+.confirm-dialog-panel {
+  width: min(100%, 26rem);
+  margin-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  border-radius: 1.25rem 1.25rem 1rem 1rem;
+  background: var(--surface);
+  box-shadow: 0 -8px 32px rgba(42, 33, 24, 0.18);
+  overflow: hidden;
+}
+
+.confirm-dialog-header {
+  padding: var(--space-5) var(--space-5) var(--space-2);
+}
+
+.confirm-dialog-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.confirm-dialog-body {
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.confirm-dialog-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.confirm-dialog-reason {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.confirm-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+@media (min-width: 640px) {
+  .confirm-dialog-overlay {
+    align-items: center;
+  }
+
+  .confirm-dialog-panel {
+    margin-bottom: 0;
+    border-radius: 1.25rem;
+  }
+}
+
+/* Shared searchable select */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  text-align: left;
+}
+
+.searchable-select-trigger.is-invalid {
+  border-color: var(--danger);
+}
+
+.searchable-select-menu {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  max-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  box-shadow: 0 12px 28px rgba(42, 33, 24, 0.14);
+}
+
+.searchable-select-search {
+  position: sticky;
+  top: 0;
+  padding: var(--space-2);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.searchable-select-option {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  color: var(--text-primary);
+}
+
+.searchable-select-option:hover,
+.searchable-select-option.is-active {
+  background: var(--surface-alt);
+}
+
+.searchable-select-empty {
+  padding: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }

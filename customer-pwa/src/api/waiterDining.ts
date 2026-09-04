@@ -329,10 +329,10 @@ export function closeWaiterSession(sessionId: number | string): Promise<ApiEnvel
 
 export function reopenWaiterSession(
   sessionId: number | string,
-  note?: string,
+  note: string,
 ): Promise<ApiEnvelope<WaiterDiningSession>> {
-  return post<ApiEnvelope<WaiterDiningSession>, { note?: string }>(
+  return post<ApiEnvelope<WaiterDiningSession>, { note: string }>(
     `/waiter/sessions/${sessionId}/reopen`,
-    note ? { note } : {},
+    { note },
   );
 }

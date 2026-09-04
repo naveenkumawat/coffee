@@ -39,8 +39,8 @@ class AdminDiningPaymentWorkflowTest extends TestCase
         $this->assertStringContainsString('<form method="POST"', $html);
         $this->assertStringNotContainsString('&lt;form method=&quot;POST&quot;', $html);
         $this->assertStringContainsString('Set method', $html);
-        $this->assertStringContainsString('Reopen', $html);
-        $this->assertStringContainsString('Close', $html);
+        $this->assertStringContainsString('Resume ordering', $html);
+        $this->assertStringContainsString('Close session', $html);
     }
 
     public function test_admin_show_displays_utr_and_verify_reject_while_awaiting_review(): void

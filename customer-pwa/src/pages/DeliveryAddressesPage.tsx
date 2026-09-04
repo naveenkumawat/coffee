@@ -9,6 +9,7 @@ import {
   makeDefaultDeliveryAddress,
 } from '../api/deliveryAddresses';
 import { ApiError, ApiValidationErrors } from '../api/client';
+import { confirmYes } from '../components/common/ConfirmDialog';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -155,9 +156,21 @@ export function DeliveryAddressesPage() {
                   type="button"
                   className="btn btn-sm btn-outline-dark rounded-pill"
                   onClick={() => {
-                    if (window.confirm('Delete this address?')) {
-                      void deleteDeliveryAddress(address.id).then(() => loadAddresses());
-                    }
+                    void (async () => {
+                      const confirmed = await confirmYes({
+                        title: 'Delete this address?',
+                        body: 'This removes the saved delivery address from your account.',
+                        confirmLabel: 'Delete address',
+                        tone: 'danger',
+                      });
+
+                      if (!confirmed) {
+                        return;
+                      }
+
+                      await deleteDeliveryAddress(address.id);
+                      await loadAddresses();
+                    })();
                   }}
                 >
                   Delete

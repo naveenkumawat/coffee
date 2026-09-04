@@ -144,7 +144,7 @@ interface DiningSessionServiceInterface
         ?string $notes = null,
     ): Order;
 
-    public function closeSession(DiningSession $session, User $actor): DiningSession;
+    public function closeSession(DiningSession $session, User $actor, ?string $reason = null): DiningSession;
 
     public function reopenSession(DiningSession $session, User $actor, ?string $note = null): DiningSession;
 
