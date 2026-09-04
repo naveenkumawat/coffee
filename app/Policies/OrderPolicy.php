@@ -32,7 +32,14 @@ class OrderPolicy
 
     public function transition(User $user, Order $order): bool
     {
-        return $user->canManageOrders() || $user->canOperateOrders();
+        if ($user->canManageOrders() || $user->canOperateOrders()) {
+            return true;
+        }
+
+        // Waiters may Accept Pending dining rounds only (commercial acceptance).
+        return $user->canOperateDining()
+            && $order->isDiningRound()
+            && $order->status === OrderStatus::Pending;
     }
 
     public function cancel(User $user, Order $order): bool

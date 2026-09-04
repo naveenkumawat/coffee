@@ -27,6 +27,7 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
             ->orderByRaw($this->statusOrderExpression([
                 OrderStatus::PendingPayment,
                 OrderStatus::PaymentConfirmed,
+                OrderStatus::Pending,
                 OrderStatus::Accepted,
                 OrderStatus::Preparing,
                 OrderStatus::ReadyForPickup,
@@ -45,6 +46,7 @@ class OrderRepository extends AbstractRepository implements OrderRepositoryInter
             ->whereNotIn('orders.status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
             ->orderByRaw($this->statusOrderExpression([
                 OrderStatus::PaymentConfirmed,
+                OrderStatus::Pending,
                 OrderStatus::Accepted,
                 OrderStatus::Preparing,
                 OrderStatus::ReadyForPickup,

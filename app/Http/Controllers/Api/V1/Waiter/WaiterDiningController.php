@@ -288,6 +288,17 @@ class WaiterDiningController extends Controller
         );
     }
 
+    public function acceptRound(Request $request, DiningSession $session, Order $order): JsonResponse
+    {
+        $this->authorize('transition', $order);
+        $this->dining->acceptRound($session, $order, $request->user());
+
+        return $this->respondWithResource(
+            new WaiterDiningSessionResource($this->loadSession($session)),
+            'Round accepted.',
+        );
+    }
+
     public function cancelRound(
         DiningRoundCancelRequest $request,
         DiningSession $session,

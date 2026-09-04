@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import {
   WaiterDiningSession,
+  acceptWaiterRound,
   cancelWaiterRound,
   claimWaiterServiceRequest,
   closeWaiterSession,
@@ -332,6 +333,21 @@ export function WaiterSessionPage() {
                 ))}
               </ul>
               <strong className="waiter-round-total">{formatCurrency(round.total_amount)}</strong>
+              {round.can_accept ? (
+                <button
+                  type="button"
+                  className="btn btn-primary rounded-pill"
+                  disabled={busy}
+                  onClick={() =>
+                    void run(
+                      async () => (await acceptWaiterRound(sessionId, round.id)).data,
+                      `Round ${round.round_number} accepted`,
+                    )
+                  }
+                >
+                  Accept
+                </button>
+              ) : null}
               {round.can_mark_served ? (
                 <button
                   type="button"

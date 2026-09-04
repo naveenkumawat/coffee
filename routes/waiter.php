@@ -41,6 +41,7 @@ Route::middleware(['auth:admin', 'role:waiter'])->group(function (): void {
     Route::get('/sessions/{session}', [DiningSessionController::class, 'show'])->name('sessions.show');
     Route::post('/sessions', [DiningSessionController::class, 'store'])->name('sessions.store');
     Route::post('/sessions/{session}/rounds', [DiningSessionController::class, 'placeRound'])->name('sessions.rounds.store');
+    Route::post('/sessions/{session}/rounds/{order}/accept', [DiningSessionController::class, 'acceptRound'])->name('sessions.rounds.accept');
     Route::post('/sessions/{session}/rounds/{order}/served', [DiningSessionController::class, 'markRoundServed'])->name('sessions.rounds.served');
     Route::post('/sessions/{session}/rounds/{order}/cancel', [DiningSessionController::class, 'cancelRound'])->name('sessions.rounds.cancel');
     Route::post('/sessions/{session}/request-bill', [DiningSessionController::class, 'requestBill'])->name('sessions.request-bill');

@@ -101,6 +101,7 @@ export interface WaiterRound {
   served?: boolean;
   served_at?: string | null;
   can_mark_served?: boolean;
+  can_accept?: boolean;
   can_cancel?: boolean;
   cancel_requires_reason?: boolean;
   can_void?: boolean;
@@ -284,6 +285,16 @@ export function markWaiterCashReceived(
 ): Promise<ApiEnvelope<WaiterDiningSession>> {
   return post<ApiEnvelope<WaiterDiningSession>, Record<string, never>>(
     `/waiter/sessions/${sessionId}/cash`,
+    {},
+  );
+}
+
+export function acceptWaiterRound(
+  sessionId: number | string,
+  orderId: number | string,
+): Promise<ApiEnvelope<WaiterDiningSession>> {
+  return post<ApiEnvelope<WaiterDiningSession>, Record<string, never>>(
+    `/waiter/sessions/${sessionId}/rounds/${orderId}/accept`,
     {},
   );
 }

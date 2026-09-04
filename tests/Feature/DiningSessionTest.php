@@ -62,7 +62,7 @@ class DiningSessionTest extends TestCase
         $this->assertSame(2, Order::query()->where('dining_session_id', $sessionId)->count());
         $this->assertTrue(
             Order::query()->where('dining_session_id', $sessionId)->get()->every(
-                fn (Order $order): bool => $order->status === OrderStatus::Accepted
+                fn (Order $order): bool => $order->status === OrderStatus::Pending
                     && $order->fulfilment_method === OrderFulfilmentMethod::DineIn
                     && $order->payment_status === PaymentStatus::Pending,
             ),

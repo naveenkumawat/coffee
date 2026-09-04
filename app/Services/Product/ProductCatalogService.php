@@ -127,7 +127,14 @@ class ProductCatalogService implements ProductCatalogServiceInterface
             function (): array {
                 $products = $this->products->listPublicProducts();
 
-                return ProductResource::collection($products)->resolve();
+                // Nested JsonResource collections must be plain arrays before caching —
+                // PHP serialize leaves AnonymousResourceCollection as incomplete classes,
+                // which strip variant is_available on the next catalogue read.
+                $resolved = ProductResource::collection($products)->resolve();
+                /** @var list<array<string, mixed>> $pure */
+                $pure = json_decode(json_encode($resolved), true) ?? [];
+
+                return $pure;
             },
         );
 

@@ -31,12 +31,20 @@
                 $canMarkServed = $allReady && ! $isServed
                     && ! in_array($order->status?->value, ['cancelled', 'rejected'], true)
                     && $actor?->can('markServed', $session);
+                $canAccept = $order->status?->value === 'pending'
+                    && ($actor?->can('transition', $order) ?? false);
                 $cancellation = $cancellationPolicy->evaluate($session, $order, $actor);
                 $roundTiming = $timingByOrderId->get($order->id);
                 $cancelRoute = match (true) {
                     request()->routeIs('waiter.*') => route('waiter.sessions.rounds.cancel', [$session, $order]),
                     request()->routeIs('operator.*') => route('operator.dining-sessions.rounds.cancel', [$session, $order]),
                     request()->routeIs('administrator.*') => route('administrator.dining-sessions.rounds.cancel', [$session, $order]),
+                    default => null,
+                };
+                $acceptRoute = match (true) {
+                    request()->routeIs('waiter.*') => route('waiter.sessions.rounds.accept', [$session, $order]),
+                    request()->routeIs('operator.*') => route('operator.dining-sessions.rounds.accept', [$session, $order]),
+                    request()->routeIs('administrator.*') => route('administrator.dining-sessions.rounds.accept', [$session, $order]),
                     default => null,
                 };
             @endphp
@@ -56,6 +64,12 @@
                         @if ($roundTiming['ready_to_serve_age_seconds'] !== null && ! $isServed)
                             <span class="badge badge-light-info">Ready age {{ $fmt($roundTiming['ready_to_serve_age_seconds']) }}</span>
                         @endif
+                    @endif
+                    @if ($canAccept && $acceptRoute)
+                        <form method="POST" action="{{ $acceptRoute }}" class="d-inline">
+                            @csrf
+                            <x-internal.button label="Accept" type="submit" variant="primary" icon="ki-check" />
+                        </form>
                     @endif
                     @if ($canMarkServed)
                         @php

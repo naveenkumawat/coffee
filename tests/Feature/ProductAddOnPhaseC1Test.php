@@ -441,6 +441,9 @@ class ProductAddOnPhaseC1Test extends TestCase
         $this->assertSame('Extra Shot', $item->addOns->first()->name);
         $this->assertSame('30.00', number_format((float) $item->addOns->first()->unit_price, 2, '.', ''));
         $this->assertSame('300.00', number_format((float) $item->line_subtotal, 2, '.', ''));
+        $this->assertSame('1000.000', $beans->fresh()->current_stock);
+
+        $order = $dining->acceptRound($session->fresh(), $order->fresh(), $waiter);
         $this->assertSame('972.000', $beans->fresh()->current_stock);
 
         app(OrderInventoryConsumptionServiceInterface::class)

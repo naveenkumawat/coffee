@@ -20,6 +20,7 @@ use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
@@ -213,7 +214,7 @@ class OrderPreparationWorkflowTest extends TestCase
         );
     }
 
-    public function test_dining_round_creates_tickets_immediately(): void
+    public function test_dining_round_stays_pending_until_accepted(): void
     {
         $waiter = User::factory()->waiter()->create();
         $customer = User::factory()->customer()->create();
@@ -245,8 +246,19 @@ class OrderPreparationWorkflowTest extends TestCase
             ['product_variant_id' => $kitchen->id, 'quantity' => 1],
         ]);
 
-        $this->assertSame(OrderStatus::Accepted, $order->status);
-        $this->assertSame(2, $order->preparations()->count());
+        $this->assertSame(OrderStatus::Pending, $order->status);
+        $this->assertSame(0, $order->preparations()->count());
+
+        $accepted = app(DiningSessionServiceInterface::class)
+            ->acceptRound($session, $order, $waiter);
+
+        $this->assertSame(OrderStatus::Accepted, $accepted->status);
+        $this->assertSame(2, $accepted->preparations()->count());
+        $this->assertTrue(
+            $accepted->preparations->every(
+                fn (OrderPreparation $ticket): bool => $ticket->status === OrderPreparationStatus::Pending,
+            ),
+        );
     }
 
     /**

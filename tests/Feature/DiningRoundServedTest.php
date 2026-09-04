@@ -6,6 +6,7 @@ use App\Enums\DiningSessionStatus;
 use App\Enums\OperationalNotificationType;
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderPreparationStatus;
+use App\Enums\OrderStatus;
 use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
 use App\Enums\WebsiteSettingKey;
@@ -215,12 +216,18 @@ class DiningRoundServedTest extends TestCase
         $round2 = $session->orders->sortBy('dining_round_number')->last();
         $this->assertNotNull($round1?->served_at);
         $this->assertNull($round2?->served_at);
+        $this->assertSame(OrderStatus::Pending, $round2?->status);
 
+        $tables = $this->getJson(route('api.v1.waiter.tables.index'))->assertOk()->json('data');
+        $row = collect($tables)->firstWhere('id', $session->cafe_table_id);
+        $this->assertSame('active', $row['display_state']);
+
+        app(DiningSessionServiceInterface::class)->acceptRound($session->fresh(), $round2->fresh(), $waiter);
         $tables = $this->getJson(route('api.v1.waiter.tables.index'))->assertOk()->json('data');
         $row = collect($tables)->firstWhere('id', $session->cafe_table_id);
         $this->assertSame('preparing', $row['display_state']);
 
-        $this->markAllTicketsReady($round2);
+        $this->markAllTicketsReady($round2->fresh(['preparations']));
         $tables = $this->getJson(route('api.v1.waiter.tables.index'))->assertOk()->json('data');
         $row = collect($tables)->firstWhere('id', $session->cafe_table_id);
         $this->assertSame('ready_to_serve', $row['display_state']);
@@ -288,6 +295,7 @@ class DiningRoundServedTest extends TestCase
             ['product_variant_id' => $bar->id, 'quantity' => 1],
             ['product_variant_id' => $kitchen->id, 'quantity' => 1],
         ]);
+        $order = app(DiningSessionServiceInterface::class)->acceptRound($session, $order, $waiter);
 
         return [$waiter, $session->fresh(), $order->fresh(['preparations'])];
     }

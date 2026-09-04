@@ -1242,6 +1242,7 @@ class OrderService implements OrderServiceInterface
                 ? [OrderStatus::PaymentConfirmed, OrderStatus::Accepted, OrderStatus::Cancelled, OrderStatus::Rejected]
                 : [OrderStatus::PaymentConfirmed, OrderStatus::Cancelled, OrderStatus::Rejected],
             OrderStatus::PaymentConfirmed => [OrderStatus::Accepted, OrderStatus::Cancelled, OrderStatus::Rejected],
+            OrderStatus::Pending => [OrderStatus::Accepted, OrderStatus::Cancelled, OrderStatus::Rejected],
             OrderStatus::Accepted => [OrderStatus::Preparing, OrderStatus::Cancelled],
             OrderStatus::Preparing => [OrderStatus::ReadyForPickup, OrderStatus::Cancelled],
             OrderStatus::ReadyForPickup => [OrderStatus::Completed],
@@ -1327,6 +1328,16 @@ class OrderService implements OrderServiceInterface
             return collect($operatorAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
         }
 
+        // Waiters may Accept a Pending dining round (commercial acceptance), not run station prep.
+        if ($actor->canOperateDining() && $order->status === OrderStatus::Pending) {
+            $waiterAllowed = array_filter(
+                $statuses,
+                static fn (OrderStatus $status): bool => $status === OrderStatus::Accepted,
+            );
+
+            return collect($waiterAllowed)->mapWithKeys(fn (OrderStatus $status): array => [$status->value => $status->label()])->all();
+        }
+
         return [];
     }
 
@@ -1371,7 +1382,7 @@ class OrderService implements OrderServiceInterface
                 'pickup_phone' => null,
                 'assigned_barista_id' => null,
                 'checkout_token' => null,
-                'status' => OrderStatus::Accepted->value,
+                'status' => OrderStatus::Pending->value,
                 'subtotal' => $subtotal,
                 'discount_total' => $discountTotal,
                 'tax_enabled_snapshot' => $tax->enabled,
@@ -1399,7 +1410,7 @@ class OrderService implements OrderServiceInterface
                 // Subordinate / non-revenue: dining payment lives on the session only.
                 'payment_status' => PaymentStatus::Pending->value,
                 'placed_at' => $placedAt,
-                'accepted_at' => $placedAt,
+                'accepted_at' => null,
             ]);
 
             $this->orders->createItems($order, array_map(static fn (array $item): array => [
@@ -1418,9 +1429,9 @@ class OrderService implements OrderServiceInterface
             ], $preparedItems));
             $this->orders->createStatusHistory($order, [
                 'from_status' => null,
-                'to_status' => OrderStatus::Accepted->value,
+                'to_status' => OrderStatus::Pending->value,
                 'changed_by' => $actor->getKey(),
-                'notes' => 'Dining round '.$roundNumber.' placed — kitchen can start without session payment.',
+                'notes' => 'Dining round '.$roundNumber.' placed — awaiting staff acceptance.',
             ]);
 
             $order = $order->fresh([
@@ -1434,20 +1445,7 @@ class OrderService implements OrderServiceInterface
                 'preparations',
             ]);
 
-            $this->inventoryConsumption->consumeForAcceptedOrder($order, $actor);
-            $this->preparations->createTicketsForOrder($order->fresh(['items', 'preparations']));
-
-            $order = $order->fresh([
-                'customer',
-                'assignedBarista',
-                'items.recipe.lines.ingredient.brand',
-                'promotions',
-                'rewardRedemptions',
-                'statusHistory.changedBy',
-                'diningSession',
-                'preparations',
-            ]);
-
+            // Sale consumption + prep tickets start on Accept (canonical F2 boundary).
             OrderPlaced::dispatch($order);
 
             return $order;

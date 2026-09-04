@@ -118,6 +118,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::delete('/sessions/{session}/drafts/{draft}', [WaiterDiningController::class, 'destroyDraft'])->name('sessions.drafts.destroy');
         Route::delete('/sessions/{session}/drafts', [WaiterDiningController::class, 'clearDrafts'])->name('sessions.drafts.clear');
         Route::post('/sessions/{session}/rounds', [WaiterDiningController::class, 'placeRound'])->name('sessions.rounds.store');
+        Route::post('/sessions/{session}/rounds/{order}/accept', [WaiterDiningController::class, 'acceptRound'])->name('sessions.rounds.accept');
         Route::post('/sessions/{session}/rounds/{order}/served', [WaiterDiningController::class, 'markRoundServed'])->name('sessions.rounds.served');
         Route::post('/sessions/{session}/rounds/{order}/cancel', [WaiterDiningController::class, 'cancelRound'])->name('sessions.rounds.cancel');
         Route::post('/sessions/{session}/request-bill', [WaiterDiningController::class, 'requestBill'])->name('sessions.request-bill');

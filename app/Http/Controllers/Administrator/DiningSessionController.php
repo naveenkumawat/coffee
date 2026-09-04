@@ -134,6 +134,14 @@ class DiningSessionController extends Controller
         return back()->with('status', 'Round marked as served.');
     }
 
+    public function acceptRound(Request $request, DiningSession $diningSession, Order $order): RedirectResponse
+    {
+        $this->authorize('transition', $order);
+        $this->dining->acceptRound($diningSession, $order, $request->user('admin'));
+
+        return back()->with('status', 'Round accepted.');
+    }
+
     public function cancelRound(
         DiningRoundCancelRequest $request,
         DiningSession $diningSession,

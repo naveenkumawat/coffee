@@ -129,11 +129,19 @@ class OrderInventoryConsumptionTest extends TestCase
         $session = $dining->startSession($table, null, $waiter, ['guest_count' => 2]);
 
         $dining->addDraftItem($session, (int) $variant->id, 1, $waiter);
-        $dining->placeRound($session, $waiter);
+        $round1 = $dining->placeRound($session, $waiter);
+        $this->assertSame('2000.000', $milk->fresh()->current_stock);
+        $this->assertSame(0, OrderInventoryConsumption::query()->where('order_id', $round1->id)->count());
+
+        $dining->acceptRound($session->fresh(), $round1->fresh(), $waiter);
         $this->assertSame('1800.000', $milk->fresh()->current_stock);
+        $this->assertSame(1, OrderInventoryConsumption::query()->where('order_id', $round1->id)->count());
 
         $dining->addDraftItem($session->fresh(), (int) $variant->id, 1, $waiter);
-        $dining->placeRound($session->fresh(), $waiter);
+        $round2 = $dining->placeRound($session->fresh(), $waiter);
+        $this->assertSame('1800.000', $milk->fresh()->current_stock);
+
+        $dining->acceptRound($session->fresh(), $round2->fresh(), $waiter);
         $this->assertSame('1600.000', $milk->fresh()->current_stock);
 
         $beforeBill = $milk->fresh()->current_stock;

@@ -6,6 +6,7 @@ enum OrderStatus: string
 {
     case PendingPayment = 'pending_payment';
     case PaymentConfirmed = 'payment_confirmed';
+    case Pending = 'pending';
     case Accepted = 'accepted';
     case Preparing = 'preparing';
     case ReadyForPickup = 'ready_for_pickup';
@@ -18,6 +19,7 @@ enum OrderStatus: string
         return match ($this) {
             self::PendingPayment => 'Pending Payment',
             self::PaymentConfirmed => 'Payment Confirmed',
+            self::Pending => 'Pending',
             self::Accepted => 'Accepted',
             self::Preparing => 'Preparing',
             self::ReadyForPickup => 'Ready for Pickup',
@@ -32,6 +34,7 @@ enum OrderStatus: string
         return match ($this) {
             self::PendingPayment => 'badge-light-warning',
             self::PaymentConfirmed => 'badge-light-primary',
+            self::Pending => 'badge-light-warning',
             self::Accepted => 'badge-light-info',
             self::Preparing => 'badge-light-dark',
             self::ReadyForPickup => 'badge-light-success',
@@ -44,7 +47,7 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::Completed, self::Cancelled, self::Rejected => true,
-            self::PendingPayment, self::PaymentConfirmed, self::Accepted, self::Preparing, self::ReadyForPickup => false,
+            self::PendingPayment, self::PaymentConfirmed, self::Pending, self::Accepted, self::Preparing, self::ReadyForPickup => false,
         };
     }
 

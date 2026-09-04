@@ -25,6 +25,7 @@ use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
@@ -273,6 +274,8 @@ class OperationalBusinessNotificationWiringTest extends TestCase
             ['product_variant_id' => $bar->id, 'quantity' => 1],
             ['product_variant_id' => $kitchen->id, 'quantity' => 1],
         ]);
+        $order = app(DiningSessionServiceInterface::class)
+            ->acceptRound($session, $order, $waiter);
 
         $this->assertSame(2, OperationalNotification::query()
             ->where('type', OperationalNotificationType::PreparationTicketPending->value)

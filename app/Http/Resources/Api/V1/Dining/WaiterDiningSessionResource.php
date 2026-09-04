@@ -160,6 +160,8 @@ class WaiterDiningSessionResource extends JsonResource
             'served' => $order->served_at !== null,
             'served_at' => $order->served_at?->toIso8601String(),
             'can_mark_served' => ($actor?->can('markServed', $session) ?? false) && $readyToServe,
+            'can_accept' => ($actor?->can('transition', $order) ?? false)
+                && $order->status === OrderStatus::Pending,
             'can_cancel' => $cancellation['can_cancel'],
             'cancel_requires_reason' => $cancellation['cancel_requires_reason'],
             'can_void' => $cancellation['can_void'],

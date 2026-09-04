@@ -28,6 +28,7 @@ use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
@@ -365,8 +366,11 @@ class OperationalCustomerNotificationWiringTest extends TestCase
                 ->count(),
         );
 
+        $order = app(DiningSessionServiceInterface::class)
+            ->acceptRound($session, $order, $waiter);
+
         $prep = app(OrderPreparationServiceInterface::class);
-        $ticket = $order->preparations->firstWhere('station', PreparationStation::Bar);
+        $ticket = $order->fresh('preparations')->preparations->firstWhere('station', PreparationStation::Bar);
         $this->assertNotNull($ticket);
 
         $prep->transition($ticket, $barista, OrderPreparationStatus::Accepted);

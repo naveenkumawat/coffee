@@ -46,6 +46,12 @@ interface DiningSessionServiceInterface
     public function placeRound(DiningSession $session, User $actor, ?string $customerNotes = null): Order;
 
     /**
+     * Accept a Pending dining round (Pending → Accepted) via canonical OrderService.
+     * Triggers F2 sale consumption and preparation ticket creation.
+     */
+    public function acceptRound(DiningSession $session, Order $order, User $actor): Order;
+
+    /**
      * @return array{
      *     subtotal: string,
      *     discount: string,

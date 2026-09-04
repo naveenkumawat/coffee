@@ -51,6 +51,12 @@ class PublicCatalogueCacheTest extends TestCase
             'If-None-Match' => $etag,
         ])->assertStatus(304);
 
+        // Cached payload must remain plain arrays across process reads (no incomplete nested resources).
+        $cached = Cache::get(ProductCatalogService::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY);
+        $this->assertIsArray($cached);
+        $this->assertIsArray($cached[0]['variants'] ?? null);
+        $this->assertTrue((bool) ($cached[0]['variants'][0]['is_available'] ?? false));
+
         // Ensure ordering stays category sort then product sort.
         $this->assertSame($categoryA->id, $response->json('data.0.category.id'));
         $this->assertSame($first->id, $response->json('data.1.id'));

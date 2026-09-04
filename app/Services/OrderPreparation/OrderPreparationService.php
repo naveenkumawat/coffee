@@ -223,6 +223,14 @@ class OrderPreparationService implements OrderPreparationServiceInterface
                 filled($statusFilter),
                 fn ($query) => $query->where('status', $statusFilter),
             )
+            ->whereHas('order', function ($query): void {
+                $query->whereNotIn('status', [
+                    OrderStatus::Pending->value,
+                    OrderStatus::PendingPayment->value,
+                    OrderStatus::Cancelled->value,
+                    OrderStatus::Rejected->value,
+                ]);
+            })
             ->with([
                 'order.customer',
                 'order.items',

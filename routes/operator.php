@@ -61,6 +61,7 @@ Route::middleware(['auth:admin', 'role:operator'])->group(function (): void {
     Route::post('/dining-sessions/{diningSession}/payment-method', [DiningSessionController::class, 'changePaymentMethod'])->name('dining-sessions.payment-method');
     Route::post('/dining-sessions/{diningSession}/payment/confirm', [DiningSessionController::class, 'confirmPayment'])->name('dining-sessions.payment.confirm');
     Route::post('/dining-sessions/{diningSession}/cash/receive', [DiningSessionController::class, 'markCashReceived'])->name('dining-sessions.cash.receive');
+    Route::post('/dining-sessions/{diningSession}/rounds/{order}/accept', [DiningSessionController::class, 'acceptRound'])->name('dining-sessions.rounds.accept');
     Route::post('/dining-sessions/{diningSession}/rounds/{order}/served', [DiningSessionController::class, 'markRoundServed'])->name('dining-sessions.rounds.served');
     Route::post('/dining-sessions/{diningSession}/rounds/{order}/cancel', [DiningSessionController::class, 'cancelRound'])->name('dining-sessions.rounds.cancel');
     Route::post('/dining-sessions/{diningSession}/payment-proof/reject', [DiningSessionController::class, 'rejectPaymentProof'])->name('dining-sessions.payment-proof.reject');

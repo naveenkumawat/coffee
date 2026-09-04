@@ -51,6 +51,7 @@ class DiningRoundCancellationTest extends TestCase
         $order = app(OrderServiceInterface::class)->placeDiningRound($waiter, $session, [
             ['product_variant_id' => $variant->id, 'quantity' => 1],
         ]);
+        $order = app(DiningSessionServiceInterface::class)->acceptRound($session, $order, $waiter);
 
         Sanctum::actingAs($waiter);
         $this->postJson(route('api.v1.waiter.sessions.rounds.cancel', [$session->id, $order->id]))
@@ -335,6 +336,7 @@ class DiningRoundCancellationTest extends TestCase
         $order = app(OrderServiceInterface::class)->placeDiningRound($waiter, $session, [
             ['product_variant_id' => $variant->id, 'quantity' => 1],
         ]);
+        $order = app(DiningSessionServiceInterface::class)->acceptRound($session, $order, $waiter);
 
         $ingredient = Ingredient::query()
             ->whereIn('id', OrderInventoryConsumption::query()->where('order_id', $order->id)->pluck('ingredient_id'))

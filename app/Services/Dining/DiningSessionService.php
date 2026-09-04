@@ -40,6 +40,7 @@ use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Support\AddOnConfiguration;
 use App\Support\CustomerDiscountLines;
+use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -271,6 +272,44 @@ class DiningSessionService implements DiningSessionServiceInterface
 
             return $order;
         });
+    }
+
+    public function acceptRound(DiningSession $session, Order $order, User $actor): Order
+    {
+        if (! $actor->canOperateDining() && ! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
+            throw ValidationException::withMessages([
+                'order' => 'You are not allowed to accept this dining round.',
+            ]);
+        }
+
+        if ((int) $order->dining_session_id !== (int) $session->getKey()) {
+            throw ValidationException::withMessages([
+                'order' => 'That round does not belong to this dining session.',
+            ]);
+        }
+
+        if (! $order->isDiningRound()) {
+            throw ValidationException::withMessages([
+                'order' => 'Only dining rounds can be accepted this way.',
+            ]);
+        }
+
+        if ($order->status === OrderStatus::Accepted) {
+            return $order->fresh(['preparations', 'items', 'statusHistory.changedBy', 'diningSession.cafeTable'])
+                ?? $order;
+        }
+
+        if ($order->status !== OrderStatus::Pending) {
+            throw ValidationException::withMessages([
+                'order' => 'Only Pending dining rounds can be accepted.',
+            ]);
+        }
+
+        $transfer = new OrderStatusTransitionTransfer;
+        $transfer->setStatus(OrderStatus::Accepted->value);
+        $transfer->setNotes('Dining round accepted by staff.');
+
+        return $this->orders->transition($order, $actor, $transfer);
     }
 
     public function runningBill(DiningSession $session): array
