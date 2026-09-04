@@ -17,8 +17,5 @@
         'method' => 'POST',
         'submit' => 'Create add-on',
         'addOn' => $addOn,
-        'ingredientOptions' => $ingredientOptions,
-        'unitOptions' => $unitOptions,
-        'lineRows' => $lineRows,
     ])
 @endsection

@@ -78,9 +78,14 @@ class Product extends AbstractModel
     public function addOns(): BelongsToMany
     {
         return $this->belongsToMany(AddOn::class, 'product_add_on')
-            ->withPivot(['id', 'price_override', 'max_quantity', 'sort_order'])
+            ->withPivot(['id', 'price_override', 'max_quantity', 'is_active', 'sort_order'])
             ->withTimestamps()
             ->orderByPivot('sort_order');
+    }
+
+    public function productAddOns(): HasMany
+    {
+        return $this->hasMany(ProductAddOn::class)->orderBy('sort_order');
     }
 
     public function variants(): HasMany

@@ -47,7 +47,6 @@ class ProductTagTest extends TestCase
 
         $response = $this->actingAs($manager, 'admin')->post(route('administrator.products.tags.store'), [
             'name' => 'Seasonal',
-            'slug' => 'seasonal-special',
             'style_key' => ProductTagStyle::Warning->value,
             'sort_order' => 40,
             'is_active' => 1,
@@ -56,7 +55,7 @@ class ProductTagTest extends TestCase
         $response->assertRedirect();
 
         $this->assertDatabaseHas('product_tags', [
-            'slug' => 'seasonal-special',
+            'slug' => 'seasonal',
             'name' => 'Seasonal',
             'style_key' => ProductTagStyle::Warning->value,
         ]);

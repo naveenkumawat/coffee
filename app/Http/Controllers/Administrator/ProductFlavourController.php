@@ -47,7 +47,9 @@ class ProductFlavourController extends Controller
 
     public function store(ProductFlavourCreateRequest $request): RedirectResponse
     {
-        $flavour = $this->service->store($this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $flavour = $this->service->store($this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage($flavour, $request->file('image'), $request->boolean('remove_image'));
 
         return redirect()
             ->route('administrator.products.flavours.edit', $flavour)
@@ -78,7 +80,9 @@ class ProductFlavourController extends Controller
     {
         $this->authorize('update', $productFlavour);
 
-        $this->service->update($productFlavour, $this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $productFlavour = $this->service->update($productFlavour, $this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage($productFlavour, $request->file('image'), $request->boolean('remove_image'));
 
         return redirect()
             ->route('administrator.products.flavours.edit', $productFlavour)

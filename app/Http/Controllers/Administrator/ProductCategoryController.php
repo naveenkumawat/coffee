@@ -43,7 +43,9 @@ class ProductCategoryController extends Controller
 
     public function store(ProductCategoryCreateRequest $request): RedirectResponse
     {
-        $category = $this->service->store($this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $category = $this->service->store($this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage($category, $request->file('image'), $request->boolean('remove_image'));
 
         return redirect()
             ->route('administrator.products.categories.edit', $category)
@@ -73,7 +75,9 @@ class ProductCategoryController extends Controller
     {
         $this->authorize('update', $productCategory);
 
-        $this->service->update($productCategory, $this->parser->getTransferFromArrayData($request->validated()));
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $productCategory = $this->service->update($productCategory, $this->parser->getTransferFromArrayData($payload));
+        $this->service->syncImage($productCategory, $request->file('image'), $request->boolean('remove_image'));
 
         return redirect()
             ->route('administrator.products.categories.edit', $productCategory)

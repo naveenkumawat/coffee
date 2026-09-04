@@ -444,10 +444,17 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 
 ## Product add-ons (C1)
 
-* `AddOn` + `AddOnRecipeLine` + `product_add_on` pivot; cart/order snapshots via `cart_item_add_ons` / `order_item_add_ons`.
+* `AddOn` = reusable customer-visible catalog identity (name/slug/description/image/status/default reference price). Global `add_on_recipe_lines` are legacy-only and are **not** authoritative for Admin create/edit or inventory consumption.
+* `ProductAddOn` (`product_add_on`) = product-specific availability, selling price override, max quantity, sort, and active flag.
+* `ProductAddOnRecipeLine` = product-specific ingredient consumption and Admin cost basis.
+* Optional `ProductVariantAddOnRecipeLine` = size-specific recipe override when configured.
+* **Consumption resolution:** variant override lines if present → else product-add-on recipe. Never fall back to global add-on recipe quantities (avoids wrong stock draws).
+* Cart/order snapshots via `cart_item_add_ons` / `order_item_add_ons` remain historical authority.
 * Line identity: `configuration_hash = sha256(product_variant_id + canonical add_ons)`.
 * Domain services: `AddOnService`, cart/order/checkout/inventory integrations; public catalog observer invalidates on add-on changes.
 * Free drink benefit uses `base_unit_price` / `base_line_subtotal` when present.
 * Preparation station for this phase inherits the parent OrderItem station (no cross-station add-ons).
 * Product-level promotions apply to merchandise including selected add-ons (same cart/order subtotal path).
 * Dining drafts use the same `configuration_hash` + `dining_round_draft_add_ons`; snapshots land on round OrderItems at accept.
+* Product Admin variants are dynamic 1..N sellable sizes (`variants.*`); no fixed three-row placeholders.
+* Admin slugs are server-generated from name and preserved on ordinary rename; catalog images use `PublicMedia` uploads (not raw path inputs).

@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers\Administrator;
 
-use App\Enums\IngredientUnit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AddOn\AddOnStoreRequest;
 use App\Http\Requests\AddOn\AddOnUpdateRequest;
 use App\Models\AddOn;
-use App\Models\Ingredient;
 use App\Services\AddOn\AddOnServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -38,15 +36,18 @@ class AddOnController extends Controller
                 'sort_order' => 10,
                 'default_price' => '0.00',
             ]),
-            'ingredientOptions' => $this->ingredientOptions(),
-            'unitOptions' => IngredientUnit::options(),
-            'lineRows' => [],
         ]);
     }
 
     public function store(AddOnStoreRequest $request): RedirectResponse
     {
-        $addOn = $this->service->store($request->validated());
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $addOn = $this->service->store($payload);
+        $this->service->syncImage(
+            $addOn,
+            $request->file('image'),
+            $request->boolean('remove_image'),
+        );
 
         return redirect()
             ->route('administrator.add-ons.edit', $addOn)
@@ -57,21 +58,9 @@ class AddOnController extends Controller
     {
         $this->authorize('update', $addOn);
 
-        $addOn->load('recipeLines.ingredient');
-
         return view('administrator.add-ons.edit', [
             'addOn' => $addOn,
-            'ingredientOptions' => $this->ingredientOptions(),
-            'unitOptions' => IngredientUnit::options(),
-            'lineRows' => $addOn->recipeLines->map(fn ($line): array => [
-                'id' => $line->id,
-                'ingredient_id' => $line->ingredient_id,
-                'quantity' => (string) $line->quantity,
-                'measurement_unit' => $line->measurement_unit instanceof \BackedEnum
-                    ? $line->measurement_unit->value
-                    : (string) $line->measurement_unit,
-                'sort_order' => $line->sort_order,
-            ])->all(),
+            'productUsageCount' => $addOn->products()->count(),
         ]);
     }
 
@@ -79,7 +68,13 @@ class AddOnController extends Controller
     {
         $this->authorize('update', $addOn);
 
-        $this->service->update($addOn, $request->validated());
+        $payload = $request->safe()->except(['image', 'remove_image']);
+        $this->service->update($addOn, $payload);
+        $this->service->syncImage(
+            $addOn->fresh(),
+            $request->file('image'),
+            $request->boolean('remove_image'),
+        );
 
         return redirect()
             ->route('administrator.add-ons.edit', $addOn)
@@ -90,22 +85,11 @@ class AddOnController extends Controller
     {
         $this->authorize('delete', $addOn);
 
+        $addOn->forceFill(['is_active' => false])->save();
         $addOn->delete();
 
         return redirect()
             ->route('administrator.add-ons.index')
             ->with('status', 'Add-on archived successfully.');
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    protected function ingredientOptions(): array
-    {
-        return Ingredient::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
     }
 }

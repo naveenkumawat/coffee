@@ -11,10 +11,10 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Demo C1 add-ons + product assignments for local/testing catalogues.
+ * Demo C1 add-ons + product-specific recipe assignments for local/testing catalogues.
  *
  * Idempotent by slug — never duplicates Extra Shot / syrups on re-seed.
- * Preparation station still inherits the parent order item (no add-on station column).
+ * Ingredient qty/unit lives on product_add_on_recipe_lines, not global add_on_recipe_lines.
  */
 class DemoAddOnSeeder extends Seeder
 {
@@ -35,11 +35,6 @@ class DemoAddOnSeeder extends Seeder
             'description' => 'One additional espresso shot.',
             'default_price' => '25.00',
             'sort_order' => 10,
-            'lines' => [[
-                'ingredient_id' => $espresso->id,
-                'quantity' => '9.000',
-                'measurement_unit' => IngredientUnit::Gram->value,
-            ]],
         ]);
 
         $vanillaSyrup = $this->upsertAddOn($addOns, [
@@ -47,11 +42,6 @@ class DemoAddOnSeeder extends Seeder
             'description' => 'Sweet vanilla syrup pump.',
             'default_price' => '20.00',
             'sort_order' => 20,
-            'lines' => [[
-                'ingredient_id' => $vanilla->id,
-                'quantity' => '0.020',
-                'measurement_unit' => IngredientUnit::Bottle->value,
-            ]],
         ]);
 
         $hazelnutSyrup = $this->upsertAddOn($addOns, [
@@ -59,11 +49,6 @@ class DemoAddOnSeeder extends Seeder
             'description' => 'Nutty hazelnut syrup pump.',
             'default_price' => '20.00',
             'sort_order' => 30,
-            'lines' => [[
-                'ingredient_id' => $hazelnut->id,
-                'quantity' => '0.020',
-                'measurement_unit' => IngredientUnit::Bottle->value,
-            ]],
         ]);
 
         $extraCheese = $this->upsertAddOn($addOns, [
@@ -71,7 +56,6 @@ class DemoAddOnSeeder extends Seeder
             'description' => 'Additional melted cheese.',
             'default_price' => '30.00',
             'sort_order' => 40,
-            'lines' => [],
         ]);
 
         $inactiveDemo = $this->upsertAddOn($addOns, [
@@ -80,24 +64,38 @@ class DemoAddOnSeeder extends Seeder
             'default_price' => '5.00',
             'sort_order' => 99,
             'is_active' => false,
-            'lines' => [],
         ]);
 
+        $shotLine = [[
+            'ingredient_id' => $espresso->id,
+            'quantity' => '9.000',
+            'measurement_unit' => IngredientUnit::Gram->value,
+        ]];
+        $vanillaLine = [[
+            'ingredient_id' => $vanilla->id,
+            'quantity' => '0.020',
+            'measurement_unit' => IngredientUnit::Bottle->value,
+        ]];
+        $hazelnutLine = [[
+            'ingredient_id' => $hazelnut->id,
+            'quantity' => '0.020',
+            'measurement_unit' => IngredientUnit::Bottle->value,
+        ]];
+
         $this->assign($addOns, 'Cappuccino', [
-            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10],
-            ['add_on_id' => $vanillaSyrup->id, 'max_quantity' => 1, 'sort_order' => 20],
-            // Assigned but inactive — catalog must hide it.
-            ['add_on_id' => $inactiveDemo->id, 'max_quantity' => 1, 'sort_order' => 90],
+            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10, 'lines' => $shotLine],
+            ['add_on_id' => $vanillaSyrup->id, 'max_quantity' => 1, 'sort_order' => 20, 'lines' => $vanillaLine],
+            ['add_on_id' => $inactiveDemo->id, 'max_quantity' => 1, 'sort_order' => 90, 'is_active' => false],
         ]);
 
         $this->assign($addOns, 'Cafe Latte', [
-            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10],
-            ['add_on_id' => $vanillaSyrup->id, 'max_quantity' => 1, 'sort_order' => 20],
-            ['add_on_id' => $hazelnutSyrup->id, 'max_quantity' => 1, 'sort_order' => 30],
+            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10, 'lines' => $shotLine],
+            ['add_on_id' => $vanillaSyrup->id, 'max_quantity' => 1, 'sort_order' => 20, 'lines' => $vanillaLine],
+            ['add_on_id' => $hazelnutSyrup->id, 'max_quantity' => 1, 'sort_order' => 30, 'lines' => $hazelnutLine],
         ]);
 
         $this->assign($addOns, 'Espresso', [
-            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10],
+            ['add_on_id' => $extraShot->id, 'max_quantity' => 2, 'sort_order' => 10, 'lines' => $shotLine],
         ]);
 
         foreach (['Club Sandwich', 'Grilled Cheese', 'Creamy Penne'] as $foodName) {
@@ -114,7 +112,6 @@ class DemoAddOnSeeder extends Seeder
      *     default_price: string,
      *     sort_order?: int,
      *     is_active?: bool,
-     *     lines?: list<array<string, mixed>>,
      * }  $data
      */
     protected function upsertAddOn(AddOnServiceInterface $addOns, array $data): AddOn
@@ -133,7 +130,6 @@ class DemoAddOnSeeder extends Seeder
                 'default_price' => $data['default_price'],
                 'is_active' => $data['is_active'] ?? true,
                 'sort_order' => $data['sort_order'] ?? 10,
-                'lines' => $data['lines'] ?? [],
             ]);
         }
 
@@ -143,12 +139,11 @@ class DemoAddOnSeeder extends Seeder
             'default_price' => $data['default_price'],
             'is_active' => $data['is_active'] ?? true,
             'sort_order' => $data['sort_order'] ?? 10,
-            'lines' => $data['lines'] ?? [],
         ]);
     }
 
     /**
-     * @param  list<array{add_on_id: int, max_quantity?: int, sort_order?: int, price_override?: ?string}>  $assignments
+     * @param  list<array<string, mixed>>  $assignments
      */
     protected function assign(AddOnServiceInterface $addOns, string $productName, array $assignments): void
     {

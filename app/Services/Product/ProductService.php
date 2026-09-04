@@ -167,8 +167,15 @@ class ProductService implements ProductServiceInterface
         $attributes = $data->toArray();
         unset($attributes['is_featured'], $attributes['is_new'], $attributes['is_bestseller']);
 
+        $existingSlug = null;
+        if ($ignoreId !== null) {
+            $existingSlug = Product::query()->whereKey($ignoreId)->value('slug');
+        }
+
         return array_merge($attributes, [
-            'slug' => $this->uniqueSlug((string) $data->getName(), $ignoreId),
+            'slug' => filled($existingSlug)
+                ? (string) $existingSlug
+                : $this->uniqueSlug((string) $data->getName(), $ignoreId),
             'sku' => $sku,
         ]);
     }

@@ -19,16 +19,41 @@
             'is_available' => is_object($variant) ? (bool) $variant->is_available : (bool) ($variant['is_available'] ?? true),
         ];
     })->all()))
-        ->pad(3, [
+        ->values();
+
+    if ($variantRows->isEmpty()) {
+        $variantRows = collect([[
             'id' => null,
-            'name' => null,
-            'serving_size_value' => null,
+            'name' => 'Regular',
+            'serving_size_value' => '250.000',
             'serving_size_unit' => 'ml',
-            'price' => null,
-            'sort_order' => 0,
+            'price' => '0.00',
+            'sort_order' => 1,
             'is_active' => true,
             'is_available' => true,
-        ])
+        ]]);
+    }
+
+    $addOnRows = collect(old('add_ons', $addOnRows ?? []))
+        ->map(function ($row): array {
+            return [
+                'add_on_id' => is_array($row) ? ($row['add_on_id'] ?? '') : '',
+                'price_override' => is_array($row) ? ($row['price_override'] ?? '') : '',
+                'max_quantity' => is_array($row) ? ($row['max_quantity'] ?? '') : '',
+                'sort_order' => is_array($row) ? ($row['sort_order'] ?? 10) : 10,
+                'is_active' => is_array($row) ? (bool) ($row['is_active'] ?? true) : true,
+                'lines' => collect(is_array($row) ? ($row['lines'] ?? []) : [])
+                    ->map(fn ($line): array => [
+                        'id' => $line['id'] ?? null,
+                        'ingredient_id' => $line['ingredient_id'] ?? '',
+                        'quantity' => $line['quantity'] ?? '',
+                        'measurement_unit' => $line['measurement_unit'] ?? '',
+                        'sort_order' => $line['sort_order'] ?? 1,
+                    ])
+                    ->values()
+                    ->all(),
+            ];
+        })
         ->values();
 @endphp
 
@@ -39,11 +64,16 @@
         </div>
     </div>
     <div class="card-body pt-0">
-        <form method="POST" action="{{ $action }}" class="form" enctype="multipart/form-data">
+        <form method="POST" action="{{ $action }}" class="form" enctype="multipart/form-data" id="product-admin-form">
             @csrf
             @if ($method !== 'POST')
                 @method($method)
             @endif
+
+            <div class="mb-8">
+                <h4 class="fw-bold text-gray-900 mb-1">Basic details</h4>
+                <div class="text-muted fs-7 mb-6">Core product identity, category, and media.</div>
+            </div>
 
             <div class="row g-6 mb-8 internal-form-grid">
                 <div class="col-md-6">
@@ -93,6 +123,7 @@
                     @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text">Slug is generated automatically from the name and preserved on rename.</div>
                 </div>
                 <div class="col-md-4">
                     <label for="sort_order" class="form-label">Sort Order</label>
@@ -200,72 +231,92 @@
 
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-4 mb-6">
                 <div>
-                    <h4 class="fw-bold text-gray-900 mb-1">Sellable Variants</h4>
-                    <div class="text-muted fs-7">Each row is a sellable size/variant with its own serving size and selling price.</div>
+                    <h4 class="fw-bold text-gray-900 mb-1">Variants / sellable sizes</h4>
+                    <div class="text-muted fs-7">Add 1..N sizes. Only submitted rows are validated — no empty placeholders required.</div>
                 </div>
+                <button type="button" class="btn btn-sm btn-light-primary" id="add-variant-row">
+                    <i class="ki-outline ki-plus fs-5"></i> Add Variant
+                </button>
             </div>
+            @error('variants')
+                <div class="text-danger fs-7 mb-4">{{ $message }}</div>
+            @enderror
 
-            <div class="row g-6 mb-8 internal-form-grid">
+            <div id="variant-rows" class="row g-6 mb-8 internal-form-grid">
                 @foreach ($variantRows as $index => $variant)
-                    <div class="col-12">
+                    <div class="col-12 variant-row" data-variant-row>
                         <div class="border border-gray-200 rounded-3 p-5">
+                            <div class="d-flex justify-content-between align-items-start mb-4">
+                                <span class="fw-semibold text-gray-800">Variant</span>
+                                <button type="button" class="btn btn-sm btn-light-danger remove-variant-row" @disabled($variantRows->count() <= 1)>Remove</button>
+                            </div>
                             <input type="hidden" name="variants[{{ $index }}][id]" value="{{ $variant['id'] }}" />
                             <div class="row g-4 align-items-end">
                                 <div class="col-lg-3">
-                                    <label for="variants_{{ $index }}_name" class="required form-label">Variant Name</label>
-                                    <input id="variants_{{ $index }}_name" name="variants[{{ $index }}][name]" type="text" value="{{ $variant['name'] }}" class="form-control @error("variants.$index.name") is-invalid @enderror" />
-                                    @error("variants.$index.name")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <label class="required form-label">Variant / Size</label>
+                                    <input name="variants[{{ $index }}][name]" type="text" value="{{ $variant['name'] }}" class="form-control" />
                                 </div>
                                 <div class="col-lg-2">
-                                    <label for="variants_{{ $index }}_serving_size_value" class="required form-label">Serving Size</label>
-                                    <input id="variants_{{ $index }}_serving_size_value" name="variants[{{ $index }}][serving_size_value]" type="number" min="0" step="0.001" value="{{ $variant['serving_size_value'] }}" class="form-control @error("variants.$index.serving_size_value") is-invalid @enderror" />
-                                    @error("variants.$index.serving_size_value")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <label class="required form-label">Serving Size</label>
+                                    <input name="variants[{{ $index }}][serving_size_value]" type="number" min="0" step="0.001" value="{{ $variant['serving_size_value'] }}" class="form-control" />
                                 </div>
                                 <div class="col-lg-2">
-                                    <label for="variants_{{ $index }}_serving_size_unit" class="required form-label">Unit</label>
-                                    <select id="variants_{{ $index }}_serving_size_unit" name="variants[{{ $index }}][serving_size_unit]" class="form-select @error("variants.$index.serving_size_unit") is-invalid @enderror">
+                                    <label class="required form-label">Serving Unit</label>
+                                    <select name="variants[{{ $index }}][serving_size_unit]" class="form-select">
                                         @foreach ($variantUnitOptions as $value => $label)
                                             <option value="{{ $value }}" @selected($variant['serving_size_unit'] === $value)>{{ $label }}</option>
                                         @endforeach
                                     </select>
-                                    @error("variants.$index.serving_size_unit")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
                                 </div>
                                 <div class="col-lg-2">
-                                    <label for="variants_{{ $index }}_price" class="required form-label">Selling Price</label>
-                                    <input id="variants_{{ $index }}_price" name="variants[{{ $index }}][price]" type="number" min="0" step="0.01" value="{{ $variant['price'] }}" class="form-control @error("variants.$index.price") is-invalid @enderror" />
-                                    @error("variants.$index.price")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <label class="required form-label">Selling Price</label>
+                                    <input name="variants[{{ $index }}][price]" type="number" min="0" step="0.01" value="{{ $variant['price'] }}" class="form-control" />
                                 </div>
                                 <div class="col-lg-1">
-                                    <label for="variants_{{ $index }}_sort_order" class="form-label">Order</label>
-                                    <input id="variants_{{ $index }}_sort_order" name="variants[{{ $index }}][sort_order]" type="number" min="0" step="1" value="{{ $variant['sort_order'] }}" class="form-control @error("variants.$index.sort_order") is-invalid @enderror" />
-                                    @error("variants.$index.sort_order")
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <label class="form-label">Order</label>
+                                    <input name="variants[{{ $index }}][sort_order]" type="number" min="0" step="1" value="{{ $variant['sort_order'] }}" class="form-control" />
                                 </div>
                                 <div class="col-lg-2">
                                     <div class="form-check form-switch form-check-custom form-check-solid mb-3">
                                         <input type="hidden" name="variants[{{ $index }}][is_active]" value="0">
-                                        <input class="form-check-input" type="checkbox" id="variants_{{ $index }}_is_active" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) $variant['is_active'])>
-                                        <label class="form-check-label" for="variants_{{ $index }}_is_active">Active</label>
+                                        <input class="form-check-input" type="checkbox" name="variants[{{ $index }}][is_active]" value="1" @checked((bool) $variant['is_active'])>
+                                        <label class="form-check-label">Active</label>
                                     </div>
                                     <div class="form-check form-switch form-check-custom form-check-solid">
                                         <input type="hidden" name="variants[{{ $index }}][is_available]" value="0">
-                                        <input class="form-check-input" type="checkbox" id="variants_{{ $index }}_is_available" name="variants[{{ $index }}][is_available]" value="1" @checked((bool) $variant['is_available'])>
-                                        <label class="form-check-label" for="variants_{{ $index }}_is_available">Available</label>
+                                        <input class="form-check-input" type="checkbox" name="variants[{{ $index }}][is_available]" value="1" @checked((bool) $variant['is_available'])>
+                                        <label class="form-check-label">Available</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 @endforeach
+            </div>
+
+            <div class="separator separator-dashed my-8"></div>
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-4 mb-6">
+                <div>
+                    <h4 class="fw-bold text-gray-900 mb-1">Add-ons</h4>
+                    <div class="text-muted fs-7">Reusable catalog add-ons with product-specific price and ingredient recipe.</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-light-primary" id="add-addon-row">
+                    <i class="ki-outline ki-plus fs-5"></i> Add Add-on
+                </button>
+            </div>
+
+            <div id="addon-rows" class="row g-6 mb-8">
+                @forelse ($addOnRows as $index => $addOnRow)
+                    @include('administrator.products.partials.add-on-row', [
+                        'index' => $index,
+                        'addOnRow' => $addOnRow,
+                        'addOnOptions' => $addOnOptions,
+                        'ingredientOptions' => $ingredientOptions,
+                        'ingredientUnitOptions' => $ingredientUnitOptions,
+                    ])
+                @empty
+                @endforelse
             </div>
 
             <div class="row g-6 mb-8 internal-form-grid">
@@ -311,3 +362,174 @@
         </form>
     </div>
 </div>
+
+<template id="variant-row-template">
+    <div class="col-12 variant-row" data-variant-row>
+        <div class="border border-gray-200 rounded-3 p-5">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <span class="fw-semibold text-gray-800">Variant</span>
+                <button type="button" class="btn btn-sm btn-light-danger remove-variant-row">Remove</button>
+            </div>
+            <input type="hidden" name="variants[__INDEX__][id]" value="" />
+            <div class="row g-4 align-items-end">
+                <div class="col-lg-3">
+                    <label class="required form-label">Variant / Size</label>
+                    <input name="variants[__INDEX__][name]" type="text" class="form-control" />
+                </div>
+                <div class="col-lg-2">
+                    <label class="required form-label">Serving Size</label>
+                    <input name="variants[__INDEX__][serving_size_value]" type="number" min="0" step="0.001" class="form-control" />
+                </div>
+                <div class="col-lg-2">
+                    <label class="required form-label">Serving Unit</label>
+                    <select name="variants[__INDEX__][serving_size_unit]" class="form-select">
+                        @foreach ($variantUnitOptions as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="required form-label">Selling Price</label>
+                    <input name="variants[__INDEX__][price]" type="number" min="0" step="0.01" class="form-control" />
+                </div>
+                <div class="col-lg-1">
+                    <label class="form-label">Order</label>
+                    <input name="variants[__INDEX__][sort_order]" type="number" min="0" step="1" value="0" class="form-control" />
+                </div>
+                <div class="col-lg-2">
+                    <div class="form-check form-switch form-check-custom form-check-solid mb-3">
+                        <input type="hidden" name="variants[__INDEX__][is_active]" value="0">
+                        <input class="form-check-input" type="checkbox" name="variants[__INDEX__][is_active]" value="1" checked>
+                        <label class="form-check-label">Active</label>
+                    </div>
+                    <div class="form-check form-switch form-check-custom form-check-solid">
+                        <input type="hidden" name="variants[__INDEX__][is_available]" value="0">
+                        <input class="form-check-input" type="checkbox" name="variants[__INDEX__][is_available]" value="1" checked>
+                        <label class="form-check-label">Available</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="addon-row-template">
+    @include('administrator.products.partials.add-on-row', [
+        'index' => '__INDEX__',
+        'addOnRow' => [
+            'add_on_id' => '',
+            'price_override' => '',
+            'max_quantity' => '',
+            'sort_order' => 10,
+            'is_active' => true,
+            'lines' => [['ingredient_id' => '', 'quantity' => '', 'measurement_unit' => '', 'sort_order' => 1]],
+        ],
+        'addOnOptions' => $addOnOptions,
+        'ingredientOptions' => $ingredientOptions,
+        'ingredientUnitOptions' => $ingredientUnitOptions,
+    ])
+</template>
+
+<template id="addon-recipe-line-template">
+    <tr data-addon-recipe-line>
+        <td>
+            <select name="add_ons[__ADDON__][lines][__LINE__][ingredient_id]" class="form-select">
+                <option value="">Select…</option>
+                @foreach ($ingredientOptions as $id => $label)
+                    <option value="{{ $id }}">{{ $label }}</option>
+                @endforeach
+            </select>
+        </td>
+        <td><input type="number" step="0.001" min="0" name="add_ons[__ADDON__][lines][__LINE__][quantity]" class="form-control" /></td>
+        <td>
+            <select name="add_ons[__ADDON__][lines][__LINE__][measurement_unit]" class="form-select">
+                <option value="">Select…</option>
+                @foreach ($ingredientUnitOptions as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+            </select>
+        </td>
+        <td><input type="number" name="add_ons[__ADDON__][lines][__LINE__][sort_order]" value="1" class="form-control" /></td>
+        <td><button type="button" class="btn btn-sm btn-light-danger remove-recipe-line">×</button></td>
+    </tr>
+</template>
+
+@push('scripts')
+<script>
+(() => {
+    const variantContainer = document.getElementById('variant-rows');
+    const addonContainer = document.getElementById('addon-rows');
+    const variantTemplate = document.getElementById('variant-row-template');
+    const addonTemplate = document.getElementById('addon-row-template');
+    const recipeLineTemplate = document.getElementById('addon-recipe-line-template');
+
+    const nextIndex = (container, selector) => container.querySelectorAll(selector).length;
+
+    const refreshVariantRemoveButtons = () => {
+        const rows = variantContainer.querySelectorAll('[data-variant-row]');
+        rows.forEach((row) => {
+            const btn = row.querySelector('.remove-variant-row');
+            if (btn) btn.disabled = rows.length <= 1;
+        });
+    };
+
+    document.getElementById('add-variant-row')?.addEventListener('click', () => {
+        const index = nextIndex(variantContainer, '[data-variant-row]');
+        const html = variantTemplate.innerHTML.replaceAll('__INDEX__', String(index));
+        variantContainer.insertAdjacentHTML('beforeend', html);
+        refreshVariantRemoveButtons();
+    });
+
+    variantContainer?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.remove-variant-row');
+        if (!btn) return;
+        const rows = variantContainer.querySelectorAll('[data-variant-row]');
+        if (rows.length <= 1) return;
+        btn.closest('[data-variant-row]')?.remove();
+        refreshVariantRemoveButtons();
+    });
+
+    document.getElementById('add-addon-row')?.addEventListener('click', () => {
+        const index = nextIndex(addonContainer, '[data-addon-row]');
+        const html = addonTemplate.innerHTML.replaceAll('__INDEX__', String(index));
+        addonContainer.insertAdjacentHTML('beforeend', html);
+    });
+
+    addonContainer?.addEventListener('click', (event) => {
+        const removeAddon = event.target.closest('.remove-addon-row');
+        if (removeAddon) {
+            removeAddon.closest('[data-addon-row]')?.remove();
+            return;
+        }
+
+        const addLine = event.target.closest('.add-recipe-line');
+        if (addLine) {
+            const row = addLine.closest('[data-addon-row]');
+            const addonIndex = row?.dataset.addonIndex ?? '0';
+            const tbody = row.querySelector('[data-addon-recipe-body]');
+            const lineIndex = tbody.querySelectorAll('[data-addon-recipe-line]').length;
+            const html = recipeLineTemplate.innerHTML
+                .replaceAll('__ADDON__', String(addonIndex))
+                .replaceAll('__LINE__', String(lineIndex));
+            tbody.insertAdjacentHTML('beforeend', html);
+            return;
+        }
+
+        const removeLine = event.target.closest('.remove-recipe-line');
+        if (removeLine) {
+            const tbody = removeLine.closest('tbody');
+            if (tbody && tbody.querySelectorAll('[data-addon-recipe-line]').length <= 1) {
+                removeLine.closest('[data-addon-recipe-line]').querySelectorAll('input, select').forEach((el) => {
+                    if (el.type === 'checkbox') el.checked = false;
+                    else el.value = '';
+                });
+                return;
+            }
+            removeLine.closest('[data-addon-recipe-line]')?.remove();
+        }
+    });
+
+    refreshVariantRemoveButtons();
+})();
+</script>
+@endpush

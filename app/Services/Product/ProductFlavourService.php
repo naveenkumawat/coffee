@@ -4,7 +4,9 @@ namespace App\Services\Product;
 
 use App\Models\ProductFlavour;
 use App\Repositories\Product\ProductFlavourRepositoryInterface;
+use App\Support\PublicMedia;
 use App\Transfers\Product\ProductFlavourTransferInterface;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +22,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
     {
         $flavour = DB::transaction(function () use ($data): ProductFlavour {
             $attributes = $data->toArray();
+            unset($attributes['image_path']);
             $attributes['slug'] = $this->uniqueSlug((string) $data->getName());
 
             $flavour = $this->flavours->create($attributes);
@@ -37,7 +40,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
     {
         $productFlavour = DB::transaction(function () use ($productFlavour, $data): ProductFlavour {
             $attributes = $data->toArray();
-            $attributes['slug'] = $this->uniqueSlug((string) $data->getName(), (int) $productFlavour->getKey());
+            unset($attributes['slug'], $attributes['image_path']);
 
             $productFlavour = $this->flavours->update($productFlavour, $attributes);
             $this->flavours->syncCategories($productFlavour, $data->getProductCategoryIds());
@@ -48,6 +51,28 @@ class ProductFlavourService implements ProductFlavourServiceInterface
         $this->catalog->flushPublicCache();
 
         return $productFlavour;
+    }
+
+    public function syncImage(ProductFlavour $flavour, ?UploadedFile $image, bool $remove): ProductFlavour
+    {
+        $previous = $flavour->image_path;
+
+        if ($image !== null) {
+            $path = PublicMedia::store($image, PublicMedia::DIRECTORY_FLAVOURS);
+            $flavour = $this->flavours->update($flavour, ['image_path' => $path]);
+            PublicMedia::deleteManaged($previous);
+            $this->catalog->flushPublicCache();
+
+            return $flavour;
+        }
+
+        if ($remove) {
+            $flavour = $this->flavours->update($flavour, ['image_path' => null]);
+            PublicMedia::deleteManaged($previous);
+            $this->catalog->flushPublicCache();
+        }
+
+        return $flavour;
     }
 
     public function delete(ProductFlavour $productFlavour): void

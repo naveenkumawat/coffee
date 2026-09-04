@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Administrator;
 
+use App\Enums\IngredientUnit;
 use App\Enums\ProductServingUnit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ProductCreateRequest;
 use App\Http\Requests\Product\ProductIndexRequest;
 use App\Http\Requests\Product\ProductUpdateRequest;
+use App\Models\AddOn;
+use App\Models\Ingredient;
 use App\Models\Product;
 use App\Parsers\Product\ProductParserInterface;
 use App\Repositories\Product\ProductCategoryRepositoryInterface;
@@ -62,6 +65,10 @@ class ProductController extends Controller
             'tagOptions' => $this->tags->activeOptions(),
             'variantUnitOptions' => ProductServingUnit::options(),
             'variantRows' => $this->defaultVariantRows(),
+            'addOnOptions' => $this->addOnOptions(),
+            'ingredientOptions' => $this->ingredientOptions(),
+            'ingredientUnitOptions' => IngredientUnit::options(),
+            'addOnRows' => [],
         ]);
     }
 
@@ -69,9 +76,7 @@ class ProductController extends Controller
     {
         $payload = $request->safe()->except(['image', 'remove_image']);
         $product = $this->service->store($this->parser->getTransferFromArrayData($payload));
-        if (array_key_exists('add_ons', $payload)) {
-            $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
-        }
+        $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
         $this->service->syncImage(
             $product,
             $request->file('image'),
@@ -88,7 +93,7 @@ class ProductController extends Controller
     {
         $this->authorize('view', $product);
 
-        $product->load(['category', 'flavours', 'tags', 'variants.recipe.lines.ingredient']);
+        $product->load(['category', 'flavours', 'tags', 'variants.recipe.lines.ingredient', 'productAddOns.recipeLines.ingredient', 'productAddOns.addOn']);
 
         return view('administrator.products.show', [
             'product' => $product,
@@ -100,13 +105,34 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
+        $product->load(['category', 'flavours', 'tags', 'variants', 'productAddOns.recipeLines', 'productAddOns.addOn']);
+
         return view('administrator.products.edit', [
-            'product' => $product->load(['category', 'flavours', 'tags', 'variants']),
+            'product' => $product,
             'categoryOptions' => $this->categoryOptionsForEdit($product),
             'flavourOptions' => $this->flavourOptionsForEdit($product),
             'tagOptions' => $this->tagOptionsForEdit($product),
             'variantUnitOptions' => ProductServingUnit::options(),
             'variantRows' => $product->variants->isNotEmpty() ? $product->variants : $this->defaultVariantRows(),
+            'addOnOptions' => $this->addOnOptions(),
+            'ingredientOptions' => $this->ingredientOptions(),
+            'ingredientUnitOptions' => IngredientUnit::options(),
+            'addOnRows' => $product->productAddOns->map(fn ($assignment): array => [
+                'add_on_id' => $assignment->add_on_id,
+                'price_override' => $assignment->price_override !== null ? (string) $assignment->price_override : '',
+                'max_quantity' => $assignment->max_quantity,
+                'sort_order' => $assignment->sort_order,
+                'is_active' => (bool) $assignment->is_active,
+                'lines' => $assignment->recipeLines->map(fn ($line): array => [
+                    'id' => $line->id,
+                    'ingredient_id' => $line->ingredient_id,
+                    'quantity' => (string) $line->quantity,
+                    'measurement_unit' => $line->measurement_unit instanceof \BackedEnum
+                        ? $line->measurement_unit->value
+                        : (string) $line->measurement_unit,
+                    'sort_order' => $line->sort_order,
+                ])->all(),
+            ])->all(),
         ]);
     }
 
@@ -116,9 +142,7 @@ class ProductController extends Controller
 
         $payload = $request->safe()->except(['image', 'remove_image']);
         $product = $this->service->update($product, $this->parser->getTransferFromArrayData($payload));
-        if (array_key_exists('add_ons', $payload)) {
-            $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
-        }
+        $this->service->syncAddOnAssignments($product, $payload['add_ons'] ?? []);
         $this->service->syncImage(
             $product,
             $request->file('image'),
@@ -182,6 +206,30 @@ class ProductController extends Controller
         asort($options);
 
         return $options;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function addOnOptions(): array
+    {
+        return AddOn::query()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function ingredientOptions(): array
+    {
+        return Ingredient::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
     }
 
     protected function defaultVariantRows(): array

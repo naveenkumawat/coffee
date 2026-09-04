@@ -30,7 +30,7 @@
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Name</th>
                             <th>Default price</th>
-                            <th>Recipe lines</th>
+                            <th>Products</th>
                             <th>Order</th>
                             <th>Status</th>
                             <th class="text-end internal-action-header">Actions</th>
@@ -46,7 +46,7 @@
                                     </div>
                                 </td>
                                 <td>{{ number_format((float) $addOn->default_price, 2) }}</td>
-                                <td>{{ $addOn->recipe_lines_count ?? $addOn->recipeLines()->count() }}</td>
+                                <td>{{ $addOn->products_count ?? $addOn->products()->count() }}</td>
                                 <td>{{ $addOn->sort_order }}</td>
                                 <td>
                                     <span class="badge {{ $addOn->is_active ? 'badge-light-success' : 'badge-light-warning' }}">

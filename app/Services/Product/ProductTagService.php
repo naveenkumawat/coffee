@@ -61,8 +61,15 @@ class ProductTagService implements ProductTagServiceInterface
     protected function prepareAttributes(array $data, ?int $ignoreId = null): array
     {
         $name = trim((string) $data['name']);
-        $requestedSlug = filled($data['slug'] ?? null) ? Str::slug((string) $data['slug']) : Str::slug($name);
-        $slug = $this->uniqueSlug($requestedSlug !== '' ? $requestedSlug : Str::slug($name), $ignoreId);
+
+        if ($ignoreId !== null) {
+            $existingSlug = ProductTag::query()->whereKey($ignoreId)->value('slug');
+            $slug = filled($existingSlug)
+                ? (string) $existingSlug
+                : $this->uniqueSlug(Str::slug($name) ?: 'tag', $ignoreId);
+        } else {
+            $slug = $this->uniqueSlug(Str::slug($name) ?: 'tag');
+        }
 
         return [
             'name' => $name,

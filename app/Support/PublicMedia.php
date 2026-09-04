@@ -17,6 +17,10 @@ class PublicMedia
 
     public const DIRECTORY_CATEGORIES = 'categories';
 
+    public const DIRECTORY_FLAVOURS = 'flavours';
+
+    public const DIRECTORY_ADDONS = 'add-ons';
+
     public const DIRECTORY_WEBSITE = 'website';
 
     /**
@@ -147,7 +151,7 @@ class PublicMedia
     {
         $normalized = ltrim(str_replace('\\', '/', $path), '/');
 
-        foreach ([self::DIRECTORY_PRODUCTS, self::DIRECTORY_CATEGORIES, self::DIRECTORY_WEBSITE] as $directory) {
+        foreach ([self::DIRECTORY_PRODUCTS, self::DIRECTORY_CATEGORIES, self::DIRECTORY_FLAVOURS, self::DIRECTORY_ADDONS, self::DIRECTORY_WEBSITE] as $directory) {
             if (str_starts_with($normalized, $directory.'/')) {
                 return true;
             }

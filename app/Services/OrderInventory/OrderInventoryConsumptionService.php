@@ -6,8 +6,11 @@ use App\Enums\InventoryTransactionType;
 use App\Models\Order;
 use App\Models\OrderInventoryConsumption;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\AddOn\AddOnServiceInterface;
 use App\Services\Inventory\InventoryServiceInterface;
 use App\Transfers\Inventory\InventoryTransactionTransfer;
 use Illuminate\Support\Facades\DB;
@@ -19,13 +22,16 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
 
     public function __construct(
         protected InventoryServiceInterface $inventory,
+        protected AddOnServiceInterface $addOns,
     ) {}
 
     public function consumeForAcceptedOrder(Order $order, ?User $actor = null): void
     {
         $order->loadMissing([
             'items.recipe.lines.ingredient',
-            'items.addOns.addOn.recipeLines.ingredient',
+            'items.addOns.addOn',
+            'items.product',
+            'items.productVariant',
         ]);
 
         if (OrderInventoryConsumption::query()->where('order_id', $order->getKey())->exists()) {
@@ -269,9 +275,18 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
                     continue;
                 }
 
-                $addOn->loadMissing('recipeLines.ingredient');
+                $product = $item->product
+                    ?? ($item->product_id ? Product::query()->find($item->product_id) : null);
+                $variant = $item->productVariant
+                    ?? ($item->product_variant_id ? ProductVariant::query()->find($item->product_variant_id) : null);
 
-                foreach ($addOn->recipeLines as $addOnLine) {
+                if ($product === null) {
+                    continue;
+                }
+
+                $recipeLines = $this->addOns->resolveRecipeLinesForConsumption($product, $variant, $addOn);
+
+                foreach ($recipeLines as $addOnLine) {
                     $ingredient = $addOnLine->ingredient;
                     if ($ingredient === null) {
                         continue;
@@ -301,7 +316,8 @@ class OrderInventoryConsumptionService implements OrderInventoryConsumptionServi
                         'source_type' => 'add_on',
                         'source_id' => (int) $addOnLine->getKey(),
                         'add_on_id' => (int) $addOn->getKey(),
-                        'add_on_recipe_line_id' => (int) $addOnLine->getKey(),
+                        // Legacy column; product/variant recipe lines are tracked via source_id.
+                        'add_on_recipe_line_id' => null,
                         'quantity' => $required,
                         'measurement_unit' => $unit,
                         'base_measurement_unit' => $baseUnit,

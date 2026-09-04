@@ -17,7 +17,6 @@ class ProductTagStoreRequest extends AbstractRequest
     {
         return [
             'name' => ['required', 'string', 'max:80'],
-            'slug' => ['nullable', 'string', 'max:80', Rule::unique('product_tags', 'slug')->whereNull('deleted_at')],
             'style_key' => ['required', 'string', Rule::in(array_keys(ProductTagStyle::options()))],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'is_active' => ['nullable', 'boolean'],

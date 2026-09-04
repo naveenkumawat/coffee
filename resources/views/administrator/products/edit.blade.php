@@ -29,5 +29,9 @@
         'tagOptions' => $tagOptions,
         'variantUnitOptions' => $variantUnitOptions,
         'variantRows' => $variantRows,
+        'addOnOptions' => $addOnOptions,
+        'ingredientOptions' => $ingredientOptions,
+        'ingredientUnitOptions' => $ingredientUnitOptions,
+        'addOnRows' => $addOnRows,
     ])
 @endsection

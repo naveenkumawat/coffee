@@ -19,6 +19,7 @@ class AddOn extends AbstractModel
         'name',
         'slug',
         'description',
+        'image_path',
         'default_price',
         'is_active',
         'sort_order',
@@ -41,9 +42,14 @@ class AddOn extends AbstractModel
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_add_on')
-            ->withPivot(['id', 'price_override', 'max_quantity', 'sort_order'])
+            ->withPivot(['id', 'price_override', 'max_quantity', 'is_active', 'sort_order'])
             ->withTimestamps()
             ->orderByPivot('sort_order');
+    }
+
+    public function productAssignments(): HasMany
+    {
+        return $this->hasMany(ProductAddOn::class);
     }
 
     public function resolvedPrice(?string $priceOverride = null): string

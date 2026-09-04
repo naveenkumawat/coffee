@@ -9,7 +9,6 @@ use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
 use App\Enums\WebsiteSettingKey;
 use App\Models\AddOn;
-use App\Models\AddOnRecipeLine;
 use App\Models\CafeTable;
 use App\Models\DiningSession;
 use App\Models\Ingredient;
@@ -162,18 +161,14 @@ class WaiterMobilePwaPhaseC11Test extends TestCase
             'sort_order' => 1,
         ]);
         $addOn = AddOn::factory()->create(['name' => 'Extra Shot', 'default_price' => '30.00', 'is_active' => true]);
-        AddOnRecipeLine::query()->create([
-            'add_on_id' => $addOn->id,
-            'ingredient_id' => $beans->id,
-            'quantity' => '7.000',
-            'measurement_unit' => IngredientUnit::Gram->value,
-            'base_quantity' => '7.000',
-            'base_measurement_unit' => IngredientUnit::Gram->value,
-            'sort_order' => 1,
-        ]);
         app(AddOnServiceInterface::class)->syncProductAssignments($variant->product, [[
             'add_on_id' => $addOn->id,
             'max_quantity' => 2,
+            'lines' => [[
+                'ingredient_id' => $beans->id,
+                'quantity' => '7.000',
+                'measurement_unit' => IngredientUnit::Gram->value,
+            ]],
         ]]);
 
         Sanctum::actingAs($waiter);

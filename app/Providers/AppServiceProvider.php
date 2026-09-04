@@ -5,11 +5,14 @@ namespace App\Providers;
 use App\Models\AddOn;
 use App\Models\AddOnRecipeLine;
 use App\Models\Product;
+use App\Models\ProductAddOn;
+use App\Models\ProductAddOnRecipeLine;
 use App\Models\ProductCategory;
 use App\Models\ProductFlavour;
 use App\Models\ProductRating;
 use App\Models\ProductTag;
 use App\Models\ProductVariant;
+use App\Models\ProductVariantAddOnRecipeLine;
 use App\Models\Recipe;
 use App\Observers\PublicCatalogCacheObserver;
 use App\Services\Cart\CartServiceInterface;
@@ -94,6 +97,9 @@ class AppServiceProvider extends ServiceProvider
         Recipe::observe($observer);
         AddOn::observe($observer);
         AddOnRecipeLine::observe($observer);
+        ProductAddOn::observe($observer);
+        ProductAddOnRecipeLine::observe($observer);
+        ProductVariantAddOnRecipeLine::observe($observer);
     }
 
     protected function configureRateLimiting(): void

@@ -18,13 +18,7 @@
                     @error('name')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
-                </div>
-                <div class="col-md-6">
-                    <label for="slug" class="form-label">Slug</label>
-                    <input id="slug" name="slug" type="text" value="{{ old('slug', $tag->slug) }}" class="form-control @error('slug') is-invalid @enderror" placeholder="auto-from-name" />
-                    @error('slug')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <div class="form-text">Slug is generated automatically and preserved on rename.</div>
                 </div>
                 <div class="col-md-6">
                     <label for="style_key" class="required form-label">Style</label>

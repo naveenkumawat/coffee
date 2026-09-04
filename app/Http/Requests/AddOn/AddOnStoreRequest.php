@@ -3,7 +3,7 @@
 namespace App\Http\Requests\AddOn;
 
 use App\Http\Requests\AbstractRequest;
-use Illuminate\Validation\Rule;
+use App\Support\PublicMedia;
 
 class AddOnStoreRequest extends AbstractRequest
 {
@@ -20,12 +20,9 @@ class AddOnStoreRequest extends AbstractRequest
             'default_price' => ['required', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:65535'],
-            'lines' => ['sometimes', 'array'],
-            'lines.*.id' => ['nullable', 'integer'],
-            'lines.*.ingredient_id' => ['required', 'integer', Rule::exists('ingredients', 'id')->whereNull('deleted_at')],
-            'lines.*.quantity' => ['required', 'numeric', 'gt:0'],
-            'lines.*.measurement_unit' => ['required', 'string', 'max:20'],
-            'lines.*.sort_order' => ['nullable', 'integer', 'min:0'],
+            'image_path' => ['nullable', 'string', 'max:255'],
+            'image' => PublicMedia::uploadRules(),
+            'remove_image' => ['nullable', 'boolean'],
         ];
     }
 }
