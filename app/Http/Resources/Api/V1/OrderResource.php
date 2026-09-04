@@ -8,6 +8,7 @@ use App\Services\Invoice\OrderInvoiceServiceInterface;
 use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
+use App\Support\CustomerDiscountLines;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,6 +54,14 @@ class OrderResource extends JsonResource
                 : null,
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
+            'discounts' => array_values(array_merge(
+                $order->relationLoaded('promotions')
+                    ? CustomerDiscountLines::fromPromotionSnapshots($order->promotions)
+                    : [],
+                $order->relationLoaded('rewardRedemptions')
+                    ? CustomerDiscountLines::fromReferralCouponRedemptions($order->rewardRedemptions)
+                    : [],
+            )),
             'loyalty_discount_amount' => $order->loyalty_discount_amount ?? '0.00',
             'loyalty_reward' => ($order->loyalty_reward_id !== null || bccomp((string) ($order->loyalty_discount_amount ?? '0'), '0', 2) > 0)
                 ? [

@@ -39,6 +39,7 @@ use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Support\AddOnConfiguration;
+use App\Support\CustomerDiscountLines;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -302,6 +303,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         return [
             'subtotal' => number_format((float) $subtotal, 2, '.', ''),
             'discount' => $discount,
+            'discounts' => [],
             'taxable' => $tax->taxableAmount,
             'tax' => $tax->taxAmount,
             'total' => $total,
@@ -319,6 +321,7 @@ class DiningSessionService implements DiningSessionServiceInterface
      * @return array{
      *     subtotal: string,
      *     discount: string,
+     *     discounts: list<array{name: string, code: ?string, type: string, amount: string}>,
      *     taxable: string,
      *     tax: string,
      *     total: string,
@@ -346,6 +349,7 @@ class DiningSessionService implements DiningSessionServiceInterface
      * @return array{
      *     subtotal: string,
      *     discount: string,
+     *     discounts: list<array{name: string, code: ?string, type: string, amount: string}>,
      *     taxable: string,
      *     tax: string,
      *     total: string,
@@ -370,6 +374,7 @@ class DiningSessionService implements DiningSessionServiceInterface
         return [
             'subtotal' => number_format((float) $session->subtotal_amount, 2, '.', ''),
             'discount' => number_format((float) ($session->discount_amount ?? 0), 2, '.', ''),
+            'discounts' => $this->finalBillDiscountLines($session),
             'taxable' => number_format((float) ($session->taxable_amount ?? 0), 2, '.', ''),
             'tax' => number_format((float) ($session->tax_amount ?? 0), 2, '.', ''),
             'total' => number_format((float) $session->total_amount, 2, '.', ''),
@@ -1439,6 +1444,16 @@ class DiningSessionService implements DiningSessionServiceInterface
         }
 
         return array_values($aggregated);
+    }
+
+    /**
+     * @return list<array{name: string, code: ?string, type: string, amount: string}>
+     */
+    protected function finalBillDiscountLines(DiningSession $session): array
+    {
+        $session->loadMissing('promotions');
+
+        return CustomerDiscountLines::fromPromotionSnapshots($session->promotions);
     }
 
     protected function normalizePaymentTransactionId(string $value): ?string

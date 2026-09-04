@@ -55,6 +55,7 @@ export interface OrderPromotion {
   name: string;
   code?: string | null;
   amount: string;
+  type?: string;
 }
 
 export interface OrderLoyaltyReward {
@@ -103,6 +104,8 @@ export interface Order {
   delivery_disclaimer: string | null;
   subtotal: string;
   discount_total: string;
+  /** Structured discount lines (promotions + referral coupons). Prefer over generic Discount. */
+  discounts?: OrderPromotion[];
   loyalty_discount_amount?: string;
   loyalty_reward?: OrderLoyaltyReward | null;
   loyalty_feedback?: OrderLoyaltyFeedback | null;

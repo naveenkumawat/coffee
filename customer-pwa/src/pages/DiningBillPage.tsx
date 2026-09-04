@@ -9,9 +9,11 @@ import {
 } from '../api/dining';
 import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { PageHeader } from '../components/common/PageHeader';
+import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
 import { useToastStore } from '../stores/toastStore';
 import { CheckoutPaymentInstructions, CheckoutPaymentMethodOption } from '../types/checkout';
 import { copyTextToClipboard } from '../utils/clipboard';
+import { diningDiscountLines } from '../utils/discounts';
 import { formatCurrency } from '../utils/format';
 import { resolveCatalogMediaUrl } from '../utils/images';
 import {
@@ -213,7 +215,7 @@ export function DiningBillPage() {
   }
 
   const totals = session.final_bill ?? session.totals;
-  const taxLabel = totals.tax_label ?? 'GST';
+  const discountLines = diningDiscountLines(session);
 
   return (
     <div className="page-container dining-bill-page">
@@ -245,28 +247,26 @@ export function DiningBillPage() {
             </p>
           )}
 
-          <dl className="checkout-totals dining-bill-totals">
-            <div>
-              <dt>Items subtotal</dt>
-              <dd>{formatCurrency(totals.subtotal)}</dd>
-            </div>
-            {Number(totals.discount) > 0 ? (
-              <div>
-                <dt>Discount</dt>
-                <dd>-{formatCurrency(totals.discount)}</dd>
-              </div>
-            ) : null}
-            {totals.tax_enabled !== false && Number(totals.tax) > 0 ? (
-              <div>
-                <dt>{taxLabel}</dt>
-                <dd>{formatCurrency(totals.tax)}</dd>
-              </div>
-            ) : null}
-            <div className="is-total">
-              <dt>Total</dt>
-              <dd>{formatCurrency(totals.total)}</dd>
-            </div>
-          </dl>
+          <OrderTaxBreakdown
+            subtotal={totals.subtotal}
+            total={totals.total}
+            tax={
+              totals.tax_enabled === false || Number(totals.tax) <= 0
+                ? null
+                : {
+                    enabled: true,
+                    label: totals.tax_label ?? 'GST',
+                    percent: totals.tax_percent ?? '0',
+                    inclusive: false,
+                    taxable_amount: totals.subtotal,
+                    amount: totals.tax,
+                  }
+            }
+            discounts={discountLines}
+            discountTotal={totals.discount}
+            totalLabel="Total"
+            showSavingsNote={false}
+          />
         </section>
 
         {paid ? (

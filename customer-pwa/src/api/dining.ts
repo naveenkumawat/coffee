@@ -90,6 +90,7 @@ export interface DiningSession {
   totals: {
     subtotal: string;
     discount: string;
+    discounts?: Array<{ name: string; code?: string | null; type?: string; amount: string }>;
     tax: string;
     total: string;
     finalized?: boolean;
@@ -100,18 +101,22 @@ export interface DiningSession {
   running_bill?: {
     subtotal: string;
     discount: string;
+    discounts?: Array<{ name: string; code?: string | null; type?: string; amount: string }>;
     tax: string;
     total: string;
   } | null;
   final_bill?: {
     subtotal: string;
     discount: string;
+    discounts?: Array<{ name: string; code?: string | null; type?: string; amount: string }>;
     tax: string;
     total: string;
     tax_label?: string | null;
     tax_percent?: string | null;
     tax_enabled?: boolean;
   } | null;
+  discounts?: Array<{ name: string; code?: string | null; type?: string; amount: string }>;
+  promotions?: Array<{ name: string; code?: string | null; amount: string }>;
   drafts: DiningDraftItem[];
   rounds: DiningRound[];
   payment_method?: string | null;

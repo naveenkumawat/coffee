@@ -16,6 +16,7 @@ use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -70,7 +71,7 @@ class CustomerDiningController extends Controller
         );
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Dining session started.',
             201,
         );
@@ -87,7 +88,7 @@ class CustomerDiningController extends Controller
         $this->authorize('view', $session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Active dining session retrieved.',
         );
     }
@@ -97,7 +98,7 @@ class CustomerDiningController extends Controller
         $this->authorize('view', $session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Dining session retrieved.',
             200,
             $this->paymentMeta($session, request()->user()),
@@ -147,7 +148,7 @@ class CustomerDiningController extends Controller
         $this->dining->updateDraftItem($session, $draft, (int) $data['quantity']);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Draft item updated.',
         );
     }
@@ -158,7 +159,7 @@ class CustomerDiningController extends Controller
         $this->dining->removeDraftItem($session, $draft);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Draft item removed.',
         );
     }
@@ -169,7 +170,7 @@ class CustomerDiningController extends Controller
         $this->dining->clearDrafts($session);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Draft cleared.',
         );
     }
@@ -185,7 +186,7 @@ class CustomerDiningController extends Controller
         $this->dining->placeRound($session, $request->user(), $data['customer_notes'] ?? null);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->fresh()->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Dining round placed.',
             201,
         );
@@ -197,7 +198,7 @@ class CustomerDiningController extends Controller
         $session = $this->dining->requestBill($session, $request->user());
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Bill requested.',
         );
     }
@@ -213,7 +214,7 @@ class CustomerDiningController extends Controller
         $session = $this->dining->setPaymentMethod($session, $data['payment_method']);
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Payment method saved.',
             200,
             $this->paymentMeta($session, $request->user()),
@@ -231,7 +232,7 @@ class CustomerDiningController extends Controller
         );
 
         return $this->respondWithResource(
-            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
+            new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns', 'promotions'])),
             'Transaction ID submitted for verification.',
             200,
             $this->paymentMeta($session, $request->user()),

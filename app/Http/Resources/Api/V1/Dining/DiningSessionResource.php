@@ -58,6 +58,7 @@ class DiningSessionResource extends JsonResource
             'totals' => [
                 'subtotal' => $bill['subtotal'],
                 'discount' => $bill['discount'],
+                'discounts' => $bill['discounts'] ?? [],
                 'tax' => $bill['tax'],
                 'total' => $bill['total'],
                 'finalized' => (bool) ($bill['finalized'] ?? false),
@@ -67,6 +68,16 @@ class DiningSessionResource extends JsonResource
             ],
             'running_bill' => ($bill['finalized'] ?? false) ? null : $bill,
             'final_bill' => ($bill['finalized'] ?? false) ? $bill : null,
+            'promotions' => $session->relationLoaded('promotions')
+                ? $session->promotions->map(static fn ($promotion): array => [
+                    'name' => filled($promotion->name_snapshot) ? (string) $promotion->name_snapshot : 'Discount',
+                    'code' => $promotion->code_snapshot,
+                    'discount_type' => $promotion->discount_type_snapshot?->value ?? $promotion->discount_type_snapshot,
+                    'discount_value' => $promotion->discount_value_snapshot,
+                    'amount' => number_format((float) $promotion->discount_amount, 2, '.', ''),
+                ])->values()->all()
+                : ($bill['discounts'] ?? []),
+            'discounts' => $bill['discounts'] ?? [],
             'drafts' => $session->relationLoaded('drafts')
                 ? $session->drafts->map(static function ($draft): array {
                     $addOns = $draft->relationLoaded('draftAddOns')

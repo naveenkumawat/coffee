@@ -50,7 +50,21 @@
     </table>
     <table class="totals">
         <tr><td>Subtotal</td><td>{{ $bill['subtotal'] }}</td></tr>
-        <tr><td>Discount</td><td>{{ $bill['discount'] }}</td></tr>
+        @forelse (($bill['discounts'] ?? []) as $discountLine)
+            <tr>
+                <td>
+                    {{ $discountLine['name'] ?? 'Discount' }}
+                    @if (! empty($discountLine['code']))
+                        ({{ $discountLine['code'] }})
+                    @endif
+                </td>
+                <td>−{{ $discountLine['amount'] ?? $bill['discount'] }}</td>
+            </tr>
+        @empty
+            @if (bccomp((string) ($bill['discount'] ?? '0'), '0', 2) > 0)
+                <tr><td>Discount</td><td>−{{ $bill['discount'] }}</td></tr>
+            @endif
+        @endforelse
         <tr><td>Tax</td><td>{{ $bill['tax'] }}</td></tr>
         <tr><td><strong>Total</strong></td><td><strong>{{ $bill['total'] }}</strong></td></tr>
     </table>

@@ -274,10 +274,13 @@ test('dining bill payment uses catalog methods and UTR not screenshot upload', (
   assert.match(bill, /Transaction ID \/ UTR/);
   assert.match(bill, /Verification Pending/);
   assert.match(bill, /Back to table/);
+  assert.match(bill, /OrderTaxBreakdown/);
+  assert.match(bill, /diningDiscountLines/);
   assert.doesNotMatch(bill, /type=["']file["']/);
   assert.doesNotMatch(bill, /Upload proof/i);
   assert.doesNotMatch(bill, /UPI payment proof/i);
   assert.doesNotMatch(bill, /clearOrderingContext/);
+  assert.doesNotMatch(bill, /<dt>Discount<\/dt>/);
 
   const diningApi = readSrc('api/dining.ts');
   assert.match(diningApi, /submitDiningPaymentTransactionId/);
@@ -287,6 +290,18 @@ test('dining bill payment uses catalog methods and UTR not screenshot upload', (
   const router = readSrc('routes/router.tsx');
   assert.match(router, /DiningBillPage/);
   assert.match(router, /pages\/DiningBillPage/);
+});
+
+test('shared discount helpers prefer named backend lines over generic Discount', () => {
+  const source = readSrc('utils/discounts.ts');
+  assert.match(source, /export function discountDisplayLabel/);
+  assert.match(source, /export function orderDiscountLines/);
+  assert.match(source, /export function diningDiscountLines/);
+  assert.match(source, /order\.discounts/);
+  assert.match(source, /name: 'Discount'/);
+
+  const breakdown = readSrc('components/orders/OrderTaxBreakdown.tsx');
+  assert.match(breakdown, /discountDisplayLabel/);
 });
 
 test('route error page logs the real error in development', () => {

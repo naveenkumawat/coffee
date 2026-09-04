@@ -49,6 +49,7 @@ interface DiningSessionServiceInterface
      * @return array{
      *     subtotal: string,
      *     discount: string,
+     *     discounts: list<array{name: string, code: ?string, type: string, amount: string}>,
      *     taxable: string,
      *     tax: string,
      *     total: string,
@@ -65,6 +66,7 @@ interface DiningSessionServiceInterface
      * @return array{
      *     subtotal: string,
      *     discount: string,
+     *     discounts: list<array{name: string, code: ?string, type: string, amount: string}>,
      *     taxable: string,
      *     tax: string,
      *     total: string,
@@ -82,6 +84,7 @@ interface DiningSessionServiceInterface
      * @return array{
      *     subtotal: string,
      *     discount: string,
+     *     discounts: list<array{name: string, code: ?string, type: string, amount: string}>,
      *     taxable: string,
      *     tax: string,
      *     total: string,

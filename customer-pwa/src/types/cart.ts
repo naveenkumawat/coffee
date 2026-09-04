@@ -49,6 +49,7 @@ export interface CartDiscount {
   promotion_id?: number;
   name: string;
   code?: string | null;
+  type?: string;
   discount_type?: string;
   discount_value?: string;
   amount: string;

@@ -6,7 +6,7 @@ import { CartSummary } from '../../types/cart';
 import { CheckoutFulfilmentMethod } from '../../types/checkout';
 import { trackBehaviour } from '../../tracking/behaviourTracker';
 import { formatCurrency } from '../../utils/format';
-import { cartDiscounts, hasDiscountSavings } from '../../utils/discounts';
+import { cartDiscounts, discountDisplayLabel, hasDiscountSavings } from '../../utils/discounts';
 import { getFieldError } from '../../utils/forms';
 import { FormFeedback } from '../forms/FormFeedback';
 
@@ -186,7 +186,7 @@ export function CartOffersSection({
         <ul className="cart-offer-list">
           {discounts.map((discount) => (
             <li key={`${discount.promotion_id ?? discount.name}-${discount.code ?? 'auto'}`}>
-              <span>✓ {discount.name} applied</span>
+              <span>✓ {discountDisplayLabel(discount)} applied</span>
               <strong>−{formatCurrency(discount.amount)}</strong>
             </li>
           ))}

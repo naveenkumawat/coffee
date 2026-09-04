@@ -1,6 +1,6 @@
 import { CartDiscount } from '../../types/cart';
 import { formatCurrency } from '../../utils/format';
-import { discountAmount, hasDiscountSavings } from '../../utils/discounts';
+import { discountAmount, discountDisplayLabel, hasDiscountSavings } from '../../utils/discounts';
 
 export interface TaxBreakdownValue {
   enabled: boolean;
@@ -63,7 +63,7 @@ export function OrderTaxBreakdown({
       </div>
       {lines.map((discount, index) => (
         <div key={`${discount.name}-${discount.code ?? index}`} className="summary-discount-row">
-          <span>{discount.name}</span>
+          <span>{discountDisplayLabel(discount)}</span>
           <strong>−{formatCurrency(discount.amount)}</strong>
         </div>
       ))}

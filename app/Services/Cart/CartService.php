@@ -20,6 +20,7 @@ use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Support\AddOnConfiguration;
+use App\Support\CustomerDiscountLines;
 use App\Transfers\Cart\CartItemTransfer;
 use App\Transfers\Cart\CartItemTransferInterface;
 use Illuminate\Support\Facades\Cache;
@@ -504,11 +505,16 @@ class CartService implements CartServiceInterface
 
         $tax = $this->taxCalculator->calculateForPayableAndGstBasis($payable, $gstBasis);
 
+        $discountLines = array_values(array_merge(
+            CustomerDiscountLines::fromPromotionEvaluation($promotionResult['discounts']),
+            CustomerDiscountLines::fromCartReferralRewards($referralRewards),
+        ));
+
         return [
             'item_count' => $itemCount,
             'subtotal' => $subtotal,
             'discount_total' => $discountTotal,
-            'discounts' => $promotionResult['discounts'],
+            'discounts' => $discountLines,
             'promo_code' => $cart->promo_code,
             'promo_error' => $promotionResult['promo_error'],
             'free_drink_benefit' => $freeDrinkBenefit,
