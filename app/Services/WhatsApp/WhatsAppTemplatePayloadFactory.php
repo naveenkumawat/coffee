@@ -133,7 +133,7 @@ class WhatsAppTemplatePayloadFactory
             'order_placed', 'order_placed_cash' => [$name, $number, $total, $fulfilment, $business],
             'payment_proof_received' => [$name, $number, $business],
             'payment_confirmed', 'cash_received' => [$name, $number, $business],
-            'payment_proof_rejected' => [$name, $number, $reason ?: 'Please upload a clearer payment screenshot.', $business],
+            'payment_proof_rejected' => [$name, $number, $reason ?: 'Please check your UPI Transaction ID / UTR and submit again.', $business],
             'order_accepted' => [$name, $number, $business],
             'order_preparing' => [$name, $number, $business],
             'order_ready_pickup' => [

@@ -1,7 +1,7 @@
-import { ChangeEvent, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, getApiBaseUrl } from '../../api/client';
-import { fetchOrder, uploadPaymentProof } from '../../api/orders';
+import { fetchOrder, submitPaymentTransactionId } from '../../api/orders';
 import { initiateOrderPayment, verifyPaymentReturn } from '../../api/payments';
 import { Order, OrderPaymentInstructions } from '../../types/order';
 import { copyTextToClipboard } from '../../utils/clipboard';
@@ -19,6 +19,9 @@ interface PaymentInstructionsCardProps {
   secondaryLabel?: string;
   showSecondaryAction?: boolean;
   onOrderUpdated?: (order: Order) => void;
+  onCancelOrder?: () => void;
+  isCancelling?: boolean;
+  cancelError?: string | null;
 }
 
 type CopyField = 'order' | 'upi' | 'phone';
@@ -51,7 +54,7 @@ async function loadRazorpayScript(): Promise<boolean> {
 function toWhatsappHref(number: string, orderNumber: string): string {
   const normalized = number.replace(/[^\d+]/g, '');
   const message = encodeURIComponent(
-    `Hi, I have completed the payment for order ${orderNumber}. Sharing the screenshot here.`,
+    `Hi, I have completed the UPI payment for order ${orderNumber}. Sharing my Transaction ID / UTR here.`,
   );
 
   return `https://wa.me/${normalized.replace(/^\+/, '')}?text=${message}`;
@@ -75,30 +78,34 @@ export function PaymentInstructionsCard({
   secondaryLabel = 'Track order',
   showSecondaryAction = true,
   onOrderUpdated,
+  onCancelOrder,
+  isCancelling = false,
+  cancelError = null,
 }: PaymentInstructionsCardProps) {
   const whatsappNumber = payment?.whatsapp_number?.trim() ?? '';
   const upiId = payment?.upi_id?.trim() ?? '';
-  const paymentPhone = payment?.phone?.trim() ?? '';
   const qrPath = payment?.qr_image_path?.trim() ?? '';
   const qrSrc = qrPath ? resolveCatalogMediaUrl(qrPath, '') : '';
   const instructions = payment?.instructions?.trim() ?? '';
   const toastSuccess = useToastStore((state) => state.success);
   const toastError = useToastStore((state) => state.error);
   const [copiedField, setCopiedField] = useState<CopyField | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isSubmittingTxn, setIsSubmittingTxn] = useState(false);
+  const [txnError, setTxnError] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState(
+    order.payment_transaction_id ?? order.payment_proof?.transaction_id ?? '',
+  );
   const [isInitiatingOnline, setIsInitiatingOnline] = useState(false);
   const [isVerifyingOnline, setIsVerifyingOnline] = useState(false);
   const [onlineClient, setOnlineClient] = useState<Record<string, unknown> | null>(null);
   const [onlineError, setOnlineError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const proof = order.payment_proof;
   const presentation = paymentStatePresentation(order);
   const awaitingReview = presentation.state === 'upi_awaiting_review';
   const rejected = presentation.state === 'upi_rejected';
   const paymentConfirmed = presentation.state === 'upi_confirmed' || presentation.state === 'cash_confirmed';
-  const canUpload = presentation.canUploadProof;
+  const canSubmitTransaction = presentation.canSubmitTransaction;
 
   async function handleCopy(field: CopyField, value: string): Promise<void> {
     if (!value.trim()) {
@@ -116,30 +123,30 @@ export function PaymentInstructionsCard({
     }
   }
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>): Promise<void> {
-    const file = event.target.files?.[0];
-    event.target.value = '';
+  async function handleSubmitTransaction(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
 
-    if (!file || isUploading) {
+    if (isSubmittingTxn || !canSubmitTransaction) {
       return;
     }
 
-    setIsUploading(true);
-    setUploadError(null);
+    setIsSubmittingTxn(true);
+    setTxnError(null);
 
     try {
-      const response = await uploadPaymentProof(order.id, file);
+      const response = await submitPaymentTransactionId(order.id, transactionId);
       onOrderUpdated?.(response.data);
-      toastSuccess('Payment screenshot uploaded');
+      setTransactionId(response.data.payment_transaction_id ?? transactionId);
+      toastSuccess('Transaction ID submitted for verification');
     } catch (error) {
       const message =
         error instanceof ApiError
-          ? error.errors.payment_proof?.[0] ?? error.message
-          : 'Unable to upload payment screenshot.';
-      setUploadError(message);
+          ? error.errors.transaction_id?.[0] ?? error.message
+          : 'Unable to submit Transaction ID.';
+      setTxnError(message);
       toastError(message);
     } finally {
-      setIsUploading(false);
+      setIsSubmittingTxn(false);
     }
   }
 
@@ -338,15 +345,16 @@ export function PaymentInstructionsCard({
   return (
     <section className="payment-card motion-enter">
       <div className="payment-card-header">
-        <OrderStatusBadge
-          status="pending_payment"
-          label={presentation.badge}
-        />
+        <OrderStatusBadge status="pending_payment" label={presentation.badge} />
         <h2>{presentation.title}</h2>
         <p>{presentation.body}</p>
       </div>
 
       <div className="payment-meta-grid">
+        <div>
+          <span>Amount to pay</span>
+          <strong className="payment-amount">{formatCurrency(order.total_amount)}</strong>
+        </div>
         <div className="payment-meta-row">
           <div>
             <span>Order number</span>
@@ -361,22 +369,12 @@ export function PaymentInstructionsCard({
             {copiedField === 'order' ? 'Copied' : 'Copy'}
           </button>
         </div>
-        <div>
-          <span>Amount due</span>
-          <strong className="payment-amount">{formatCurrency(order.total_amount)}</strong>
-        </div>
-        {payment?.display_name ? (
-          <div>
-            <span>Pay to</span>
-            <strong>{payment.display_name}</strong>
-          </div>
-        ) : null}
       </div>
 
       {upiId ? (
         <div className="payment-detail-block payment-copy-row">
           <div className="payment-copy-value">
-            <span>UPI</span>
+            <span>Pay to</span>
             <strong className="user-select-text">{upiId}</strong>
           </div>
           <button
@@ -388,22 +386,10 @@ export function PaymentInstructionsCard({
             {copiedField === 'upi' ? 'Copied' : 'Copy'}
           </button>
         </div>
-      ) : null}
-
-      {paymentPhone ? (
-        <div className="payment-detail-block payment-copy-row">
-          <div className="payment-copy-value">
-            <span>Phone</span>
-            <strong className="user-select-text">{paymentPhone}</strong>
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline-dark btn-sm rounded-pill payment-copy-btn"
-            aria-label="Copy payment phone number"
-            onClick={() => void handleCopy('phone', paymentPhone)}
-          >
-            {copiedField === 'phone' ? 'Copied' : 'Copy'}
-          </button>
+      ) : payment?.display_name ? (
+        <div className="payment-detail-block">
+          <span>Pay to</span>
+          <strong>{payment.display_name}</strong>
         </div>
       ) : null}
 
@@ -419,18 +405,13 @@ export function PaymentInstructionsCard({
           <span>Instructions</span>
           <p>{instructions}</p>
         </div>
-      ) : (
-        <div className="payment-detail-block">
-          <span>Instructions</span>
-          <p>Pay the amount due via UPI or phone, then upload your screenshot with the order number.</p>
-        </div>
-      )}
+      ) : null}
 
       {rejected && proof?.rejection_notes ? (
         <div className="payment-reminder" role="status">
           <i className="bi bi-exclamation-triangle" aria-hidden="true"></i>
           <div>
-            <strong>Replacement requested</strong>
+            <strong>Not verified</strong>
             <p>{proof.rejection_notes}</p>
           </div>
         </div>
@@ -440,66 +421,73 @@ export function PaymentInstructionsCard({
         <div className="payment-reminder" role="status">
           <i className="bi bi-hourglass-split" aria-hidden="true"></i>
           <div>
-            <strong>Payment proof submitted</strong>
+            <strong>Payment verification pending</strong>
             <p>
-              Waiting for cafe confirmation
-              {proof?.uploaded_at ? ` · uploaded ${new Date(proof.uploaded_at).toLocaleString()}` : ''}.
+              We&apos;ve received your transaction ID
+              {proof?.transaction_id || order.payment_transaction_id
+                ? ` (${proof?.transaction_id || order.payment_transaction_id})`
+                : ''}
+              . Your order will be confirmed once the payment is verified.
             </p>
           </div>
         </div>
       ) : null}
 
+      {canSubmitTransaction ? (
+        <form className="payment-detail-block" onSubmit={(event) => void handleSubmitTransaction(event)}>
+          <span>Already paid?</span>
+          <p className="mb-3">
+            Enter the UPI Transaction ID / UTR from your payment app. We&apos;ll verify it against the payment
+            received.
+          </p>
+          <label className="form-label" htmlFor={`upi-txn-${order.id}`}>
+            UPI Transaction ID / UTR
+          </label>
+          <input
+            id={`upi-txn-${order.id}`}
+            type="text"
+            className="form-control mb-3"
+            value={transactionId}
+            autoComplete="off"
+            spellCheck={false}
+            inputMode="text"
+            placeholder="e.g. 312345678901"
+            onChange={(event) => setTransactionId(event.target.value)}
+          />
+          {txnError ? (
+            <p className="form-error-text" role="alert">
+              {txnError}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isSubmittingTxn || transactionId.trim().length < 6}
+            aria-busy={isSubmittingTxn}
+          >
+            {isSubmittingTxn
+              ? 'Submitting…'
+              : presentation.primaryAction === 'replace_transaction'
+                ? 'Resubmit for Verification'
+                : 'Submit for Verification'}
+          </button>
+        </form>
+      ) : null}
+
       <div className="payment-actions">
         {awaitingReview && showSecondaryAction ? (
-          <Link to={secondaryHref} className="btn btn-primary btn-lg rounded-pill">
+          <Link to={secondaryHref} className="btn btn-outline-dark rounded-pill w-100">
             {secondaryLabel}
           </Link>
         ) : null}
 
-        {canUpload ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="visually-hidden"
-              onChange={(event) => void handleFileChange(event)}
-            />
-            <button
-              type="button"
-              className={
-                awaitingReview
-                  ? 'btn btn-outline-dark btn-lg rounded-pill'
-                  : 'btn btn-primary btn-lg rounded-pill'
-              }
-              disabled={isUploading}
-              aria-busy={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {isUploading
-                ? 'Uploading…'
-                : presentation.primaryAction === 'replace_proof' || proof?.uploaded
-                  ? 'Replace payment screenshot'
-                  : 'Upload payment screenshot'}
-            </button>
-            {uploadError ? (
-              <p className="form-error-text" role="alert">
-                {uploadError}
-              </p>
-            ) : null}
-          </>
-        ) : null}
-
-        {!awaitingReview && showSecondaryAction ? (
-          <Link
-            to={secondaryHref}
-            className={canUpload ? 'btn btn-outline-dark btn-lg rounded-pill' : 'btn btn-primary btn-lg rounded-pill'}
-          >
+        {!awaitingReview && showSecondaryAction && !canSubmitTransaction ? (
+          <Link to={secondaryHref} className="btn btn-primary btn-lg rounded-pill w-100">
             {secondaryLabel}
           </Link>
         ) : null}
 
-        {whatsappNumber && presentation.state === 'upi_pending' ? (
+        {whatsappNumber && (presentation.state === 'upi_pending' || rejected) ? (
           <a
             href={toWhatsappHref(whatsappNumber, order.order_number)}
             target="_blank"
@@ -510,15 +498,29 @@ export function PaymentInstructionsCard({
           </a>
         ) : null}
 
-        {proof?.uploaded ? (
+        {proof?.has_screenshot ? (
           <a
             href={`${getApiBaseUrl()}/orders/${order.id}/payment-proof`}
             target="_blank"
             rel="noreferrer"
             className="link-button payment-view-proof"
           >
-            View uploaded screenshot
+            View historical screenshot
           </a>
+        ) : null}
+
+        {onCancelOrder && order.can_cancel && isPendingPayment(order.status) ? (
+          <div className="mt-2">
+            {cancelError ? <p className="form-feedback is-error">{cancelError}</p> : null}
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm rounded-pill w-100"
+              disabled={isCancelling}
+              onClick={onCancelOrder}
+            >
+              {isCancelling ? 'Cancelling…' : 'Cancel Order'}
+            </button>
+          </div>
         ) : null}
       </div>
     </section>

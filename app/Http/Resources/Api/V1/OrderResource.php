@@ -99,22 +99,31 @@ class OrderResource extends JsonResource
             'payment_status' => $order->payment_status?->value,
             'payment_status_label' => $order->payment_status?->label(),
             'payment_reference' => $order->payment_reference,
-            'payment_proof' => $order->isCashPayment()
+            'payment_transaction_id' => $order->isCashPayment() || $order->payment_method?->isOnline()
+                ? null
+                : $order->payment_transaction_id,
+            'payment_proof' => $order->isCashPayment() || $order->payment_method?->isOnline()
                 ? [
                     'uploaded' => false,
                     'uploaded_at' => null,
                     'mime' => null,
                     'size' => null,
                     'can_upload' => false,
+                    'can_submit_transaction' => false,
+                    'transaction_id' => null,
                     'rejection_notes' => null,
+                    'has_screenshot' => false,
                 ]
                 : [
-                    'uploaded' => $order->hasPaymentProof(),
+                    'uploaded' => $order->hasManualPaymentEvidence(),
                     'uploaded_at' => $order->payment_proof_uploaded_at?->toIso8601String(),
                     'mime' => $order->payment_proof_mime,
                     'size' => $order->payment_proof_size,
-                    'can_upload' => $order->canUploadPaymentProof(),
+                    'can_upload' => $order->canSubmitManualPaymentEvidence(),
+                    'can_submit_transaction' => $order->canSubmitManualPaymentEvidence(),
+                    'transaction_id' => $order->payment_transaction_id,
                     'rejection_notes' => $order->payment_proof_rejection_notes,
+                    'has_screenshot' => $order->hasPaymentProof(),
                 ],
             'payment_confirmed_at' => $order->payment_confirmed_at?->toIso8601String(),
             'payment_expires_at' => $order->payment_expires_at?->toIso8601String(),

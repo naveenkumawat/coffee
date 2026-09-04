@@ -59,7 +59,37 @@ Return/callback URLs only drive UX (“Verifying payment…” → refetch order
 ## Manual methods
 
 - **Cash** — fulfilment rules centralized in `PaymentMethodCatalog` / `PaymentEligibilityService` (delivery cash blocked; takeaway requires `cash_takeaway_allowed`; dine-in allowed when enabled).
-- **Manual UPI** — QR/UPI instructions + screenshot; rejected when method disabled; staff confirmation unchanged.
+- **Manual UPI / QR Payment** — customer pays via configured UPI ID / QR, then submits **Transaction ID / UTR** for staff verification.
+
+```
+Manual UPI:
+QR / UPI payment
+    ↓
+Customer submits Transaction ID / UTR
+    ↓
+Verification Pending (payment_status = awaiting_review)
+    ↓
+Authorized staff matches received transaction
+    ↓
+Canonical Payment Confirmed
+```
+
+Invariant:
+
+```
+TRANSACTION ID SUBMITTED != PAYMENT CONFIRMED
+```
+
+- Screenshot upload is removed from the active retail Manual UPI UX; historical `payment_proof_*` screenshot files remain readable.
+- Duplicate Transaction IDs already awaiting review or confirmed on another live order are rejected.
+- When Manual UPI is disabled: QR/UPI instructions stay hidden for availability, and Transaction ID submission is rejected.
+- Staff verify/reject through existing order payment workflows (no direct status hacks).
+
+### Expiry hold for verification-pending Manual UPI
+
+Retail Pending Payment auto-expiry (`coffee:expire-pending-orders`) **excludes** orders with `payment_status = awaiting_review` (submitted Transaction ID / historical evidence pending staff verification).
+
+A potentially paid customer must not lose the order solely because staff has not verified yet. Rejected submissions return to correctable Pending Payment within the normal payment window.
 
 ## Online flow
 

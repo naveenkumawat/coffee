@@ -16,7 +16,8 @@ export interface PaymentStatePresentation {
   title: string;
   body: string;
   canUploadProof: boolean;
-  primaryAction: 'upload_proof' | 'replace_proof' | 'track_order' | 'none';
+  canSubmitTransaction: boolean;
+  primaryAction: 'submit_transaction' | 'replace_transaction' | 'track_order' | 'none';
 }
 
 /**
@@ -32,7 +33,7 @@ export function resolvePaymentState(order: Order): CanonicalPaymentState {
     return 'cash_pending';
   }
 
-  if (order.payment_status === 'awaiting_review' && Boolean(order.payment_proof?.uploaded)) {
+  if (order.payment_status === 'awaiting_review' && Boolean(order.payment_proof?.uploaded || order.payment_transaction_id)) {
     return 'upi_awaiting_review';
   }
 
@@ -58,6 +59,7 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
   const state = resolvePaymentState(order);
   const proof = order.payment_proof;
   const amount = formatCurrency(order.total_amount);
+  const canSubmit = Boolean(proof?.can_submit_transaction ?? proof?.can_upload ?? isPendingPayment(order.status));
 
   switch (state) {
     case 'cash_confirmed':
@@ -67,6 +69,7 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
         title: 'Cash received',
         body: 'The cafe has marked your cash payment as received.',
         canUploadProof: false,
+        canSubmitTransaction: false,
         primaryAction: 'track_order',
       };
     case 'cash_pending':
@@ -75,30 +78,33 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
         badge: isDineInOrder(order) ? 'Cash Pending' : 'Cash at Pickup',
         title: isDineInOrder(order) ? 'Pay at the cafe' : 'Pay when collecting',
         body: isDineInOrder(order)
-          ? `Pay ${amount} in cash at your table / the cafe. No payment screenshot is needed.`
+          ? `Pay ${amount} in cash at your table / the cafe. No Transaction ID is needed.`
           : `Your order has been placed. Pay ${amount} in cash when you collect it.`,
         canUploadProof: false,
+        canSubmitTransaction: false,
         primaryAction: 'track_order',
       };
     case 'upi_awaiting_review':
       return {
         state,
-        badge: 'Awaiting Verification',
-        title: 'Proof submitted',
-        body: 'Payment proof submitted. Waiting for cafe confirmation.',
-        canUploadProof: proof?.can_upload === true,
-        primaryAction: proof?.can_upload === true ? 'replace_proof' : 'track_order',
+        badge: 'Payment verification pending',
+        title: 'Payment verification pending',
+        body: "We've received your transaction ID. Your order will be confirmed once the payment is verified.",
+        canUploadProof: canSubmit,
+        canSubmitTransaction: canSubmit,
+        primaryAction: canSubmit ? 'replace_transaction' : 'track_order',
       };
     case 'upi_rejected':
       return {
         state,
         badge: 'Verification Needed',
-        title: 'Proof needs another look',
+        title: 'Transaction ID needs another look',
         body:
           order.payment_proof?.rejection_notes?.trim() ||
-          'Please upload a clearer payment screenshot so we can start preparing.',
-        canUploadProof: Boolean(proof?.can_upload ?? true),
-        primaryAction: 'replace_proof',
+          'We could not verify that Transaction ID. Please check it in your payment app and submit again.',
+        canUploadProof: canSubmit,
+        canSubmitTransaction: canSubmit,
+        primaryAction: 'replace_transaction',
       };
     case 'upi_confirmed':
       return {
@@ -107,6 +113,7 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
         title: 'Payment confirmed',
         body: 'Payment confirmed. Track your order for preparation updates.',
         canUploadProof: false,
+        canSubmitTransaction: false,
         primaryAction: 'track_order',
       };
     case 'upi_pending':
@@ -114,10 +121,11 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
       return {
         state,
         badge: 'UPI Pending',
-        title: 'Pay by UPI',
-        body: `Pay ${amount} and upload your payment screenshot so we can start preparing.`,
-        canUploadProof: Boolean(proof?.can_upload ?? isPendingPayment(order.status)),
-        primaryAction: 'upload_proof',
+        title: 'Pay via UPI',
+        body: `Pay ${amount} via UPI / QR, then enter your Transaction ID / UTR so we can verify payment.`,
+        canUploadProof: canSubmit,
+        canSubmitTransaction: canSubmit,
+        primaryAction: 'submit_transaction',
       };
   }
 }

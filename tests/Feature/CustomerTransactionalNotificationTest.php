@@ -27,7 +27,6 @@ use App\Services\Notification\CustomerNotificationDispatcherInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -179,7 +178,7 @@ class CustomerTransactionalNotificationTest extends TestCase
         $updated = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 200, 200),
+            'UTRTEST007XYZ',
         );
 
         Notification::assertSentTo(
@@ -221,7 +220,7 @@ class CustomerTransactionalNotificationTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('blurry.jpg', 120, 120),
+            'UTRTEST008XYZ',
         );
 
         $orders->rejectPaymentProof($order, $admin, 'Please upload a clearer screenshot.');

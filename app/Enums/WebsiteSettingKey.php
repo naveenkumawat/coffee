@@ -142,7 +142,7 @@ enum WebsiteSettingKey: string
             self::PaymentQrImagePath => 'Payment QR image',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
             self::PaymentCashEnabled => 'Enable Cash',
-            self::PaymentManualUpiEnabled => 'Enable Manual UPI / Screenshot',
+            self::PaymentManualUpiEnabled => 'Enable Manual UPI / QR Payment',
             self::PaymentRazorpayEnabled => 'Enable Razorpay',
             self::PaymentPayuEnabled => 'Enable PayU',
             self::PaymentPaytmEnabled => 'Enable Paytm',

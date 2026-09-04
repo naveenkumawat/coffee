@@ -14,7 +14,7 @@ enum PaymentMethod: string
     public function label(): string
     {
         return match ($this) {
-            self::Manual => 'UPI',
+            self::Manual => 'Manual UPI / QR Payment',
             self::Cash => 'Cash',
             self::Razorpay => 'Razorpay',
             self::PayU => 'PayU',

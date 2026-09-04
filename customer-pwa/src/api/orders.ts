@@ -25,6 +25,15 @@ export function uploadPaymentProof(orderId: number | string, file: File): Promis
   return postForm<OrderDetailResponse>(`/orders/${orderId}/payment-proof`, body);
 }
 
+export function submitPaymentTransactionId(
+  orderId: number | string,
+  transactionId: string,
+): Promise<OrderDetailResponse> {
+  return post<OrderDetailResponse, { transaction_id: string }>(`/orders/${orderId}/payment-proof`, {
+    transaction_id: transactionId,
+  });
+}
+
 export function paymentProofUrl(orderId: number | string): string {
   return `/orders/${orderId}/payment-proof`;
 }

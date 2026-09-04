@@ -12,8 +12,6 @@ use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -78,9 +76,8 @@ class UnifiedPaymentMethodsTest extends TestCase
             ->assertJsonPath('data.by_fulfilment.takeaway', []);
     }
 
-    public function test_manual_upi_screenshot_rejected_when_disabled(): void
+    public function test_manual_upi_transaction_rejected_when_disabled(): void
     {
-        Storage::fake('local');
         config()->set('coffee.payments.methods.manual_upi.enabled', false);
 
         $customer = User::factory()->customer()->create();
@@ -92,9 +89,9 @@ class UnifiedPaymentMethodsTest extends TestCase
         ]);
 
         Sanctum::actingAs($customer);
-        $this->post(route('api.v1.orders.payment-proof.upload', $order), [
-            'payment_proof' => UploadedFile::fake()->image('proof.jpg'),
-        ], ['Accept' => 'application/json'])->assertUnprocessable();
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'UTRDISABLED999',
+        ])->assertUnprocessable();
     }
 
     public function test_cash_disabled_blocks_customer_selection_even_when_trusted(): void

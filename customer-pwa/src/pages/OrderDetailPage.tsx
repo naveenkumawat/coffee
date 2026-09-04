@@ -236,15 +236,18 @@ export function OrderDetailPage() {
           payment={payment}
           showSecondaryAction={false}
           onOrderUpdated={setOrder}
+          onCancelOrder={() => void handleCancelOrder()}
+          isCancelling={isCancelling}
+          cancelError={cancelMessage}
         />
       ) : null}
 
-      {order.can_cancel && isPendingPayment(order.status) ? (
+      {!showPaymentCard && order.can_cancel && isPendingPayment(order.status) ? (
         <section className="account-section">
           {cancelMessage ? <p className="form-feedback is-error">{cancelMessage}</p> : null}
           <button
             type="button"
-            className="btn btn-outline-dark rounded-pill w-100"
+            className="btn btn-outline-danger btn-sm rounded-pill w-100"
             disabled={isCancelling}
             onClick={() => void handleCancelOrder()}
           >

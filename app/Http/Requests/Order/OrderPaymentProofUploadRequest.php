@@ -22,15 +22,13 @@ class OrderPaymentProofUploadRequest extends AbstractRequest
 
     public function rules(): array
     {
-        $maxKb = max(100, (int) config('coffee.payments.proof_max_kilobytes', 5120));
-
         return [
-            'payment_proof' => [
+            'transaction_id' => [
                 'required',
-                'file',
-                'image',
-                'mimes:jpg,jpeg,png,webp,gif',
-                'max:'.$maxKb,
+                'string',
+                'min:6',
+                'max:64',
+                'regex:/^[A-Za-z0-9][A-Za-z0-9\\-_]*$/',
             ],
         ];
     }
@@ -38,10 +36,25 @@ class OrderPaymentProofUploadRequest extends AbstractRequest
     public function messages(): array
     {
         return [
-            'payment_proof.required' => 'Please choose a payment screenshot to upload.',
-            'payment_proof.image' => 'Payment proof must be an image file.',
-            'payment_proof.mimes' => 'Payment proof must be a JPG, PNG, WEBP, or GIF image.',
-            'payment_proof.max' => 'Payment proof must be smaller than '.(int) config('coffee.payments.proof_max_kilobytes', 5120).' KB.',
+            'transaction_id.required' => 'Enter the UPI Transaction ID / UTR from your payment app.',
+            'transaction_id.min' => 'Transaction ID / UTR looks too short.',
+            'transaction_id.max' => 'Transaction ID / UTR looks too long.',
+            'transaction_id.regex' => 'Transaction ID / UTR may only contain letters, numbers, hyphens, and underscores.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $raw = $this->input('transaction_id', $this->input('utr'));
+
+        if (! is_string($raw)) {
+            return;
+        }
+
+        $normalized = preg_replace('/\s+/', '', trim($raw)) ?? '';
+
+        $this->merge([
+            'transaction_id' => $normalized,
+        ]);
     }
 }

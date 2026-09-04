@@ -9,7 +9,6 @@ use App\Models\PaymentAttempt;
 use App\Models\User;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
-use Illuminate\Http\UploadedFile;
 
 interface OrderServiceInterface
 {
@@ -59,7 +58,7 @@ interface OrderServiceInterface
      */
     public function cancelDiningRound(Order $order, User $actor, ?string $notes = null): Order;
 
-    public function uploadPaymentProof(Order $order, User $customer, UploadedFile $file): Order;
+    public function uploadPaymentProof(Order $order, User $customer, string $transactionId): Order;
 
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order;
 

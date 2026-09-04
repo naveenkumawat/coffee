@@ -32,7 +32,6 @@ use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -163,7 +162,7 @@ class OperationalCustomerNotificationWiringTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 120, 120),
+            'UTRTEST003XYZ',
         );
 
         $proof = OperationalNotification::query()
@@ -185,7 +184,7 @@ class OperationalCustomerNotificationWiringTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order->fresh(),
             $customer,
-            UploadedFile::fake()->image('proof2.jpg', 120, 120),
+            'UTRTEST004XYZ',
         );
         $orders->transition($order->fresh(), $admin, $this->statusTransfer(OrderStatus::PaymentConfirmed));
 

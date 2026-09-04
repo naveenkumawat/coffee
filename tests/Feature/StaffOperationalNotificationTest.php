@@ -24,7 +24,6 @@ use App\Services\Notification\StaffNotificationDispatcherInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -94,7 +93,7 @@ class StaffOperationalNotificationTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 160, 160),
+            'UTRTEST001XYZ',
         );
 
         Notification::assertSentTo(
@@ -111,7 +110,7 @@ class StaffOperationalNotificationTest extends TestCase
         $orders->uploadPaymentProof(
             $order->fresh(),
             $customer,
-            UploadedFile::fake()->image('proof-2.jpg', 160, 160),
+            'UTRTEST002XYZ',
         );
 
         Notification::assertSentTo(

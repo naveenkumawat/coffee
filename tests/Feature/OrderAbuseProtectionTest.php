@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Enums\ProductServingUnit;
 use App\Enums\WebsiteSettingKey;
@@ -16,10 +17,8 @@ use App\Models\User;
 use App\Models\WebsiteSetting;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -271,7 +270,6 @@ class OrderAbuseProtectionTest extends TestCase
 
     public function test_payment_proof_rate_limit_returns_429_without_clearing_existing_proof(): void
     {
-        Storage::fake('local');
         $this->setSecuritySetting(WebsiteSettingKey::OrderSecurityPaymentProofAttemptsPer15Minutes, '1');
 
         $customer = User::factory()->customer()->create();
@@ -279,24 +277,25 @@ class OrderAbuseProtectionTest extends TestCase
             'customer_id' => $customer->id,
             'status' => OrderStatus::PendingPayment,
             'payment_status' => PaymentStatus::Pending,
+            'payment_method' => PaymentMethod::Manual,
         ]);
 
         Sanctum::actingAs($customer);
 
-        $this->post(route('api.v1.orders.payment-proof.upload', $order), [
-            'payment_proof' => UploadedFile::fake()->image('proof-1.jpg'),
-        ], ['Accept' => 'application/json'])->assertOk();
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'UTRRATELIMIT001',
+        ])->assertOk();
 
-        $path = $order->fresh()->payment_proof_path;
-        $this->assertNotNull($path);
+        $txn = $order->fresh()->payment_transaction_id;
+        $this->assertSame('UTRRATELIMIT001', $txn);
 
-        $this->post(route('api.v1.orders.payment-proof.upload', $order), [
-            'payment_proof' => UploadedFile::fake()->image('proof-2.jpg'),
-        ], ['Accept' => 'application/json'])
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'UTRRATELIMIT002',
+        ])
             ->assertStatus(429)
             ->assertJsonPath('code', 'rate_limit');
 
-        $this->assertSame($path, $order->fresh()->payment_proof_path);
+        $this->assertSame($txn, $order->fresh()->payment_transaction_id);
     }
 
     public function test_duplicate_checkout_reuses_existing_order_and_token_idempotency_is_preserved(): void

@@ -82,12 +82,12 @@ class CustomerOrderController extends Controller
         $order = $this->orderService->uploadPaymentProof(
             $order,
             $request->user(),
-            $request->file('payment_proof'),
+            (string) $request->validated('transaction_id'),
         );
 
         return $this->respondWithResource(
             new OrderResource($order->loadMissing(['items.addOns', 'statusHistory', 'promotions', 'rewardRedemptions'])),
-            'Payment proof uploaded successfully.',
+            'Transaction ID submitted for verification.',
             200,
             [
                 'payment' => $this->websiteSettings->paymentInstructions(),

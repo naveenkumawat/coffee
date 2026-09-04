@@ -19,7 +19,6 @@ use App\Models\WebsiteSetting;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -232,16 +231,16 @@ class CashPaymentTest extends TestCase
 
         Sanctum::actingAs($customer);
 
-        $this->post(route('api.v1.orders.payment-proof.upload', $cashOrder), [
-            'payment_proof' => UploadedFile::fake()->image('cash.jpg'),
-        ], ['Accept' => 'application/json'])
-            ->assertForbidden();
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $cashOrder), [
+            'transaction_id' => 'UTRCASHBLOCK01',
+        ])->assertForbidden();
 
-        $this->post(route('api.v1.orders.payment-proof.upload', $upiOrder), [
-            'payment_proof' => UploadedFile::fake()->image('upi.jpg'),
-        ], ['Accept' => 'application/json'])
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $upiOrder), [
+            'transaction_id' => 'UTRCASHALLOW01',
+        ])
             ->assertOk()
-            ->assertJsonPath('data.payment_status', 'awaiting_review');
+            ->assertJsonPath('data.payment_status', 'awaiting_review')
+            ->assertJsonPath('data.payment_transaction_id', 'UTRCASHALLOW01');
     }
 
     public function test_mark_cash_received_by_admin_and_operator_with_duplicate_guard(): void

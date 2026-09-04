@@ -45,7 +45,10 @@ export interface OrderPaymentProof {
   mime: string | null;
   size: number | null;
   can_upload: boolean;
+  can_submit_transaction?: boolean;
+  transaction_id?: string | null;
   rejection_notes: string | null;
+  has_screenshot?: boolean;
 }
 
 export interface OrderPromotion {
@@ -127,6 +130,7 @@ export interface Order {
   payment_status: string | null;
   payment_status_label: string | null;
   payment_reference: string | null;
+  payment_transaction_id?: string | null;
   payment_proof: OrderPaymentProof | null;
   placed_at: string | null;
   payment_expires_at?: string | null;

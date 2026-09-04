@@ -29,7 +29,6 @@ use App\Support\PhoneNumber;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
@@ -354,7 +353,7 @@ class CustomerWhatsAppNotificationTest extends TestCase
         app(OrderServiceInterface::class)->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 200, 200),
+            'UTRTEST009XYZ',
         );
 
         Http::assertSent(function (Request $request): bool {

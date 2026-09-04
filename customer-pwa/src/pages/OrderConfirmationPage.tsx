@@ -251,28 +251,28 @@ export function OrderConfirmationPage() {
           secondaryHref={`/orders/${order.id}`}
           secondaryLabel="Track order"
           onOrderUpdated={setOrder}
+          onCancelOrder={() => void handleCancelOrder()}
+          isCancelling={isCancelling}
+          cancelError={cancelMessage}
         />
       ) : (
         <div className="confirmation-actions">
           <Link to={`/orders/${order.id}`} className="btn btn-primary btn-lg rounded-pill w-100">
             Track order
           </Link>
+          {order.can_cancel && isPendingPayment(order.status) ? (
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm rounded-pill w-100 mt-2"
+              disabled={isCancelling}
+              onClick={() => void handleCancelOrder()}
+            >
+              {isCancelling ? 'Cancelling…' : 'Cancel Order'}
+            </button>
+          ) : null}
+          {cancelMessage ? <p className="form-feedback is-error">{cancelMessage}</p> : null}
         </div>
       )}
-
-      {order.can_cancel && isPendingPayment(order.status) ? (
-        <section className="account-section">
-          {cancelMessage ? <p className="form-feedback is-error">{cancelMessage}</p> : null}
-          <button
-            type="button"
-            className="btn btn-outline-dark rounded-pill w-100"
-            disabled={isCancelling}
-            onClick={() => void handleCancelOrder()}
-          >
-            {isCancelling ? 'Cancelling…' : 'Cancel Order'}
-          </button>
-        </section>
-      ) : null}
 
       {isDeliveryOrder(order) ? (
         <section className="checkout-section" aria-labelledby="confirmation-delivery-heading">

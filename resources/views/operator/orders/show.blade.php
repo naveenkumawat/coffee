@@ -94,9 +94,12 @@
 
             @include('internal.orders.partials.payment-proof', [
                 'order' => $order,
-                'showAdminActions' => false,
+                'showAdminActions' => true,
                 'showFinancialSummary' => true,
                 'markCashRoute' => route('operator.orders.cash.receive', $order),
+                'paymentProofShowRoute' => 'operator.orders.payment-proof.show',
+                'paymentProofRejectRoute' => 'operator.orders.payment-proof.reject',
+                'paymentVerifyRoute' => 'operator.orders.status.update',
             ])
 
             @include('internal.orders.partials.status-actions', [

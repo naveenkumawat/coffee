@@ -173,7 +173,7 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                         $method === OrderFulfilmentMethod::DineIn && filled($tableLabel)
                             ? 'Table: '.$tableLabel
                             : null,
-                        'Please complete payment and upload your payment screenshot from the order page.',
+                        'Please complete payment and submit your UPI Transaction ID / UTR from the order page.',
                     ])),
                     'actionText' => 'View Order & Pay',
                     'outro' => [
@@ -221,7 +221,7 @@ class OrderCustomerNotification extends Notification implements ShouldQueue
                 'statusLabel' => 'Payment proof needs replacement',
                 'statusTone' => 'danger',
                 'intro' => array_values(array_filter([
-                    'We need a clearer payment screenshot for order #'.$number.'.',
+                    'We need a valid Transaction ID / UTR for order #'.$number.'.',
                     filled($this->customerFacingReason) ? $this->customerFacingReason : null,
                     'Please upload a replacement proof from your order page.',
                 ])),

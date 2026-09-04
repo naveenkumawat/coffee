@@ -64,6 +64,7 @@ class Order extends AbstractModel
         'payment_method',
         'payment_status',
         'payment_reference',
+        'payment_transaction_id',
         'payment_proof_path',
         'payment_proof_disk',
         'payment_proof_mime',
@@ -295,9 +296,31 @@ class Order extends AbstractModel
         return filled($this->payment_proof_path);
     }
 
+    public function hasPaymentTransactionId(): bool
+    {
+        return filled($this->payment_transaction_id);
+    }
+
+    /**
+     * Manual UPI evidence: submitted Transaction ID/UTR and/or historical screenshot.
+     */
+    public function hasManualPaymentEvidence(): bool
+    {
+        return $this->hasPaymentTransactionId() || $this->hasPaymentProof();
+    }
+
     public function canUploadPaymentProof(): bool
     {
+        return $this->canSubmitManualPaymentEvidence();
+    }
+
+    public function canSubmitManualPaymentEvidence(): bool
+    {
         if ($this->isCashPayment() || ! ($this->payment_method?->requiresPaymentProof() ?? true)) {
+            return false;
+        }
+
+        if ($this->payment_method?->isOnline()) {
             return false;
         }
 

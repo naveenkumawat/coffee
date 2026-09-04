@@ -41,10 +41,8 @@ use App\Support\AddOnConfiguration;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OrderService implements OrderServiceInterface
@@ -453,11 +451,28 @@ class OrderService implements OrderServiceInterface
             if (
                 $nextStatus === OrderStatus::PaymentConfirmed
                 && ! $locked->isCashPayment()
-                && ! $locked->hasPaymentProof()
+                && ! $locked->hasManualPaymentEvidence()
             ) {
                 throw ValidationException::withMessages([
-                    'status' => 'UPI payment confirmation requires an uploaded payment proof.',
+                    'status' => 'UPI payment confirmation requires a submitted Transaction ID / UTR (or historical payment screenshot).',
                 ]);
+            }
+
+            if (
+                $nextStatus === OrderStatus::PaymentConfirmed
+                && ! $locked->isCashPayment()
+                && $locked->hasPaymentTransactionId()
+            ) {
+                $duplicate = $this->findConflictingPaymentTransaction(
+                    (string) $locked->payment_transaction_id,
+                    excludeOrderId: (int) $locked->getKey(),
+                );
+
+                if ($duplicate !== null) {
+                    throw ValidationException::withMessages([
+                        'status' => 'This Transaction ID / UTR is already linked to another order and cannot confirm payment.',
+                    ]);
+                }
             }
 
             if (
@@ -489,6 +504,14 @@ class OrderService implements OrderServiceInterface
 
                 if ($locked->isCashPayment() && $locked->payment_received_by_id === null) {
                     $attributes['payment_received_by_id'] = $actor->getKey();
+                }
+
+                if (! $locked->isCashPayment()) {
+                    $attributes['payment_received_by_id'] = $actor->getKey();
+
+                    if ($locked->hasPaymentTransactionId() && ! filled($locked->payment_reference)) {
+                        $attributes['payment_reference'] = $locked->payment_transaction_id;
+                    }
                 }
             }
 
@@ -757,6 +780,11 @@ class OrderService implements OrderServiceInterface
             return false;
         }
 
+        // Submitted Manual UPI Transaction ID awaiting staff verification must not auto-cancel.
+        if ($order->payment_status === PaymentStatus::AwaitingReview && $order->hasManualPaymentEvidence()) {
+            return false;
+        }
+
         if (! in_array($order->fulfilment_method, [
             OrderFulfilmentMethod::Takeaway,
             OrderFulfilmentMethod::Delivery,
@@ -779,6 +807,7 @@ class OrderService implements OrderServiceInterface
             ->whereNull('dining_session_id')
             ->where('status', OrderStatus::PendingPayment->value)
             ->where('payment_status', '!=', PaymentStatus::Confirmed->value)
+            ->where('payment_status', '!=', PaymentStatus::AwaitingReview->value)
             ->whereNull('payment_confirmed_at')
             ->whereIn('fulfilment_method', [
                 OrderFulfilmentMethod::Takeaway->value,
@@ -890,56 +919,61 @@ class OrderService implements OrderServiceInterface
         });
     }
 
-    public function uploadPaymentProof(Order $order, User $customer, UploadedFile $file): Order
+    public function uploadPaymentProof(Order $order, User $customer, string $transactionId): Order
     {
         if ((int) $order->customer_id !== (int) $customer->getKey()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'You can only upload payment proof for your own orders.',
+                'transaction_id' => 'You can only submit a Transaction ID for your own orders.',
             ]);
         }
 
         if ($order->isCashPayment()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Cash orders do not use payment screenshots.',
+                'transaction_id' => 'Cash orders do not use UPI Transaction IDs.',
+            ]);
+        }
+
+        if ($order->payment_method?->isOnline()) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Online gateway payments do not use Manual UPI Transaction IDs.',
             ]);
         }
 
         if (! $this->paymentMethods->isEnabled(PaymentMethod::Manual)) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Manual UPI payments are currently unavailable.',
+                'transaction_id' => 'Manual UPI payments are currently unavailable.',
             ]);
         }
 
-        if (! $order->canUploadPaymentProof()) {
+        if (! $order->canSubmitManualPaymentEvidence()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Payment proof can only be uploaded while the order is awaiting payment confirmation.',
+                'transaction_id' => 'Transaction ID can only be submitted while the order is awaiting payment confirmation.',
+            ]);
+        }
+
+        $normalized = $this->normalizePaymentTransactionId($transactionId);
+
+        if ($normalized === null) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Enter a valid UPI Transaction ID / UTR.',
             ]);
         }
 
         $this->orderSecurity->assertPaymentProofUploadAllowed($customer, $order);
 
-        $isResubmission = $order->hasPaymentProof()
-            || $order->payment_status === PaymentStatus::Rejected;
+        $conflict = $this->findConflictingPaymentTransaction($normalized, excludeOrderId: (int) $order->getKey());
 
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-        $safeExtension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) ? $extension : 'jpg';
-        $filename = Str::uuid()->toString().'.'.$safeExtension;
-        $directory = 'payment-proofs/'.$order->getKey();
-        $path = $file->storeAs($directory, $filename, 'local');
-
-        if (! is_string($path) || $path === '') {
+        if ($conflict !== null) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Unable to store the payment proof. Please try again.',
+                'transaction_id' => 'This Transaction ID / UTR is already in use on another order.',
             ]);
         }
 
-        $order->clearPaymentProofFiles();
+        $isResubmission = $order->hasManualPaymentEvidence()
+            || $order->payment_status === PaymentStatus::Rejected;
 
         $order = $this->orders->update($order, [
-            'payment_proof_path' => $path,
-            'payment_proof_disk' => 'local',
-            'payment_proof_mime' => $file->getMimeType(),
-            'payment_proof_size' => $file->getSize(),
+            'payment_transaction_id' => $normalized,
             'payment_proof_uploaded_at' => now(),
             'payment_status' => PaymentStatus::AwaitingReview->value,
             'payment_proof_rejection_notes' => null,
@@ -958,19 +992,19 @@ class OrderService implements OrderServiceInterface
     {
         if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Only administrators or operators can request a payment proof replacement.',
+                'payment_proof' => 'Only administrators or operators can reject a Manual UPI submission.',
             ]);
         }
 
         if ($order->status !== OrderStatus::PendingPayment) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'Payment proof can only be rejected while the order is pending payment.',
+                'payment_proof' => 'Payment evidence can only be rejected while the order is pending payment.',
             ]);
         }
 
-        if (! $order->hasPaymentProof()) {
+        if (! $order->hasManualPaymentEvidence()) {
             throw ValidationException::withMessages([
-                'payment_proof' => 'This order does not have an uploaded payment proof.',
+                'payment_proof' => 'This order does not have a submitted Transaction ID or payment screenshot.',
             ]);
         }
 
@@ -980,19 +1014,19 @@ class OrderService implements OrderServiceInterface
 
             if ($locked->status !== OrderStatus::PendingPayment) {
                 throw ValidationException::withMessages([
-                    'payment_proof' => 'Payment proof can only be rejected while the order is pending payment.',
+                    'payment_proof' => 'Payment evidence can only be rejected while the order is pending payment.',
                 ]);
             }
 
-            if (! $locked->hasPaymentProof()) {
+            if (! $locked->hasManualPaymentEvidence()) {
                 throw ValidationException::withMessages([
-                    'payment_proof' => 'This order does not have an uploaded payment proof.',
+                    'payment_proof' => 'This order does not have a submitted Transaction ID or payment screenshot.',
                 ]);
             }
 
             $customerFacingReason = filled($notes)
                 ? trim($notes)
-                : 'Please upload a clearer payment screenshot.';
+                : 'We could not verify that Transaction ID. Please check it in your payment app and submit again.';
 
             $locked = $this->orders->update($locked, [
                 'payment_status' => PaymentStatus::Rejected->value,
@@ -1003,7 +1037,7 @@ class OrderService implements OrderServiceInterface
                 'from_status' => OrderStatus::PendingPayment->value,
                 'to_status' => OrderStatus::PendingPayment->value,
                 'changed_by' => $actor->getKey(),
-                'notes' => 'Payment proof replacement requested.'.(filled($notes) ? ' '.$notes : ''),
+                'notes' => 'Manual UPI Transaction ID rejected.'.(filled($notes) ? ' '.$notes : ''),
             ]);
 
             $locked = $locked->fresh([
@@ -1017,6 +1051,39 @@ class OrderService implements OrderServiceInterface
 
             return $locked;
         });
+    }
+
+    protected function normalizePaymentTransactionId(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = preg_replace('/\s+/', '', trim($value)) ?? '';
+
+        if ($normalized === '' || strlen($normalized) < 6 || strlen($normalized) > 64) {
+            return null;
+        }
+
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9\-_]*$/', $normalized)) {
+            return null;
+        }
+
+        return $normalized;
+    }
+
+    protected function findConflictingPaymentTransaction(string $transactionId, int $excludeOrderId): ?Order
+    {
+        return Order::query()
+            ->where('payment_transaction_id', $transactionId)
+            ->whereKeyNot($excludeOrderId)
+            ->where(function ($query): void {
+                $query->where('payment_status', PaymentStatus::Confirmed->value)
+                    ->orWhere('payment_status', PaymentStatus::AwaitingReview->value)
+                    ->orWhereNotNull('payment_confirmed_at');
+            })
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+            ->first();
     }
 
     public function markCashReceived(Order $order, User $actor): Order

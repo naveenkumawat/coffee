@@ -29,7 +29,6 @@ use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Transfers\Order\OrderStatusTransitionTransfer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -94,7 +93,7 @@ class OperationalBusinessNotificationWiringTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 120, 120),
+            'UTRTEST005XYZ',
         );
 
         $review = OperationalNotification::query()
@@ -137,7 +136,7 @@ class OperationalBusinessNotificationWiringTest extends TestCase
         $order = $orders->uploadPaymentProof(
             $order,
             $customer,
-            UploadedFile::fake()->image('proof.jpg', 120, 120),
+            'UTRTEST006XYZ',
         );
 
         $review = OperationalNotification::query()
