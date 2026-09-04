@@ -144,12 +144,17 @@
                     @enderror
                 </div>
                 <div class="col-12">
-                    <label for="targeting_rules" class="form-label">Audience targeting (JSON)</label>
-                    <textarea id="targeting_rules" name="targeting_rules" rows="8" class="form-control font-monospace @error('targeting_rules') is-invalid @enderror">{{ $targetingJson }}</textarea>
-                    @error('targeting_rules')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                    <div class="form-text">Empty all/any/exclude = everyone. Prefer segment_matches over repeating complex profile rules.</div>
+                    @include('internal.partials.json-rule-editor', [
+                        'fieldName' => 'targeting_rules',
+                        'fieldLabel' => 'Audience targeting',
+                        'fieldHelp' => 'Optional. Empty all/any/exclude means everyone. Prefer a template for guests, loyalty, or affinity audiences.',
+                        'jsonValue' => is_array($targetingJson) ? json_encode($targetingJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : $targetingJson,
+                        'templates' => $targetingTemplates ?? [],
+                        'docsUrl' => route('administrator.documentation.show', 'homepage-merchandising'),
+                        'docsLabel' => 'Homepage targeting help',
+                        'required' => false,
+                        'rows' => 8,
+                    ])
                 </div>
             </div>
 

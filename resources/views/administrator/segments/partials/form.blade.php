@@ -64,10 +64,8 @@
         </div>
         <div class="card-body pt-0">
             <div class="alert alert-light-info mb-6">
-                Use <code>all</code> / <code>any</code> / <code>exclude</code> groups with allowlisted types:
-                {{ implode(', ', array_keys($ruleTypeOptions)) }}.
+                Templates generate allowlisted rule types only.
                 Operators: {{ implode(', ', array_keys($operatorOptions)) }}.
-                Thresholds (e.g. completed_orders, last_purchase_days, orders_per_30d) are configured per segment — no hardcoded business defaults.
                 Segments do not nest other segments.
             </div>
             @if ($segment->exists)
@@ -75,9 +73,16 @@
                     Summary: {{ $segment->ruleSummary() }}
                 </div>
             @endif
-            <label for="rules" class="required form-label">Rule definition (JSON)</label>
-            <textarea id="rules" name="rules" rows="14" required class="form-control font-monospace @error('rules') is-invalid @enderror">{{ $rulesJson }}</textarea>
-            @error('rules')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            @include('internal.partials.json-rule-editor', [
+                'fieldName' => 'rules',
+                'fieldLabel' => 'Who belongs in this audience',
+                'fieldHelp' => 'Pick a template (guests, high-value, near loyalty reward, …). Use Advanced JSON only when you need a custom combination.',
+                'jsonValue' => $rulesJson,
+                'templates' => $targetingTemplates ?? [],
+                'docsUrl' => route('administrator.documentation.show', 'audience-segments'),
+                'docsLabel' => 'How targeting rules work',
+                'rows' => 14,
+            ])
         </div>
     </div>
 

@@ -18,6 +18,7 @@ use App\Parsers\Home\HomeSectionParserInterface;
 use App\Repositories\Home\HomeSectionRepositoryInterface;
 use App\Services\Home\HomeSectionServiceInterface;
 use App\Services\Product\ProductReadinessServiceInterface;
+use App\Support\Targeting\TargetingRuleTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -29,6 +30,7 @@ class HomeSectionController extends Controller
         protected HomeSectionRepositoryInterface $sections,
         protected HomeSectionServiceInterface $service,
         protected ProductReadinessServiceInterface $readiness,
+        protected TargetingRuleTemplates $targetingTemplates,
     ) {}
 
     public function index(HomeSectionIndexRequest $request): View
@@ -225,6 +227,7 @@ class HomeSectionController extends Controller
                 ->all(),
             'categoryOptions' => ProductCategory::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id'),
             'tagOptions' => ProductTag::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id'),
+            'targetingTemplates' => $this->targetingTemplates->forScope('home_section'),
         ];
     }
 }

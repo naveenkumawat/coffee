@@ -17,6 +17,8 @@ use App\Models\ProductCategory;
 use App\Models\Promotion;
 use App\Services\Campaign\CampaignCatalogServiceInterface;
 use App\Services\Campaign\CampaignRuleValidator;
+use App\Support\Campaign\CampaignRuleTemplates;
+use App\Support\Targeting\TargetingRuleTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +28,8 @@ class CampaignController extends Controller
     public function __construct(
         protected CampaignCatalogServiceInterface $catalog,
         protected CampaignRuleValidator $ruleValidator,
+        protected TargetingRuleTemplates $targetingTemplates,
+        protected CampaignRuleTemplates $campaignRuleTemplates,
     ) {}
 
     public function index(Request $request): View
@@ -179,6 +183,9 @@ class CampaignController extends Controller
             'operatorOptions' => collect($this->ruleValidator->allowedOperators())
                 ->mapWithKeys(fn (string $op): array => [$op => strtoupper($op)])
                 ->all(),
+            'targetingTemplates' => $this->targetingTemplates->forScope('campaign'),
+            'placementTemplates' => $this->campaignRuleTemplates->placementTemplates(),
+            'triggerTemplates' => $this->campaignRuleTemplates->triggerTemplates(),
         ];
     }
 }

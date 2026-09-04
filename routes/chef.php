@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Chef\DashboardController;
 use App\Http\Controllers\Chef\PreparationController;
+use App\Http\Controllers\Internal\DocumentationController;
 use App\Http\Controllers\Internal\StaffNotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,12 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:chef'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/documentation', [DocumentationController::class, 'index'])
+        ->defaults('panel', 'chef')
+        ->name('documentation.index');
+    Route::get('/documentation/{module}', [DocumentationController::class, 'show'])
+        ->defaults('panel', 'chef')
+        ->name('documentation.show');
     Route::get('/preparations', [PreparationController::class, 'index'])->name('preparations.index');
     Route::post('/preparations/{orderPreparation}/accept', [PreparationController::class, 'accept'])
         ->name('preparations.accept');

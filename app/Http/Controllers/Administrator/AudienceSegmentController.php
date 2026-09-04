@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Segment\SegmentCatalogServiceInterface;
 use App\Services\Segment\SegmentServiceInterface;
 use App\Services\Targeting\TargetingRuleValidator;
+use App\Support\Targeting\TargetingRuleTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class AudienceSegmentController extends Controller
         protected SegmentCatalogServiceInterface $catalog,
         protected SegmentServiceInterface $segments,
         protected TargetingRuleValidator $ruleValidator,
+        protected TargetingRuleTemplates $targetingTemplates,
     ) {}
 
     public function index(Request $request): View
@@ -186,6 +188,7 @@ class AudienceSegmentController extends Controller
             'operatorOptions' => collect($this->ruleValidator->allowedOperators())
                 ->mapWithKeys(fn (string $op): array => [$op => strtoupper($op)])
                 ->all(),
+            'targetingTemplates' => $this->targetingTemplates->forScope('segment'),
         ];
     }
 }

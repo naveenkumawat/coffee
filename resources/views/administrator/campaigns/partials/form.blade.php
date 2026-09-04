@@ -186,27 +186,45 @@
         <div class="card-body pt-0">
             <div class="alert alert-light-info mb-6">
                 Allowed placements: {{ implode(', ', array_keys($placementOptions)) }}.
-                Rule types: {{ implode(', ', array_keys($ruleTypeOptions)) }}.
-                Operators: {{ implode(', ', array_keys($operatorOptions)) }}.
-                Use <code>all</code> / <code>any</code> / <code>exclude</code> groups. Location rules fail closed when location context is unavailable.
-                Reference reusable audiences with <code>segment_matches</code> / <code>segment_not_matches</code> and an active segment id (do not paste segment rule JSON here).
+                Prefer templates below for targeting, placement, and triggers. Advanced JSON remains available.
+                Location rules fail closed when location context is unavailable.
+                Reference reusable audiences with <code>segment_matches</code> / <code>segment_not_matches</code> and an active segment id.
             </div>
             <div class="row g-6">
                 <div class="col-md-12">
-                    <label for="placement_rules" class="required form-label">Placement rules (JSON)</label>
-                    <textarea id="placement_rules" name="placement_rules" rows="6" required class="form-control font-monospace @error('placement_rules') is-invalid @enderror">{{ $placementJson }}</textarea>
-                    @error('placement_rules')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @include('internal.partials.json-simple-editor', [
+                        'fieldName' => 'placement_rules',
+                        'fieldLabel' => 'Where this campaign appears',
+                        'fieldHelp' => 'Choose a placement template (home, cart, checkout, …). This controls which customer pages can show the campaign.',
+                        'jsonValue' => $placementJson,
+                        'templates' => $placementTemplates ?? [],
+                        'docsUrl' => route('administrator.documentation.show', 'campaigns'),
+                        'rows' => 6,
+                    ])
                     @error('placement_rules.placements')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-12">
-                    <label for="targeting_rules" class="required form-label">Targeting rules (JSON)</label>
-                    <textarea id="targeting_rules" name="targeting_rules" rows="10" required class="form-control font-monospace @error('targeting_rules') is-invalid @enderror">{{ $targetingJson }}</textarea>
-                    @error('targeting_rules')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @include('internal.partials.json-rule-editor', [
+                        'fieldName' => 'targeting_rules',
+                        'fieldLabel' => 'Who should see this campaign',
+                        'fieldHelp' => 'Pick an audience template such as guests, logged-in customers, or loyalty near reward. Generated rules stay editable as Advanced JSON.',
+                        'jsonValue' => $targetingJson,
+                        'templates' => $targetingTemplates ?? [],
+                        'docsUrl' => route('administrator.documentation.show', 'campaigns'),
+                        'docsLabel' => 'View campaign targeting examples',
+                        'rows' => 10,
+                    ])
                 </div>
                 <div class="col-md-12">
-                    <label for="trigger_rules" class="required form-label">Trigger rules (JSON)</label>
-                    <textarea id="trigger_rules" name="trigger_rules" rows="5" required class="form-control font-monospace @error('trigger_rules') is-invalid @enderror">{{ $triggerJson }}</textarea>
-                    @error('trigger_rules')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    @include('internal.partials.json-simple-editor', [
+                        'fieldName' => 'trigger_rules',
+                        'fieldLabel' => 'When it should appear',
+                        'fieldHelp' => 'Immediate, delayed, scroll, or after product views — use a template if unsure.',
+                        'jsonValue' => $triggerJson,
+                        'templates' => $triggerTemplates ?? [],
+                        'docsUrl' => route('administrator.documentation.show', 'campaigns'),
+                        'rows' => 5,
+                    ])
                     @error('trigger_rules.type')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
             </div>

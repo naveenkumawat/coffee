@@ -14,6 +14,7 @@
                 'heading' => 'Dashboard',
                 'items' => [
                     ['label' => 'Analytics', 'route' => 'administrator.dashboard', 'pattern' => 'administrator.dashboard*', 'icon' => 'ki-chart-line'],
+                    ['label' => 'Documentation', 'route' => 'administrator.documentation.index', 'pattern' => 'administrator.documentation.*', 'icon' => 'ki-book'],
                 ],
             ],
             [
@@ -112,6 +113,7 @@
                 'heading' => 'Dashboard',
                 'items' => [
                     ['label' => 'Overview', 'route' => 'operator.dashboard', 'pattern' => 'operator.dashboard*', 'icon' => 'ki-chart-line'],
+                    ['label' => 'Documentation', 'route' => 'operator.documentation.index', 'pattern' => 'operator.documentation.*', 'icon' => 'ki-book'],
                 ],
             ],
             [
@@ -138,6 +140,7 @@
                 'heading' => 'Dashboard',
                 'items' => [
                     ['label' => 'Overview', 'route' => 'waiter.dashboard', 'pattern' => 'waiter.dashboard*', 'icon' => 'ki-chart-line'],
+                    ['label' => 'Documentation', 'route' => 'waiter.documentation.index', 'pattern' => 'waiter.documentation.*', 'icon' => 'ki-book'],
                 ],
             ],
             [
@@ -153,6 +156,7 @@
                 'heading' => 'Dashboard',
                 'items' => [
                     ['label' => 'Overview', 'route' => 'chef.dashboard', 'pattern' => 'chef.dashboard*', 'icon' => 'ki-chart-line'],
+                    ['label' => 'Documentation', 'route' => 'chef.documentation.index', 'pattern' => 'chef.documentation.*', 'icon' => 'ki-book'],
                 ],
             ],
             [
@@ -167,6 +171,7 @@
                 'heading' => 'Dashboard',
                 'items' => [
                     ['label' => 'Overview', 'route' => 'barista.dashboard', 'pattern' => 'barista.dashboard*', 'icon' => 'ki-chart-line'],
+                    ['label' => 'Documentation', 'route' => 'barista.documentation.index', 'pattern' => 'barista.documentation.*', 'icon' => 'ki-book'],
                 ],
             ],
             [

@@ -35,6 +35,7 @@ use App\Http\Controllers\Administrator\SocialLinkController;
 use App\Http\Controllers\Administrator\UserController;
 use App\Http\Controllers\Administrator\WebsiteSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Internal\DocumentationController;
 use App\Http\Controllers\Internal\StaffNotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,12 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/documentation', [DocumentationController::class, 'index'])
+        ->defaults('panel', 'administrator')
+        ->name('documentation.index');
+    Route::get('/documentation/{module}', [DocumentationController::class, 'show'])
+        ->defaults('panel', 'administrator')
+        ->name('documentation.show');
 
     Route::get('reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial.index');
     Route::get('reports/financial/export', [FinancialReportController::class, 'export'])->name('reports.financial.export');

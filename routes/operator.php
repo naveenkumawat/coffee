@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Internal\DocumentationController;
 use App\Http\Controllers\Internal\StaffNotificationController;
 use App\Http\Controllers\Operator\DashboardController;
 use App\Http\Controllers\Operator\DiningSessionController;
@@ -35,6 +36,12 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:operator'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/documentation', [DocumentationController::class, 'index'])
+        ->defaults('panel', 'operator')
+        ->name('documentation.index');
+    Route::get('/documentation/{module}', [DocumentationController::class, 'show'])
+        ->defaults('panel', 'operator')
+        ->name('documentation.show');
     Route::get('/reconciliation', ReconciliationController::class)->name('reconciliation.index');
     Route::get('/reports/inventory-products', InventoryProductOverviewController::class)->name('reports.inventory-products.index');
     Route::get('/reports/operational-performance', OperationalPerformanceOverviewController::class)->name('reports.operational-performance.index');

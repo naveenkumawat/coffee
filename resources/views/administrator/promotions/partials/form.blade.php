@@ -22,6 +22,11 @@
             <div class="card-title">
                 <h3 class="fw-bold text-gray-900">{{ $title }} — Basic</h3>
             </div>
+            <div class="card-toolbar">
+                <a href="{{ route('administrator.documentation.show', 'promotions') }}" class="btn btn-sm btn-light" target="_blank" rel="noopener">
+                    ? Promotion conditions &amp; examples
+                </a>
+            </div>
         </div>
         <div class="card-body pt-0">
             <div class="row g-6 internal-form-grid">

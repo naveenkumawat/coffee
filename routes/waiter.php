@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Internal\DocumentationController;
 use App\Http\Controllers\Internal\StaffNotificationController;
 use App\Http\Controllers\Waiter\DashboardController;
 use App\Http\Controllers\Waiter\DiningSessionController;
@@ -29,6 +30,12 @@ Route::middleware('guest:admin')->group(function (): void {
 
 Route::middleware(['auth:admin', 'role:waiter'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/documentation', [DocumentationController::class, 'index'])
+        ->defaults('panel', 'waiter')
+        ->name('documentation.index');
+    Route::get('/documentation/{module}', [DocumentationController::class, 'show'])
+        ->defaults('panel', 'waiter')
+        ->name('documentation.show');
     Route::get('/tables', [TableController::class, 'index'])->name('tables.index');
     Route::get('/sessions', [DiningSessionController::class, 'index'])->name('sessions.index');
     Route::get('/sessions/{session}', [DiningSessionController::class, 'show'])->name('sessions.show');

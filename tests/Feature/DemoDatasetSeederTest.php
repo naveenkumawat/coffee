@@ -4,14 +4,18 @@ namespace Tests\Feature;
 
 use App\Enums\OrderFulfilmentMethod;
 use App\Enums\OrderStatus;
+use App\Models\AudienceSegment;
 use App\Models\CafeTable;
+use App\Models\Campaign;
 use App\Models\Ingredient;
 use App\Models\InventoryRefillRequest;
 use App\Models\InventoryTransaction;
+use App\Models\LoyaltyReward;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductFavourite;
 use App\Models\ProductRating;
+use App\Models\Promotion;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\WebsiteSetting;
@@ -97,6 +101,11 @@ class DemoDatasetSeederTest extends TestCase
         $this->assertTrue(
             WebsiteSetting::query()->where('key', 'fulfilment_dine_in_enabled')->where('value', '1')->exists(),
         );
+
+        $this->assertGreaterThanOrEqual(10, Promotion::query()->where('name', 'like', '[Demo]%')->count());
+        $this->assertGreaterThanOrEqual(10, AudienceSegment::query()->where('name', 'like', '[Demo]%')->count());
+        $this->assertGreaterThanOrEqual(8, LoyaltyReward::query()->where('name', 'like', '[Demo]%')->count());
+        $this->assertGreaterThanOrEqual(10, Campaign::query()->where('name', 'like', '[Demo]%')->count());
 
         $this->assertGreaterThan(
             0,
