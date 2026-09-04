@@ -70,10 +70,10 @@ enum PaymentMethod: string
     public function customerSubtitle(?OrderFulfilmentMethod $fulfilment = null): string
     {
         return match ($this) {
-            self::Manual => 'Pay now and submit payment proof.',
+            self::Manual => 'Pay via UPI / QR, then submit your Transaction ID / UTR.',
             self::Cash => match ($fulfilment) {
                 OrderFulfilmentMethod::Takeaway => 'Pay cash when you collect your order.',
-                OrderFulfilmentMethod::DineIn => 'Pay at the cafe.',
+                OrderFulfilmentMethod::DineIn => 'Pay your waiter at the table.',
                 default => 'Pay in cash.',
             },
             self::Razorpay, self::PayU, self::Paytm, self::PhonePe => 'Pay securely online.',

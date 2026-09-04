@@ -33,6 +33,8 @@ use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
 use App\Services\Notification\StaffNotificationContext;
 use App\Services\Notification\StaffNotificationDispatcherInterface;
 use App\Services\Order\OrderServiceInterface;
+use App\Services\Payment\PaymentEligibilityServiceInterface;
+use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
@@ -54,6 +56,8 @@ class DiningSessionService implements DiningSessionServiceInterface
         protected StaffNotificationDispatcherInterface $staffNotifications,
         protected AddOnServiceInterface $addOns,
         protected DiningRoundCancellationPolicy $roundCancellation,
+        protected PaymentEligibilityServiceInterface $paymentEligibility,
+        protected PaymentMethodCatalog $paymentMethods,
     ) {}
 
     public function startSession(
@@ -499,7 +503,20 @@ class DiningSessionService implements DiningSessionServiceInterface
             $method = PaymentMethod::tryFromApiKey($paymentMethodApiKey);
             if ($method === null) {
                 throw ValidationException::withMessages([
-                    'payment_method' => 'Choose cash or UPI for dining payment.',
+                    'payment_method' => 'Choose a valid payment method.',
+                ]);
+            }
+
+            $customer = $locked->customer;
+            if ($customer instanceof User) {
+                $this->paymentEligibility->assertAllowed(
+                    $customer,
+                    OrderFulfilmentMethod::DineIn,
+                    $method->apiKey(),
+                );
+            } elseif (! $this->paymentMethods->isEnabled($method) || ! $this->paymentMethods->isConfigured($method)) {
+                throw ValidationException::withMessages([
+                    'payment_method' => 'That payment method is not available right now.',
                 ]);
             }
 
@@ -527,6 +544,19 @@ class DiningSessionService implements DiningSessionServiceInterface
                 $attributes['payment_proof_size'] = null;
                 $attributes['payment_proof_uploaded_at'] = null;
                 $attributes['payment_proof_rejection_notes'] = null;
+                $attributes['payment_reference'] = null;
+                $attributes['payment_status'] = PaymentStatus::Pending;
+            }
+
+            if ($method->isOnline()) {
+                $locked->clearPaymentProofFiles();
+                $attributes['payment_proof_path'] = null;
+                $attributes['payment_proof_disk'] = null;
+                $attributes['payment_proof_mime'] = null;
+                $attributes['payment_proof_size'] = null;
+                $attributes['payment_proof_uploaded_at'] = null;
+                $attributes['payment_proof_rejection_notes'] = null;
+                $attributes['payment_reference'] = null;
                 $attributes['payment_status'] = PaymentStatus::Pending;
             }
 
@@ -608,6 +638,87 @@ class DiningSessionService implements DiningSessionServiceInterface
         return $session->fresh(['cafeTable', 'customer', 'orders.items']);
     }
 
+    public function submitPaymentTransactionId(DiningSession $session, User $actor, string $transactionId): DiningSession
+    {
+        $isOwner = $session->customer_id && (int) $session->customer_id === (int) $actor->getKey();
+        if (! $isOwner && ! $actor->canOperateDining() && ! $actor->canManageOrders()) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'You cannot submit a Transaction ID for this session.',
+            ]);
+        }
+
+        if ($session->isCashPayment()) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Cash dining bills do not use UPI Transaction IDs.',
+            ]);
+        }
+
+        if ($session->payment_method?->isOnline()) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Online gateway payments do not use Manual UPI Transaction IDs.',
+            ]);
+        }
+
+        if (! $this->paymentMethods->isEnabled(PaymentMethod::Manual)) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Manual UPI payments are currently unavailable.',
+            ]);
+        }
+
+        if (! $session->canSubmitManualPaymentEvidence()) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Transaction ID can only be submitted while the bill is awaiting payment confirmation.',
+            ]);
+        }
+
+        $normalized = $this->normalizePaymentTransactionId($transactionId);
+        if ($normalized === null) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'Enter a valid UPI Transaction ID / UTR.',
+            ]);
+        }
+
+        if ($this->paymentTransactionIdInUse($normalized, (int) $session->getKey())) {
+            throw ValidationException::withMessages([
+                'transaction_id' => 'This Transaction ID / UTR is already in use on another payment.',
+            ]);
+        }
+
+        $wasResubmission = $session->payment_status === PaymentStatus::Rejected
+            || $session->hasManualPaymentEvidence();
+
+        $session->fill([
+            'payment_reference' => $normalized,
+            'payment_proof_uploaded_at' => now(),
+            'payment_status' => PaymentStatus::AwaitingReview,
+            'payment_proof_rejection_notes' => null,
+            'status' => DiningSessionStatus::AwaitingPayment,
+            'payment_method' => $session->payment_method ?? PaymentMethod::Manual,
+        ])->save();
+
+        $relatedOrder = $session->orders()->latest('id')->first();
+        if ($relatedOrder instanceof Order) {
+            $this->staffNotifications->notify(
+                StaffNotificationType::PaymentProofReceived,
+                'staff:dining_payment_proof:'.$session->getKey().':'.now()->timestamp,
+                StaffNotificationAudience::Administrators,
+                StaffNotificationContext::forOrder($relatedOrder),
+                true,
+            );
+            $this->staffNotifications->notify(
+                StaffNotificationType::PaymentProofReceived,
+                'staff:dining_payment_proof:ops:'.$session->getKey().':'.now()->timestamp,
+                StaffNotificationAudience::Operators,
+                StaffNotificationContext::forOrder($relatedOrder),
+                true,
+            );
+        }
+
+        event(new DiningPaymentProofReceived($session->fresh(['customer']) ?? $session, $wasResubmission));
+
+        return $session->fresh(['cafeTable', 'customer', 'orders.items']);
+    }
+
     public function rejectPaymentProof(DiningSession $session, User $actor, ?string $notes = null): DiningSession
     {
         if (! $actor->canManageOrders() && ! $actor->canOperateOrders()) {
@@ -625,13 +736,13 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
-            if (! $locked->hasPaymentProof()) {
+            if (! $locked->hasManualPaymentEvidence()) {
                 throw ValidationException::withMessages([
-                    'payment_proof' => 'This session does not have an uploaded payment proof.',
+                    'payment_proof' => 'This session does not have a submitted Transaction ID or payment screenshot.',
                 ]);
             }
 
-            $reason = filled($notes) ? trim($notes) : 'Please upload a clearer payment screenshot.';
+            $reason = filled($notes) ? trim($notes) : 'Please check your UPI Transaction ID / UTR and submit again.';
 
             $locked->fill([
                 'payment_status' => PaymentStatus::Rejected,
@@ -673,9 +784,9 @@ class DiningSessionService implements DiningSessionServiceInterface
                 ]);
             }
 
-            if ($locked->payment_method === PaymentMethod::Manual && ! $locked->hasPaymentProof()) {
+            if ($locked->payment_method === PaymentMethod::Manual && ! $locked->hasManualPaymentEvidence()) {
                 throw ValidationException::withMessages([
-                    'payment' => 'UPI payment confirmation requires an uploaded payment proof.',
+                    'payment' => 'UPI payment confirmation requires a submitted Transaction ID / UTR (or historical screenshot).',
                 ]);
             }
 
@@ -1328,5 +1439,46 @@ class DiningSessionService implements DiningSessionServiceInterface
         }
 
         return array_values($aggregated);
+    }
+
+    protected function normalizePaymentTransactionId(string $value): ?string
+    {
+        $normalized = preg_replace('/\s+/', '', trim($value)) ?? '';
+
+        if ($normalized === '' || strlen($normalized) < 6 || strlen($normalized) > 64) {
+            return null;
+        }
+
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9\-_]*$/', $normalized)) {
+            return null;
+        }
+
+        return $normalized;
+    }
+
+    protected function paymentTransactionIdInUse(string $transactionId, int $excludeSessionId): bool
+    {
+        $orderConflict = Order::query()
+            ->where('payment_transaction_id', $transactionId)
+            ->where(function ($query): void {
+                $query->where('payment_status', PaymentStatus::Confirmed->value)
+                    ->orWhere('payment_status', PaymentStatus::AwaitingReview->value)
+                    ->orWhereNotNull('payment_confirmed_at');
+            })
+            ->whereNotIn('status', [OrderStatus::Cancelled->value, OrderStatus::Rejected->value])
+            ->exists();
+
+        if ($orderConflict) {
+            return true;
+        }
+
+        return DiningSession::query()
+            ->where('payment_reference', $transactionId)
+            ->whereKeyNot($excludeSessionId)
+            ->where(function ($query): void {
+                $query->where('payment_status', PaymentStatus::Confirmed->value)
+                    ->orWhere('payment_status', PaymentStatus::AwaitingReview->value);
+            })
+            ->exists();
     }
 }

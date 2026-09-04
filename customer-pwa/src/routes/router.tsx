@@ -54,7 +54,7 @@ const DiningMenuPage = lazyPage(() =>
   import('../pages/DiningMenuPage').then((module) => ({ default: module.DiningMenuPage })),
 );
 const DiningBillPage = lazyPage(() =>
-  import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningBillPage })),
+  import('../pages/DiningBillPage').then((module) => ({ default: module.DiningBillPage })),
 );
 const WaiterTablesPage = lazyPage(() =>
   import('../pages/waiter/WaiterTablesPage').then((module) => ({ default: module.WaiterTablesPage })),

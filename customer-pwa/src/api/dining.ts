@@ -1,4 +1,4 @@
-import { ApiEnvelope, destroy, get, post, postForm, put } from './client';
+import { ApiEnvelope, destroy, get, post, put } from './client';
 import { CartAddOnSelection } from '../types/cart';
 import { canonicalizeAddOns } from '../utils/addOns';
 
@@ -92,6 +92,10 @@ export interface DiningSession {
     discount: string;
     tax: string;
     total: string;
+    finalized?: boolean;
+    tax_label?: string | null;
+    tax_percent?: string | null;
+    tax_enabled?: boolean;
   };
   running_bill?: {
     subtotal: string;
@@ -99,14 +103,34 @@ export interface DiningSession {
     tax: string;
     total: string;
   } | null;
+  final_bill?: {
+    subtotal: string;
+    discount: string;
+    tax: string;
+    total: string;
+    tax_label?: string | null;
+    tax_percent?: string | null;
+    tax_enabled?: boolean;
+  } | null;
   drafts: DiningDraftItem[];
   rounds: DiningRound[];
   payment_method?: string | null;
   payment_status?: string | null;
+  payment_status_label?: string | null;
+  payment_transaction_id?: string | null;
+  payment_proof?: {
+    uploaded?: boolean;
+    transaction_id?: string | null;
+    has_screenshot?: boolean;
+    uploaded_at?: string | null;
+    rejection_notes?: string | null;
+  } | null;
   billing_requested_at?: string | null;
   capabilities?: {
     can_add_rounds: boolean;
     can_upload_payment_proof: boolean;
+    can_submit_transaction_id?: boolean;
+    can_pay?: boolean;
     can_call_waiter?: boolean;
   };
   service_request?: DiningServiceRequest | null;
@@ -202,7 +226,7 @@ export function requestDiningBill(sessionId: number | string): Promise<ApiEnvelo
 
 export function setDiningPaymentMethod(
   sessionId: number | string,
-  paymentMethod: 'cash' | 'manual_upi',
+  paymentMethod: string,
 ): Promise<ApiEnvelope<DiningSession>> {
   return post<ApiEnvelope<DiningSession>, { payment_method: string }>(
     `/dining/sessions/${sessionId}/payment-method`,
@@ -210,12 +234,12 @@ export function setDiningPaymentMethod(
   );
 }
 
-export function uploadDiningPaymentProof(
+export function submitDiningPaymentTransactionId(
   sessionId: number | string,
-  file: File,
+  transactionId: string,
 ): Promise<ApiEnvelope<DiningSession>> {
-  const body = new FormData();
-  body.append('payment_proof', file);
-
-  return postForm<ApiEnvelope<DiningSession>>(`/dining/sessions/${sessionId}/payment-proof`, body);
+  return post<ApiEnvelope<DiningSession>, { transaction_id: string }>(
+    `/dining/sessions/${sessionId}/payment-proof`,
+    { transaction_id: transactionId },
+  );
 }

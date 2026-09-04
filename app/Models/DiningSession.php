@@ -156,9 +156,23 @@ class DiningSession extends AbstractModel
         return filled($this->payment_proof_path);
     }
 
+    public function hasManualPaymentEvidence(): bool
+    {
+        return $this->hasPaymentProof() || filled($this->payment_reference);
+    }
+
     public function canUploadPaymentProof(): bool
     {
+        return $this->canSubmitManualPaymentEvidence();
+    }
+
+    public function canSubmitManualPaymentEvidence(): bool
+    {
         if ($this->isCashPayment()) {
+            return false;
+        }
+
+        if ($this->payment_method?->isOnline()) {
             return false;
         }
 

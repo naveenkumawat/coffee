@@ -12,7 +12,7 @@
     "build": "tsc -b && vite build && node scripts/generate-sw.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "test:ux": "node --test scripts/ux-cleanup.test.mjs"
+    "test:ux": "node --test scripts/ux-cleanup.test.mjs scripts/ordering-context.runtime.test.mjs"
   },
   "dependencies": {
     "bootstrap": "^5.3.7",

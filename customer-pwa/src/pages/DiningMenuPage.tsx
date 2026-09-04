@@ -18,6 +18,7 @@ import { formatCurrency } from '../utils/format';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
 import {
+  diningDraftItemCount,
   diningSessionPath,
   writeOrderingContext,
 } from '../utils/orderingContext';
@@ -79,6 +80,7 @@ export function DiningMenuPage() {
           type: 'dining',
           diningSessionId: sessionId,
           tableLabel: sessionResponse.data.table.label,
+          draftItemCount: diningDraftItemCount(sessionResponse.data.drafts),
         });
         setCategories(categoryResponse.data);
         setFlavours(flavourResponse.data);
@@ -139,6 +141,12 @@ export function DiningMenuPage() {
         try {
           const response = await addDiningDraft(sessionId, payload);
           setSession(response.data);
+          writeOrderingContext({
+            type: 'dining',
+            diningSessionId: sessionId,
+            tableLabel: response.data.table.label,
+            draftItemCount: diningDraftItemCount(response.data.drafts),
+          });
           toastSuccess('Added to your next round');
         } catch (error) {
           toastError(error instanceof ApiError ? error.message : 'Unable to add item.');
@@ -166,6 +174,7 @@ export function DiningMenuPage() {
         type: 'dining',
         diningSessionId: sessionId,
         tableLabel: sessionResponse.data.table.label,
+        draftItemCount: diningDraftItemCount(sessionResponse.data.drafts),
       });
       setCategories(categoryResponse.data);
       setFlavours(flavourResponse.data);

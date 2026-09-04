@@ -109,6 +109,8 @@ interface DiningSessionServiceInterface
 
     public function uploadPaymentProof(DiningSession $session, User $actor, UploadedFile $file): DiningSession;
 
+    public function submitPaymentTransactionId(DiningSession $session, User $actor, string $transactionId): DiningSession;
+
     public function rejectPaymentProof(DiningSession $session, User $actor, ?string $notes = null): DiningSession;
 
     public function confirmPayment(DiningSession $session, User $actor): DiningSession;

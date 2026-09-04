@@ -78,7 +78,8 @@
   --customer-content-max-mobile: 34rem;
   --customer-content-gutter: var(--space-4);
   /* Readable dining workflow column inside the shared shell (not a second shell). */
-  --dining-content-max: 48rem;
+  --dining-content-max-tablet: 48rem;
+  --dining-content-max-desktop: 56rem;
   --coffee-shell-max: var(--customer-content-max-mobile);
   --bottom-nav-height: 4.35rem;
   --coffee-bottom-nav-height: var(--bottom-nav-height);
@@ -1048,6 +1049,11 @@ a.category-pill {
   overflow: visible;
   /* Prevent iOS rubber-band / overscroll from painting content through. */
   isolation: isolate;
+}
+
+/* Waiter mode may have fewer items; keep equal flex without forcing empty slots. */
+.bottom-navigation:not(.bottom-navigation--customer) {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
 .bottom-nav-link {
@@ -6963,16 +6969,30 @@ body.product-overlay-open .bottom-navigation {
   margin-inline: 0;
 }
 
-/* Inner dining workflow column — lives inside the shared customer shell. */
+/* Inner dining workflow column — lives inside the shared customer shell.
+   Mobile: full shell width (shared gutters only). Tablet/desktop: readable centered column. */
 .dining-content {
   width: 100%;
-  max-width: min(100%, var(--dining-content-max));
+  max-width: none;
   margin-inline: auto;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
+@media (min-width: 768px) {
+  .dining-content {
+    max-width: min(100%, var(--dining-content-max-tablet));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dining-content {
+    max-width: min(100%, var(--dining-content-max-desktop));
+  }
+}
+
+/* Dining add-items uses the full menu/grid width inside the shared shell. */
 .dining-menu-page .dining-content {
   max-width: none;
 }

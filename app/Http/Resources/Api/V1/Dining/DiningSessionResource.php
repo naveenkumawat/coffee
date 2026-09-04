@@ -42,12 +42,28 @@ class DiningSessionResource extends JsonResource
             'closed_at' => $session->closed_at?->toIso8601String(),
             'payment_method' => $session->payment_method?->apiKey(),
             'payment_status' => $session->payment_status?->value,
+            'payment_status_label' => $session->payment_status?->label(),
+            'payment_transaction_id' => $session->payment_reference,
+            'payment_proof' => $session->isCashPayment() || $session->payment_method?->isOnline()
+                ? null
+                : [
+                    'uploaded' => $session->hasManualPaymentEvidence(),
+                    'transaction_id' => $session->payment_reference,
+                    'has_screenshot' => $session->hasPaymentProof(),
+                    'uploaded_at' => $session->payment_proof_uploaded_at?->toIso8601String(),
+                    'mime' => $session->payment_proof_mime,
+                    'size' => $session->payment_proof_size,
+                    'rejection_notes' => $session->payment_proof_rejection_notes,
+                ],
             'totals' => [
                 'subtotal' => $bill['subtotal'],
                 'discount' => $bill['discount'],
                 'tax' => $bill['tax'],
                 'total' => $bill['total'],
                 'finalized' => (bool) ($bill['finalized'] ?? false),
+                'tax_label' => $session->tax_label_snapshot,
+                'tax_percent' => $session->tax_percent_snapshot,
+                'tax_enabled' => (bool) $session->tax_enabled_snapshot,
             ],
             'running_bill' => ($bill['finalized'] ?? false) ? null : $bill,
             'final_bill' => ($bill['finalized'] ?? false) ? $bill : null,
@@ -96,7 +112,11 @@ class DiningSessionResource extends JsonResource
                 : [],
             'capabilities' => [
                 'can_add_rounds' => $session->allowsNewRounds(),
-                'can_upload_payment_proof' => $session->canUploadPaymentProof(),
+                'can_upload_payment_proof' => $session->canSubmitManualPaymentEvidence(),
+                'can_submit_transaction_id' => $session->canSubmitManualPaymentEvidence()
+                    && $session->payment_method?->apiKey() === 'manual_upi',
+                'can_pay' => in_array($session->status?->value, ['billing_requested', 'awaiting_payment'], true)
+                    && $session->payment_status?->value !== 'confirmed',
                 'can_call_waiter' => $session->allowsNewRounds()
                     && $session->customer_id !== null
                     && (int) $session->customer_id === (int) $request->user()?->getKey(),

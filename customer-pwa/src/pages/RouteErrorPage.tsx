@@ -34,6 +34,15 @@ export function RouteErrorPage() {
     }
   }, [chunkError, error, offline]);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV || !error) {
+      return;
+    }
+
+    // Keep the friendly fallback, but never hide the real failure in development.
+    console.error('[RouteErrorPage]', error);
+  }, [error]);
+
   if (recovering) {
     return (
       <div className="page-container route-error-page">

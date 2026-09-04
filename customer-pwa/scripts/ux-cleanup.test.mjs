@@ -150,9 +150,13 @@ test('customer shell uses shared content max tokens', () => {
   assert.match(theme, /--customer-content-max:\s*72rem/);
   assert.match(theme, /--customer-content-max-mobile:\s*34rem/);
   assert.match(theme, /--customer-content-gutter:/);
-  assert.match(theme, /--dining-content-max:\s*48rem/);
+  assert.match(theme, /--dining-content-max-tablet:\s*48rem/);
+  assert.match(theme, /--dining-content-max-desktop:\s*56rem/);
   assert.match(theme, /\.app-shell\s*\{[\s\S]*?var\(--customer-content-max\)/);
-  assert.match(theme, /\.dining-content\s*\{[\s\S]*?var\(--dining-content-max\)/);
+  assert.match(theme, /\.dining-content\s*\{[\s\S]*?max-width:\s*none/);
+  assert.match(theme, /@media \(min-width: 768px\)[\s\S]*?\.dining-content[\s\S]*?var\(--dining-content-max-tablet\)/);
+  assert.match(theme, /@media \(min-width: 1024px\)[\s\S]*?\.dining-content[\s\S]*?var\(--dining-content-max-desktop\)/);
+  assert.match(theme, /\.dining-menu-page \.dining-content\s*\{[\s\S]*?max-width:\s*none/);
   assert.match(theme, /\.dining-session-page,[\s\S]*?max-width:\s*none/);
   assert.doesNotMatch(
     theme,
@@ -161,36 +165,48 @@ test('customer shell uses shared content max tokens', () => {
 });
 
 test('dining session and bill use inner dining-content inside shared page shell', () => {
-  const source = readSrc('pages/DiningSessionPage.tsx');
-  assert.match(source, /page-container dining-session-page/);
-  assert.match(source, /className="dining-content"/);
-  assert.match(source, /page-container dining-bill-page/);
-  assert.match(source, /tableLabel:/);
+  const session = readSrc('pages/DiningSessionPage.tsx');
+  assert.match(session, /page-container dining-session-page/);
+  assert.match(session, /className="dining-content"/);
+  assert.match(session, /tableLabel:/);
+
+  const bill = readSrc('pages/DiningBillPage.tsx');
+  assert.match(bill, /page-container dining-bill-page/);
+  assert.match(bill, /className="dining-content"/);
+  assert.match(bill, /tableLabel:/);
 });
 
-test('dining bottom nav uses orderingContext and hides booking/cart', () => {
+test('customer footer always keeps Home/Menu/Dining/Cart/Account with dining-aware destinations', () => {
   const source = readSrc('components/navigation/BottomNavigation.tsx');
   assert.match(source, /useOrderingContext/);
   assert.match(source, /isDiningOrderingContext/);
   assert.match(source, /diningMenuPath/);
   assert.match(source, /diningSessionPath/);
-  assert.match(source, /diningActive/);
-  assert.doesNotMatch(source, /pathname\.(includes|startsWith)\(/);
+  assert.match(source, /draftItemCount/);
   assert.doesNotMatch(source, /Book table/i);
+  assert.doesNotMatch(source, /label:\s*'Table'/);
 
-  const diningBranch = source.match(/diningActive\s*\?\s*(\[[\s\S]*?\])\s*:/);
-  assert.ok(diningBranch, 'expected diningActive ternary branch');
-  assert.match(diningBranch[1], /diningMenuPath/);
-  assert.match(diningBranch[1], /diningSessionPath/);
-  assert.match(diningBranch[1], /label: 'Menu'/);
-  assert.doesNotMatch(diningBranch[1], /to:\s*'\/cart'/);
-  assert.doesNotMatch(diningBranch[1], /label:\s*'Cart'/);
-  assert.doesNotMatch(diningBranch[1], /label:\s*'Dining'/);
-  assert.doesNotMatch(diningBranch[1], /to:\s*[^,\n]*\/dining['"`]/);
-
-  // Retail booking + cart remain available outside dining context.
+  assert.match(source, /label: 'Home'/);
+  assert.match(source, /label: 'Menu'/);
   assert.match(source, /label: 'Dining'/);
-  assert.match(source, /to: '\/cart'/);
+  assert.match(source, /label: 'Cart'/);
+  assert.match(source, /label: isAuthenticated \? 'Account'/);
+  assert.match(source, /AppIcons\.cart/);
+  assert.match(source, /AppIcons\.dining/);
+
+  // Always five customer destinations (Dining never removed by context).
+  assert.match(source, /menuTo = diningContext \? diningMenuPath/);
+  assert.match(source, /diningTo = diningContext/);
+  assert.match(source, /cartTo = diningContext \? diningSessionPath/);
+  assert.match(source, /cartCount = diningContext \? \(diningContext\.draftItemCount/);
+  assert.match(source, /retailCartCount/);
+  assert.doesNotMatch(source, /!diningContext && diningEnabled/);
+  assert.doesNotMatch(source, /diningEnabled/);
+
+  // Active-state ownership: add-items → Menu, session → Dining, Cart not dual-active in dining.
+  assert.match(source, /isDiningAddItemsPath/);
+  assert.match(source, /isDiningSessionSurfacePath/);
+  assert.match(source, /isNavActive/);
 });
 
 test('dining add-items sticky bar has table return actions without retail cart', () => {
@@ -209,25 +225,73 @@ test('retail menu and cart redirect into dining when dining context is active', 
   assert.match(menu, /isDiningOrderingContext/);
   assert.match(menu, /diningMenuPath/);
   assert.match(menu, /Navigate to=\{diningMenuPath/);
+  assert.doesNotMatch(menu, /navigate\(diningMenuPath/);
 
   const cart = readSrc('pages/CartPage.tsx');
   assert.match(cart, /isDiningOrderingContext/);
   assert.match(cart, /diningSessionPath/);
   assert.match(cart, /Navigate to=\{diningSessionPath/);
+  assert.doesNotMatch(cart, /navigate\(diningSessionPath/);
 
   const product = readSrc('pages/ProductDetailPage.tsx');
   assert.match(product, /isDiningOrderingContext/);
   assert.match(product, /diningMenuPath/);
+  assert.doesNotMatch(product, /navigate\(diningMenuPath/);
+
+  // Dining menu must not bounce back to retail /menu (redirect loop).
+  const diningMenu = readSrc('pages/DiningMenuPage.tsx');
+  assert.doesNotMatch(diningMenu, /Navigate to=\{?['"`]\/menu/);
+  assert.doesNotMatch(diningMenu, /navigate\(['"`]\/menu/);
+  assert.doesNotMatch(diningMenu, /Navigate to=\{?['"`]\/cart/);
 });
 
-test('orderingContext exposes tableLabel and live subscription', () => {
+test('orderingContext caches snapshots and hardens stale dining shapes', () => {
   const source = readSrc('utils/orderingContext.ts');
   assert.match(source, /tableLabel/);
+  assert.match(source, /draftItemCount/);
+  assert.match(source, /diningDraftItemCount/);
   assert.match(source, /subscribeOrderingContext/);
   assert.match(source, /coffee:ordering-context/);
   assert.match(source, /isDiningOrderingContext/);
+  assert.match(source, /normalizeOrderingContext/);
+  assert.match(source, /RETAIL_ORDERING_CONTEXT/);
+  assert.match(source, /cachedRaw/);
+  assert.match(source, /rememberSnapshot/);
 
   const hook = readSrc('hooks/useOrderingContext.ts');
   assert.match(hook, /useSyncExternalStore/);
   assert.match(hook, /subscribeOrderingContext/);
+  assert.match(hook, /readOrderingContext/);
+  assert.match(hook, /RETAIL_ORDERING_CONTEXT/);
+  // Unstable inline object snapshots caused the global Maximum update depth crash.
+  assert.doesNotMatch(hook, /getSnapshot[\s\S]{0,80}return\s*\{\s*type:\s*['"]retail['"]/);
+});
+
+test('dining bill payment uses catalog methods and UTR not screenshot upload', () => {
+  const bill = readSrc('pages/DiningBillPage.tsx');
+  assert.match(bill, /PaymentMethodSelector/);
+  assert.match(bill, /submitDiningPaymentTransactionId/);
+  assert.match(bill, /Transaction ID \/ UTR/);
+  assert.match(bill, /Verification Pending/);
+  assert.match(bill, /Back to table/);
+  assert.doesNotMatch(bill, /type=["']file["']/);
+  assert.doesNotMatch(bill, /Upload proof/i);
+  assert.doesNotMatch(bill, /UPI payment proof/i);
+  assert.doesNotMatch(bill, /clearOrderingContext/);
+
+  const diningApi = readSrc('api/dining.ts');
+  assert.match(diningApi, /submitDiningPaymentTransactionId/);
+  assert.doesNotMatch(diningApi, /uploadDiningPaymentProof/);
+  assert.doesNotMatch(diningApi, /FormData/);
+
+  const router = readSrc('routes/router.tsx');
+  assert.match(router, /DiningBillPage/);
+  assert.match(router, /pages\/DiningBillPage/);
+});
+
+test('route error page logs the real error in development', () => {
+  const source = readSrc('pages/RouteErrorPage.tsx');
+  assert.match(source, /import\.meta\.env\.DEV/);
+  assert.match(source, /console\.error/);
+  assert.match(source, /Something went wrong/);
 });

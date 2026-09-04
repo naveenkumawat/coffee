@@ -12,9 +12,7 @@ import {
   placeDiningRound,
   removeDiningDraft,
   requestDiningBill,
-  setDiningPaymentMethod,
   updateDiningDraft,
-  uploadDiningPaymentProof,
 } from '../api/dining';
 import { CompactDiningRoundBar } from '../components/common/CompactActionBars';
 import { QuantityStepper } from '../components/common/QuantityStepper';
@@ -24,6 +22,7 @@ import { formatCurrency, formatDateTime } from '../utils/format';
 import { AppIcons } from '../utils/icons';
 import {
   clearOrderingContext,
+  diningDraftItemCount,
   diningMenuPath,
   writeOrderingContext,
 } from '../utils/orderingContext';
@@ -115,6 +114,12 @@ export function DiningSessionPage() {
   const reload = useCallback(async (): Promise<void> => {
     const response = await fetchDiningSession(sessionId);
     setSession(response.data);
+    writeOrderingContext({
+      type: 'dining',
+      diningSessionId: sessionId,
+      tableLabel: response.data.table.label,
+      draftItemCount: diningDraftItemCount(response.data.drafts),
+    });
   }, [sessionId]);
 
   useLiveCanonicalSync(
@@ -156,6 +161,7 @@ export function DiningSessionPage() {
             type: 'dining',
             diningSessionId: sessionId,
             tableLabel: response.data.table.label,
+            draftItemCount: diningDraftItemCount(response.data.drafts),
           });
         }
       } catch (err) {
@@ -388,6 +394,7 @@ export function DiningSessionPage() {
                     type: 'dining',
                     diningSessionId: sessionId,
                     tableLabel: session.table.label,
+                    draftItemCount: diningDraftItemCount(session.drafts),
                   })
                 }
               >
@@ -407,6 +414,7 @@ export function DiningSessionPage() {
                       type: 'dining',
                       diningSessionId: sessionId,
                       tableLabel: session.table.label,
+                      draftItemCount: diningDraftItemCount(session.drafts),
                     })
                   }
                 >
@@ -593,127 +601,6 @@ export function DiningSessionPage() {
           onPlaceOrder={() => void handlePlaceOrder()}
         />
       ) : null}
-    </div>
-  );
-}
-
-export function DiningBillPage() {
-  const { sessionId = '' } = useParams();
-  const [session, setSession] = useState<DiningSession | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-
-  useEffect(() => {
-    clearOrderingContext();
-    void fetchDiningSession(sessionId)
-      .then((response) => setSession(response.data))
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Unable to load bill.'));
-  }, [sessionId]);
-
-  if (!session) {
-    return (
-      <div className="page-container dining-bill-page">
-        <div className="dining-content">
-          <h1>Bill</h1>
-          {error ? <p className="form-error-text">{error}</p> : <p className="muted">Loading…</p>}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-container dining-bill-page">
-      <div className="dining-content">
-      <header className="dining-session-hero">
-        <div className="dining-session-hero-top">
-          <div>
-            <p className="dining-session-kicker">Bill</p>
-            <h1 className="dining-session-table">Table {session.table.label}</h1>
-            <p className="dining-session-ref muted">{session.session_number}</p>
-          </div>
-          <span className="status-badge is-pending">{session.status_label ?? session.status}</span>
-        </div>
-        <div className="dining-session-bill-row">
-          <span>Total due</span>
-          <strong>{formatCurrency(session.totals.total)}</strong>
-        </div>
-      </header>
-
-      {error ? (
-        <p className="form-error-text" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="stack gap-3 dining-bill-actions">
-        <button
-          type="button"
-          className="btn btn-secondary rounded-pill"
-          disabled={busy}
-          onClick={() => {
-            setBusy(true);
-            void setDiningPaymentMethod(sessionId, 'cash')
-              .then((response) => setSession(response.data))
-              .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Unable to set cash.'))
-              .finally(() => setBusy(false));
-          }}
-        >
-          Pay with cash (waiter will confirm)
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-secondary rounded-pill"
-          disabled={busy}
-          onClick={() => {
-            setBusy(true);
-            void setDiningPaymentMethod(sessionId, 'manual_upi')
-              .then((response) => setSession(response.data))
-              .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'Unable to set UPI.'))
-              .finally(() => setBusy(false));
-          }}
-        >
-          Pay with UPI
-        </button>
-
-        {session.capabilities?.can_upload_payment_proof ? (
-          <form
-            className="stack gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!proofFile) {
-                setError('Choose a payment screenshot.');
-                return;
-              }
-              setBusy(true);
-              void uploadDiningPaymentProof(sessionId, proofFile)
-                .then((response) => setSession(response.data))
-                .catch((err: unknown) =>
-                  setError(err instanceof ApiError ? err.message : 'Unable to upload proof.'),
-                )
-                .finally(() => setBusy(false));
-            }}
-          >
-            <label className="field">
-              <span>UPI payment proof</span>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-              />
-            </label>
-            <button className="btn btn-primary rounded-pill" type="submit" disabled={busy}>
-              Upload proof
-            </button>
-          </form>
-        ) : null}
-      </div>
-
-      <Link to={`/dining/sessions/${sessionId}`} className="btn btn-text">
-        Back to session
-      </Link>
-      </div>
     </div>
   );
 }

@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\Customer;
 
+use App\Enums\OrderFulfilmentMethod;
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dining\DiningPaymentTransactionRequest;
 use App\Http\Resources\Api\V1\Dining\DiningSessionResource;
 use App\Models\CafeTable;
 use App\Models\DiningRoundDraft;
 use App\Models\DiningSession;
 use App\Services\Dining\DiningSessionServiceInterface;
 use App\Services\Invoice\DiningInvoiceServiceInterface;
+use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,6 +27,7 @@ class CustomerDiningController extends Controller
         protected DiningSessionServiceInterface $dining,
         protected WebsiteSettingServiceInterface $websiteSettings,
         protected DiningInvoiceServiceInterface $invoices,
+        protected PaymentMethodCatalog $paymentMethods,
     ) {}
 
     public function tables(): JsonResponse
@@ -96,6 +99,8 @@ class CustomerDiningController extends Controller
         return $this->respondWithResource(
             new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Dining session retrieved.',
+            200,
+            $this->paymentMeta($session, request()->user()),
         );
     }
 
@@ -202,7 +207,7 @@ class CustomerDiningController extends Controller
         $this->authorize('pay', $session);
 
         $data = $request->validate([
-            'payment_method' => ['required', 'string', Rule::in(['manual_upi', 'manual', 'cash'])],
+            'payment_method' => ['required', 'string'],
         ]);
 
         $session = $this->dining->setPaymentMethod($session, $data['payment_method']);
@@ -211,23 +216,25 @@ class CustomerDiningController extends Controller
             new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
             'Payment method saved.',
             200,
-            ['payment' => $this->websiteSettings->paymentInstructions()],
+            $this->paymentMeta($session, $request->user()),
         );
     }
 
-    public function uploadPaymentProof(Request $request, DiningSession $session): JsonResponse
+    public function uploadPaymentProof(DiningPaymentTransactionRequest $request, DiningSession $session): JsonResponse
     {
         $this->authorize('pay', $session);
 
-        $request->validate([
-            'payment_proof' => ['required', 'file', 'image', 'max:5120'],
-        ]);
-
-        $session = $this->dining->uploadPaymentProof($session, $request->user(), $request->file('payment_proof'));
+        $session = $this->dining->submitPaymentTransactionId(
+            $session,
+            $request->user(),
+            (string) $request->validated('transaction_id'),
+        );
 
         return $this->respondWithResource(
             new DiningSessionResource($session->load(['cafeTable', 'customer', 'drafts.productVariant.product', 'drafts.draftAddOns.addOn', 'orders.items.addOns'])),
-            'Payment proof uploaded.',
+            'Transaction ID submitted for verification.',
+            200,
+            $this->paymentMeta($session, $request->user()),
         );
     }
 
@@ -242,5 +249,22 @@ class CustomerDiningController extends Controller
         }
 
         return $this->invoices->downloadPdf($session);
+    }
+
+    /**
+     * @return array{payment: array<string, mixed>, payment_methods: list<array<string, mixed>>}
+     */
+    protected function paymentMeta(DiningSession $session, $user): array
+    {
+        $methods = [];
+
+        if ($user !== null) {
+            $methods = $this->paymentMethods->availableMethods($user, OrderFulfilmentMethod::DineIn);
+        }
+
+        return [
+            'payment' => $this->websiteSettings->paymentInstructions(),
+            'payment_methods' => $methods,
+        ];
     }
 }

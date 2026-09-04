@@ -5,7 +5,6 @@ import { useOrderingContext } from '../../hooks/useOrderingContext';
 import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
-import { useContentStore } from '../../stores/contentStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
 import { AppIcons, formatCountBadge } from '../../utils/icons';
@@ -27,16 +26,32 @@ interface BottomNavItem {
   end?: boolean;
   ariaLabel?: string;
   badgeCount?: number;
+  /** Custom active matching so Dining/Menu/Cart never fight over the same route. */
+  isNavActive?: (pathname: string) => boolean;
 }
 
 interface BottomNavigationProps {
   realtimeState?: RealtimeConnectionState;
 }
 
+function isDiningAddItemsPath(pathname: string, sessionId: string): boolean {
+  return pathname === diningMenuPath(sessionId) || pathname.startsWith(`${diningMenuPath(sessionId)}/`);
+}
+
+function isDiningSessionSurfacePath(pathname: string, sessionId: string): boolean {
+  if (isDiningAddItemsPath(pathname, sessionId)) {
+    return false;
+  }
+
+  const sessionBase = diningSessionPath(sessionId);
+
+  return pathname === sessionBase || pathname.startsWith(`${sessionBase}/`);
+}
+
 export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationProps) {
   const location = useLocation();
   const orderingContext = useOrderingContext();
-  const count = useCartStore((state) => state.count);
+  const retailCartCount = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
@@ -45,28 +60,39 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const showRealtimeDot = isAuthenticated && realtimeState !== 'idle';
   const realtimeTone = realtimeStatusTone(realtimeState);
   const realtimeLabel = realtimeStatusLabel(realtimeState);
-  const content = useContentStore((state) => state.content);
-  const diningEnabled = Boolean(
-    content?.fulfilment?.dining_enabled ?? content?.fulfilment?.dine_in_enabled,
-  );
-  const previousCount = useRef(count);
+  const diningContext =
+    !waiterMode && isDiningOrderingContext(orderingContext) ? orderingContext : null;
+  const cartCount = diningContext ? (diningContext.draftItemCount ?? 0) : retailCartCount;
+  const previousCount = useRef(cartCount);
   const [badgeBump, setBadgeBump] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const badgeLabel = formatCartBadgeCount(count);
+  const badgeLabel = formatCartBadgeCount(cartCount);
   const accountUnreadLabel = formatCountBadge(unreadCount);
-  const diningActive = !waiterMode && isDiningOrderingContext(orderingContext);
+
+  const menuTo = diningContext ? diningMenuPath(diningContext.diningSessionId) : '/menu';
+  const diningTo = diningContext
+    ? diningSessionPath(diningContext.diningSessionId)
+    : isAuthenticated
+      ? '/dining'
+      : buildLoginRedirect('/dining');
+  const cartTo = diningContext ? diningSessionPath(diningContext.diningSessionId) : '/cart';
+  const cartAriaLabel = diningContext
+    ? cartCount > 0
+      ? `Cart, ${cartCount} item${cartCount === 1 ? '' : 's'} in next round`
+      : 'Cart, dining next round'
+    : cartBadgeAriaLabel(retailCartCount);
 
   useEffect(() => {
-    if (count > previousCount.current) {
+    if (cartCount > previousCount.current) {
       setBadgeBump(true);
       const timer = window.setTimeout(() => setBadgeBump(false), 280);
-      previousCount.current = count;
+      previousCount.current = cartCount;
 
       return () => window.clearTimeout(timer);
     }
 
-    previousCount.current = count;
-  }, [count]);
+    previousCount.current = cartCount;
+  }, [cartCount]);
 
   useEffect(() => {
     if (!waiterMode) {
@@ -91,64 +117,66 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
             ]
           : []),
       ]
-    : diningActive
-      ? [
-          { to: '/', label: 'Home', icon: AppIcons.home, end: true },
-          {
-            to: diningMenuPath(orderingContext.diningSessionId),
-            label: 'Menu',
-            icon: AppIcons.menu,
+    : [
+        { to: '/', label: 'Home', icon: AppIcons.home, end: true },
+        {
+          to: menuTo,
+          label: 'Menu',
+          icon: AppIcons.menu,
+          isNavActive: (pathname) => {
+            if (diningContext) {
+              return isDiningAddItemsPath(pathname, diningContext.diningSessionId);
+            }
+
+            return pathname === '/menu' || pathname.startsWith('/menu/');
           },
-          {
-            to: diningSessionPath(orderingContext.diningSessionId),
-            label: orderingContext.tableLabel
-              ? `Table ${orderingContext.tableLabel}`
-              : 'Table',
-            icon: AppIcons.dining,
-            ariaLabel: orderingContext.tableLabel
-              ? `Back to table ${orderingContext.tableLabel}`
-              : 'Back to dining table',
+        },
+        {
+          to: diningTo,
+          label: 'Dining',
+          icon: AppIcons.dining,
+          isNavActive: (pathname) => {
+            if (diningContext) {
+              return isDiningSessionSurfacePath(pathname, diningContext.diningSessionId);
+            }
+
+            if (pathname === '/dining') {
+              return true;
+            }
+
+            // Booking/list flow only — dining add-items should highlight Menu instead.
+            return (
+              pathname.startsWith('/dining/') &&
+              !pathname.includes('/menu')
+            );
           },
-          {
-            to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
-            label: isAuthenticated ? 'Account' : 'Sign in',
-            icon: AppIcons.account,
-            badgeCount: isAuthenticated ? unreadCount : 0,
-            ariaLabel:
-              isAuthenticated && accountUnreadLabel
-                ? `Account, ${accountUnreadLabel} unread notifications`
-                : undefined,
+        },
+        {
+          to: cartTo,
+          label: 'Cart',
+          icon: AppIcons.cart,
+          ariaLabel: cartAriaLabel,
+          isNavActive: (pathname) => {
+            // When Cart and Dining share the dining session URL, Dining owns the active state.
+            if (diningContext) {
+              return false;
+            }
+
+            return pathname === '/cart' || pathname.startsWith('/cart/');
           },
-        ]
-      : [
-          { to: '/', label: 'Home', icon: AppIcons.home, end: true },
-          { to: '/menu', label: 'Menu', icon: AppIcons.menu },
-          ...(diningEnabled
-            ? [
-                {
-                  to: isAuthenticated ? '/dining' : buildLoginRedirect('/dining'),
-                  label: 'Dining',
-                  icon: AppIcons.dining,
-                } satisfies BottomNavItem,
-              ]
-            : []),
-          {
-            to: '/cart',
-            label: 'Cart',
-            icon: AppIcons.cart,
-            ariaLabel: cartBadgeAriaLabel(count),
-          },
-          {
-            to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
-            label: isAuthenticated ? 'Account' : 'Sign in',
-            icon: AppIcons.account,
-            badgeCount: isAuthenticated ? unreadCount : 0,
-            ariaLabel:
-              isAuthenticated && accountUnreadLabel
-                ? `Account, ${accountUnreadLabel} unread notifications`
-                : undefined,
-          },
-        ];
+        },
+        {
+          to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
+          label: isAuthenticated ? 'Account' : 'Sign in',
+          icon: AppIcons.account,
+          badgeCount: isAuthenticated ? unreadCount : 0,
+          ariaLabel:
+            isAuthenticated && accountUnreadLabel
+              ? `Account, ${accountUnreadLabel} unread notifications`
+              : undefined,
+          isNavActive: (pathname) => pathname === '/account' || pathname.startsWith('/account/'),
+        },
+      ];
 
   if (typeof document === 'undefined') {
     return null;
@@ -156,14 +184,18 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
 
   /* Portal to body so fixed positioning is never trapped by app-shell filters/transforms. */
   return createPortal(
-    <nav className="bottom-navigation" aria-label="Primary">
+    <nav className="bottom-navigation bottom-navigation--customer" aria-label="Primary">
       {items.map((item) => (
         <NavLink
           key={`${item.label}-${item.to}`}
           to={item.to}
           end={item.end}
           aria-label={item.ariaLabel}
-          className={({ isActive }) => `bottom-nav-link ${isActive ? 'active' : ''}`}
+          className={({ isActive }) => {
+            const active = item.isNavActive ? item.isNavActive(location.pathname) : isActive;
+
+            return `bottom-nav-link ${active ? 'active' : ''}`;
+          }}
         >
           <span className="bottom-nav-icon">
             <i className={`bi ${item.icon}`} aria-hidden="true"></i>
