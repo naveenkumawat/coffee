@@ -3811,6 +3811,37 @@ textarea.coffee-input:focus {
   margin-top: 0.35rem;
 }
 
+.landing-campaign-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md, 0.75rem);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.landing-campaign-image {
+  width: 100%;
+  max-height: 9rem;
+  object-fit: cover;
+  border-radius: var(--radius-md, 0.75rem);
+}
+
+.landing-campaign-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.landing-campaign-copy h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.landing-campaign-copy p {
+  margin: 0;
+  color: var(--coffee-muted, #6b635c);
+  line-height: 1.4;
+}
+
 .product-card {
   gap: 1.15rem;
   padding: 0.55rem;

@@ -45,6 +45,8 @@ class HomeSectionRepository extends AbstractRepository implements HomeSectionRep
     {
         return $this->model->newQuery()
             ->where('is_active', true)
+            ->where('placement', 'home')
+            ->where('source_type', 'curated')
             ->with([
                 'products' => function ($query): void {
                     $query
@@ -73,6 +75,7 @@ class HomeSectionRepository extends AbstractRepository implements HomeSectionRep
                         ->orderBy('products.name');
                 },
             ])
+            ->orderByDesc('priority')
             ->orderBy('sort_order')
             ->orderBy('title')
             ->get();
@@ -143,7 +146,10 @@ class HomeSectionRepository extends AbstractRepository implements HomeSectionRep
 
     public function moveSection(HomeSection $homeSection, string $direction): void
     {
+        $placement = $homeSection->placement?->value ?? (string) $homeSection->placement;
+
         $siblings = $this->model->newQuery()
+            ->where('placement', $placement)
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();

@@ -54,6 +54,8 @@ use App\Services\Menu\MenuCategoryService;
 use App\Services\Menu\MenuCategoryServiceInterface;
 use App\Services\Menu\MenuItemService;
 use App\Services\Menu\MenuItemServiceInterface;
+use App\Services\Merchandising\MerchandisingService;
+use App\Services\Merchandising\MerchandisingServiceInterface;
 use App\Services\Notification\CustomerNotificationDispatcher;
 use App\Services\Notification\CustomerNotificationDispatcherInterface;
 use App\Services\Notification\StaffNotificationDispatcher;
@@ -142,6 +144,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->bind(DiningSessionServiceInterface::class, DiningSessionService::class);
         $this->app->bind(FavouriteServiceInterface::class, FavouriteService::class);
         $this->app->bind(HomeSectionServiceInterface::class, HomeSectionService::class);
+        $this->app->bind(MerchandisingServiceInterface::class, MerchandisingService::class);
         $this->app->bind(ProductRatingServiceInterface::class, ProductRatingService::class);
         $this->app->bind(IngredientCategoryServiceInterface::class, IngredientCategoryService::class);
         $this->app->bind(IngredientBrandServiceInterface::class, IngredientBrandService::class);

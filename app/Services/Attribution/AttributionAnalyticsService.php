@@ -379,7 +379,7 @@ class AttributionAnalyticsService implements AttributionAnalyticsServiceInterfac
         $impressions = CustomerBehaviourEvent::query()
             ->where('event_type', BehaviourEventType::CampaignImpression->value)
             ->whereBetween('occurred_at', [$start, $end])
-            ->selectRaw('CAST('.$this->jsonText('metadata', 'campaign_id').' AS INTEGER) as campaign_id')
+            ->selectRaw($this->castJsonPathAsInteger('metadata', 'campaign_id').' as campaign_id')
             ->selectRaw('COUNT(*) as impressions')
             ->groupBy('campaign_id')
             ->pluck('impressions', 'campaign_id');
@@ -387,7 +387,7 @@ class AttributionAnalyticsService implements AttributionAnalyticsServiceInterfac
         $clicks = CustomerBehaviourEvent::query()
             ->where('event_type', BehaviourEventType::CampaignClicked->value)
             ->whereBetween('occurred_at', [$start, $end])
-            ->selectRaw('CAST('.$this->jsonText('metadata', 'campaign_id').' AS INTEGER) as campaign_id')
+            ->selectRaw($this->castJsonPathAsInteger('metadata', 'campaign_id').' as campaign_id')
             ->selectRaw('COUNT(*) as clicks')
             ->groupBy('campaign_id')
             ->pluck('clicks', 'campaign_id');
@@ -395,7 +395,7 @@ class AttributionAnalyticsService implements AttributionAnalyticsServiceInterfac
         $dismissals = CustomerBehaviourEvent::query()
             ->where('event_type', BehaviourEventType::CampaignDismissed->value)
             ->whereBetween('occurred_at', [$start, $end])
-            ->selectRaw('CAST('.$this->jsonText('metadata', 'campaign_id').' AS INTEGER) as campaign_id')
+            ->selectRaw($this->castJsonPathAsInteger('metadata', 'campaign_id').' as campaign_id')
             ->selectRaw('COUNT(*) as dismissals')
             ->groupBy('campaign_id')
             ->pluck('dismissals', 'campaign_id');
@@ -466,6 +466,19 @@ class AttributionAnalyticsService implements AttributionAnalyticsServiceInterfac
         return match (DB::connection()->getDriverName()) {
             'sqlite' => "json_extract({$column}, '$.{$path}')",
             default => "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$.{$path}'))",
+        };
+    }
+
+    /**
+     * MySQL uses SIGNED/UNSIGNED for integer casts; SQLite accepts INTEGER.
+     */
+    protected function castJsonPathAsInteger(string $column, string $path): string
+    {
+        $expression = $this->jsonText($column, $path);
+
+        return match (DB::connection()->getDriverName()) {
+            'sqlite' => "CAST({$expression} AS INTEGER)",
+            default => "CAST({$expression} AS UNSIGNED)",
         };
     }
 

@@ -23,5 +23,10 @@
         'method' => 'PUT',
         'submit' => 'Save changes',
         'section' => $section,
+        'placementOptions' => $placementOptions,
+        'sourceTypeOptions' => $sourceTypeOptions,
+        'recommendationContextOptions' => $recommendationContextOptions,
+        'categoryOptions' => $categoryOptions,
+        'tagOptions' => $tagOptions,
     ])
 @endsection

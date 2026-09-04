@@ -2,15 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchCategories, fetchFlavours, fetchMenuCatalogue } from '../api/catalog';
 import { ApiError } from '../api/client';
+import { fetchHome } from '../api/home';
+import { LandingCampaignSurface } from '../components/campaigns/LandingCampaignSurface';
 import { CategoryPills } from '../components/catalog/CategoryPills';
 import { FlavourPills } from '../components/catalog/FlavourPills';
+import { HomeProductSection } from '../components/catalog/HomeProductSection';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
+import { HomeCampaigns, HomeSection } from '../types/home';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
+import { getOrCreateCampaignSessionKey } from '../utils/campaignSession';
+import { getOrCreateVisitorId } from '../utils/visitorId';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -40,6 +46,8 @@ export function MenuPage() {
   const [catalogue, setCatalogue] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [flavours, setFlavours] = useState<ProductFlavour[]>([]);
+  const [landingSections, setLandingSections] = useState<HomeSection[]>([]);
+  const [landingCampaigns, setLandingCampaigns] = useState<HomeCampaigns>({ banner: null, inline: null });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -139,10 +147,15 @@ export function MenuPage() {
       setErrorMessage(null);
 
       try {
-        const [categoryResponse, flavourResponse, products] = await Promise.all([
+        const [categoryResponse, flavourResponse, products, homeResponse] = await Promise.all([
           fetchCategories(),
           fetchFlavours(),
           fetchMenuCatalogue(),
+          fetchHome({
+            placement: 'menu',
+            visitor_key: getOrCreateVisitorId(),
+            session_key: getOrCreateCampaignSessionKey(),
+          }).catch(() => null),
         ]);
 
         if (cancelled) {
@@ -152,6 +165,8 @@ export function MenuPage() {
         setCategories(categoryResponse.data);
         setFlavours(flavourResponse.data);
         setCatalogue(products);
+        setLandingSections(homeResponse?.data.sections ?? []);
+        setLandingCampaigns(homeResponse?.data.campaigns ?? { banner: null, inline: null });
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load the menu.');
@@ -378,6 +393,16 @@ export function MenuPage() {
           <strong>{isLoading ? 'Loading drinks…' : resultsLabel}</strong>
         </div>
       </div>
+
+      {!isLoading && !errorMessage && !hasActiveFilters ? (
+        <>
+          <LandingCampaignSurface campaign={landingCampaigns.banner} surface="banner" placement="menu" />
+          {landingSections.map((section) => (
+            <HomeProductSection key={section.id} section={section} placement="menu_rail" />
+          ))}
+          <LandingCampaignSurface campaign={landingCampaigns.inline} surface="inline" placement="menu" />
+        </>
+      ) : null}
 
       {isLoading ? <LoadingSkeleton cardCount={3} lines={3} variant="list" /> : null}
 

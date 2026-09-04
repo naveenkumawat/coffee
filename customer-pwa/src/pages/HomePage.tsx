@@ -3,17 +3,20 @@ import { Link } from 'react-router-dom';
 import { fetchCategories } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { fetchHome } from '../api/home';
+import { LandingCampaignSurface } from '../components/campaigns/LandingCampaignSurface';
 import { HomeProductSection } from '../components/catalog/HomeProductSection';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Header } from '../components/common/Header';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { ProductCategory } from '../types/catalog';
-import { HomeSection } from '../types/home';
+import { HomeCampaigns, HomeSection } from '../types/home';
+import { getOrCreateCampaignSessionKey } from '../utils/campaignSession';
+import { getOrCreateVisitorId } from '../utils/visitorId';
 
 export function HomePage() {
   const [sections, setSections] = useState<HomeSection[]>([]);
+  const [campaigns, setCampaigns] = useState<HomeCampaigns>({ banner: null, inline: null });
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -24,9 +27,17 @@ export function HomePage() {
       setErrorMessage(null);
 
       try {
-        const [homeResponse, categoryResponse] = await Promise.all([fetchHome(), fetchCategories()]);
+        const [homeResponse, categoryResponse] = await Promise.all([
+          fetchHome({
+            placement: 'home',
+            visitor_key: getOrCreateVisitorId(),
+            session_key: getOrCreateCampaignSessionKey(),
+          }),
+          fetchCategories(),
+        ]);
 
         setSections(homeResponse.data.sections ?? []);
+        setCampaigns(homeResponse.data.campaigns ?? { banner: null, inline: null });
         setCategories(categoryResponse.data);
       } catch (error) {
         const message = error instanceof ApiError ? error.message : 'Unable to load the cafe menu right now.';
@@ -71,15 +82,10 @@ export function HomePage() {
 
       {!isLoading && !errorMessage ? (
         <>
-          <RecommendationSection context="home" placement="home_rail" limit={8} title="For you" />
+          <LandingCampaignSurface campaign={campaigns.banner} surface="banner" placement="home" />
           {sections.length > 0 ? (
             sections.map((section) => (
-              <HomeProductSection
-                key={section.id}
-                title={section.title}
-                subtitle={section.subtitle}
-                products={section.products}
-              />
+              <HomeProductSection key={section.id} section={section} placement="home_rail" />
             ))
           ) : (
             <EmptyState
@@ -89,6 +95,7 @@ export function HomePage() {
               actionHref="/menu"
             />
           )}
+          <LandingCampaignSurface campaign={campaigns.inline} surface="inline" placement="home" />
         </>
       ) : null}
     </div>

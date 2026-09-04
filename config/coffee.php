@@ -215,5 +215,13 @@ return [
             'view_through_window_hours' => (int) env('COFFEE_ATTRIBUTION_VIEW_THROUGH_WINDOW_HOURS', 24),
             'analytics_cache_ttl_seconds' => (int) env('COFFEE_ATTRIBUTION_ANALYTICS_CACHE_TTL', 60),
         ],
+
+        /*
+        | P2.7 merchandising / personalised landing orchestration.
+        | Cache section configuration only — never the final personalised payload.
+        */
+        'merchandising' => [
+            'config_cache_ttl_seconds' => (int) env('COFFEE_MERCHANDISING_CONFIG_CACHE_TTL', 120),
+        ],
     ],
 ];

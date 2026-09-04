@@ -279,6 +279,56 @@ class AttributionAnalyticsTest extends TestCase
         $this->assertNull($campaignReport['summary']['ctr']);
     }
 
+    public function test_campaign_report_aggregates_json_metadata_campaign_ids(): void
+    {
+        $campaign = Campaign::factory()->active()->popup()->create([
+            'name' => 'Home Banner',
+            'cta_type' => CampaignCtaType::Close,
+            'frequency_policy' => CampaignFrequencyPolicy::EverySession,
+            'status' => CampaignStatus::Active,
+            'surface' => CampaignSurface::Banner,
+            'trigger_rules' => [
+                'type' => CampaignTriggerType::Immediate->value,
+                'delay_ms' => null,
+                'scroll_percent' => null,
+                'product_view_count' => null,
+            ],
+        ]);
+
+        CustomerBehaviourEvent::query()->create([
+            'event_type' => BehaviourEventType::CampaignImpression->value,
+            'source' => BehaviourEventSource::Client->value,
+            'visitor_key' => 'guest'.Str::lower(Str::random(8)),
+            'occurred_at' => now(),
+            'metadata' => [
+                'campaign_id' => $campaign->id,
+                'request_id' => (string) Str::uuid(),
+                'placement' => 'home',
+                'surface' => 'banner',
+            ],
+        ]);
+        CustomerBehaviourEvent::query()->create([
+            'event_type' => BehaviourEventType::CampaignClicked->value,
+            'source' => BehaviourEventSource::Client->value,
+            'visitor_key' => 'guest'.Str::lower(Str::random(8)),
+            'occurred_at' => now(),
+            'metadata' => [
+                'campaign_id' => $campaign->id,
+                'request_id' => (string) Str::uuid(),
+                'placement' => 'home',
+                'surface' => 'banner',
+            ],
+        ]);
+
+        $report = app(AttributionAnalyticsServiceInterface::class)->buildCampaignReport(['preset' => 'today']);
+
+        $this->assertSame(1, $report['summary']['impressions']);
+        $this->assertSame(1, $report['summary']['clicks']);
+        $this->assertSame(100.0, $report['summary']['ctr']);
+        $this->assertSame($campaign->id, $report['campaigns'][0]['campaign_id'] ?? null);
+        $this->assertSame('Home Banner', $report['campaigns'][0]['campaign_name'] ?? null);
+    }
+
     public function test_client_cannot_submit_conversion_events(): void
     {
         $this->postJson(route('api.v1.behaviour.events.store'), [

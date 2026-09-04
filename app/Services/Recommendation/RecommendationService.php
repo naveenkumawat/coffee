@@ -124,7 +124,9 @@ class RecommendationService implements RecommendationServiceInterface
             hasSufficientEvidence: $hasEvidence,
         );
 
-        $strategyKeys = $this->strategiesFor($context, $hasEvidence);
+        $strategyKeys = is_array($input['strategies'] ?? null) && $input['strategies'] !== []
+            ? array_values(array_map('strval', $input['strategies']))
+            : $this->strategiesFor($context, $hasEvidence);
         $candidates = [];
 
         foreach ($strategyKeys as $key) {

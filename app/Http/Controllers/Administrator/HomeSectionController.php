@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Administrator;
 
+use App\Enums\HomeSectionPlacement;
+use App\Enums\HomeSectionSourceType;
+use App\Enums\RecommendationContext;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HomeSection\HomeSectionAttachProductRequest;
 use App\Http\Requests\HomeSection\HomeSectionIndexRequest;
@@ -9,12 +12,15 @@ use App\Http\Requests\HomeSection\HomeSectionStoreRequest;
 use App\Http\Requests\HomeSection\HomeSectionUpdateRequest;
 use App\Models\HomeSection;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductTag;
 use App\Parsers\Home\HomeSectionParserInterface;
 use App\Repositories\Home\HomeSectionRepositoryInterface;
 use App\Services\Home\HomeSectionServiceInterface;
 use App\Services\Product\ProductReadinessServiceInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 
 class HomeSectionController extends Controller
 {
@@ -44,7 +50,14 @@ class HomeSectionController extends Controller
             'section' => new HomeSection([
                 'is_active' => true,
                 'sort_order' => 10,
+                'placement' => HomeSectionPlacement::Home,
+                'source_type' => HomeSectionSourceType::Curated,
+                'priority' => 0,
+                'dedupe_products' => true,
+                'fallback_to_curated' => true,
+                'targeting_rules' => ['all' => [], 'any' => [], 'exclude' => []],
             ]),
+            ...$this->formOptions(),
         ]);
     }
 
@@ -63,6 +76,7 @@ class HomeSectionController extends Controller
 
         return view('administrator.home-sections.edit', [
             'section' => $homeSection,
+            ...$this->formOptions(),
         ]);
     }
 
@@ -190,5 +204,27 @@ class HomeSectionController extends Controller
         return redirect()
             ->route('administrator.home-sections.products', $homeSection)
             ->with('status', 'Product order updated.');
+    }
+
+    /**
+     * @return array{
+     *     placementOptions: array<string, string>,
+     *     sourceTypeOptions: array<string, string>,
+     *     recommendationContextOptions: array<string, string>,
+     *     categoryOptions: Collection<int|string, string>,
+     *     tagOptions: Collection<int|string, string>
+     * }
+     */
+    protected function formOptions(): array
+    {
+        return [
+            'placementOptions' => HomeSectionPlacement::options(),
+            'sourceTypeOptions' => HomeSectionSourceType::options(),
+            'recommendationContextOptions' => collect(RecommendationContext::cases())
+                ->mapWithKeys(fn (RecommendationContext $case): array => [$case->value => str_replace('_', ' ', ucfirst($case->value))])
+                ->all(),
+            'categoryOptions' => ProductCategory::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id'),
+            'tagOptions' => ProductTag::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name', 'id'),
+        ];
     }
 }

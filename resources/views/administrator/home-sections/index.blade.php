@@ -2,7 +2,7 @@
 
 @section('page-title', 'Homepage Sections')
 
-@section('page-description', 'Administrator-managed merchandising rails with manual product assignment and ordering.')
+@section('page-description', 'Administrator-managed merchandising rails for Home and Menu landing, with curated or recommendation-backed sources.')
 
 @section('breadcrumbs')
     <x-internal.breadcrumbs :items="[
@@ -50,10 +50,12 @@
                     <thead>
                         <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                             <th>Title</th>
+                            <th>Placement</th>
+                            <th>Source</th>
                             <th>Products</th>
+                            <th>Priority</th>
                             <th>Status</th>
                             <th>Sort</th>
-                            <th>Updated</th>
                             <th class="text-end internal-action-header">Actions</th>
                         </tr>
                     </thead>
@@ -66,14 +68,16 @@
                                         <span class="text-muted">{{ $section->subtitle ?: $section->slug }}</span>
                                     </div>
                                 </td>
+                                <td>{{ $section->placement?->label() ?? $section->placement }}</td>
+                                <td>{{ $section->source_type?->label() ?? $section->source_type }}</td>
                                 <td>{{ $section->section_products_count }}</td>
+                                <td>{{ $section->priority }}</td>
                                 <td>
                                     <span class="badge {{ $section->is_active ? 'badge-light-success' : 'badge-light-warning' }}">
                                         {{ $section->is_active ? 'Active' : 'Inactive' }}
                                     </span>
                                 </td>
                                 <td>{{ $section->sort_order }}</td>
-                                <td>{{ $section->updated_at?->format('d M Y, h:i A') }}</td>
                                 <td class="text-end internal-action-cell">
                                     <x-internal.action-dropdown :items="[
                                         ['label' => 'Edit', 'url' => route('administrator.home-sections.edit', $section), 'icon' => 'ki-notepad-edit'],
@@ -111,7 +115,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-10">No homepage sections yet.</td>
+                                <td colspan="8" class="text-center text-muted py-10">No homepage sections yet.</td>
                             </tr>
                         @endforelse
                     </tbody>

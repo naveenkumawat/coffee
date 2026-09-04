@@ -5,6 +5,7 @@ namespace App\Services\Home;
 use App\Models\HomeSection;
 use App\Models\Product;
 use App\Repositories\Home\HomeSectionRepositoryInterface;
+use App\Services\Merchandising\MerchandisingServiceInterface;
 use App\Services\Product\ProductCatalogServiceInterface;
 use App\Transfers\Home\HomeSectionTransferInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +18,7 @@ class HomeSectionService implements HomeSectionServiceInterface
     public function __construct(
         protected HomeSectionRepositoryInterface $sections,
         protected ProductCatalogServiceInterface $catalog,
+        protected MerchandisingServiceInterface $merchandising,
     ) {}
 
     public function store(HomeSectionTransferInterface $data): HomeSection
@@ -30,7 +32,7 @@ class HomeSectionService implements HomeSectionServiceInterface
             return $this->sections->create($attributes);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
 
         return $section;
     }
@@ -47,7 +49,7 @@ class HomeSectionService implements HomeSectionServiceInterface
             return $this->sections->update($homeSection, $attributes);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
 
         return $section;
     }
@@ -59,13 +61,13 @@ class HomeSectionService implements HomeSectionServiceInterface
             $this->sections->delete($homeSection);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
     }
 
     public function setActive(HomeSection $homeSection, bool $isActive): HomeSection
     {
         $section = $this->sections->setActive($homeSection, $isActive);
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
 
         return $section;
     }
@@ -79,7 +81,7 @@ class HomeSectionService implements HomeSectionServiceInterface
         }
 
         DB::transaction(fn () => $this->sections->moveSection($homeSection, $direction));
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
     }
 
     public function attachProduct(HomeSection $homeSection, Product $product): void
@@ -91,13 +93,13 @@ class HomeSectionService implements HomeSectionServiceInterface
         }
 
         DB::transaction(fn () => $this->sections->attachProduct($homeSection, (int) $product->getKey()));
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
     }
 
     public function detachProduct(HomeSection $homeSection, Product $product): void
     {
         DB::transaction(fn () => $this->sections->detachProduct($homeSection, (int) $product->getKey()));
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
     }
 
     public function moveProduct(HomeSection $homeSection, Product $product, string $direction): void
@@ -136,7 +138,7 @@ class HomeSectionService implements HomeSectionServiceInterface
             $this->sections->reorderProducts($homeSection, $ids);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->flushCaches();
     }
 
     public function activeSectionsForCustomer(): Collection
@@ -157,6 +159,12 @@ class HomeSectionService implements HomeSectionServiceInterface
             })
             ->filter(fn (HomeSection $section): bool => $section->products->isNotEmpty())
             ->values();
+    }
+
+    protected function flushCaches(): void
+    {
+        $this->catalog->flushPublicCache();
+        $this->merchandising->flushConfigCache();
     }
 
     protected function uniqueSlug(string $value, ?int $ignoreId = null): string

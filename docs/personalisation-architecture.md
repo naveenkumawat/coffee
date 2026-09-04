@@ -246,7 +246,6 @@ Administrator → **Audience Segments**: list/filter, create/edit, activate/paus
 - Nested segments
 - Materialized membership warehouse
 - Automatic recommendation weight tuning / campaign auto-pause from P2.6 metrics
-- Personalised landing surfaces using segment ids
 - Multi-touch marketing attribution
 
 ## P2.6 attribution analytics
@@ -284,3 +283,46 @@ Raw behaviour events may prune per `coffee.behaviour.retention_days`. Order item
 
 - Do **not** auto-tune P2.3 weights or auto pause campaigns from these metrics
 - No warehouse / Elasticsearch / external CDP
+
+## P2.7 personalised landing & merchandising
+
+Orchestration only — no second recommendation, segment, or campaign engine.
+
+```
+Profiles + Segments + Recommendations + Campaigns
+                    ↓
+          Merchandising Orchestrator
+                    ↓
+          Personalised Landing Sections
+                    ↓
+             Home / Menu
+                    ↓
+               P2.6 Analytics
+```
+
+### Contract
+
+- Extends `GET /api/v1/home` with optional `placement=home|menu`, `visitor_key`, `session_key`, cart/fulfilment context.
+- Customer-safe payload: section metadata + products (+ recommendation attribution when applicable) + optional `campaigns.banner` / `campaigns.inline`.
+- Never exposes targeting rules, profile internals, scores, behavioural history, financial bands, or recipes.
+- Personalised final payloads are never globally cached; section configuration may be cached briefly (`coffee.behaviour.merchandising.config_cache_ttl_seconds`).
+
+### Section sources
+
+Curated/manual, recommendation rail, strategy-backed rails (`buy_again`, `favourite`, `repeated_interest`, `affinity`, `trending`, `popular`, `new_arrival`, `featured`, `bestseller`), category, and tag. Recommendation-backed rails reuse `RecommendationService`. Targeting reuses `TargetingRuleEvaluator` + segment ids.
+
+### Fallback
+
+Tracking disabled / no visitor / no profile / no segments / empty recommendation evidence → existing curated Home/Menu content. Orchestration failures fall back to curated sections and must not yield an empty/broken page.
+
+### Admin
+
+Administrator → Homepage Sections extended with placement, source type, priority, schedule, targeting JSON, recommendation context, category/tag source, dedupe + curated fallback. Row actions remain Actions dropdown.
+
+### Attribution
+
+Recommendation-backed sections preserve P2.6 `request_id` / strategy / reason. Campaign banner/inline preserve campaign attribution. Manual curated sections do not invent attribution. Impression dedupe keys prevent double-count on rerender.
+
+### Status
+
+**P2.7 Personalised Landing/Merchandising COMPLETE.** Phase-1 remains DEVELOPMENT COMPLETE / FROZEN.

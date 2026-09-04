@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1\Home;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Api\V1\Concerns\InteractsWithApiResponses;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Api\V1\HomeSectionResource;
-use App\Services\Home\HomeSectionServiceInterface;
+use App\Http\Requests\Home\HomeShowRequest;
+use App\Models\User;
+use App\Services\Merchandising\MerchandisingServiceInterface;
 use Illuminate\Http\JsonResponse;
 
 class HomeController extends Controller
@@ -13,15 +15,16 @@ class HomeController extends Controller
     use InteractsWithApiResponses;
 
     public function __construct(
-        protected HomeSectionServiceInterface $homeSections,
+        protected MerchandisingServiceInterface $merchandising,
     ) {}
 
-    public function show(): JsonResponse
+    public function show(HomeShowRequest $request): JsonResponse
     {
-        $sections = $this->homeSections->activeSectionsForCustomer();
+        $user = $request->user('web') ?? $request->user();
+        $customer = $user instanceof User && $user->hasRole(UserRole::Customer) ? $user : null;
 
-        return $this->respondWithData([
-            'sections' => HomeSectionResource::collection($sections)->resolve(),
-        ], 'Homepage sections retrieved.');
+        $payload = $this->merchandising->landingPayload($request->validated(), $customer);
+
+        return $this->respondWithData($payload, 'Homepage sections retrieved.');
     }
 }

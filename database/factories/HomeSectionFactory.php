@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\HomeSectionPlacement;
+use App\Enums\HomeSectionSourceType;
 use App\Models\HomeSection;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -25,6 +27,12 @@ class HomeSectionFactory extends Factory
             'sort_order' => fake()->numberBetween(1, 100),
             'is_active' => true,
             'max_items' => null,
+            'placement' => HomeSectionPlacement::Home,
+            'source_type' => HomeSectionSourceType::Curated,
+            'priority' => 0,
+            'targeting_rules' => ['all' => [], 'any' => [], 'exclude' => []],
+            'dedupe_products' => true,
+            'fallback_to_curated' => true,
         ];
     }
 
@@ -32,6 +40,13 @@ class HomeSectionFactory extends Factory
     {
         return $this->state(fn (): array => [
             'is_active' => false,
+        ]);
+    }
+
+    public function forMenu(): static
+    {
+        return $this->state(fn (): array => [
+            'placement' => HomeSectionPlacement::Menu,
         ]);
     }
 }

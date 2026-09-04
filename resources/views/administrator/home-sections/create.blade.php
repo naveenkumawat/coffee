@@ -17,5 +17,10 @@
         'method' => 'POST',
         'submit' => 'Create section',
         'section' => $section,
+        'placementOptions' => $placementOptions,
+        'sourceTypeOptions' => $sourceTypeOptions,
+        'recommendationContextOptions' => $recommendationContextOptions,
+        'categoryOptions' => $categoryOptions,
+        'tagOptions' => $tagOptions,
     ])
 @endsection
