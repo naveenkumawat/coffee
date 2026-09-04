@@ -128,6 +128,8 @@ test('dining menu reuses ProductCard customization into dining draft', () => {
   assert.match(source, /Add to round/);
   assert.match(source, /writeOrderingContext/);
   assert.match(source, /View round/);
+  assert.match(source, /Back to table/);
+  assert.match(source, /No items in next round/);
   assert.doesNotMatch(source, /useCartStore/);
 });
 
@@ -141,4 +143,91 @@ test('router exposes dining-aware menu route', () => {
   const source = readSrc('routes/router.tsx');
   assert.match(source, /dining\/sessions\/:sessionId\/menu/);
   assert.match(source, /DiningMenuPage/);
+});
+
+test('customer shell uses shared content max tokens', () => {
+  const theme = readFileSync(join(root, 'src/assets/styles/theme.css'), 'utf8');
+  assert.match(theme, /--customer-content-max:\s*72rem/);
+  assert.match(theme, /--customer-content-max-mobile:\s*34rem/);
+  assert.match(theme, /--customer-content-gutter:/);
+  assert.match(theme, /--dining-content-max:\s*48rem/);
+  assert.match(theme, /\.app-shell\s*\{[\s\S]*?var\(--customer-content-max\)/);
+  assert.match(theme, /\.dining-content\s*\{[\s\S]*?var\(--dining-content-max\)/);
+  assert.match(theme, /\.dining-session-page,[\s\S]*?max-width:\s*none/);
+  assert.doesNotMatch(
+    theme,
+    /\.dining-session-page,[\s\S]{0,200}max-width:\s*min\(100%,\s*var\(--coffee-shell-max\)\)/,
+  );
+});
+
+test('dining session and bill use inner dining-content inside shared page shell', () => {
+  const source = readSrc('pages/DiningSessionPage.tsx');
+  assert.match(source, /page-container dining-session-page/);
+  assert.match(source, /className="dining-content"/);
+  assert.match(source, /page-container dining-bill-page/);
+  assert.match(source, /tableLabel:/);
+});
+
+test('dining bottom nav uses orderingContext and hides booking/cart', () => {
+  const source = readSrc('components/navigation/BottomNavigation.tsx');
+  assert.match(source, /useOrderingContext/);
+  assert.match(source, /isDiningOrderingContext/);
+  assert.match(source, /diningMenuPath/);
+  assert.match(source, /diningSessionPath/);
+  assert.match(source, /diningActive/);
+  assert.doesNotMatch(source, /pathname\.(includes|startsWith)\(/);
+  assert.doesNotMatch(source, /Book table/i);
+
+  const diningBranch = source.match(/diningActive\s*\?\s*(\[[\s\S]*?\])\s*:/);
+  assert.ok(diningBranch, 'expected diningActive ternary branch');
+  assert.match(diningBranch[1], /diningMenuPath/);
+  assert.match(diningBranch[1], /diningSessionPath/);
+  assert.match(diningBranch[1], /label: 'Menu'/);
+  assert.doesNotMatch(diningBranch[1], /to:\s*'\/cart'/);
+  assert.doesNotMatch(diningBranch[1], /label:\s*'Cart'/);
+  assert.doesNotMatch(diningBranch[1], /label:\s*'Dining'/);
+  assert.doesNotMatch(diningBranch[1], /to:\s*[^,\n]*\/dining['"`]/);
+
+  // Retail booking + cart remain available outside dining context.
+  assert.match(source, /label: 'Dining'/);
+  assert.match(source, /to: '\/cart'/);
+});
+
+test('dining add-items sticky bar has table return actions without retail cart', () => {
+  const source = readSrc('pages/DiningMenuPage.tsx');
+  assert.match(source, /No items in next round/);
+  assert.match(source, /Back to table/);
+  assert.match(source, /View round/);
+  assert.match(source, /tableLabel:/);
+  assert.doesNotMatch(source, /Book table/i);
+  assert.doesNotMatch(source, /useCartStore/);
+  assert.doesNotMatch(source, /to="\/cart"/);
+});
+
+test('retail menu and cart redirect into dining when dining context is active', () => {
+  const menu = readSrc('pages/MenuPage.tsx');
+  assert.match(menu, /isDiningOrderingContext/);
+  assert.match(menu, /diningMenuPath/);
+  assert.match(menu, /Navigate to=\{diningMenuPath/);
+
+  const cart = readSrc('pages/CartPage.tsx');
+  assert.match(cart, /isDiningOrderingContext/);
+  assert.match(cart, /diningSessionPath/);
+  assert.match(cart, /Navigate to=\{diningSessionPath/);
+
+  const product = readSrc('pages/ProductDetailPage.tsx');
+  assert.match(product, /isDiningOrderingContext/);
+  assert.match(product, /diningMenuPath/);
+});
+
+test('orderingContext exposes tableLabel and live subscription', () => {
+  const source = readSrc('utils/orderingContext.ts');
+  assert.match(source, /tableLabel/);
+  assert.match(source, /subscribeOrderingContext/);
+  assert.match(source, /coffee:ordering-context/);
+  assert.match(source, /isDiningOrderingContext/);
+
+  const hook = readSrc('hooks/useOrderingContext.ts');
+  assert.match(hook, /useSyncExternalStore/);
+  assert.match(hook, /subscribeOrderingContext/);
 });

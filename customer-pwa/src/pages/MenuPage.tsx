@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { fetchCategories, fetchFlavours, fetchMenuCatalogue } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { fetchHome } from '../api/home';
@@ -11,12 +11,14 @@ import { ProductCard } from '../components/catalog/ProductCard';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
+import { useOrderingContext } from '../hooks/useOrderingContext';
 import { Product, ProductCategory, ProductFlavour } from '../types/catalog';
 import { HomeCampaigns, HomeSection } from '../types/home';
 import { filterMenuProducts } from '../utils/menuFilters';
 import { groupProductsByCategory } from '../utils/menuGrouping';
 import { getOrCreateCampaignSessionKey } from '../utils/campaignSession';
 import { getOrCreateVisitorId } from '../utils/visitorId';
+import { diningMenuPath, isDiningOrderingContext } from '../utils/orderingContext';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -42,6 +44,7 @@ function toggleId(ids: number[], id: number): number[] {
 }
 
 export function MenuPage() {
+  const orderingContext = useOrderingContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const [catalogue, setCatalogue] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
@@ -305,6 +308,10 @@ export function MenuPage() {
 
   const resultsLabel =
     filteredProducts.length === 1 ? '1 drink' : `${filteredProducts.length} drinks`;
+
+  if (isDiningOrderingContext(orderingContext)) {
+    return <Navigate to={diningMenuPath(orderingContext.diningSessionId)} replace />;
+  }
 
   return (
     <div className="page-container menu-page">

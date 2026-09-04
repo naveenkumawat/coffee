@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useOrderingContext } from '../../hooks/useOrderingContext';
 import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
@@ -9,6 +10,11 @@ import { useNotificationStore } from '../../stores/notificationStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
 import { AppIcons, formatCountBadge } from '../../utils/icons';
 import { buildLoginRedirect } from '../../utils/navigation';
+import {
+  diningMenuPath,
+  diningSessionPath,
+  isDiningOrderingContext,
+} from '../../utils/orderingContext';
 import { realtimeStatusLabel, realtimeStatusTone } from '../../utils/realtimeStatus';
 import { isWaiter } from '../../utils/roles';
 import { getRememberedWaiterSession } from '../../utils/waiterSession';
@@ -29,6 +35,7 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationProps) {
   const location = useLocation();
+  const orderingContext = useOrderingContext();
   const count = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
@@ -47,6 +54,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const badgeLabel = formatCartBadgeCount(count);
   const accountUnreadLabel = formatCountBadge(unreadCount);
+  const diningActive = !waiterMode && isDiningOrderingContext(orderingContext);
 
   useEffect(() => {
     if (count > previousCount.current) {
@@ -83,35 +91,64 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
             ]
           : []),
       ]
-    : [
-        { to: '/', label: 'Home', icon: AppIcons.home, end: true },
-        { to: '/menu', label: 'Menu', icon: AppIcons.menu },
-        ...(diningEnabled
-          ? [
-              {
-                to: isAuthenticated ? '/dining' : buildLoginRedirect('/dining'),
-                label: 'Dining',
-                icon: AppIcons.dining,
-              } satisfies BottomNavItem,
-            ]
-          : []),
-        {
-          to: '/cart',
-          label: 'Cart',
-          icon: AppIcons.cart,
-          ariaLabel: cartBadgeAriaLabel(count),
-        },
-        {
-          to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
-          label: isAuthenticated ? 'Account' : 'Sign in',
-          icon: AppIcons.account,
-          badgeCount: isAuthenticated ? unreadCount : 0,
-          ariaLabel:
-            isAuthenticated && accountUnreadLabel
-              ? `Account, ${accountUnreadLabel} unread notifications`
-              : undefined,
-        },
-      ];
+    : diningActive
+      ? [
+          { to: '/', label: 'Home', icon: AppIcons.home, end: true },
+          {
+            to: diningMenuPath(orderingContext.diningSessionId),
+            label: 'Menu',
+            icon: AppIcons.menu,
+          },
+          {
+            to: diningSessionPath(orderingContext.diningSessionId),
+            label: orderingContext.tableLabel
+              ? `Table ${orderingContext.tableLabel}`
+              : 'Table',
+            icon: AppIcons.dining,
+            ariaLabel: orderingContext.tableLabel
+              ? `Back to table ${orderingContext.tableLabel}`
+              : 'Back to dining table',
+          },
+          {
+            to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
+            label: isAuthenticated ? 'Account' : 'Sign in',
+            icon: AppIcons.account,
+            badgeCount: isAuthenticated ? unreadCount : 0,
+            ariaLabel:
+              isAuthenticated && accountUnreadLabel
+                ? `Account, ${accountUnreadLabel} unread notifications`
+                : undefined,
+          },
+        ]
+      : [
+          { to: '/', label: 'Home', icon: AppIcons.home, end: true },
+          { to: '/menu', label: 'Menu', icon: AppIcons.menu },
+          ...(diningEnabled
+            ? [
+                {
+                  to: isAuthenticated ? '/dining' : buildLoginRedirect('/dining'),
+                  label: 'Dining',
+                  icon: AppIcons.dining,
+                } satisfies BottomNavItem,
+              ]
+            : []),
+          {
+            to: '/cart',
+            label: 'Cart',
+            icon: AppIcons.cart,
+            ariaLabel: cartBadgeAriaLabel(count),
+          },
+          {
+            to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
+            label: isAuthenticated ? 'Account' : 'Sign in',
+            icon: AppIcons.account,
+            badgeCount: isAuthenticated ? unreadCount : 0,
+            ariaLabel:
+              isAuthenticated && accountUnreadLabel
+                ? `Account, ${accountUnreadLabel} unread notifications`
+                : undefined,
+          },
+        ];
 
   if (typeof document === 'undefined') {
     return null;
@@ -122,7 +159,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
     <nav className="bottom-navigation" aria-label="Primary">
       {items.map((item) => (
         <NavLink
-          key={item.label}
+          key={`${item.label}-${item.to}`}
           to={item.to}
           end={item.end}
           aria-label={item.ariaLabel}

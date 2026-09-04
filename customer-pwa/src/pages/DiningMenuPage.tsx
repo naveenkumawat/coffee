@@ -75,6 +75,11 @@ export function DiningMenuPage() {
         }
 
         setSession(sessionResponse.data);
+        writeOrderingContext({
+          type: 'dining',
+          diningSessionId: sessionId,
+          tableLabel: sessionResponse.data.table.label,
+        });
         setCategories(categoryResponse.data);
         setFlavours(flavourResponse.data);
         setCatalogue(products);
@@ -157,6 +162,11 @@ export function DiningMenuPage() {
       ]);
 
       setSession(sessionResponse.data);
+      writeOrderingContext({
+        type: 'dining',
+        diningSessionId: sessionId,
+        tableLabel: sessionResponse.data.table.label,
+      });
       setCategories(categoryResponse.data);
       setFlavours(flavourResponse.data);
       setCatalogue(products);
@@ -321,21 +331,18 @@ export function DiningMenuPage() {
 
       <StickyActionBar
         eyebrow={session ? `Table ${session.table.label}` : 'Next round'}
-        title={draftCount > 0 ? 'Your next round' : 'No items yet'}
-        value={formatCurrency(draftTotal)}
-        note={
+        title={
           draftCount > 0
-            ? `${draftCount} item${draftCount === 1 ? '' : 's'} · View round`
-            : 'Add items for this table'
+            ? `${draftCount} item${draftCount === 1 ? '' : 's'} in next round`
+            : 'No items in next round'
         }
+        value={formatCurrency(draftTotal)}
       >
         <Link
           to={diningSessionPath(sessionId)}
           className="btn btn-primary btn-lg rounded-pill w-100"
         >
-          {draftCount > 0
-            ? `View round · ${draftCount} item${draftCount === 1 ? '' : 's'} · ${formatCurrency(draftTotal)}`
-            : 'Back to table'}
+          {draftCount > 0 ? 'View round' : 'Back to table'}
         </Link>
       </StickyActionBar>
     </div>

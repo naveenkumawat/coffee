@@ -152,6 +152,11 @@ export function DiningSessionPage() {
         const response = await fetchDiningSession(sessionId);
         if (!cancelled) {
           setSession(response.data);
+          writeOrderingContext({
+            type: 'dining',
+            diningSessionId: sessionId,
+            tableLabel: response.data.table.label,
+          });
         }
       } catch (err) {
         if (!cancelled) {
@@ -268,8 +273,10 @@ export function DiningSessionPage() {
   if (!session) {
     return (
       <div className="page-container dining-session-page">
-        <h1 className="visually-hidden">Dining session</h1>
-        {error ? <p className="form-error-text">{error}</p> : <p className="muted">Loading…</p>}
+        <div className="dining-content">
+          <h1 className="visually-hidden">Dining session</h1>
+          {error ? <p className="form-error-text">{error}</p> : <p className="muted">Loading…</p>}
+        </div>
       </div>
     );
   }
@@ -280,6 +287,7 @@ export function DiningSessionPage() {
     <div
       className={`page-container dining-session-page${drafts.length > 0 && canOrder ? ' has-sticky-cta' : ''}`.trim()}
     >
+      <div className="dining-content">
       <header className="dining-session-hero" aria-labelledby="dining-session-table">
         <div className="dining-session-hero-top">
           <div>
@@ -375,7 +383,13 @@ export function DiningSessionPage() {
               <Link
                 to={diningMenuPath(sessionId)}
                 className="btn btn-primary rounded-pill"
-                onClick={() => writeOrderingContext({ type: 'dining', diningSessionId: sessionId })}
+                onClick={() =>
+                  writeOrderingContext({
+                    type: 'dining',
+                    diningSessionId: sessionId,
+                    tableLabel: session.table.label,
+                  })
+                }
               >
                 <i className="bi bi-plus-lg" aria-hidden="true"></i>
                 Add items
@@ -388,7 +402,13 @@ export function DiningSessionPage() {
                 <Link
                   to={diningMenuPath(sessionId)}
                   className="btn btn-sm btn-outline-dark rounded-pill"
-                  onClick={() => writeOrderingContext({ type: 'dining', diningSessionId: sessionId })}
+                  onClick={() =>
+                    writeOrderingContext({
+                      type: 'dining',
+                      diningSessionId: sessionId,
+                      tableLabel: session.table.label,
+                    })
+                  }
                 >
                   <i className="bi bi-plus-lg" aria-hidden="true"></i>
                   Add items
@@ -562,6 +582,8 @@ export function DiningSessionPage() {
         </section>
       ) : null}
 
+      </div>
+
       {canOrder && drafts.length > 0 ? (
         <CompactDiningRoundBar
           itemCount={draftCount}
@@ -592,14 +614,17 @@ export function DiningBillPage() {
   if (!session) {
     return (
       <div className="page-container dining-bill-page">
-        <h1>Bill</h1>
-        {error ? <p className="form-error-text">{error}</p> : <p className="muted">Loading…</p>}
+        <div className="dining-content">
+          <h1>Bill</h1>
+          {error ? <p className="form-error-text">{error}</p> : <p className="muted">Loading…</p>}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="page-container dining-bill-page">
+      <div className="dining-content">
       <header className="dining-session-hero">
         <div className="dining-session-hero-top">
           <div>
@@ -688,6 +713,7 @@ export function DiningBillPage() {
       <Link to={`/dining/sessions/${sessionId}`} className="btn btn-text">
         Back to session
       </Link>
+      </div>
     </div>
   );
 }

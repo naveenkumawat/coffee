@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { fetchProduct } from '../api/catalog';
 import { ApiError } from '../api/client';
 import { fetchProductRatings } from '../api/ratings';
@@ -13,12 +13,15 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { ProductImage } from '../components/common/ProductImage';
 import { RecommendationSection } from '../components/recommendations/RecommendationSection';
+import { useOrderingContext } from '../hooks/useOrderingContext';
 import { Product } from '../types/catalog';
 import { PublicProductReview, RatingSummary } from '../types/rating';
+import { diningMenuPath, isDiningOrderingContext } from '../utils/orderingContext';
 import { getProductVariants, isProductUnavailable } from '../utils/productActions';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
 export function ProductDetailPage() {
+  const orderingContext = useOrderingContext();
   const { productId = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
@@ -55,6 +58,10 @@ export function ProductDetailPage() {
 
     void load();
   }, [productId]);
+
+  if (isDiningOrderingContext(orderingContext)) {
+    return <Navigate to={diningMenuPath(orderingContext.diningSessionId)} replace />;
+  }
 
   if (isLoading) {
     return (
