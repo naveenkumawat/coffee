@@ -157,7 +157,7 @@ test('customer shell uses shared content max tokens', () => {
   assert.match(theme, /@media \(min-width: 768px\)[\s\S]*?\.dining-content[\s\S]*?var\(--dining-content-max-tablet\)/);
   assert.match(theme, /@media \(min-width: 1024px\)[\s\S]*?\.dining-content[\s\S]*?var\(--dining-content-max-desktop\)/);
   assert.match(theme, /\.dining-menu-page \.dining-content\s*\{[\s\S]*?max-width:\s*none/);
-  assert.match(theme, /\.dining-session-page,[\s\S]*?max-width:\s*none/);
+  assert.match(theme, /\.dining-page,[\s\S]*?\.dining-session-page,[\s\S]*?max-width:\s*none/);
   assert.doesNotMatch(
     theme,
     /\.dining-session-page,[\s\S]{0,200}max-width:\s*min\(100%,\s*var\(--coffee-shell-max\)\)/,
@@ -174,6 +174,44 @@ test('dining session and bill use inner dining-content inside shared page shell'
   assert.match(bill, /page-container dining-bill-page/);
   assert.match(bill, /className="dining-content"/);
   assert.match(bill, /tableLabel:/);
+
+  const entry = readSrc('pages/DiningPage.tsx');
+  assert.match(entry, /page-container dining-page/);
+  assert.match(entry, /className="dining-content"/);
+});
+
+test('dining entry page uses table cards guest stepper and start dining CTA', () => {
+  const source = readSrc('pages/DiningPage.tsx');
+  assert.match(source, /PageHeader/);
+  assert.match(source, /dining-table-card/);
+  assert.match(source, /dining-table-grid/);
+  assert.match(source, /QuantityStepper/);
+  assert.match(source, /Decrease guests/);
+  assert.match(source, /Increase guests/);
+  assert.match(source, /Start dining/);
+  assert.match(source, /Starting session…/);
+  assert.match(source, /Return to table/);
+  assert.match(source, /fetchActiveDiningSession/);
+  assert.match(source, /writeOrderingContext/);
+  assert.match(source, /clearOrderingContext/);
+  assert.match(source, /No tables available right now/);
+  assert.match(source, /aria-selected/);
+  assert.match(source, /is-selected/);
+  assert.match(source, /is-unavailable/);
+  assert.match(source, /disabled=\{!canStart \|\| submitting\}/);
+  assert.match(source, /submitting/);
+  assert.doesNotMatch(source, /<select[\s>]/);
+  assert.doesNotMatch(source, /type=["']number["']/);
+  assert.doesNotMatch(source, /Start session/);
+  assert.doesNotMatch(source, /navigate\(`\/dining\/sessions\/\$\{active\.data\.id\}`/);
+
+  const theme = readSrc('assets/styles/theme.css');
+  assert.match(theme, /\.dining-table-grid/);
+  assert.match(theme, /\.dining-table-card/);
+  assert.match(theme, /\.dining-table-card\.is-selected/);
+  assert.match(theme, /\.app-shell\s*\{[\s\S]*?display:\s*flex/);
+  assert.match(theme, /\.app-main\s*>\s*\.site-footer\s*\{[\s\S]*?margin-top:\s*auto/);
+  assert.match(theme, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
 });
 
 test('customer footer always keeps Home/Menu/Dining/Cart/Account with dining-aware destinations', () => {

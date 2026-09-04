@@ -140,6 +140,8 @@ button {
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
   /* Notch once on the shell — do not re-apply on banners/headers. */
   padding-top: var(--coffee-safe-top);
   /* Opaque shell — avoid backdrop-filter here so position:fixed chrome stays viewport-fixed. */
@@ -161,10 +163,18 @@ button {
 .app-main {
   --page-inline-start: calc(var(--page-gutter) + env(safe-area-inset-left, 0px));
   --page-inline-end: calc(var(--page-gutter) + env(safe-area-inset-right, 0px));
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   padding-top: 0;
   padding-bottom: calc(var(--coffee-nav-offset) + var(--space-6));
   padding-left: var(--page-inline-start);
   padding-right: var(--page-inline-end);
+}
+
+.app-main > .site-footer {
+  margin-top: auto;
 }
 
 .page-container {
@@ -6958,6 +6968,7 @@ body.product-overlay-open .bottom-navigation {
   flex-shrink: 0;
 }
 
+.dining-page,
 .dining-session-page,
 .dining-menu-page,
 .dining-bill-page {
@@ -6967,6 +6978,128 @@ body.product-overlay-open .bottom-navigation {
   width: 100%;
   max-width: none;
   margin-inline: 0;
+  flex: 1 0 auto;
+}
+
+.dining-start-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dining-table-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.dining-table-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-height: 5.5rem;
+  min-width: 0;
+  padding: 0.9rem 0.95rem;
+  text-align: left;
+  border: 1px solid var(--coffee-border);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), var(--coffee-cream));
+  box-shadow: var(--coffee-shadow-sm);
+  color: var(--coffee-text);
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    background var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.dining-table-card:focus-visible {
+  outline: 2px solid var(--coffee-accent, #7c5a3b);
+  outline-offset: 2px;
+}
+
+.dining-table-card.is-available:hover {
+  border-color: rgba(124, 90, 59, 0.35);
+}
+
+.dining-table-card.is-selected {
+  border-color: rgba(124, 90, 59, 0.55);
+  background: linear-gradient(180deg, rgba(124, 90, 59, 0.12), #fff);
+  box-shadow: var(--coffee-shadow);
+}
+
+.dining-table-card.is-unavailable,
+.dining-table-card:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.dining-table-card-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dining-table-card-state {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--coffee-muted);
+}
+
+.dining-table-card-state.is-available {
+  color: color-mix(in srgb, var(--coffee-text) 72%, #3f6b4a);
+}
+
+.dining-table-card-check {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--coffee-accent, #7c5a3b) 88%, #1c1917);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.dining-guest-stepper {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.dining-guest-section .quantity-stepper.size-lg {
+  width: min(100%, 14rem);
+  justify-content: space-between;
+}
+
+.dining-start-summary,
+.dining-active-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dining-start-summary .btn,
+.dining-active-session-card .btn {
+  margin-top: 0.45rem;
+}
+
+@media (min-width: 768px) {
+  .dining-table-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dining-table-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 /* Inner dining workflow column — lives inside the shared customer shell.
