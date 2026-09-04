@@ -24,5 +24,19 @@ interface CartItemTransferInterface
      */
     public function setAddOns(array $addOns): void;
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getAttribution(): ?array;
+
+    /**
+     * @param  array<string, mixed>|null  $attribution
+     */
+    public function setAttribution(?array $attribution): void;
+
+    public function getVisitorKey(): ?string;
+
+    public function setVisitorKey(?string $visitorKey): void;
+
     public function toArray(): array;
 }

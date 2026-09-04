@@ -7,6 +7,7 @@ import {
 } from '../../api/recommendations';
 import { ProductCard } from '../catalog/ProductCard';
 import { trackBehaviour } from '../../tracking/behaviourTracker';
+import { stashCartAttribution } from '../../utils/cartAttributionStash';
 import { getOrCreateVisitorId } from '../../utils/visitorId';
 import { recommendationReasonLabel } from '../../utils/recommendationLabels';
 
@@ -135,6 +136,14 @@ function RecommendationProductCard({
   return (
     <div
       onClickCapture={() => {
+        stashCartAttribution(item.product.id, {
+          source_type: 'recommendation',
+          request_id: item.request_id,
+          reason: item.reason,
+          strategy: item.strategy,
+          placement,
+          context: item.strategy,
+        });
         trackBehaviour({
           event_type: 'recommendation_clicked',
           product_id: item.product.id,

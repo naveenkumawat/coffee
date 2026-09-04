@@ -8,6 +8,8 @@ import {
 } from '../types/cart';
 import { CheckoutFulfilmentMethod } from '../types/checkout';
 import { canonicalizeAddOns } from '../utils/addOns';
+import { getOrCreateVisitorId } from '../utils/visitorId';
+import type { CartAttributionPayload } from '../utils/cartAttributionStash';
 
 export function fetchCart(): Promise<ApiEnvelope<Cart>> {
   return get<ApiEnvelope<Cart>>('/cart');
@@ -81,6 +83,8 @@ function cartItemBody(payload: CartItemMutationPayload): {
   product_variant_id: number;
   quantity: number;
   add_ons?: CartAddOnSelection[];
+  visitor_key?: string;
+  attribution?: CartAttributionPayload;
 } {
   const addOns = canonicalizeAddOns(payload.add_ons);
 
@@ -88,6 +92,7 @@ function cartItemBody(payload: CartItemMutationPayload): {
     product_variant_id: payload.product_variant_id,
     quantity: payload.quantity,
     ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+    ...(payload.attribution ? { attribution: payload.attribution, visitor_key: getOrCreateVisitorId() } : {}),
   };
 }
 
@@ -126,6 +131,9 @@ export function mergeGuestCart(payload: CartMergePayload): Promise<ApiEnvelope<C
         product_variant_id: item.product_variant_id,
         quantity: item.quantity,
         ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+        ...(item.attribution
+          ? { attribution: item.attribution, visitor_key: item.visitor_key ?? getOrCreateVisitorId() }
+          : {}),
       };
     }),
   });

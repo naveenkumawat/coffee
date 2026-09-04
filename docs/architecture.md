@@ -406,7 +406,7 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * **NOT PRODUCTION READY** until real café data (`docs/launch-data-todo.md`) and production smoke (`docs/production-deployment.md`).
 * Freeze record: `docs/development-completion-audit.md` → Frozen baseline (L4).
 
-## Behaviour tracking & personalisation foundation (P2.1–P2.5)
+## Behaviour tracking & personalisation foundation (P2.1–P2.6)
 
 * Append-only `customer_behaviour_events` + `customer_visitor_identities` (first-party; no fingerprinting).
 * Client ingest: `POST /api/v1/behaviour/events`; merge: `POST /api/v1/behaviour/merge`.
@@ -416,8 +416,9 @@ Catalog: products have `product_type` (beverage/food) and `preparation_station` 
 * **P2.3:** `RecommendationService` strategy pipeline; `GET /api/v1/recommendations`; PWA recommendation rails; `recommendation_impression` / `recommendation_clicked`.
 * **P2.4:** `campaigns` + `campaign_impressions`; Admin campaign CRUD; `CampaignEligibilityService` (placement/audience/frequency); `GET /api/v1/campaigns/eligible`; PWA popup controller; `campaign_impression` / `campaign_clicked` / `campaign_dismissed`.
 * **P2.5:** `audience_segments`; shared `TargetingRule*` vocabulary; `SegmentService` dynamic membership; campaigns may use `segment_matches` / `segment_not_matches`; Admin Audience Segments + safe preview.
-* Config: `coffee.behaviour.*` including `profile`, `recommendations`, `campaigns`, and `segments`.
-* Detail: `docs/personalisation-architecture.md`. P2.6 analytics / conversion feedback next.
+* **P2.6:** cart/order `attribution` snapshots + `commerce_attribution_events`; server `recommendation_converted` / `campaign_converted`; Admin Recommendation/Campaign Performance reports (aggregate only).
+* Config: `coffee.behaviour.*` including `profile`, `recommendations`, `campaigns`, `segments`, and `attribution`.
+* Detail: `docs/personalisation-architecture.md`. Phase-1 freeze unchanged.
 
 ## Mobile ordering journey hardening (C2)
 

@@ -24,6 +24,7 @@ use App\Events\Order\OrderPaymentProofRejected;
 use App\Events\Order\OrderPlaced;
 use App\Events\Order\OrderPreparationStatusChanged;
 use App\Events\Order\OrderStatusChanged;
+use App\Listeners\Attribution\RecordAttributionConversions;
 use App\Listeners\Behaviour\RecordOrderCompletedBehaviourEvent;
 use App\Listeners\Customer\SendCustomerPasswordChangedNotification;
 use App\Listeners\Customer\SendCustomerWelcomeNotification;
@@ -104,6 +105,7 @@ class EventServiceProvider extends ServiceProvider
             NotifyStaffOrderStatusChanged::class,
             QualifyReferralOnPaymentConfirmed::class,
             RecordOrderCompletedBehaviourEvent::class,
+            [RecordAttributionConversions::class, 'handleOrderStatusChanged'],
             WireOperationalOrderStatusChanged::class,
             [WireDiningRealtimeSignals::class, 'handleOrderStatusChanged'],
         ],
@@ -138,6 +140,7 @@ class EventServiceProvider extends ServiceProvider
             SendDiningPaymentConfirmedNotification::class,
             QualifyReferralOnDiningPaymentConfirmed::class,
             WireOperationalDiningPaymentConfirmed::class,
+            [RecordAttributionConversions::class, 'handleDiningPaymentConfirmed'],
             [WireDiningRealtimeSignals::class, 'handlePaymentConfirmed'],
         ],
         DiningPaymentProofReceived::class => [

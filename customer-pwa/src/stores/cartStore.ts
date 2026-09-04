@@ -42,6 +42,7 @@ import {
   writeGuestCartItems,
 } from '../utils/guestCartStorage';
 import { totalCartQuantity } from '../utils/cartQuantity';
+import { takeCartAttribution } from '../utils/cartAttributionStash';
 import { trackBehaviour } from '../tracking/behaviourTracker';
 
 interface CartState {
@@ -277,13 +278,13 @@ export const useCartStore = create<CartState>((set, get) => ({
     const release = withPendingVariant(set, payload.product_variant_id);
     const addOns = canonicalizeAddOns(payload.add_ons);
     const productId = payload.display?.product?.id;
+    const attribution =
+      payload.attribution ?? (productId ? takeCartAttribution(productId) ?? undefined : undefined);
+    const attributedPayload = { ...payload, add_ons: addOns, attribution };
 
     try {
       if (!isSessionAuthenticated()) {
-        const nextItems = upsertGuestCartItem(readGuestCartItems(), {
-          ...payload,
-          add_ons: addOns,
-        });
+        const nextItems = upsertGuestCartItem(readGuestCartItems(), attributedPayload);
         writeGuestCartItems(nextItems);
         const state = buildGuestCartState(nextItems);
         set({
@@ -301,6 +302,12 @@ export const useCartStore = create<CartState>((set, get) => ({
               quantity: payload.quantity,
               variant_id: payload.product_variant_id,
               addon_count: addOns.length,
+              ...(attribution
+                ? {
+                    attribution_source_type: attribution.source_type,
+                    attribution_request_id: attribution.request_id,
+                  }
+                : {}),
             },
           });
         }
@@ -340,7 +347,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       });
 
       try {
-        const response = await addCartItem({ ...payload, add_ons: addOns });
+        const response = await addCartItem(attributedPayload);
         applyCartState(set, response);
 
         if (productId) {
@@ -352,6 +359,12 @@ export const useCartStore = create<CartState>((set, get) => ({
               quantity: payload.quantity,
               variant_id: payload.product_variant_id,
               addon_count: addOns.length,
+              ...(attribution
+                ? {
+                    attribution_source_type: attribution.source_type,
+                    attribution_request_id: attribution.request_id,
+                  }
+                : {}),
             },
           });
         }

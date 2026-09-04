@@ -9,6 +9,8 @@ import {
   CartVariantSummary,
 } from '../types/cart';
 import { addonUnitTotal, addOnsConfigurationKey, canonicalizeAddOns } from './addOns';
+import type { CartAttributionPayload } from './cartAttributionStash';
+import { getOrCreateVisitorId } from './visitorId';
 
 const STORAGE_KEY = 'coffee.guest-cart.v1';
 const MERGE_KEY_STORAGE = 'coffee.guest-cart.merge-key';
@@ -21,6 +23,7 @@ export interface GuestCartStoredItem {
   add_ons_display: CartItemAddOn[];
   product: CartProductSummary | null;
   variant: CartVariantSummary | null;
+  attribution?: CartAttributionPayload | null;
 }
 
 function emptySummary(): CartSummary {
@@ -64,6 +67,7 @@ function normalizeStoredItem(raw: Partial<GuestCartStoredItem> & { product_varia
     add_ons_display: addOnsDisplay,
     product: raw.product ?? null,
     variant: raw.variant ?? null,
+    attribution: raw.attribution ?? null,
   };
 }
 
@@ -198,6 +202,7 @@ export function upsertGuestCartItem(
       add_ons_display: displayAddOns,
       product: payload.display?.product ?? next[existingIndex].product,
       variant: payload.display?.variant ?? next[existingIndex].variant,
+      attribution: next[existingIndex].attribution ?? payload.attribution ?? null,
     };
 
     return next;
@@ -211,6 +216,7 @@ export function upsertGuestCartItem(
     add_ons_display: displayAddOns,
     product: payload.display?.product ?? null,
     variant: payload.display?.variant ?? null,
+    attribution: payload.attribution ?? null,
   });
 
   return next;
@@ -279,6 +285,8 @@ export function guestItemsForMerge(items: GuestCartStoredItem[]): Array<{
   product_variant_id: number;
   quantity: number;
   add_ons?: CartAddOnSelection[];
+  attribution?: CartAttributionPayload;
+  visitor_key?: string;
 }> {
   return items.map((item) => {
     const addOns = canonicalizeAddOns(item.add_ons);
@@ -287,6 +295,9 @@ export function guestItemsForMerge(items: GuestCartStoredItem[]): Array<{
       product_variant_id: item.product_variant_id,
       quantity: item.quantity,
       ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+      ...(item.attribution
+        ? { attribution: item.attribution, visitor_key: getOrCreateVisitorId() }
+        : {}),
     };
   });
 }

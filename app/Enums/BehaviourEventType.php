@@ -17,6 +17,8 @@ enum BehaviourEventType: string
 
     // Server business events (Laravel authoritative; reject from clients)
     case OrderCompleted = 'order_completed';
+    case RecommendationConverted = 'recommendation_converted';
+    case CampaignConverted = 'campaign_converted';
 
     // Recommendation feedback (P2.3)
     case RecommendationImpression = 'recommendation_impression';
@@ -26,7 +28,6 @@ enum BehaviourEventType: string
     case CampaignImpression = 'campaign_impression';
     case CampaignClicked = 'campaign_clicked';
     case CampaignDismissed = 'campaign_dismissed';
-    case CampaignConverted = 'campaign_converted';
 
     /**
      * @return list<self>
@@ -69,6 +70,10 @@ enum BehaviourEventType: string
 
     public function isServerAuthoritative(): bool
     {
-        return $this === self::OrderCompleted;
+        return in_array($this, [
+            self::OrderCompleted,
+            self::RecommendationConverted,
+            self::CampaignConverted,
+        ], true);
     }
 }

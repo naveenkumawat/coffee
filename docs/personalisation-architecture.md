@@ -12,15 +12,14 @@ Derived Personalisation Profile (P2.2)
         ↓
 Reusable Audience Segment Definitions (P2.5)
         ↓
-Segment Evaluator (dynamic; optional bounded TTL cache ≠ truth)
+Recommendation / Campaign (P2.3 / P2.4)
         ↓
-Campaign Targeting (P2.4 + segment_matches / segment_not_matches)
-        ├─ future recommendation boosts
-        ├─ future personalised landing content
-        └─ P2.6 analytics / conversion feedback
+Impression → Click → Cart (attributed) → Checkout → Canonical Purchase
+        ↓
+Attribution Snapshot (order item) + Funnel Events
+        ↓
+Aggregate Performance Analytics (P2.6)
 ```
-
-(Also parallel: Recommendation Candidate Strategies → Surfaces → Impression/Click → P2.6)
 
 | Phase | Status | Scope |
 | --- | --- | --- |
@@ -29,7 +28,7 @@ Campaign Targeting (P2.4 + segment_matches / segment_not_matches)
 | **P2.3** Recommendation Engine | **COMPLETE** | Hybrid strategy pipeline; guest/customer/cold-start; API + PWA rails |
 | **P2.4** Campaign/Popup Engine | **COMPLETE** | Admin campaigns; targeting/frequency; eligible API; PWA popup |
 | **P2.5** Segmentation | **COMPLETE** | Reusable named segments; shared rule evaluator; campaign segment operators |
-| **P2.6** Analytics / Conversion Feedback | **NEXT** | Recommendation/campaign impression→conversion reporting |
+| **P2.6** Attribution Analytics | **COMPLETE** | Cart→order attribution snapshots; conversion events; Admin rec/campaign performance |
 
 ## P2.1 collection
 
@@ -39,11 +38,8 @@ Campaign Targeting (P2.4 + segment_matches / segment_not_matches)
 
 ### Server business events (Laravel only)
 
-`order_completed` — recorded from `OrderStatusChanged` → `Completed` with idempotency key `server:order_completed:{order_id}`. Clients cannot submit this type.
-
-### Reserved (reject until later phases)
-
-`campaign_converted`
+`order_completed` — recorded from `OrderStatusChanged` → `Completed` with idempotency key `server:order_completed:{order_id}`.
+`recommendation_converted` / `campaign_converted` — server-authoritative purchase attribution (idempotent per order item). Clients cannot submit these types.
 
 ## Anonymous visitor identity
 
@@ -169,8 +165,8 @@ Cold start (`has_sufficient_evidence = false`): trending / popular / featured / 
 
 ### Out of scope (later)
 
-- Purchase/conversion attribution analytics (P2.6)
 - ML / external recommendation services
+- Automatic weight tuning from P2.6 metrics
 
 ## P2.4 campaign / popup engine
 
@@ -202,7 +198,7 @@ Rules reuse P2.2 `profilePayloadFor*` plus canonical completed-order / favourite
 - Architecture-ready surfaces: `banner`, `inline`, `landing` (same targeting)
 - `GET /api/v1/campaigns/eligible` — customer-safe render payload only (no rules/scores/profile)
 - `POST /api/v1/campaigns/interactions` — optional explicit frequency write
-- Behaviour ingest: `campaign_impression` / `campaign_clicked` / `campaign_dismissed` (mirrors frequency rows); `campaign_converted` reserved for P2.6
+- Behaviour ingest: `campaign_impression` / `campaign_clicked` / `campaign_dismissed` (mirrors frequency rows); server `campaign_converted` on attributed paid completion
 - Impressions fire only when the modal is actually presented; client dedupes per `request_id`
 
 ### Config / cache
@@ -249,6 +245,42 @@ Administrator → **Audience Segments**: list/filter, create/edit, activate/paus
 
 - Nested segments
 - Materialized membership warehouse
-- Recommendation ranking changes (P2.3 may optionally consume `matchingSegments` later)
+- Automatic recommendation weight tuning / campaign auto-pause from P2.6 metrics
 - Personalised landing surfaces using segment ids
-- P2.6 analytics / conversion feedback
+- Multi-touch marketing attribution
+
+## P2.6 attribution analytics
+
+Closes the feedback loop: exposure → click → cart → checkout → canonical purchase → aggregate performance.
+
+### Durable linkage (minimum)
+
+- Optional `cart_items.attribution` JSON (validated server-side against behaviour evidence; does not affect pricing/`configuration_hash`)
+- Snapshot `order_items.attribution` at order creation (stable history even if campaigns/weights change)
+- `commerce_attribution_events` funnel rows: `cart_added` / `converted` (idempotent keys)
+- Server behaviour events: `recommendation_converted` / `campaign_converted`
+
+Guest attribution uses `visitor_key` + `request_id`; survives login via merge payload + visitor→customer evidence matching. No fingerprinting/IP identity.
+
+### Rules (deterministic V1)
+
+Priority: direct click evidence within configured window → optional view-through impression → unattributed. Metrics are **attributed/conversion correlation**, not causal proof. No multi-touch model.
+
+Purchase conversion only when order is `Completed` and payment is canonically confirmed (retail: order payment confirmed; dining: parent session payment confirmed). Cancelled/rejected/unpaid excluded. Duplicate status transitions are idempotent.
+
+### Admin
+
+Administrator → Recommendation Performance / Campaign Performance (date presets, KPIs, strategy/campaign/placement tables). Aggregate only — no customer browsing timelines. Auth: `canViewFinancialReports()`.
+
+### Retention boundary
+
+Raw behaviour events may prune per `coffee.behaviour.retention_days`. Order item attribution snapshots and conversion funnel rows remain with business order records.
+
+### Config
+
+`coffee.behaviour.attribution.*` — view-through toggle/windows, analytics cache TTL.
+
+### Explicit non-goals
+
+- Do **not** auto-tune P2.3 weights or auto pause campaigns from these metrics
+- No warehouse / Elasticsearch / external CDP

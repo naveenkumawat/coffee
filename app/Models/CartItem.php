@@ -17,12 +17,14 @@ class CartItem extends AbstractModel
         'product_variant_id',
         'configuration_hash',
         'quantity',
+        'attribution',
     ];
 
     protected function casts(): array
     {
         return [
             'quantity' => 'integer',
+            'attribution' => 'array',
         ];
     }
 

@@ -11,6 +11,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\Cart\CartRepositoryInterface;
 use App\Services\AddOn\AddOnServiceInterface;
+use App\Services\Attribution\AttributionServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
@@ -29,6 +30,7 @@ class CartService implements CartServiceInterface
         protected PromotionServiceInterface $promotions,
         protected ReferralServiceInterface $referrals,
         protected AddOnServiceInterface $addOns,
+        protected AttributionServiceInterface $attribution,
     ) {}
 
     public function getForCustomer(User $customer): Cart
@@ -45,6 +47,18 @@ class CartService implements CartServiceInterface
             $resolvedAddOns = $this->addOns->resolveSelectionForProduct($product, $data->getAddOns());
             $configurationHash = AddOnConfiguration::hash((int) $variant->getKey(), $resolvedAddOns);
             $existingItem = $this->carts->findCustomerItem($cart, $configurationHash);
+            $quantityAdded = $data->getQuantity();
+
+            $resolvedAttribution = null;
+
+            if ($data->getAttribution() !== null) {
+                $resolvedAttribution = $this->attribution->resolveForCartAdd(
+                    $data->getAttribution(),
+                    (int) $product->getKey(),
+                    $customer,
+                    $data->getVisitorKey(),
+                );
+            }
 
             if ($existingItem === null && $resolvedAddOns === []) {
                 $existingItem = $cart->items()
@@ -62,15 +76,35 @@ class CartService implements CartServiceInterface
 
             if ($existingItem) {
                 $this->carts->updateItem($existingItem, [
-                    'quantity' => $existingItem->quantity + $data->getQuantity(),
+                    'quantity' => $existingItem->quantity + $quantityAdded,
                 ]);
+
+                if ($resolvedAttribution !== null) {
+                    $this->attribution->stampCartItem(
+                        $existingItem->fresh() ?? $existingItem,
+                        $resolvedAttribution,
+                        $customer,
+                        $data->getVisitorKey(),
+                        $quantityAdded,
+                    );
+                }
             } else {
                 $cartItem = $this->carts->createItem($cart, [
                     'product_variant_id' => $variant->getKey(),
                     'configuration_hash' => $configurationHash,
-                    'quantity' => $data->getQuantity(),
+                    'quantity' => $quantityAdded,
                 ]);
                 $this->syncCartItemAddOns($cartItem, $resolvedAddOns);
+
+                if ($resolvedAttribution !== null) {
+                    $this->attribution->stampCartItem(
+                        $cartItem,
+                        $resolvedAttribution,
+                        $customer,
+                        $data->getVisitorKey(),
+                        $quantityAdded,
+                    );
+                }
             }
 
             return $this->carts->refreshCart($cart);
@@ -178,9 +212,15 @@ class CartService implements CartServiceInterface
                     'product_variant_id' => $variantId,
                     'quantity' => 0,
                     'add_ons' => $addOns,
+                    'attribution' => is_array($item['attribution'] ?? null) ? $item['attribution'] : null,
+                    'visitor_key' => isset($item['visitor_key']) ? (string) $item['visitor_key'] : null,
                 ];
             }
             $grouped[$hash]['quantity'] += (int) $item['quantity'];
+
+            if (($grouped[$hash]['attribution'] ?? null) === null && is_array($item['attribution'] ?? null)) {
+                $grouped[$hash]['attribution'] = $item['attribution'];
+            }
         }
 
         $cart = DB::transaction(function () use ($customer, $grouped): Cart {
@@ -189,6 +229,15 @@ class CartService implements CartServiceInterface
                 $transfer->setProductVariantId((int) $row['product_variant_id']);
                 $transfer->setQuantity((int) $row['quantity']);
                 $transfer->setAddOns($row['add_ons']);
+
+                if (is_array($row['attribution'] ?? null)) {
+                    $transfer->setAttribution($row['attribution']);
+                }
+
+                if (filled($row['visitor_key'] ?? null)) {
+                    $transfer->setVisitorKey((string) $row['visitor_key']);
+                }
+
                 $this->addItem($customer, $transfer);
             }
 

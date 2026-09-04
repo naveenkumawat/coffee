@@ -4,6 +4,7 @@ use App\Http\Controllers\Administrator\AddOnController;
 use App\Http\Controllers\Administrator\AudienceSegmentController;
 use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
+use App\Http\Controllers\Administrator\CampaignAnalyticsController;
 use App\Http\Controllers\Administrator\CampaignController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\DiningSessionController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Administrator\ProductRatingController;
 use App\Http\Controllers\Administrator\ProductTagController;
 use App\Http\Controllers\Administrator\PromotionController;
 use App\Http\Controllers\Administrator\RecipeController;
+use App\Http\Controllers\Administrator\RecommendationAnalyticsController;
 use App\Http\Controllers\Administrator\ReferralController;
 use App\Http\Controllers\Administrator\SocialLinkController;
 use App\Http\Controllers\Administrator\UserController;
@@ -59,6 +61,8 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
 
     Route::get('reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial.index');
     Route::get('reports/financial/export', [FinancialReportController::class, 'export'])->name('reports.financial.export');
+    Route::get('reports/recommendations', [RecommendationAnalyticsController::class, 'index'])->name('reports.recommendations.index');
+    Route::get('reports/campaigns', [CampaignAnalyticsController::class, 'index'])->name('reports.campaigns.index');
     Route::get('reports/inventory-products', [InventoryProductReportController::class, 'index'])->name('reports.inventory-products.index');
     Route::get('reports/inventory-products/export/ingredient-movements', [InventoryProductReportController::class, 'exportIngredientMovements'])->name('reports.inventory-products.export.ingredient-movements');
     Route::get('reports/inventory-products/export/product-sales', [InventoryProductReportController::class, 'exportProductSales'])->name('reports.inventory-products.export.product-sales');

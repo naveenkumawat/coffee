@@ -22,6 +22,7 @@ use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Order\OrderRepositoryInterface;
 use App\Services\AddOn\AddOnServiceInterface;
+use App\Services\Attribution\AttributionServiceInterface;
 use App\Services\Dining\DiningRoundCancellationPolicy;
 use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
@@ -55,6 +56,7 @@ class OrderService implements OrderServiceInterface
         protected OrderInventoryConsumptionServiceInterface $inventoryConsumption,
         protected AddOnServiceInterface $addOns,
         protected DiningRoundCancellationPolicy $diningCancellation,
+        protected AttributionServiceInterface $attribution,
     ) {}
 
     public function store(User $actor, OrderTransferInterface $data): Order
@@ -281,6 +283,7 @@ class OrderService implements OrderServiceInterface
                 'unit_price' => $item['unit_price'],
                 'quantity' => $item['quantity'],
                 'line_subtotal' => $item['line_subtotal'],
+                'attribution' => $item['attribution'] ?? null,
                 'add_ons' => $item['add_ons'] ?? [],
             ], $preparedItems));
             $this->persistOrderPromotions($order, $promotionResult['discounts']);
@@ -935,6 +938,7 @@ class OrderService implements OrderServiceInterface
                 'unit_price' => $item['unit_price'],
                 'quantity' => $item['quantity'],
                 'line_subtotal' => $item['line_subtotal'],
+                'attribution' => $item['attribution'] ?? null,
                 'add_ons' => $item['add_ons'] ?? [],
             ], $preparedItems));
             $this->orders->createStatusHistory($order, [
@@ -1040,6 +1044,9 @@ class OrderService implements OrderServiceInterface
                 'base_line_subtotal' => $baseLineSubtotal,
                 'addon_line_subtotal' => $addonLineSubtotal,
                 'add_ons' => $resolvedAddOns,
+                'attribution' => $this->attribution->snapshotForOrderItem(
+                    is_array($item['attribution'] ?? null) ? $item['attribution'] : null,
+                ),
             ];
         }
 

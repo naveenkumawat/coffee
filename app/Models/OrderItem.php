@@ -25,6 +25,7 @@ class OrderItem extends AbstractModel
         'unit_price',
         'quantity',
         'line_subtotal',
+        'attribution',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class OrderItem extends AbstractModel
             'unit_price' => 'decimal:2',
             'quantity' => 'integer',
             'line_subtotal' => 'decimal:2',
+            'attribution' => 'array',
         ];
     }
 

@@ -8,6 +8,7 @@ import {
 import { trackBehaviour } from '../../tracking/behaviourTracker';
 import { useCartStore } from '../../stores/cartStore';
 import { getOrCreateCampaignSessionKey } from '../../utils/campaignSession';
+import { stashCartAttribution } from '../../utils/cartAttributionStash';
 import { getOrCreateVisitorId } from '../../utils/visitorId';
 import { CampaignPopupModal } from './CampaignPopupModal';
 
@@ -82,9 +83,14 @@ export function CampaignPopupController() {
   );
 
   const trackCampaign = useCallback(
-    (eventType: 'campaign_impression' | 'campaign_clicked' | 'campaign_dismissed', current: EligibleCampaign) => {
+    (
+      eventType: 'campaign_impression' | 'campaign_clicked' | 'campaign_dismissed',
+      current: EligibleCampaign,
+      productId?: number,
+    ) => {
       trackBehaviour({
         event_type: eventType,
+        product_id: productId,
         metadata: {
           campaign_id: current.id,
           request_id: current.request_id,
@@ -219,12 +225,22 @@ export function CampaignPopupController() {
       return;
     }
 
-    trackCampaign('campaign_clicked', campaign);
+    const productId =
+      campaign.cta.type === 'product' && campaign.cta.product_id ? campaign.cta.product_id : undefined;
+
+    trackCampaign('campaign_clicked', campaign, productId);
     setOpen(false);
 
     const { cta } = campaign;
 
     if (cta.type === 'product' && cta.product_id) {
+      stashCartAttribution(cta.product_id, {
+        source_type: 'campaign',
+        source_id: campaign.id,
+        request_id: campaign.request_id,
+        placement: routeContext.placement,
+        reason: campaign.cta.type,
+      });
       navigate(`/menu/${cta.product_id}`);
 
       return;
@@ -245,7 +261,7 @@ export function CampaignPopupController() {
     if (cta.type === 'promotion') {
       navigate('/cart');
     }
-  }, [campaign, navigate, trackCampaign]);
+  }, [campaign, navigate, trackCampaign, routeContext.placement]);
 
   if (!campaign) {
     return null;

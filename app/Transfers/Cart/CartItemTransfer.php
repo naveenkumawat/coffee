@@ -15,6 +15,11 @@ class CartItemTransfer extends AbstractTransfer implements CartItemTransferInter
 
     protected bool $addOnsProvided = false;
 
+    /** @var array<string, mixed>|null */
+    protected ?array $attribution = null;
+
+    protected ?string $visitorKey = null;
+
     public function getProductVariantId(): ?int
     {
         return $this->productVariantId;
@@ -71,12 +76,35 @@ class CartItemTransfer extends AbstractTransfer implements CartItemTransferInter
         $this->addOnsProvided = true;
     }
 
+    public function getAttribution(): ?array
+    {
+        return $this->attribution;
+    }
+
+    public function setAttribution(?array $attribution): void
+    {
+        $this->attribution = $attribution;
+    }
+
+    public function getVisitorKey(): ?string
+    {
+        return $this->visitorKey;
+    }
+
+    public function setVisitorKey(?string $visitorKey): void
+    {
+        $visitorKey = $visitorKey !== null ? trim($visitorKey) : null;
+        $this->visitorKey = $visitorKey !== '' ? $visitorKey : null;
+    }
+
     public function toArray(): array
     {
         return [
             'product_variant_id' => $this->productVariantId,
             'quantity' => $this->quantity,
             'add_ons' => $this->addOns,
+            'attribution' => $this->attribution,
+            'visitor_key' => $this->visitorKey,
         ];
     }
 }

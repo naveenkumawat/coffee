@@ -1,3 +1,5 @@
+import type { CartAttributionPayload } from '../utils/cartAttributionStash';
+
 export interface CartProductSummary {
   id: number;
   name: string;
@@ -103,6 +105,7 @@ export interface CartItemMutationPayload {
   product_variant_id: number;
   quantity: number;
   add_ons?: CartAddOnSelection[];
+  attribution?: CartAttributionPayload;
   display?: {
     product: CartProductSummary | null;
     variant: CartVariantSummary | null;
@@ -115,6 +118,8 @@ export interface CartMergePayload {
     product_variant_id: number;
     quantity: number;
     add_ons?: CartAddOnSelection[];
+    attribution?: CartAttributionPayload;
+    visitor_key?: string;
   }>;
   idempotency_key?: string | null;
 }

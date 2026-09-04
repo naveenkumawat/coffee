@@ -468,7 +468,7 @@ Canonical: `docs/personalisation-architecture.md`.
 - [x] **P2.3** — Hybrid recommendation engine (complete)
 - [x] **P2.4** — Campaign/popup engine (complete)
 - [x] **P2.5** — Reusable customer/visitor segments (complete)
-- [ ] **P2.6** — Analytics / conversion feedback (next)
+- [x] **P2.6** — Attribution analytics (complete)
 
 ## Later non-software phases (do not treat as development backlog)
 
@@ -495,3 +495,4 @@ Canonical: `docs/personalisation-architecture.md`.
 - [x] P2.3 hybrid recommendation engine: strategy pipeline + `/api/v1/recommendations` + Home/PDP/Cart rails; Phase-1 freeze unchanged
 - [x] P2.4 campaign/popup engine: Admin campaigns + targeting/frequency + eligible API + PWA popup; Phase-1 freeze unchanged
 - [x] P2.5 reusable audience segments: dynamic segment definitions + shared targeting evaluator + campaign `segment_matches` / `segment_not_matches`; Phase-1 freeze unchanged
+- [x] P2.6 attribution analytics: cart/order attribution snapshots + conversion funnel + Admin recommendation/campaign performance; Phase-1 freeze unchanged

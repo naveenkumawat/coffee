@@ -135,6 +135,7 @@ class CheckoutService implements CheckoutServiceInterface
                                 ])
                                 ->values()
                                 ->all(),
+                            'attribution' => is_array($item->attribution) ? $item->attribution : null,
                         ];
                     })
                     ->values()

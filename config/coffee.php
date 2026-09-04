@@ -205,5 +205,15 @@ return [
             'definition_cache_ttl_seconds' => (int) env('COFFEE_SEGMENTS_DEFINITION_CACHE_TTL', 120),
             'preview_scan_limit' => (int) env('COFFEE_SEGMENTS_PREVIEW_SCAN_LIMIT', 200),
         ],
+
+        /*
+        | P2.6 attribution analytics (measure only — no auto optimization).
+        */
+        'attribution' => [
+            'view_through_enabled' => (bool) env('COFFEE_ATTRIBUTION_VIEW_THROUGH', true),
+            'direct_window_hours' => (int) env('COFFEE_ATTRIBUTION_DIRECT_WINDOW_HOURS', 72),
+            'view_through_window_hours' => (int) env('COFFEE_ATTRIBUTION_VIEW_THROUGH_WINDOW_HOURS', 24),
+            'analytics_cache_ttl_seconds' => (int) env('COFFEE_ATTRIBUTION_ANALYTICS_CACHE_TTL', 60),
+        ],
     ],
 ];

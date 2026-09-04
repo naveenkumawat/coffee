@@ -20,6 +20,14 @@ class CartParser implements CartParserInterface
             $transfer->setAddOns(is_array($cartItemData['add_ons']) ? $cartItemData['add_ons'] : []);
         }
 
+        if (array_key_exists('attribution', $cartItemData) && is_array($cartItemData['attribution'])) {
+            $transfer->setAttribution($cartItemData['attribution']);
+        }
+
+        if (filled($cartItemData['visitor_key'] ?? null)) {
+            $transfer->setVisitorKey((string) $cartItemData['visitor_key']);
+        }
+
         return $transfer;
     }
 }

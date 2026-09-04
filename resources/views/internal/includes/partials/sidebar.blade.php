@@ -51,6 +51,8 @@
                         $user?->canViewFinancialReports()
                             ? [
                                 ['label' => 'Financial Report', 'route' => 'administrator.reports.financial.index', 'pattern' => 'administrator.reports.financial.*', 'icon' => 'ki-chart-simple'],
+                                ['label' => 'Recommendation Performance', 'route' => 'administrator.reports.recommendations.index', 'pattern' => 'administrator.reports.recommendations.*', 'icon' => 'ki-chart-line-up'],
+                                ['label' => 'Campaign Performance', 'route' => 'administrator.reports.campaigns.index', 'pattern' => 'administrator.reports.campaigns.*', 'icon' => 'ki-notification-status'],
                                 ['label' => 'Inventory & Product Analytics', 'route' => 'administrator.reports.inventory-products.index', 'pattern' => 'administrator.reports.inventory-products.*', 'icon' => 'ki-chart-pie-simple'],
                                 ['label' => 'Operational Performance', 'route' => 'administrator.reports.operational-performance.index', 'pattern' => 'administrator.reports.operational-performance.*', 'icon' => 'ki-timer'],
                             ]
