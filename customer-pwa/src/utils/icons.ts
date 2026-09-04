@@ -10,6 +10,7 @@ export const AppIcons = {
   rewards: 'bi-gift',
   referral: 'bi-people',
   notification: 'bi-bell',
+  check: 'bi-check-lg',
   dining: 'bi-cup-hot',
   chevronRight: 'bi-chevron-right',
   chevronDown: 'bi-chevron-down',

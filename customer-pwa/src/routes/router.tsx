@@ -50,6 +50,9 @@ const DiningPage = lazyPage(() => import('../pages/DiningPage').then((module) =>
 const DiningSessionPage = lazyPage(() =>
   import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningSessionPage })),
 );
+const DiningMenuPage = lazyPage(() =>
+  import('../pages/DiningMenuPage').then((module) => ({ default: module.DiningMenuPage })),
+);
 const DiningBillPage = lazyPage(() =>
   import('../pages/DiningSessionPage').then((module) => ({ default: module.DiningBillPage })),
 );
@@ -167,6 +170,10 @@ export const router = createBrowserRouter([
           {
             path: 'dining/sessions/:sessionId',
             element: <DiningSessionPage />,
+          },
+          {
+            path: 'dining/sessions/:sessionId/menu',
+            element: <DiningMenuPage />,
           },
           {
             path: 'dining/sessions/:sessionId/bill',

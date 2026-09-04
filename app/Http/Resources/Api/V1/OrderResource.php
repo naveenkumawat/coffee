@@ -26,6 +26,7 @@ class OrderResource extends JsonResource
         return [
             'id' => $order->getKey(),
             'order_number' => $order->order_number,
+            'dining_round_number' => $order->isDiningRound() ? $order->dining_round_number : null,
             'status' => $order->status?->value,
             'status_label' => $order->customerStatusLabel(),
             'fulfilment_method' => $order->fulfilment_method?->value,

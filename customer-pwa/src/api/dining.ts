@@ -1,4 +1,6 @@
 import { ApiEnvelope, destroy, get, post, postForm, put } from './client';
+import { CartAddOnSelection } from '../types/cart';
+import { canonicalizeAddOns } from '../utils/addOns';
 
 export interface DiningTableOption {
   id: number;
@@ -50,6 +52,34 @@ export interface DiningServiceRequest {
   action_url?: string | null;
 }
 
+export interface DiningRoundItem {
+  id: number;
+  product_name?: string | null;
+  variant_name?: string | null;
+  quantity: number;
+  line_subtotal?: string | null;
+  add_ons?: Array<{
+    add_on_id: number;
+    name?: string | null;
+    quantity: number;
+    unit_price?: string | null;
+    line_total?: string | null;
+  }>;
+}
+
+export interface DiningRound {
+  id: number;
+  order_number?: string | null;
+  dining_round_number?: number | null;
+  status?: string | null;
+  status_label?: string | null;
+  served?: boolean;
+  served_at?: string | null;
+  placed_at?: string | null;
+  total_amount?: string | null;
+  items?: DiningRoundItem[];
+}
+
 export interface DiningSession {
   id: number;
   session_number: string;
@@ -68,11 +98,12 @@ export interface DiningSession {
     discount: string;
     tax: string;
     total: string;
-  };
+  } | null;
   drafts: DiningDraftItem[];
-  rounds: Array<Record<string, unknown>>;
+  rounds: DiningRound[];
   payment_method?: string | null;
   payment_status?: string | null;
+  billing_requested_at?: string | null;
   capabilities?: {
     can_add_rounds: boolean;
     can_upload_payment_proof: boolean;
@@ -102,9 +133,16 @@ export function startDiningSession(payload: {
 
 export function addDiningDraft(
   sessionId: number | string,
-  payload: { product_variant_id: number; quantity: number },
+  payload: { product_variant_id: number; quantity: number; add_ons?: CartAddOnSelection[] },
 ): Promise<ApiEnvelope<DiningSession>> {
-  return post<ApiEnvelope<DiningSession>, typeof payload>(`/dining/sessions/${sessionId}/drafts`, payload);
+  const addOns = canonicalizeAddOns(payload.add_ons);
+  const body = {
+    product_variant_id: payload.product_variant_id,
+    quantity: payload.quantity,
+    ...(addOns.length > 0 ? { add_ons: addOns } : {}),
+  };
+
+  return post<ApiEnvelope<DiningSession>, typeof body>(`/dining/sessions/${sessionId}/drafts`, body);
 }
 
 export function updateDiningDraft(
