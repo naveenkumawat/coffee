@@ -360,6 +360,12 @@ class BehaviourEventService implements BehaviourEventServiceInterface
                 'attribution_key',
                 'session_key',
             ],
+            BehaviourEventType::LoyaltyRewardViewed,
+            BehaviourEventType::LoyaltyRewardSelected => [
+                'reward_id',
+                'points_cost',
+                'source',
+            ],
             default => [],
         };
 

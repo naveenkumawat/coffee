@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1;
 use App\Enums\OrderFulfilmentMethod;
 use App\Models\Order;
 use App\Services\Invoice\OrderInvoiceServiceInterface;
+use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\Request;
@@ -52,7 +53,7 @@ class OrderResource extends JsonResource
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
             'loyalty_discount_amount' => $order->loyalty_discount_amount ?? '0.00',
-            'loyalty_reward' => bccomp((string) ($order->loyalty_discount_amount ?? '0'), '0', 2) > 0
+            'loyalty_reward' => ($order->loyalty_reward_id !== null || bccomp((string) ($order->loyalty_discount_amount ?? '0'), '0', 2) > 0)
                 ? [
                     'id' => $order->loyalty_reward_id,
                     'name' => $order->loyalty_reward_name_snapshot,
@@ -60,8 +61,12 @@ class OrderResource extends JsonResource
                     'points_cost' => $order->loyalty_reward_points_cost_snapshot,
                     'discount_amount' => $order->loyalty_discount_amount,
                     'description' => $order->loyalty_reward_description_snapshot,
+                    'benefit_label' => is_array($order->loyalty_reward_snapshot)
+                        ? ($order->loyalty_reward_snapshot['benefit_label'] ?? null)
+                        : null,
                 ]
                 : null,
+            'loyalty_feedback' => app(LoyaltyServiceInterface::class)->orderFeedback($order),
             'promotions' => $order->relationLoaded('promotions')
                 ? $order->promotions->map(static fn ($promotion): array => [
                     'name' => $promotion->name_snapshot,

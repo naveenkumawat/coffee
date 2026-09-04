@@ -14,7 +14,9 @@ export type BehaviourEventType =
   | 'recommendation_clicked'
   | 'campaign_impression'
   | 'campaign_clicked'
-  | 'campaign_dismissed';
+  | 'campaign_dismissed'
+  | 'loyalty_reward_viewed'
+  | 'loyalty_reward_selected';
 
 export interface BehaviourEventPayload {
   event_type: BehaviourEventType;

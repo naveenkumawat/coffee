@@ -54,6 +54,25 @@ export interface OrderPromotion {
   amount: string;
 }
 
+export interface OrderLoyaltyReward {
+  id: number | null;
+  name: string | null;
+  reward_type: string | null;
+  points_cost: number | null;
+  discount_amount: string;
+  description: string | null;
+  benefit_label?: string | null;
+}
+
+export interface OrderLoyaltyFeedback {
+  points_earned: number | null;
+  points_redeemed: number | null;
+  reward_name: string | null;
+  loyalty_discount_amount: string;
+  benefit_label: string | null;
+  earning_pending: boolean;
+}
+
 export interface Order {
   id: number;
   order_number: string;
@@ -81,6 +100,9 @@ export interface Order {
   delivery_disclaimer: string | null;
   subtotal: string;
   discount_total: string;
+  loyalty_discount_amount?: string;
+  loyalty_reward?: OrderLoyaltyReward | null;
+  loyalty_feedback?: OrderLoyaltyFeedback | null;
   /** Present when the API includes applied promotions on the order payload. */
   promotions?: OrderPromotion[];
   reward_redemptions?: Array<{

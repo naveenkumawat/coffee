@@ -50,20 +50,72 @@ class LoyaltyService implements LoyaltyServiceInterface
         $limit = max(1, min(50, $historyLimit));
         $available = (int) $account->available_points;
         $inDebt = $available < 0;
+        $displayPoints = max(0, $available);
 
         return [
             'available_points' => $available,
+            'display_available_points' => $displayPoints,
             'lifetime_earned_points' => (int) $account->lifetime_earned_points,
             'lifetime_redeemed_points' => (int) $account->lifetime_redeemed_points,
             'lifetime_adjusted_points' => (int) $account->lifetime_adjusted_points,
             'has_points_debt' => $inDebt,
             'debt_message' => $inDebt ? 'Points adjustment pending' : null,
+            'debt_explanation' => $inDebt
+                ? 'Previous points were adjusted. Future earned points will restore availability. Rewards cannot be redeemed until then.'
+                : null,
             'earning_enabled' => $this->isEnabled(),
             'redemption_enabled' => $this->isEnabled() && (bool) config('loyalty.redemption.enabled', true),
             'earning_explanation' => $this->customerExplanation(),
             'recent_transactions' => collect($this->recentTransactions($customer, $limit))
                 ->map(fn (LoyaltyPointTransaction $txn): array => $this->toCustomerTransaction($txn))
                 ->all(),
+        ];
+    }
+
+    /**
+     * Safe loyalty feedback for an order (never invents pending earn amounts).
+     *
+     * @return array{
+     *     points_earned: int|null,
+     *     points_redeemed: int|null,
+     *     reward_name: string|null,
+     *     loyalty_discount_amount: string,
+     *     benefit_label: string|null,
+     *     earning_pending: bool
+     * }
+     */
+    public function orderFeedback(Order $order): array
+    {
+        $pointsRedeemed = $order->loyalty_reward_points_cost_snapshot !== null
+            ? (int) $order->loyalty_reward_points_cost_snapshot
+            : null;
+
+        $earn = LoyaltyPointTransaction::query()
+            ->where('idempotency_key', 'earn:order:'.(int) $order->getKey())
+            ->where('type', LoyaltyTransactionType::Earn->value)
+            ->first();
+
+        $status = $order->status instanceof OrderStatus
+            ? $order->status
+            : OrderStatus::tryFrom((string) $order->status);
+
+        $earningPending = $status === OrderStatus::Completed
+            && $order->customer_id !== null
+            && $this->isEnabled()
+            && $earn === null
+            && $this->paymentIsConfirmed($order);
+
+        $snapshot = is_array($order->loyalty_reward_snapshot) ? $order->loyalty_reward_snapshot : [];
+
+        return [
+            'points_earned' => $earn !== null ? (int) $earn->points : null,
+            'points_redeemed' => $pointsRedeemed,
+            'reward_name' => $order->loyalty_reward_name_snapshot,
+            'loyalty_discount_amount' => number_format((float) ($order->loyalty_discount_amount ?? 0), 2, '.', ''),
+            'benefit_label' => isset($snapshot['benefit_label'])
+                ? (string) $snapshot['benefit_label']
+                : ($order->loyalty_reward_description_snapshot ?: null),
+            'earning_pending' => $earningPending,
         ];
     }
 
@@ -825,12 +877,23 @@ class LoyaltyService implements LoyaltyServiceInterface
             ? $txn->type
             : LoyaltyTransactionType::tryFrom((string) $txn->type);
 
+        $metadata = is_array($txn->metadata) ? $txn->metadata : [];
+        $reasonCode = (string) ($txn->reason_code ?? '');
+        $label = $type?->customerLabel() ?? 'Points update';
+
+        if ($reasonCode === 'order_loyalty_restore') {
+            $label = 'Points restored';
+        } elseif ($type === LoyaltyTransactionType::Reversal && $reasonCode === 'order_earn_reversal') {
+            $label = 'Points reversed';
+        }
+
         return [
             'id' => (int) $txn->getKey(),
             'type' => $type?->value ?? (string) $txn->type,
-            'label' => $type?->customerLabel() ?? 'Points update',
+            'label' => $label,
             'points' => (int) $txn->points,
             'description' => $txn->description,
+            'order_number' => isset($metadata['order_number']) ? (string) $metadata['order_number'] : null,
             'occurred_at' => $txn->occurred_at?->toIso8601String(),
         ];
     }

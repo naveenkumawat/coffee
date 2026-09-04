@@ -251,6 +251,9 @@ export function CartPage() {
               tax={summary?.tax}
               discounts={cartDiscounts(summary)}
               discountTotal={summary?.discount_total}
+              loyaltyDiscount={summary?.loyalty_discount}
+              loyaltyLabel={summary?.loyalty_reward?.benefit_label ?? summary?.loyalty_reward?.name ?? 'Loyalty reward'}
+              freeDrinkBenefit={summary?.free_drink_benefit}
               totalLabel="Total"
               showSavingsNote={false}
               estimateNote={

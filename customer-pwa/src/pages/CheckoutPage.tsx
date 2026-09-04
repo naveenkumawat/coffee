@@ -651,6 +651,13 @@ export function CheckoutPage() {
             tax={summaryMeta.summary.tax}
             discounts={cartDiscounts(summaryMeta.summary)}
             discountTotal={summaryMeta.summary.discount_total}
+            loyaltyDiscount={summaryMeta.summary.loyalty_discount}
+            loyaltyLabel={
+              summaryMeta.summary.loyalty_reward?.benefit_label
+              ?? summaryMeta.summary.loyalty_reward?.name
+              ?? 'Loyalty reward'
+            }
+            freeDrinkBenefit={summaryMeta.summary.free_drink_benefit}
             totalLabel="Cafe total"
           />
         </section>

@@ -466,9 +466,29 @@ class CartService implements CartServiceInterface
                                 : (string) $loyaltyReward->reward_type,
                             'points_cost' => (int) $evaluation['points_cost'],
                             'discount_amount' => $loyaltyDiscount,
+                            'benefit_label' => $this->loyaltyRewards->benefitLabel($loyaltyReward, $loyaltyDiscount),
+                            'remaining_points_after' => max(
+                                0,
+                                (int) $this->loyalty->ensureAccount($cart->customer)->available_points - (int) $evaluation['points_cost'],
+                            ),
                         ];
                     }
                 }
+            }
+        }
+
+        $loyaltyNextReward = null;
+        $loyaltyRemainingAfter = null;
+        if ($cart->customer !== null && $this->loyaltyRewards->redemptionEnabled()) {
+            $accountPoints = (int) $this->loyalty->ensureAccount($cart->customer)->available_points;
+            $loyaltyNextReward = $this->loyaltyRewards->resolveNextRewardProgress(
+                $loyaltyRewardsAvailable,
+                max(0, $accountPoints),
+                $accountPoints < 0,
+                true,
+            );
+            if ($loyaltyRewardSummary !== null) {
+                $loyaltyRemainingAfter = $loyaltyRewardSummary['remaining_points_after'] ?? null;
             }
         }
 
@@ -498,6 +518,8 @@ class CartService implements CartServiceInterface
             'loyalty_discount' => $loyaltyDiscount,
             'loyalty_reward' => $loyaltyRewardSummary,
             'loyalty_rewards' => $loyaltyRewardsAvailable,
+            'loyalty_next_reward' => $loyaltyNextReward,
+            'loyalty_remaining_points_after' => $loyaltyRemainingAfter,
             'loyalty_error' => $loyaltyError,
             'total' => $tax->cafeTotal,
             'tax' => $tax->toCustomerArray(),

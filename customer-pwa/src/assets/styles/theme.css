@@ -2850,6 +2850,183 @@ textarea.coffee-input:focus {
   margin-top: var(--space-4);
 }
 
+.loyalty-debt-banner {
+  margin-top: var(--space-3);
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.loyalty-debt-banner strong,
+.loyalty-debt-banner p {
+  margin: 0;
+}
+
+.loyalty-debt-banner p {
+  margin-top: 0.35rem;
+  font-size: var(--text-meta);
+  opacity: 0.92;
+}
+
+.loyalty-progress {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.loyalty-progress-bar {
+  position: relative;
+  overflow: hidden;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: rgba(28, 25, 23, 0.08);
+}
+
+.loyalty-progress-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--coffee-primary), var(--coffee-accent));
+  transition: width 0.25s ease;
+}
+
+.loyalty-progress-bar.is-indeterminate .loyalty-progress-bar-fill {
+  width: 0 !important;
+}
+
+.loyalty-progress-points {
+  margin: 0;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  color: var(--coffee-muted);
+}
+
+.loyalty-reward-grid {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.loyalty-reward-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2);
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--coffee-border);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.96);
+  text-align: left;
+  box-shadow: var(--coffee-shadow-soft, 0 8px 24px rgba(28, 25, 23, 0.06));
+}
+
+button.loyalty-reward-card {
+  cursor: pointer;
+}
+
+button.loyalty-reward-card:focus-visible {
+  outline: 2px solid var(--coffee-primary);
+  outline-offset: 2px;
+}
+
+.loyalty-reward-card.is-selected {
+  border-color: var(--coffee-primary);
+  box-shadow: 0 0 0 1px var(--coffee-primary);
+}
+
+.loyalty-reward-card.is-static.is-disabled {
+  opacity: 0.82;
+}
+
+.loyalty-reward-card.is-compact {
+  grid-template-columns: 1fr;
+  padding: 0.75rem 0.9rem;
+}
+
+.loyalty-reward-card-image {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: cover;
+  border-radius: 0.85rem;
+  flex-shrink: 0;
+}
+
+.loyalty-reward-card.is-compact .loyalty-reward-card-image {
+  display: none;
+}
+
+.loyalty-reward-card-body {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.loyalty-reward-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.loyalty-reward-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.loyalty-reward-card-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.loyalty-reward-card-badge.is-available {
+  background: rgba(34, 139, 87, 0.12);
+  color: var(--coffee-success);
+}
+
+.loyalty-reward-card-badge.is-scheduled {
+  background: rgba(124, 90, 59, 0.12);
+  color: var(--coffee-primary);
+}
+
+.loyalty-reward-card-badge.is-limit,
+.loyalty-reward-card-badge.is-locked {
+  background: rgba(28, 25, 23, 0.08);
+  color: var(--coffee-muted);
+}
+
+.loyalty-reward-card-description,
+.loyalty-reward-card-benefit,
+.loyalty-reward-card-unavailable {
+  margin: 0;
+  font-size: var(--text-meta);
+}
+
+.loyalty-reward-card-benefit {
+  font-weight: 600;
+  color: var(--coffee-primary);
+}
+
+.loyalty-reward-card-unavailable {
+  color: var(--coffee-muted);
+}
+
+.loyalty-reward-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  font-size: var(--text-meta);
+  font-weight: 600;
+}
+
 .cart-add-more {
   justify-self: start;
 }

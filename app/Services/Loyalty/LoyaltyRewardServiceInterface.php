@@ -18,6 +18,22 @@ interface LoyaltyRewardServiceInterface
 
     /**
      * @param  list<array<string, mixed>>  $pricedItems
+     * @return array<string, mixed>
+     */
+    public function customerExperiencePayload(
+        User $customer,
+        string $merchandiseAfterPromotions = '0.00',
+        array $pricedItems = [],
+    ): array;
+
+    /**
+     * @param  list<array<string, mixed>>  $rewards
+     * @return array<string, mixed>|null
+     */
+    public function resolveNextRewardProgress(array $rewards, int $displayPoints, bool $inDebt, bool $enabled): ?array;
+
+    /**
+     * @param  list<array<string, mixed>>  $pricedItems
      * @return array{
      *     eligible: bool,
      *     reason: string|null,
@@ -67,4 +83,6 @@ interface LoyaltyRewardServiceInterface
     public function buildSnapshot(LoyaltyReward $reward, string $discountAmount, int $pointsCost): array;
 
     public function customerFacingReason(?string $reason): string;
+
+    public function benefitLabel(LoyaltyReward $reward, string $discountAmount): string;
 }

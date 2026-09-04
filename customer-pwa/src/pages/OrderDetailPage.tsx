@@ -13,10 +13,11 @@ import { DownloadInvoiceButton } from '../components/orders/DownloadInvoiceButto
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderStatusTimeline } from '../components/orders/OrderStatusTimeline';
 import { OrderTaxBreakdown } from '../components/orders/OrderTaxBreakdown';
+import { LoyaltyFeedbackBanner } from '../components/loyalty/LoyaltyFeedbackBanner';
 import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
-import { orderDiscountLines } from '../utils/discounts';
+import { discountAmount, orderDiscountLines } from '../utils/discounts';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
 import { isCashPayment, isPendingPayment, statusTone } from '../utils/orders';
 
@@ -171,6 +172,10 @@ export function OrderDetailPage() {
     return 'Cash — Pay at Pickup';
   })();
 
+  const freeDrinkBenefit = (order.reward_redemptions ?? [])
+    .filter((redemption) => redemption.reward_type === 'free_drink')
+    .reduce((sum, redemption) => sum + discountAmount(redemption.benefit_amount), 0);
+
   return (
     <div className="page-container order-detail-page">
       <PageHeader
@@ -207,6 +212,8 @@ export function OrderDetailPage() {
       ) : null}
 
       <OrderStatusTimeline order={order} />
+
+      <LoyaltyFeedbackBanner feedback={order.loyalty_feedback} />
 
       <section className="account-section">
         <div className="account-section-heading">
@@ -256,6 +263,15 @@ export function OrderDetailPage() {
           tax={order.tax}
           discounts={orderDiscountLines(order)}
           discountTotal={order.discount_total}
+          loyaltyDiscount={order.loyalty_discount_amount}
+          loyaltyLabel={
+            order.loyalty_reward?.benefit_label
+            ?? order.loyalty_feedback?.benefit_label
+            ?? order.loyalty_reward?.name
+            ?? 'Loyalty reward'
+          }
+          freeDrinkBenefit={freeDrinkBenefit > 0 ? freeDrinkBenefit : null}
+          deliveryFee={order.delivery_fee_amount}
           totalLabel="Total"
         />
       </section>

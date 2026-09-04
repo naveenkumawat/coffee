@@ -1,4 +1,4 @@
-# Loyalty architecture (P3.1 + P3.2)
+# Loyalty architecture (P3.1–P3.3)
 
 Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 
@@ -6,9 +6,10 @@ Phase-1 and Phase-2 remain **DEVELOPMENT COMPLETE / FROZEN**.
 
 - **P3.1** Loyalty & Rewards Foundation — **COMPLETE**
 - **P3.2** Redemption & Reward Rules — **COMPLETE**
-- **P3.3** Loyalty Experience — **NEXT**
+- **P3.3** Customer Loyalty Experience — **COMPLETE**
+- **P3.4** Admin/Operations Loyalty Controls — **NEXT**
 
-Out of scope through P3.2: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI, payment gateway, invented production earn rates, automatic historical backfill.
+Out of scope through P3.3: wallet/store credit, tiers, subscriptions, gamification, auto-expiry, AI, payment gateway, invented production earn rates, automatic historical backfill. P3.3 does **not** change earning/redemption economics.
 
 ## Flow
 
@@ -137,13 +138,25 @@ When an earn is reversed after points were spent:
 
 ## Surfaces
 
-- Customer API: `GET /account/loyalty`, `GET /account/loyalty/rewards`, cart `POST/DELETE /cart/loyalty-reward`
-- PWA: Loyalty page + cart reward selector
+- Customer API: `GET /account/loyalty` (hub + progress + discovery), `GET /account/loyalty/rewards`, cart `POST/DELETE /cart/loyalty-reward`
+- Order API: `loyalty_feedback` (earned only when ledger exists; `earning_pending` when async award not yet written)
+- PWA: Loyalty rewards hub, progress, reward cards, cart/checkout clarity, debt messaging, order feedback
 - Admin: Loyalty Rewards CRUD; user show balance/ledger + manual adjustment
 - Invoices: separate loyalty discount line (not cash/payment)
+- Behaviour (allowlisted): `loyalty_reward_viewed`, `loyalty_reward_selected` (client); `loyalty_reward_redeemed` reserved server-side
+
+### Customer experience payload (P3.3)
+
+- `display_available_points` — never shows debt as money owed (`max(0, available)`)
+- `next_reward` — server progress toward nearest reachable reward (deterministic by points_cost, id)
+- `available_now` / `locked` / `recently_redeemed` — discovery groups
+- Reward cards: state, `unavailable_message`, `benefit_label`, optional `image_url`
+- `personalisation_summary` — safe fields for future P3.5 (no segment wiring yet)
+- Activity: customer labels only; may include `order_number`; no metadata/idempotency/source internals
+
+Hub discovery uses a high merchandise basis when the cart is empty so points-based discount rewards can appear before checkout; checkout still recalculates against the real cart.
 
 ## Future
 
-- **P3.3** Loyalty customer UX polish
 - **P3.4** Admin/operations controls
 - **P3.5** Intelligence / segment integration

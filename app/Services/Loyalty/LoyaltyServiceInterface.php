@@ -69,6 +69,18 @@ interface LoyaltyServiceInterface
     ): array;
 
     /**
+     * @return array{
+     *     points_earned: int|null,
+     *     points_redeemed: int|null,
+     *     reward_name: string|null,
+     *     loyalty_discount_amount: string,
+     *     benefit_label: string|null,
+     *     earning_pending: bool
+     * }
+     */
+    public function orderFeedback(Order $order): array;
+
+    /**
      * @return list<LoyaltyPointTransaction>
      */
     public function recentTransactions(User $customer, int $limit = 20): array;

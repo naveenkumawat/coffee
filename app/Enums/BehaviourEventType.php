@@ -29,6 +29,11 @@ enum BehaviourEventType: string
     case CampaignClicked = 'campaign_clicked';
     case CampaignDismissed = 'campaign_dismissed';
 
+    // Loyalty feedback (P3.3)
+    case LoyaltyRewardViewed = 'loyalty_reward_viewed';
+    case LoyaltyRewardSelected = 'loyalty_reward_selected';
+    case LoyaltyRewardRedeemed = 'loyalty_reward_redeemed';
+
     /**
      * @return list<self>
      */
@@ -49,6 +54,8 @@ enum BehaviourEventType: string
             self::CampaignImpression,
             self::CampaignClicked,
             self::CampaignDismissed,
+            self::LoyaltyRewardViewed,
+            self::LoyaltyRewardSelected,
         ];
     }
 
@@ -74,6 +81,7 @@ enum BehaviourEventType: string
             self::OrderCompleted,
             self::RecommendationConverted,
             self::CampaignConverted,
+            self::LoyaltyRewardRedeemed,
         ], true);
     }
 }

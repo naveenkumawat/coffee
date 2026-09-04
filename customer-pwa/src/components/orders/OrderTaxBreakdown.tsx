@@ -17,6 +17,10 @@ interface OrderTaxBreakdownProps {
   tax?: TaxBreakdownValue | null;
   discounts?: Array<Pick<CartDiscount, 'name' | 'amount' | 'code'> | { name: string; amount: string; code?: string | null }>;
   discountTotal?: string | number | null;
+  loyaltyDiscount?: string | number | null;
+  loyaltyLabel?: string | null;
+  freeDrinkBenefit?: string | number | null;
+  deliveryFee?: string | number | null;
   totalLabel?: string;
   estimateNote?: string | null;
   showSavingsNote?: boolean;
@@ -33,6 +37,10 @@ export function OrderTaxBreakdown({
   tax,
   discounts = [],
   discountTotal = null,
+  loyaltyDiscount = null,
+  loyaltyLabel = 'Loyalty reward',
+  freeDrinkBenefit = null,
+  deliveryFee = null,
   totalLabel = 'Total',
   estimateNote = null,
   showSavingsNote = true,
@@ -41,6 +49,11 @@ export function OrderTaxBreakdown({
   const lines = discounts.filter((discount) => discountAmount(discount.amount) > 0);
   const showDiscountTotal =
     lines.length === 0 && hasDiscountSavings(discountTotal);
+  const loyaltyAmount = discountAmount(loyaltyDiscount);
+  const freeDrinkAmount = discountAmount(freeDrinkBenefit);
+  const deliveryAmount = discountAmount(deliveryFee);
+  const promoSavings = lines.reduce((sum, line) => sum + discountAmount(line.amount), 0)
+    + (showDiscountTotal ? discountAmount(discountTotal) : 0);
 
   return (
     <div className="summary-card checkout-summary-grid">
@@ -60,6 +73,18 @@ export function OrderTaxBreakdown({
           <strong>−{formatCurrency(discountTotal)}</strong>
         </div>
       ) : null}
+      {loyaltyAmount > 0 ? (
+        <div className="summary-discount-row">
+          <span>{loyaltyLabel ?? 'Loyalty reward'}</span>
+          <strong>−{formatCurrency(loyaltyDiscount)}</strong>
+        </div>
+      ) : null}
+      {freeDrinkAmount > 0 ? (
+        <div className="summary-discount-row">
+          <span>Free drink</span>
+          <strong>−{formatCurrency(freeDrinkBenefit)}</strong>
+        </div>
+      ) : null}
       {enabled && tax ? (
         <div>
           <span>
@@ -70,12 +95,18 @@ export function OrderTaxBreakdown({
           <strong>{formatCurrency(tax.amount)}</strong>
         </div>
       ) : null}
+      {deliveryAmount > 0 ? (
+        <div>
+          <span>Delivery</span>
+          <strong>{formatCurrency(deliveryFee)}</strong>
+        </div>
+      ) : null}
       <div className="cart-summary-total">
         <span>{totalLabel}</span>
         <strong>{formatCurrency(total)}</strong>
       </div>
-      {showSavingsNote && hasDiscountSavings(discountTotal) ? (
-        <p className="summary-savings">You saved {formatCurrency(discountTotal)}</p>
+      {showSavingsNote && promoSavings > 0 ? (
+        <p className="summary-savings">You saved {formatCurrency(promoSavings)} on promotions</p>
       ) : null}
       {estimateNote ? <p className="summary-warning">{estimateNote}</p> : null}
     </div>

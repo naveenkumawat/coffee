@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { updateCustomerPassword, updateCustomerProfile } from '../api/account';
+import { fetchLoyalty } from '../api/loyalty';
 import { ApiError, ApiValidationErrors } from '../api/client';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
@@ -35,6 +36,28 @@ export function AccountPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loyaltyPointsLabel, setLoyaltyPointsLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchLoyalty()
+      .then((response) => {
+        if (!cancelled) {
+          const points = response.data.display_available_points ?? Math.max(0, response.data.available_points);
+          setLoyaltyPointsLabel(`${points} points`);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoyaltyPointsLabel(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!customer) {
@@ -175,7 +198,7 @@ export function AccountPage() {
           <Link to="/account/loyalty" className="account-link-row is-emphasis">
             <span>
               <i className="bi bi-star" aria-hidden="true"></i>
-              Loyalty points
+              Rewards{loyaltyPointsLabel ? ` — ${loyaltyPointsLabel}` : ''}
             </span>
             <i className="bi bi-chevron-right" aria-hidden="true"></i>
           </Link>
