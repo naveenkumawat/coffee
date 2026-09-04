@@ -169,7 +169,7 @@ export function WaiterMenuPage() {
   }
 
   return (
-    <div className="page-container waiter-page menu-page has-sticky-cta">
+    <div className="page-container waiter-page menu-page has-sticky-cta is-sticky-stack">
       <PageHeader
         title="Add order"
         description={session ? `Table ${session.table.label}` : undefined}

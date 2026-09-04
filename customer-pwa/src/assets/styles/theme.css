@@ -79,7 +79,10 @@
   --coffee-safe-top: env(safe-area-inset-top, 0px);
   --coffee-safe-bottom: env(safe-area-inset-bottom, 0px);
   --coffee-nav-offset: calc(var(--bottom-nav-height) + var(--coffee-safe-bottom));
-  --coffee-sticky-cta-height: 9.5rem;
+  /* Compact cart/checkout sticky CTA; stack variant used by waiter multi-button bars. */
+  --sticky-action-height: 5.25rem;
+  --sticky-action-height-stack: 9.5rem;
+  --coffee-sticky-cta-height: var(--sticky-action-height);
   --z-bottom-nav: 40;
   --z-sticky-cta: 35;
   --z-toast: 50;
@@ -167,6 +170,10 @@ button {
 .page-container.has-sticky-cta {
   /* Sticky CTA sits above the fixed nav; clear both. */
   padding-bottom: calc(var(--coffee-sticky-cta-height) + var(--space-4));
+}
+
+.page-container.has-sticky-cta.is-sticky-stack {
+  --coffee-sticky-cta-height: var(--sticky-action-height-stack);
 }
 
 .coffee-topbar,
@@ -1857,6 +1864,23 @@ select:focus-visible,
     max-width: min(100%, 72rem);
   }
 
+  .sticky-action-bar--compact {
+    position: static;
+    max-width: none;
+    margin: var(--space-4) 0 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--coffee-border);
+    box-shadow: none;
+  }
+
+  .sticky-action-spacer--compact {
+    display: none;
+  }
+
+  .page-container.has-sticky-cta:not(.is-sticky-stack) {
+    padding-bottom: var(--space-6);
+  }
+
   .toast-host {
     max-width: min(calc(100% - 1.5rem), calc(72rem - 1.5rem));
   }
@@ -2074,6 +2098,14 @@ textarea.coffee-input:focus {
   pointer-events: none;
 }
 
+.sticky-action-spacer--compact {
+  height: var(--sticky-action-height);
+}
+
+.sticky-action-spacer--stack {
+  height: var(--sticky-action-height-stack);
+}
+
 .sticky-action-bar {
   position: fixed;
   left: 0;
@@ -2085,12 +2117,66 @@ textarea.coffee-input:focus {
   margin: 0 auto;
   transform: none;
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4) var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--coffee-border);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: #ffffff;
   box-shadow: 0 -12px 30px rgba(27, 22, 16, 0.1);
+}
+
+.sticky-action-bar--compact {
+  gap: 0.35rem;
+  padding: 0.65rem var(--space-4);
+  box-shadow: 0 -8px 22px rgba(27, 22, 16, 0.08);
+}
+
+.sticky-action-bar--stack {
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  box-shadow: 0 -12px 30px rgba(27, 22, 16, 0.1);
+}
+
+.compact-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.compact-action-total {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.compact-action-total span {
+  color: var(--coffee-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.compact-action-total strong {
+  font-size: 1.05rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.compact-action-cta {
+  flex: 0 0 auto;
+  min-width: 7.5rem;
+  min-height: 2.65rem;
+  padding-inline: 1.1rem;
+  width: auto;
+}
+
+.compact-action-note {
+  margin: 0;
+  color: var(--coffee-muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
 }
 
 .sticky-action-copy h2 {
@@ -2126,6 +2212,31 @@ textarea.coffee-input:focus {
   width: 100%;
 }
 
+.bottom-nav-realtime-dot {
+  position: absolute;
+  top: -0.05rem;
+  right: -0.2rem;
+  z-index: 2;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--coffee-surface-strong);
+  background: var(--coffee-muted);
+  pointer-events: none;
+}
+
+.bottom-nav-realtime-dot.is-connected {
+  background: var(--coffee-success);
+}
+
+.bottom-nav-realtime-dot.is-reconnecting {
+  background: var(--coffee-warning);
+}
+
+.bottom-nav-realtime-dot.is-offline {
+  background: var(--coffee-danger);
+}
+
 /* ——— Foundation: toast ——— */
 .toast-host {
   position: fixed;
@@ -2146,26 +2257,9 @@ textarea.coffee-input:focus {
   bottom: calc(var(--coffee-nav-offset) + var(--coffee-sticky-cta-height) + var(--space-2));
 }
 
-/* R1.1 — subtle realtime connection chip (never blocks REST UI) */
+/* R1.1 — legacy floating chip removed; status is a Home/Tables nav dot. */
 .realtime-status-indicator {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--coffee-nav-offset) + 0.35rem);
-  z-index: calc(var(--z-toast) - 1);
-  transform: translateX(-50%);
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(28, 25, 23, 0.78);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  pointer-events: none;
-}
-
-.realtime-status-indicator.is-failed,
-.realtime-status-indicator.is-disconnected {
-  background: rgba(122, 47, 29, 0.88);
+  display: none;
 }
 
 .toast-item {
@@ -6215,7 +6309,11 @@ body.product-overlay-open .bottom-navigation {
 }
 
 .waiter-page.has-sticky-cta {
-  padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--coffee-sticky-cta-height) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+}
+
+.waiter-page.has-sticky-cta.is-sticky-stack {
+  --coffee-sticky-cta-height: var(--sticky-action-height-stack);
 }
 
 .waiter-page-header {

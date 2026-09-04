@@ -177,7 +177,7 @@ export function WaiterRoundReviewPage() {
   }
 
   return (
-    <div className="page-container waiter-page has-sticky-cta">
+    <div className="page-container waiter-page has-sticky-cta is-sticky-stack">
       <PageHeader
         title="Review order"
         description={`Table ${session.table.label}`}

@@ -9,7 +9,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { FlowIntro } from '../components/common/FlowIntro';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { StickyActionBar } from '../components/common/StickyActionBar';
+import { CheckoutSubmitBar } from '../components/common/CompactActionBars';
 import { FormFeedback } from '../components/forms/FormFeedback';
 import { FormField } from '../components/forms/FormField';
 import { FormTextarea } from '../components/forms/FormTextarea';
@@ -401,17 +401,13 @@ export function CheckoutPage() {
   ];
   const isCashSelected = paymentMethod === 'cash';
   const placeOrderLabel = isSubmitting
-    ? 'Placing order…'
+    ? 'Placing…'
     : orderingClosed
-      ? 'Ordering Closed'
-      : `Place Order · ${formatCurrency(summaryMeta.summary.total)}`;
+      ? 'Closed'
+      : 'Place Order';
   const stickyNote = orderingClosed
     ? availability?.message ?? 'Checkout unavailable right now.'
-    : isCashSelected
-      ? fulfilmentMethod === 'takeaway'
-        ? 'Cash at pickup — no payment screenshot needed'
-        : 'Pay cash at the cafe — no payment screenshot needed'
-      : 'Payment comes next — Pending Payment until confirmed';
+    : null;
   const paymentSectionSubtitle = isCashSelected
     ? fulfilmentMethod === 'takeaway'
       ? 'Pay cash when collecting'
@@ -773,21 +769,13 @@ export function CheckoutPage() {
           />
         </section>
 
-        <StickyActionBar
-          eyebrow="Cafe total"
-          title={orderingClosed ? 'Ordering Closed' : isSubmitting ? 'Placing order…' : 'Ready to place'}
-          value={formatCurrency(summaryMeta.summary.total)}
+        <CheckoutSubmitBar
+          totalLabel={formatCurrency(summaryMeta.summary.total)}
+          ctaLabel={placeOrderLabel}
+          disabled={isSubmitting || orderingClosed}
+          busy={isSubmitting}
           note={stickyNote}
-        >
-          <button
-            type="submit"
-            className="btn btn-primary btn-lg rounded-pill w-100"
-            disabled={isSubmitting || orderingClosed}
-            aria-busy={isSubmitting}
-          >
-            {placeOrderLabel}
-          </button>
-        </StickyActionBar>
+        />
       </form>
     </div>
   );

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { NavLink, useLocation } from 'react-router-dom';
+import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import { useContentStore } from '../../stores/contentStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
 import { buildLoginRedirect } from '../../utils/navigation';
+import { realtimeStatusLabel, realtimeStatusTone } from '../../utils/realtimeStatus';
 import { isWaiter } from '../../utils/roles';
 import { getRememberedWaiterSession } from '../../utils/waiterSession';
 
@@ -17,13 +19,20 @@ interface BottomNavItem {
   ariaLabel?: string;
 }
 
-export function BottomNavigation() {
+interface BottomNavigationProps {
+  realtimeState?: RealtimeConnectionState;
+}
+
+export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationProps) {
   const location = useLocation();
   const count = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
   const isAuthenticated = status === 'authenticated';
   const waiterMode = isAuthenticated && isWaiter(customer);
+  const showRealtimeDot = isAuthenticated && realtimeState !== 'idle';
+  const realtimeTone = realtimeStatusTone(realtimeState);
+  const realtimeLabel = realtimeStatusLabel(realtimeState);
   const content = useContentStore((state) => state.content);
   const diningEnabled = Boolean(
     content?.fulfilment?.dining_enabled ?? content?.fulfilment?.dine_in_enabled,
@@ -110,6 +119,14 @@ export function BottomNavigation() {
         >
           <span className="bottom-nav-icon">
             <i className={`bi ${item.icon}`} aria-hidden="true"></i>
+            {showRealtimeDot && (item.label === 'Home' || item.label === 'Tables') ? (
+              <span
+                className={`bottom-nav-realtime-dot is-${realtimeTone}`}
+                title={realtimeLabel}
+                aria-label={realtimeLabel}
+                role="status"
+              />
+            ) : null}
             {item.label === 'Cart' && badgeLabel ? (
               <small className={`bottom-nav-badge ${badgeBump ? 'is-bump' : ''}`} aria-hidden="true">
                 {badgeLabel}

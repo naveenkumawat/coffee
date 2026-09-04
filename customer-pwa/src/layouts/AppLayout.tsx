@@ -4,7 +4,6 @@ import { CampaignPopupController } from '../components/campaigns/CampaignPopupCo
 import { SiteFooter } from '../components/content/SiteFooter';
 import { BottomNavigation } from '../components/navigation/BottomNavigation';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
-import { RealtimeStatusIndicator } from '../components/common/RealtimeStatusIndicator';
 import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpdateBanner';
 import { ToastHost } from '../components/common/ToastHost';
 import { NotificationBell, NotificationDrawer } from '../components/notifications/NotificationBell';
@@ -109,8 +108,7 @@ export function AppLayout() {
       <ToastHost elevateForStickyCta={hasStickyCta} />
       {authStatus === 'authenticated' ? <NotificationDrawer /> : null}
       <CampaignPopupController />
-      <RealtimeStatusIndicator state={realtimeState} />
-      <BottomNavigation />
+      <BottomNavigation realtimeState={realtimeState} />
     </div>
   );
 }

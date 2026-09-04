@@ -163,7 +163,7 @@ export function WaiterSessionPage() {
   const readyRounds = session.rounds.filter((round) => round.ready_to_serve);
   const closeBlockedReason = caps.close_blocked_reason ?? null;
   return (
-    <div className="page-container waiter-page has-sticky-cta">
+    <div className="page-container waiter-page has-sticky-cta is-sticky-stack">
       <PageHeader
         title={session.table.label}
         description={`${session.session_number} · ${session.status_label ?? session.status}`}

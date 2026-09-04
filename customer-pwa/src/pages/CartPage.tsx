@@ -5,7 +5,7 @@ import { ApiError } from '../api/client';
 import { CartItemCard } from '../components/cart/CartItemCard';
 import { CartOffersSection } from '../components/cart/CartOffersSection';
 import { ProductCustomizationSheet } from '../components/catalog/ProductCustomizationSheet';
-import { StickyActionBar } from '../components/common/StickyActionBar';
+import { CompactCartCheckoutBar } from '../components/common/CompactActionBars';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
@@ -273,38 +273,30 @@ export function CartPage() {
             </Link>
           </section>
 
-          <StickyActionBar
-            eyebrow="Order total"
-            title={orderingClosed ? 'Ordering Closed' : 'Ready to checkout?'}
-            value={formatCurrency(summary?.total ?? 0)}
+          <CompactCartCheckoutBar
+            totalLabel={formatCurrency(summary?.total ?? 0)}
+            ctaLabel={
+              orderingClosed
+                ? 'Unavailable'
+                : authStatus === 'authenticated'
+                  ? 'Checkout'
+                  : 'Sign in'
+            }
+            disabled={
+              orderingClosed
+              || Boolean(summary?.has_unavailable_items)
+              || isClearing
+              || pendingItemId !== null
+            }
             note={
               orderingClosed
                 ? availability?.message ?? 'Checkout unavailable right now.'
                 : summary?.has_unavailable_items
                   ? 'Fix unavailable items to continue.'
-                  : authStatus === 'authenticated'
-                    ? 'Next: choose takeaway or delivery'
-                    : 'Next: sign in to checkout'
+                  : null
             }
-          >
-            <button
-              type="button"
-              className="btn btn-primary btn-lg rounded-pill w-100"
-              disabled={
-                orderingClosed
-                || Boolean(summary?.has_unavailable_items)
-                || isClearing
-                || pendingItemId !== null
-              }
-              onClick={handleCheckout}
-            >
-              {orderingClosed
-                ? 'Checkout unavailable'
-                : authStatus === 'authenticated'
-                  ? 'Continue to checkout'
-                  : 'Sign in to checkout'}
-            </button>
-          </StickyActionBar>
+            onCheckout={handleCheckout}
+          />
         </>
       ) : null}
 

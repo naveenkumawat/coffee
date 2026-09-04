@@ -125,7 +125,11 @@ class RealtimeBroadcastFoundationTest extends TestCase
         $channels = File::get(base_path('routes/channels.php'));
 
         $this->assertStringContainsString('useRealtimeBootstrap', $layout);
-        $this->assertStringContainsString('RealtimeStatusIndicator', $layout);
+        $this->assertStringContainsString('BottomNavigation realtimeState={realtimeState}', $layout);
+        $this->assertStringNotContainsString('RealtimeStatusIndicator', $layout);
+        $nav = File::get(base_path('customer-pwa/src/components/navigation/BottomNavigation.tsx'));
+        $this->assertStringContainsString('bottom-nav-realtime-dot', $nav);
+        $this->assertStringContainsString('realtimeStatusLabel', $nav);
         $this->assertStringContainsString('connectGeneration', $connection);
         $this->assertStringContainsString('disconnect', $connection);
         $this->assertStringContainsString('resources/js/realtime.js', $blade);

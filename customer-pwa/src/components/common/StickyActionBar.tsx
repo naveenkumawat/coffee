@@ -8,11 +8,12 @@ interface StickyActionBarProps {
   children: ReactNode;
 }
 
+/** Stacked sticky action panel (waiter flows). Prefer Compact* bars for customer cart/checkout. */
 export function StickyActionBar({ eyebrow, title, value, note, children }: StickyActionBarProps) {
   return (
     <>
-      <div className="sticky-action-spacer" aria-hidden="true" />
-      <section className="sticky-action-bar" aria-label="Checkout actions">
+      <div className="sticky-action-spacer sticky-action-spacer--stack" aria-hidden="true" />
+      <section className="sticky-action-bar sticky-action-bar--stack" aria-label="Actions">
         <div className="sticky-action-copy">
           {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
           <div className="sticky-action-row">
