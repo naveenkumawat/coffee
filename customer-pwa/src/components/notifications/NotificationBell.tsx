@@ -3,28 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { formatElapsed, isActionable, sortActionRequired } from '../../notifications/normalize';
 import { isCustomerNotificationType } from '../../notifications/liveSignals';
+import {
+  notificationSubjectPath,
+  resolveNotificationOpenPath,
+} from '../../utils/notificationActions';
 import { lockOverlayBackgroundScroll, unlockOverlayBackgroundScroll } from '../../utils/overlayScrollLock';
-
-function resolveOpenPath(actionUrl: string | null | undefined, fallbackSubjectPath: string | null): string | null {
-  if (actionUrl) {
-    if (actionUrl.startsWith('/orders') || actionUrl.startsWith('/dining') || actionUrl.startsWith('/waiter')) {
-      return actionUrl;
-    }
-
-    try {
-      const parsed = new URL(actionUrl, window.location.origin);
-      if (parsed.origin === window.location.origin) {
-        if (parsed.pathname.startsWith('/orders') || parsed.pathname.startsWith('/dining') || parsed.pathname.startsWith('/waiter')) {
-          return `${parsed.pathname}${parsed.search}`;
-        }
-      }
-    } catch {
-      // fall through
-    }
-  }
-
-  return fallbackSubjectPath;
-}
 
 export function NotificationBell() {
   const unreadCount = useNotificationStore((state) => state.unreadCount);
@@ -40,7 +23,7 @@ export function NotificationBell() {
       aria-expanded={drawerOpen}
       onClick={() => setDrawerOpen(!drawerOpen)}
     >
-      <span aria-hidden="true">🔔</span>
+      <i className="bi bi-bell" aria-hidden="true"></i>
       {actionRequiredCount > 0 ? (
         <span className="ops-notification-bell-action">{actionRequiredCount > 99 ? '99+' : actionRequiredCount}</span>
       ) : null}
@@ -116,13 +99,7 @@ export function NotificationDrawer() {
     void markRead(item.recipient_id);
     setDrawerOpen(false);
 
-    const subjectPath = item.subject?.type === 'Order'
-      ? `/orders/${item.subject.id}`
-      : item.subject?.type === 'DiningSession'
-        ? `/dining/sessions/${item.subject.id}`
-        : null;
-
-    const path = resolveOpenPath(item.action_url, subjectPath);
+    const path = resolveNotificationOpenPath(item.action_url, notificationSubjectPath(item));
     if (path) {
       navigate(path);
     }

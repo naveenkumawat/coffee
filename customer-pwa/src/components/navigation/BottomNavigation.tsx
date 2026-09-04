@@ -5,11 +5,14 @@ import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import { useContentStore } from '../../stores/contentStore';
+import { useNotificationStore } from '../../stores/notificationStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
+import { AppIcons, formatCountBadge } from '../../utils/icons';
 import { buildLoginRedirect } from '../../utils/navigation';
 import { realtimeStatusLabel, realtimeStatusTone } from '../../utils/realtimeStatus';
 import { isWaiter } from '../../utils/roles';
 import { getRememberedWaiterSession } from '../../utils/waiterSession';
+import { NotificationBadge } from '../common/NotificationBadge';
 
 interface BottomNavItem {
   to: string;
@@ -17,6 +20,7 @@ interface BottomNavItem {
   icon: string;
   end?: boolean;
   ariaLabel?: string;
+  badgeCount?: number;
 }
 
 interface BottomNavigationProps {
@@ -28,6 +32,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const count = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
   const isAuthenticated = status === 'authenticated';
   const waiterMode = isAuthenticated && isWaiter(customer);
   const showRealtimeDot = isAuthenticated && realtimeState !== 'idle';
@@ -41,6 +46,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const [badgeBump, setBadgeBump] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const badgeLabel = formatCartBadgeCount(count);
+  const accountUnreadLabel = formatCountBadge(unreadCount);
 
   useEffect(() => {
     if (count > previousCount.current) {
@@ -72,33 +78,38 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
               {
                 to: `/waiter/sessions/${activeSessionId}`,
                 label: 'Session',
-                icon: 'bi-cup-hot',
+                icon: AppIcons.dining,
               } satisfies BottomNavItem,
             ]
           : []),
       ]
     : [
-        { to: '/', label: 'Home', icon: 'bi-house-door', end: true },
-        { to: '/menu', label: 'Menu', icon: 'bi-grid' },
+        { to: '/', label: 'Home', icon: AppIcons.home, end: true },
+        { to: '/menu', label: 'Menu', icon: AppIcons.menu },
         ...(diningEnabled
           ? [
               {
                 to: isAuthenticated ? '/dining' : buildLoginRedirect('/dining'),
                 label: 'Dining',
-                icon: 'bi-cup-hot',
+                icon: AppIcons.dining,
               } satisfies BottomNavItem,
             ]
           : []),
         {
           to: '/cart',
           label: 'Cart',
-          icon: 'bi-bag',
+          icon: AppIcons.cart,
           ariaLabel: cartBadgeAriaLabel(count),
         },
         {
           to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
           label: isAuthenticated ? 'Account' : 'Sign in',
-          icon: 'bi-person',
+          icon: AppIcons.account,
+          badgeCount: isAuthenticated ? unreadCount : 0,
+          ariaLabel:
+            isAuthenticated && accountUnreadLabel
+              ? `Account, ${accountUnreadLabel} unread notifications`
+              : undefined,
         },
       ];
 
@@ -131,6 +142,9 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
               <small className={`bottom-nav-badge ${badgeBump ? 'is-bump' : ''}`} aria-hidden="true">
                 {badgeLabel}
               </small>
+            ) : null}
+            {item.label === 'Account' && item.badgeCount ? (
+              <NotificationBadge count={item.badgeCount} className="bottom-nav-badge" />
             ) : null}
           </span>
           <span>{item.label}</span>

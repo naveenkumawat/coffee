@@ -37,6 +37,9 @@ const OrderDetailPage = lazyPage(() =>
   import('../pages/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })),
 );
 const AccountPage = lazyPage(() => import('../pages/AccountPage').then((module) => ({ default: module.AccountPage })));
+const AccountNotificationsPage = lazyPage(() =>
+  import('../pages/AccountNotificationsPage').then((module) => ({ default: module.AccountNotificationsPage })),
+);
 const DeliveryAddressesPage = lazyPage(() =>
   import('../pages/DeliveryAddressesPage').then((module) => ({ default: module.DeliveryAddressesPage })),
 );
@@ -188,6 +191,10 @@ export const router = createBrowserRouter([
           {
             path: 'account',
             element: <AccountPage />,
+          },
+          {
+            path: 'account/notifications',
+            element: <AccountNotificationsPage />,
           },
           {
             path: 'account/delivery-addresses',

@@ -50,10 +50,8 @@ export function AppLayout() {
     return () => window.cancelAnimationFrame(frame);
   }, [location.pathname, location.search]);
 
-  const waiterAwayFromDesk =
-    authStatus === 'authenticated' &&
-    isWaiter(customer) &&
-    !location.pathname.startsWith('/waiter');
+  const waiterMode = authStatus === 'authenticated' && isWaiter(customer);
+  const waiterAwayFromDesk = waiterMode && !location.pathname.startsWith('/waiter');
 
   if (waiterAwayFromDesk) {
     return <Navigate to="/waiter" replace />;
@@ -95,7 +93,7 @@ export function AppLayout() {
         </div>
       ) : null}
       <main className="app-main" id="main-content">
-        {authStatus === 'authenticated' ? (
+        {waiterMode ? (
           <div className="ops-notification-floating-bell">
             <NotificationBell />
           </div>
@@ -106,7 +104,7 @@ export function AppLayout() {
         {!hasStickyCta ? <SiteFooter /> : null}
       </main>
       <ToastHost elevateForStickyCta={hasStickyCta} />
-      {authStatus === 'authenticated' ? <NotificationDrawer /> : null}
+      {waiterMode ? <NotificationDrawer /> : null}
       <CampaignPopupController />
       <BottomNavigation realtimeState={realtimeState} />
     </div>

@@ -143,8 +143,20 @@ Primary mobile navigation should use a restrained bottom navigation with up to f
 - Home
 - Menu
 - Cart
-- Orders
-- Account
+- Orders (or Dining when enabled)
+- Account (unread notification badge when count > 0)
+
+Customer notifications live under Account, not as a floating header control:
+
+BOTTOM NAV Account → Account menu → Notifications (`/account/notifications`)
+
+The shared unread count from the notification store feeds:
+
+- Account footer badge
+- Account → Notifications row badge
+- Notifications page
+
+Waiter mode retains the operational floating bell/drawer. Home footer realtime connection dot is unchanged.
 
 Secondary navigation may use:
 
@@ -155,6 +167,7 @@ Secondary navigation may use:
 Avoid:
 
 - overcrowded bottom nav
+- customer floating notification bells overlapping page content
 - mixing internal/admin concepts into customer navigation
 - large floating side menus as the primary mobile navigation pattern
 

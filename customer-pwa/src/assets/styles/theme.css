@@ -1790,6 +1790,152 @@ select:focus-visible,
   gap: 0.55rem;
 }
 
+.account-link-row-main {
+  min-width: 0;
+}
+
+.account-link-row-label {
+  font-weight: inherit;
+}
+
+.account-link-row-trailing {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.account-link-row-meta {
+  color: var(--coffee-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.notification-count-badge {
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 0.28rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.account-accordion-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.account-accordion {
+  border-radius: 1.15rem;
+  background: rgba(239, 226, 207, 0.28);
+  overflow: hidden;
+}
+
+.account-accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.account-accordion-trigger span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.account-accordion-panel {
+  padding: 0 1rem 1rem;
+}
+
+.account-notifications-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.account-notifications-header h1 {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 1.45rem;
+}
+
+.account-notifications-header-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(239, 226, 207, 0.55);
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.account-notification-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-subsection-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.account-notification-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--coffee-border);
+}
+
+.account-notification-card.is-unread {
+  border-color: rgba(4, 118, 78, 0.28);
+  background: rgba(4, 118, 78, 0.06);
+}
+
+.account-notification-card-icon {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(239, 226, 207, 0.7);
+  color: var(--brand-primary);
+}
+
+.account-notification-card-body h3 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.account-notification-card-body p,
+.account-notification-card-body small {
+  margin: 0.25rem 0 0;
+  color: var(--coffee-muted);
+}
+
+.account-notification-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
 .content-preview-card,
 .content-page-card {
   padding: 1.15rem 1.2rem;
@@ -3271,6 +3417,54 @@ button.loyalty-reward-card:focus-visible {
 
 .checkout-summary-grid {
   margin-top: var(--space-2);
+}
+
+.checkout-summary-stack {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.checkout-summary-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--coffee-border);
+}
+
+.checkout-summary-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.checkout-summary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--coffee-muted);
+}
+
+.checkout-summary-copy strong {
+  font-size: 0.98rem;
+}
+
+.checkout-summary-copy small {
+  color: var(--coffee-muted);
+  line-height: 1.4;
+}
+
+.checkout-summary-note {
+  margin-top: 0.15rem;
+}
+
+.checkout-edit-sheet-body {
+  display: grid;
+  gap: var(--space-3);
 }
 
 .checkout-form {
