@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\Customer\CustomerDiningController;
 use App\Http\Controllers\Api\V1\Customer\CustomerFavouriteController;
 use App\Http\Controllers\Api\V1\Customer\CustomerLoyaltyController;
 use App\Http\Controllers\Api\V1\Customer\CustomerOrderController;
+use App\Http\Controllers\Api\V1\Customer\CustomerPaymentController;
 use App\Http\Controllers\Api\V1\Customer\CustomerProductRatingController;
 use App\Http\Controllers\Api\V1\Customer\CustomerRecommendationController;
 use App\Http\Controllers\Api\V1\Customer\CustomerReferralController;
@@ -23,8 +24,16 @@ use App\Http\Controllers\Api\V1\Home\HomeController;
 use App\Http\Controllers\Api\V1\Notification\OperationalNotificationController;
 use App\Http\Controllers\Api\V1\Realtime\RealtimePresenceController;
 use App\Http\Controllers\Api\V1\Waiter\WaiterDiningController;
+use App\Http\Controllers\Api\Webhooks\PaymentWebhookController;
 use App\Http\Middleware\AuthenticateNotificationRequest;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('webhooks')->name('api.webhooks.')->group(function (): void {
+    Route::post('/razorpay', [PaymentWebhookController::class, 'razorpay'])->name('razorpay');
+    Route::post('/payu', [PaymentWebhookController::class, 'payu'])->name('payu');
+    Route::post('/paytm', [PaymentWebhookController::class, 'paytm'])->name('paytm');
+    Route::post('/phonepe', [PaymentWebhookController::class, 'phonepe'])->name('phonepe');
+});
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -197,11 +206,16 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('/', [CustomerOrderController::class, 'index'])->name('index');
             Route::get('/{order}', [CustomerOrderController::class, 'show'])->name('show');
             Route::post('/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('cancel');
+            Route::post('/{order}/payment/initiate', [CustomerPaymentController::class, 'initiate'])->name('payment.initiate');
             Route::post('/{order}/payment-proof', [CustomerOrderController::class, 'uploadPaymentProof'])
                 ->middleware('throttle:payment-proof')
                 ->name('payment-proof.upload');
             Route::get('/{order}/payment-proof', [CustomerOrderController::class, 'paymentProof'])->name('payment-proof.show');
             Route::get('/{order}/invoice', [CustomerOrderController::class, 'invoice'])->name('invoice.download');
         });
+
+        Route::get('/payment-methods', [CustomerPaymentController::class, 'methods'])->name('payment-methods.index');
+        Route::post('/payment-attempts/{paymentAttempt}/verify-return', [CustomerPaymentController::class, 'verifyReturn'])
+            ->name('payment-attempts.verify-return');
     });
 });

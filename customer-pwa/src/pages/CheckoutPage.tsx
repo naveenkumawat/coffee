@@ -188,13 +188,13 @@ export function CheckoutPage() {
     const keys = eligible.map((method) => (method.key === 'manual' ? 'manual_upi' : method.key));
 
     if (keys.length === 0) {
-      setPaymentMethod('manual_upi');
+      setPaymentMethod('');
 
       return;
     }
 
     if (!keys.includes(paymentMethod)) {
-      setPaymentMethod((keys[0] as CheckoutPaymentMethod) ?? 'manual_upi');
+      setPaymentMethod(keys[0] ?? '');
     }
   }, [summaryMeta?.payment_methods, fulfilmentMethod, paymentMethod]);
 
@@ -396,10 +396,9 @@ export function CheckoutPage() {
     { value: 'takeaway' as const, label: 'Takeaway' },
     { value: 'delivery' as const, label: 'Delivery' },
   ];
-  const paymentMethods = summaryMeta.payment_methods?.[fulfilmentMethod] ?? [
-    { key: 'manual_upi', label: 'UPI / QR', subtitle: 'Pay now and submit payment proof.' },
-  ];
+  const paymentMethods = summaryMeta.payment_methods?.[fulfilmentMethod] ?? [];
   const isCashSelected = paymentMethod === 'cash';
+  const canPlaceOrder = paymentMethods.length > 0 && Boolean(paymentMethod);
   const placeOrderLabel = isSubmitting
     ? 'Placing…'
     : orderingClosed
@@ -772,9 +771,12 @@ export function CheckoutPage() {
         <CheckoutSubmitBar
           totalLabel={formatCurrency(summaryMeta.summary.total)}
           ctaLabel={placeOrderLabel}
-          disabled={isSubmitting || orderingClosed}
+          disabled={isSubmitting || orderingClosed || !canPlaceOrder}
           busy={isSubmitting}
-          note={stickyNote}
+          note={
+            stickyNote
+            ?? (!canPlaceOrder ? 'No payment methods are currently available. Please contact the café.' : null)
+          }
         />
       </form>
     </div>

@@ -9,8 +9,12 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentEligibilityService implements PaymentEligibilityServiceInterface
 {
+    public function __construct(
+        protected PaymentMethodCatalog $catalog,
+    ) {}
+
     /**
-     * @return list<array{key: string, label: string, subtitle: string}>
+     * @return list<array{key: string, label: string, subtitle: string, code?: string, type?: string, available?: bool, requires_initiation?: bool, requires_payment_proof?: bool, client_config?: array<string, mixed>}>
      */
     public function methodsFor(User $customer, OrderFulfilmentMethod|string|null $fulfilment): array
     {
@@ -22,20 +26,7 @@ class PaymentEligibilityService implements PaymentEligibilityServiceInterface
             return [];
         }
 
-        $options = [PaymentMethod::Manual];
-
-        if ($this->cashAllowed($customer, $method)) {
-            $options[] = PaymentMethod::Cash;
-        }
-
-        return array_map(
-            fn (PaymentMethod $payment): array => [
-                'key' => $payment->apiKey(),
-                'label' => $payment->customerLabel($method),
-                'subtitle' => $payment->customerSubtitle($method),
-            ],
-            $options,
-        );
+        return $this->catalog->availableMethods($customer, $method);
     }
 
     /**
@@ -43,13 +34,7 @@ class PaymentEligibilityService implements PaymentEligibilityServiceInterface
      */
     public function methodsByFulfilment(User $customer): array
     {
-        $result = [];
-
-        foreach (OrderFulfilmentMethod::cases() as $fulfilment) {
-            $result[$fulfilment->value] = $this->methodsFor($customer, $fulfilment);
-        }
-
-        return $result;
+        return $this->catalog->availableMethodsByFulfilment($customer);
     }
 
     public function isAllowed(User $customer, OrderFulfilmentMethod|string|null $fulfilment, PaymentMethod|string|null $paymentMethod): bool
@@ -65,22 +50,12 @@ class PaymentEligibilityService implements PaymentEligibilityServiceInterface
             return false;
         }
 
-        foreach ($this->methodsFor($customer, $method) as $option) {
-            if ($option['key'] === $payment->apiKey()) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->catalog->isAvailable($customer, $method, $payment);
     }
 
     public function cashAllowed(User $customer, OrderFulfilmentMethod $fulfilment): bool
     {
-        return match ($fulfilment) {
-            OrderFulfilmentMethod::DineIn => true,
-            OrderFulfilmentMethod::Takeaway => (bool) $customer->cash_takeaway_allowed,
-            OrderFulfilmentMethod::Delivery => false,
-        };
+        return $this->catalog->isAvailable($customer, $fulfilment, PaymentMethod::Cash);
     }
 
     public function assertAllowed(User $customer, OrderFulfilmentMethod|string|null $fulfilment, PaymentMethod|string|null $paymentMethod): PaymentMethod

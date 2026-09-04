@@ -28,6 +28,11 @@ class LaunchReadinessTest extends TestCase
 
     public function test_detects_missing_critical_business_and_payment_config(): void
     {
+        config()->set('coffee.payments.upi_id', null);
+        config()->set('coffee.payments.qr_image_path', null);
+        config()->set('coffee.payments.instructions', null);
+        config()->set('coffee.payments.whatsapp_number', null);
+
         $json = app(LaunchReadinessServiceInterface::class)->evaluate()->toArray();
 
         $codes = collect($json['blockers'])->pluck('code')->all();

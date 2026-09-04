@@ -6,6 +6,7 @@ use App\Enums\WebsiteSettingKey;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WebsiteSetting\WebsiteSettingUpdateRequest;
 use App\Models\WebsiteSetting;
+use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Support\PublicMedia;
 use Illuminate\Contracts\View\View;
@@ -15,6 +16,7 @@ class WebsiteSettingController extends Controller
 {
     public function __construct(
         protected WebsiteSettingServiceInterface $websiteSettings,
+        protected PaymentMethodCatalog $paymentMethods,
     ) {}
 
     public function edit(): View
@@ -24,6 +26,7 @@ class WebsiteSettingController extends Controller
         return view('administrator.website-settings.edit', [
             'values' => $this->websiteSettings->valuesForAdmin(),
             'keys' => WebsiteSettingKey::ordered(),
+            'paymentMethodDiagnostics' => $this->paymentMethods->adminDiagnostics(),
             'paymentConfig' => [
                 'display_name' => config('coffee.payments.display_name'),
                 'instructions' => config('coffee.payments.instructions'),

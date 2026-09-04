@@ -3,9 +3,16 @@ import { Cart, CartSummary } from './cart';
 import { Order } from './order';
 
 export interface CheckoutPaymentMethodOption {
-  key: 'manual_upi' | 'cash' | string;
+  key: string;
+  code?: string;
   label: string;
+  name?: string;
   subtitle?: string;
+  type?: 'online' | 'manual' | string;
+  available?: boolean;
+  requires_initiation?: boolean;
+  requires_payment_proof?: boolean;
+  client_config?: Record<string, unknown>;
 }
 
 export interface CheckoutCustomerDefaults {
@@ -24,7 +31,7 @@ export interface CheckoutPaymentInstructions {
 }
 
 export type CheckoutFulfilmentMethod = 'takeaway' | 'delivery';
-export type CheckoutPaymentMethod = 'manual_upi' | 'cash';
+export type CheckoutPaymentMethod = string;
 
 export interface CheckoutFulfilmentMeta {
   methods: Array<{ value: CheckoutFulfilmentMethod; label: string }>;

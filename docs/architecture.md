@@ -274,6 +274,15 @@ Limits live in Website Settings → Order Security. Trusted cash (`cash_takeaway
 
 Open unpaid pending-payment limit counts **only live** unpaid `Pending Payment` retail orders whose payment window has not expired (`payment_expires_at`, or legacy `placed_at` + config window). Cancelled / rejected / paid / completed / expired orders do not count. Before enforcing the limit, due pending orders for that customer are expired through the canonical order workflow.
 
+## Payments (unified methods + gateways)
+
+Canonical doc: `docs/payment-architecture.md`.
+
+- Methods: Razorpay, PayU, Paytm, PhonePe, Cash, Manual UPI — each independently enabled/configured.
+- `PaymentMethodCatalog` + `PaymentEligibilityService` decide **available** methods (enabled ∩ configured ∩ fulfilment-eligible).
+- Online confirmation is server-verified only (`PaymentService` → `OrderService::confirmGatewayPayment`). Browser success is not paid.
+- Phase-1/2/3 freeze unchanged.
+
 ## Customer pending-payment cancellation & expiry
 
 Retail takeaway/delivery only (Dining round cancellation is unchanged):

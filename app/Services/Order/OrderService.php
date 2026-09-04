@@ -18,6 +18,7 @@ use App\Models\CustomerReward;
 use App\Models\DiningSession;
 use App\Models\LoyaltyReward;
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
@@ -31,6 +32,7 @@ use App\Services\OrderInventory\OrderInventoryConsumptionServiceInterface;
 use App\Services\OrderPreparation\OrderPreparationServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
 use App\Services\Payment\PaymentEligibilityServiceInterface;
+use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
@@ -53,6 +55,7 @@ class OrderService implements OrderServiceInterface
         protected WebsiteSettingServiceInterface $websiteSettings,
         protected TaxCalculatorInterface $taxCalculator,
         protected PaymentEligibilityServiceInterface $paymentEligibility,
+        protected PaymentMethodCatalog $paymentMethods,
         protected OrderSecurityServiceInterface $orderSecurity,
         protected PromotionServiceInterface $promotions,
         protected ReferralServiceInterface $referrals,
@@ -901,6 +904,12 @@ class OrderService implements OrderServiceInterface
             ]);
         }
 
+        if (! $this->paymentMethods->isEnabled(PaymentMethod::Manual)) {
+            throw ValidationException::withMessages([
+                'payment_proof' => 'Manual UPI payments are currently unavailable.',
+            ]);
+        }
+
         if (! $order->canUploadPaymentProof()) {
             throw ValidationException::withMessages([
                 'payment_proof' => 'Payment proof can only be uploaded while the order is awaiting payment confirmation.',
@@ -1079,6 +1088,72 @@ class OrderService implements OrderServiceInterface
                 );
             } else {
                 OrderCashReceived::dispatch($locked, $actor);
+            }
+
+            return $locked;
+        });
+    }
+
+    public function confirmGatewayPayment(Order $order, PaymentAttempt $attempt, PaymentMethod $method): Order
+    {
+        return DB::transaction(function () use ($order, $attempt, $method): Order {
+            /** @var Order $locked */
+            $locked = Order::query()->whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($locked->payment_status === PaymentStatus::Confirmed) {
+                return $locked->fresh([
+                    'customer',
+                    'assignedBarista',
+                    'items',
+                    'statusHistory.changedBy',
+                ]) ?? $locked;
+            }
+
+            if (in_array($locked->status, [OrderStatus::Cancelled, OrderStatus::Rejected], true)) {
+                throw ValidationException::withMessages([
+                    'payment' => 'Paid provider settlement requires admin reconciliation for a cancelled order.',
+                ]);
+            }
+
+            $currentStatus = $locked->status;
+            $attributes = [
+                'payment_method' => $method->value,
+                'payment_status' => PaymentStatus::Confirmed->value,
+                'payment_confirmed_at' => $locked->payment_confirmed_at ?: now(),
+                'payment_reference' => $attempt->provider_payment_id ?: $attempt->provider_order_id,
+            ];
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                $attributes['status'] = OrderStatus::PaymentConfirmed->value;
+            }
+
+            $locked = $this->orders->update($locked, $attributes);
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                $this->orders->createStatusHistory($locked, [
+                    'from_status' => OrderStatus::PendingPayment->value,
+                    'to_status' => OrderStatus::PaymentConfirmed->value,
+                    'changed_by' => null,
+                    'notes' => 'Online payment confirmed ('.$method->label().').',
+                ]);
+            }
+
+            $locked = $locked->fresh([
+                'customer',
+                'assignedBarista',
+                'items',
+                'statusHistory.changedBy',
+                'promotions',
+                'rewardRedemptions',
+            ]);
+
+            if ($currentStatus === OrderStatus::PendingPayment) {
+                OrderStatusChanged::dispatch(
+                    $locked,
+                    OrderStatus::PendingPayment,
+                    OrderStatus::PaymentConfirmed,
+                    'Online payment confirmed ('.$method->label().').',
+                );
             }
 
             return $locked;

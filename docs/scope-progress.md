@@ -420,7 +420,7 @@ Status: Partial (non-blocking polish only)
 ## Phase 12 - Phase 2 Enhancements
 Status: Pending (explicitly deferred; not launch-blocking)
 
-- [ ] Online payment gateway integration implemented
+- [x] Online payment gateway integration implemented
 - [x] Automated WhatsApp transactional notifications implemented (Cloud API; credentials/templates still required in production)
 - [ ] OTP authentication implemented
 - [ ] QR menu implemented
@@ -517,3 +517,4 @@ Canonical: `docs/loyalty-architecture.md`.
 - [x] Customer cancel unpaid Pending Payment retail orders (`POST /api/v1/orders/{order}/cancel`) + PWA Cancel CTA
 - [x] Pending payment expiry snapshot (`payment_expires_at`) + `coffee:expire-pending-orders` (15m) + pending-limit excludes cancelled/expired
 - [x] Saved customer delivery addresses API + Account screen; checkout Contact & Delivery merge with snapshot independence
+- [x] Unified payment methods + online gateways (Razorpay/PayU/Paytm/PhonePe) with Cash/Manual UPI enablement (`docs/payment-architecture.md`)

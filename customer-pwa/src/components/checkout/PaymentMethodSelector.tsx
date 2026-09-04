@@ -9,7 +9,11 @@ interface PaymentMethodSelectorProps {
 
 export function PaymentMethodSelector({ methods, value, onChange, error }: PaymentMethodSelectorProps) {
   if (methods.length === 0) {
-    return null;
+    return (
+      <p className="summary-warning" role="status">
+        No payment methods are currently available. Please contact the café.
+      </p>
+    );
   }
 
   return (

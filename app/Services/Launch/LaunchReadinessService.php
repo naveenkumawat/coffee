@@ -2,6 +2,7 @@
 
 namespace App\Services\Launch;
 
+use App\Enums\PaymentMethod;
 use App\Enums\UserRole;
 use App\Enums\WebsiteSettingKey;
 use App\Models\CafeOperatingHour;
@@ -13,6 +14,7 @@ use App\Models\ProductFlavour;
 use App\Models\SocialLink;
 use App\Models\User;
 use App\Models\WebsiteSetting;
+use App\Services\Payment\PaymentMethodCatalog;
 use App\Services\Product\ProductReadinessServiceInterface;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -121,32 +123,81 @@ class LaunchReadinessService implements LaunchReadinessServiceInterface
      */
     protected function auditPayment(array $settings, array &$findings, array &$areas): void
     {
-        $upi = $this->filled($settings[WebsiteSettingKey::PaymentUpiId->value] ?? null);
-        $qr = $this->filled($settings[WebsiteSettingKey::PaymentQrImagePath->value] ?? null);
-        $instructions = $this->filled($settings[WebsiteSettingKey::PaymentInstructions->value] ?? null);
+        $catalog = app(PaymentMethodCatalog::class);
+        $manualEnabled = $catalog->isEnabled(PaymentMethod::Manual);
+        $anyOnlineEnabled = collect(PaymentMethod::onlineCases())
+            ->contains(fn (PaymentMethod $method): bool => $catalog->isEnabled($method));
 
-        if ($upi === null) {
-            $this->add($findings, 'payment.upi', 'blocker', 'payment', 'Payment UPI ID missing (manual payment launch model).');
+        $upi = $this->filled($settings[WebsiteSettingKey::PaymentUpiId->value] ?? null)
+            ?? $this->filled(is_string(config('coffee.payments.upi_id')) ? config('coffee.payments.upi_id') : null);
+        $qr = $this->filled($settings[WebsiteSettingKey::PaymentQrImagePath->value] ?? null)
+            ?? $this->filled(is_string(config('coffee.payments.qr_image_path')) ? config('coffee.payments.qr_image_path') : null);
+        $instructions = $this->filled($settings[WebsiteSettingKey::PaymentInstructions->value] ?? null)
+            ?? $this->filled(is_string(config('coffee.payments.instructions')) ? config('coffee.payments.instructions') : null);
+
+        if ($manualEnabled) {
+            if ($upi === null) {
+                $this->add($findings, 'payment.upi', 'blocker', 'payment', 'Manual UPI is enabled but Payment UPI ID is missing.');
+            }
+
+            if ($qr === null) {
+                $this->add($findings, 'payment.qr', 'blocker', 'payment', 'Manual UPI is enabled but Payment QR image path is missing.');
+            } elseif (! $this->mediaExists($qr)) {
+                $this->add($findings, 'payment.qr_file', 'blocker', 'payment', 'Payment QR path is set but file is missing on the public media disk.');
+            }
+
+            if ($instructions === null) {
+                $this->add($findings, 'payment.instructions', 'required', 'payment', 'Payment instructions missing.');
+            }
+
+            if ($this->filled($settings[WebsiteSettingKey::PaymentWhatsappNumber->value] ?? null) === null
+                && $this->filled(is_string(config('coffee.payments.whatsapp_number')) ? config('coffee.payments.whatsapp_number') : null) === null) {
+                $this->add($findings, 'payment.whatsapp', 'required', 'payment', 'Payment WhatsApp number missing.');
+            }
         }
 
-        if ($qr === null) {
-            $this->add($findings, 'payment.qr', 'blocker', 'payment', 'Payment QR image path missing.');
-        } elseif (! $this->mediaExists($qr)) {
-            $this->add($findings, 'payment.qr_file', 'blocker', 'payment', 'Payment QR path is set but file is missing on the public media disk.');
+        foreach ($catalog->adminDiagnostics() as $row) {
+            if (! ($row['enabled'] ?? false)) {
+                continue;
+            }
+
+            if (! ($row['configured'] ?? false)) {
+                $this->add(
+                    $findings,
+                    'payment.'.$row['code'].'.incomplete',
+                    'blocker',
+                    'payment',
+                    $row['name'].' is enabled but configuration is incomplete.',
+                );
+            }
+
+            if (($row['type'] ?? null) === 'online' && ($row['mode'] ?? null) === 'test' && app()->environment('production')) {
+                $this->add(
+                    $findings,
+                    'payment.'.$row['code'].'.test_mode',
+                    'required',
+                    'payment',
+                    $row['name'].' is enabled in test/sandbox mode on a production environment.',
+                );
+            }
         }
 
-        if ($instructions === null) {
-            $this->add($findings, 'payment.instructions', 'required', 'payment', 'Payment instructions missing.');
-        }
+        $readyManual = $manualEnabled && $upi && $qr && $this->mediaExists((string) $qr);
+        $readyOnline = collect($catalog->adminDiagnostics())
+            ->contains(fn (array $row): bool => ($row['type'] ?? null) === 'online'
+                && ($row['enabled'] ?? false)
+                && ($row['configured'] ?? false));
 
-        if ($this->filled($settings[WebsiteSettingKey::PaymentWhatsappNumber->value] ?? null) === null) {
-            $this->add($findings, 'payment.whatsapp', 'required', 'payment', 'Payment WhatsApp number missing.');
+        if (! $manualEnabled && ! $anyOnlineEnabled && ! $catalog->isEnabled(PaymentMethod::Cash)) {
+            $this->add($findings, 'payment.none', 'blocker', 'payment', 'No payment methods are enabled.');
         }
 
         $areas[] = $this->area(
-            'payment_upi_qr',
-            ($upi && $qr && $this->mediaExists((string) $qr)) ? 'ready' : 'missing_real_data',
-            'Manual UPI remains the launch payment model; no gateway.',
+            'payment_methods',
+            ($readyManual || $readyOnline || ($catalog->isEnabled(PaymentMethod::Cash) && $catalog->isConfigured(PaymentMethod::Cash)))
+                ? 'ready'
+                : 'missing_real_data',
+            'ENABLED ≠ AVAILABLE. Gateways use env credentials; Manual UPI uses website settings/config.',
         );
     }
 

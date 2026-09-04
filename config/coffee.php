@@ -39,6 +39,60 @@ return [
         'qr_image_path' => env('COFFEE_PAYMENT_QR_IMAGE_PATH'),
         'whatsapp_number' => env('COFFEE_WHATSAPP_NUMBER'),
         'proof_max_kilobytes' => (int) env('COFFEE_PAYMENT_PROOF_MAX_KB', 5120),
+        'currency' => env('COFFEE_PAYMENT_CURRENCY', 'INR'),
+        /*
+        | Method enablement defaults (website settings override when present).
+        | ENABLED != AVAILABLE — availability also requires configuration + eligibility.
+        */
+        'methods' => [
+            'cash' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_CASH_ENABLED', true),
+            ],
+            'manual_upi' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_MANUAL_UPI_ENABLED', true),
+            ],
+            'razorpay' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_RAZORPAY_ENABLED', false),
+            ],
+            'payu' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_PAYU_ENABLED', false),
+            ],
+            'paytm' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_PAYTM_ENABLED', false),
+            ],
+            'phonepe' => [
+                'enabled' => (bool) env('COFFEE_PAYMENT_PHONEPE_ENABLED', false),
+            ],
+        ],
+        'gateways' => [
+            'razorpay' => [
+                'key_id' => env('RAZORPAY_KEY_ID'),
+                'key_secret' => env('RAZORPAY_KEY_SECRET'),
+                'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+                'mode' => env('RAZORPAY_MODE', 'test'),
+            ],
+            'payu' => [
+                'merchant_key' => env('PAYU_MERCHANT_KEY'),
+                'merchant_salt' => env('PAYU_MERCHANT_SALT'),
+                'mode' => env('PAYU_MODE', 'test'),
+                'base_url' => env('PAYU_BASE_URL'),
+            ],
+            'paytm' => [
+                'merchant_id' => env('PAYTM_MERCHANT_ID'),
+                'merchant_key' => env('PAYTM_MERCHANT_KEY'),
+                'mode' => env('PAYTM_MODE', 'test'),
+                'website' => env('PAYTM_WEBSITE', 'WEBSTAGING'),
+                'industry_type' => env('PAYTM_INDUSTRY_TYPE', 'Retail'),
+                'base_url' => env('PAYTM_BASE_URL'),
+            ],
+            'phonepe' => [
+                'merchant_id' => env('PHONEPE_MERCHANT_ID'),
+                'salt_key' => env('PHONEPE_SALT_KEY'),
+                'salt_index' => env('PHONEPE_SALT_INDEX', '1'),
+                'mode' => env('PHONEPE_MODE', 'test'),
+                'base_url' => env('PHONEPE_BASE_URL'),
+            ],
+        ],
     ],
     'fulfilment' => [
         'delivery_disclaimer' => env(

@@ -21,6 +21,12 @@ enum WebsiteSettingKey: string
     case PaymentPhone = 'payment_phone';
     case PaymentQrImagePath = 'payment_qr_image_path';
     case PaymentWhatsappNumber = 'payment_whatsapp_number';
+    case PaymentCashEnabled = 'payment_cash_enabled';
+    case PaymentManualUpiEnabled = 'payment_manual_upi_enabled';
+    case PaymentRazorpayEnabled = 'payment_razorpay_enabled';
+    case PaymentPayuEnabled = 'payment_payu_enabled';
+    case PaymentPaytmEnabled = 'payment_paytm_enabled';
+    case PaymentPhonepeEnabled = 'payment_phonepe_enabled';
     case FulfilmentDeliveryDisclaimer = 'fulfilment_delivery_disclaimer';
     case FulfilmentDineInEnabled = 'fulfilment_dine_in_enabled';
     case TaxEnabled = 'tax_enabled';
@@ -61,7 +67,8 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
             self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours, self::BusinessTimezone => 'business',
-            self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber => 'payment',
+            self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber,
+            self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'payment',
             self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
             self::TaxEnabled, self::TaxLabel, self::TaxPercent, self::TaxInclusive, self::TaxGstin, self::TaxLegalBusinessName => 'tax',
             self::OrderSecurityEnabled,
@@ -98,7 +105,8 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 'boolean',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'boolean',
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
             self::OrderSecurityCheckoutAttemptsPer10Minutes,
@@ -133,6 +141,12 @@ enum WebsiteSettingKey: string
             self::PaymentPhone => 'Payment phone / number',
             self::PaymentQrImagePath => 'Payment QR image',
             self::PaymentWhatsappNumber => 'Payment WhatsApp number',
+            self::PaymentCashEnabled => 'Enable Cash',
+            self::PaymentManualUpiEnabled => 'Enable Manual UPI / Screenshot',
+            self::PaymentRazorpayEnabled => 'Enable Razorpay',
+            self::PaymentPayuEnabled => 'Enable PayU',
+            self::PaymentPaytmEnabled => 'Enable Paytm',
+            self::PaymentPhonepeEnabled => 'Enable PhonePe',
             self::FulfilmentDeliveryDisclaimer => 'Delivery disclaimer',
             self::FulfilmentDineInEnabled => 'Enable dine-in / table ordering',
             self::TaxEnabled => 'Enable GST',
@@ -190,7 +204,8 @@ enum WebsiteSettingKey: string
             self::ReferralMaxRewardsPerCustomerMonth => 10,
             self::HeroSubtitle, self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 1,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
     }
@@ -200,7 +215,8 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled => 'checkbox',
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'checkbox',
             self::TaxPercent,
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,

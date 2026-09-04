@@ -41,5 +41,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="COFFEE_UPI_ID" value="demo@upi"/>
+        <env name="COFFEE_PAYMENT_CASH_ENABLED" value="true"/>
+        <env name="COFFEE_PAYMENT_MANUAL_UPI_ENABLED" value="true"/>
     </php>
 </phpunit>

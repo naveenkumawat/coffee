@@ -14,7 +14,7 @@
         $sections = [
             'hero' => 'Hero / home branding',
             'business' => 'Business information',
-            'payment' => 'Payment display',
+            'payment' => 'Payment methods & display',
             'fulfilment' => 'Fulfilment',
             'tax' => 'Tax / GST',
             'order_security' => 'Order Security',
@@ -25,6 +25,7 @@
             \App\Enums\WebsiteSettingKey::HeroImagePath->value,
             \App\Enums\WebsiteSettingKey::PaymentQrImagePath->value,
         ];
+        $diagnosticsByCode = collect($paymentMethodDiagnostics ?? [])->keyBy('code');
     @endphp
 
     <form method="POST" action="{{ route('administrator.website-settings.update') }}" class="form" enctype="multipart/form-data">
@@ -34,7 +35,58 @@
         <div class="alert alert-primary mb-8">
             Customer-facing café content belongs here. Payment and delivery fields use website settings when filled;
             empty fields fall back to <code>config/coffee.php</code> / env so infrastructure defaults stay separate from operational CMS values.
-            Demo seed data is local/testing only and must not be used as production content.
+            Gateway secrets stay in environment variables and are never shown here. Demo seed data is local/testing only and must not be used as production content.
+        </div>
+
+        <div class="card card-flush internal-card internal-form-card mb-8">
+            <div class="card-header">
+                <div class="card-title">
+                    <h3 class="fw-bold text-gray-900">Payment method readiness</h3>
+                </div>
+            </div>
+            <div class="card-body pt-0">
+                <p class="text-muted mb-6">
+                    Enabled ≠ available. A method appears to customers only when it is enabled, configured, and eligible for the fulfilment type.
+                    Online gateway credentials are configured via environment variables (<code>RAZORPAY_*</code>, <code>PAYU_*</code>, <code>PAYTM_*</code>, <code>PHONEPE_*</code>).
+                </p>
+                <div class="row g-4">
+                    @foreach (($paymentMethodDiagnostics ?? []) as $row)
+                        @php
+                            $status = $row['configuration_status'] ?? 'disabled';
+                            $badge = match ($status) {
+                                'ready' => 'badge-light-success',
+                                'incomplete' => 'badge-light-warning',
+                                default => 'badge-light-secondary',
+                            };
+                            $label = match ($status) {
+                                'ready' => 'Ready',
+                                'incomplete' => 'Configuration incomplete',
+                                default => 'Disabled',
+                            };
+                        @endphp
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="border rounded p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                    <div>
+                                        <div class="fw-bold text-gray-900">{{ $row['name'] }}</div>
+                                        <div class="text-muted fs-7">{{ $row['code'] }} · {{ $row['type'] }}</div>
+                                    </div>
+                                    <span class="badge {{ $badge }}">{{ $label }}</span>
+                                </div>
+                                <div class="fs-7 text-gray-700">
+                                    {{ ($row['enabled'] ?? false) ? 'Enabled' : 'Disabled' }}
+                                    @if (! empty($row['mode']))
+                                        · Mode: {{ $row['mode'] }}
+                                    @endif
+                                </div>
+                                @if (($row['enabled'] ?? false) && ($row['mode'] ?? null) === 'test')
+                                    <div class="fs-8 text-warning mt-2">Test/sandbox credentials active while method is enabled.</div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
 
         @foreach ($sections as $sectionKey => $sectionLabel)
@@ -238,6 +290,16 @@
                                 @elseif ($key->valueType() === 'boolean')
                                     @php
                                         $checked = filter_var(old($key->value, $values[$key->value] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+                                        $methodCode = match ($key) {
+                                            \App\Enums\WebsiteSettingKey::PaymentCashEnabled => 'cash',
+                                            \App\Enums\WebsiteSettingKey::PaymentManualUpiEnabled => 'manual_upi',
+                                            \App\Enums\WebsiteSettingKey::PaymentRazorpayEnabled => 'razorpay',
+                                            \App\Enums\WebsiteSettingKey::PaymentPayuEnabled => 'payu',
+                                            \App\Enums\WebsiteSettingKey::PaymentPaytmEnabled => 'paytm',
+                                            \App\Enums\WebsiteSettingKey::PaymentPhonepeEnabled => 'phonepe',
+                                            default => null,
+                                        };
+                                        $diag = $methodCode ? ($diagnosticsByCode[$methodCode] ?? null) : null;
                                     @endphp
                                     <input type="hidden" name="{{ $key->value }}" value="0">
                                     <div class="form-check form-switch form-check-custom form-check-solid">
@@ -256,6 +318,22 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
+                                    @if ($diag)
+                                        @php
+                                            $status = $diag['configuration_status'] ?? 'disabled';
+                                            $badge = match ($status) {
+                                                'ready' => 'badge-light-success',
+                                                'incomplete' => 'badge-light-warning',
+                                                default => 'badge-light-secondary',
+                                            };
+                                            $label = match ($status) {
+                                                'ready' => 'Configuration: Ready',
+                                                'incomplete' => 'Configuration: Incomplete',
+                                                default => 'Configuration: Disabled',
+                                            };
+                                        @endphp
+                                        <div class="mt-2"><span class="badge {{ $badge }}">{{ $label }}</span></div>
+                                    @endif
                                     @if ($key->helpText())
                                         <div class="form-text">{{ $key->helpText() }}</div>
                                     @endif

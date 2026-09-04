@@ -101,7 +101,15 @@ class CheckoutStoreRequest extends AbstractRequest
             'save_delivery_address' => ['nullable', 'boolean'],
             'make_default_address' => ['nullable', 'boolean'],
             'cafe_table_id' => ['prohibited'],
-            'payment_method' => ['required', 'string', Rule::in(['manual_upi', 'manual', 'cash'])],
+            'payment_method' => ['required', 'string', Rule::in([
+                'manual_upi',
+                'manual',
+                'cash',
+                'razorpay',
+                'payu',
+                'paytm',
+                'phonepe',
+            ])],
         ];
     }
 

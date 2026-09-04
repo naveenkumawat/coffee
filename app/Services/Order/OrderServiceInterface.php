@@ -2,8 +2,10 @@
 
 namespace App\Services\Order;
 
+use App\Enums\PaymentMethod;
 use App\Models\DiningSession;
 use App\Models\Order;
+use App\Models\PaymentAttempt;
 use App\Models\User;
 use App\Transfers\Order\OrderStatusTransitionTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
@@ -62,6 +64,11 @@ interface OrderServiceInterface
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order;
 
     public function markCashReceived(Order $order, User $actor): Order;
+
+    /**
+     * Confirm unpaid order from a verified online gateway payment attempt.
+     */
+    public function confirmGatewayPayment(Order $order, PaymentAttempt $attempt, PaymentMethod $method): Order;
 
     public function availableTransitions(Order $order, User $actor): array;
 }

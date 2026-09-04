@@ -6,12 +6,20 @@ enum PaymentMethod: string
 {
     case Manual = 'manual';
     case Cash = 'cash';
+    case Razorpay = 'razorpay';
+    case PayU = 'payu';
+    case Paytm = 'paytm';
+    case PhonePe = 'phonepe';
 
     public function label(): string
     {
         return match ($this) {
-            self::Manual => 'UPI / QR',
+            self::Manual => 'UPI',
             self::Cash => 'Cash',
+            self::Razorpay => 'Razorpay',
+            self::PayU => 'PayU',
+            self::Paytm => 'Paytm',
+            self::PhonePe => 'PhonePe',
         };
     }
 
@@ -23,6 +31,23 @@ enum PaymentMethod: string
         return match ($this) {
             self::Manual => 'manual_upi',
             self::Cash => 'cash',
+            self::Razorpay => 'razorpay',
+            self::PayU => 'payu',
+            self::Paytm => 'paytm',
+            self::PhonePe => 'phonepe',
+        };
+    }
+
+    public function type(): string
+    {
+        return $this->isOnline() ? 'online' : 'manual';
+    }
+
+    public function isOnline(): bool
+    {
+        return match ($this) {
+            self::Razorpay, self::PayU, self::Paytm, self::PhonePe => true,
+            default => false,
         };
     }
 
@@ -35,6 +60,10 @@ enum PaymentMethod: string
                 OrderFulfilmentMethod::DineIn => 'Cash',
                 default => 'Cash',
             },
+            self::Razorpay => 'Razorpay',
+            self::PayU => 'PayU',
+            self::Paytm => 'Paytm',
+            self::PhonePe => 'PhonePe',
         };
     }
 
@@ -47,6 +76,7 @@ enum PaymentMethod: string
                 OrderFulfilmentMethod::DineIn => 'Pay at the cafe.',
                 default => 'Pay in cash.',
             },
+            self::Razorpay, self::PayU, self::Paytm, self::PhonePe => 'Pay securely online.',
         };
     }
 
@@ -60,6 +90,27 @@ enum PaymentMethod: string
         return $this === self::Manual;
     }
 
+    public function requiresGatewayInitiation(): bool
+    {
+        return $this->isOnline();
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function onlineCases(): array
+    {
+        return [self::Razorpay, self::PayU, self::Paytm, self::PhonePe];
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function manualCases(): array
+    {
+        return [self::Manual, self::Cash];
+    }
+
     public static function tryFromApiKey(?string $key): ?self
     {
         $key = trim((string) $key);
@@ -67,6 +118,10 @@ enum PaymentMethod: string
         return match ($key) {
             'manual_upi', 'manual' => self::Manual,
             'cash' => self::Cash,
+            'razorpay' => self::Razorpay,
+            'payu' => self::PayU,
+            'paytm' => self::Paytm,
+            'phonepe' => self::PhonePe,
             default => self::tryFrom($key),
         };
     }

@@ -1,13 +1,13 @@
 import { ChangeEvent, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getApiBaseUrl } from '../../api/client';
-import { uploadPaymentProof } from '../../api/orders';
-import { ApiError } from '../../api/client';
+import { ApiError, getApiBaseUrl } from '../../api/client';
+import { fetchOrder, uploadPaymentProof } from '../../api/orders';
+import { initiateOrderPayment, verifyPaymentReturn } from '../../api/payments';
 import { Order, OrderPaymentInstructions } from '../../types/order';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { formatCurrency } from '../../utils/format';
 import { resolveCatalogMediaUrl } from '../../utils/images';
-import { isCashPayment, isDineInOrder } from '../../utils/orders';
+import { isCashPayment, isDineInOrder, isPendingPayment } from '../../utils/orders';
 import { paymentStatePresentation } from '../../utils/paymentState';
 import { useToastStore } from '../../stores/toastStore';
 import { OrderStatusBadge } from '../orders/OrderStatusBadge';
@@ -22,6 +22,31 @@ interface PaymentInstructionsCardProps {
 }
 
 type CopyField = 'order' | 'upi' | 'phone';
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+function isOnlinePaymentMethod(method: string | null | undefined): boolean {
+  return ['razorpay', 'payu', 'paytm', 'phonepe'].includes(method ?? '');
+}
+
+async function loadRazorpayScript(): Promise<boolean> {
+  if (window.Razorpay) {
+    return true;
+  }
+
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 function toWhatsappHref(number: string, orderNumber: string): string {
   const normalized = number.replace(/[^\d+]/g, '');
@@ -62,6 +87,10 @@ export function PaymentInstructionsCard({
   const [copiedField, setCopiedField] = useState<CopyField | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isInitiatingOnline, setIsInitiatingOnline] = useState(false);
+  const [isVerifyingOnline, setIsVerifyingOnline] = useState(false);
+  const [onlineClient, setOnlineClient] = useState<Record<string, unknown> | null>(null);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const proof = order.payment_proof;
@@ -112,6 +141,132 @@ export function PaymentInstructionsCard({
     } finally {
       setIsUploading(false);
     }
+  }
+
+  async function handleStartOnlinePayment(): Promise<void> {
+    if (isInitiatingOnline || !order.payment_method) {
+      return;
+    }
+
+    setIsInitiatingOnline(true);
+    setOnlineError(null);
+
+    try {
+      const response = await initiateOrderPayment(order.id, order.payment_method);
+      const client = response.data.client;
+      setOnlineClient(client);
+
+      const redirectUrl = client.redirect_url;
+      if (typeof redirectUrl === 'string' && redirectUrl) {
+        window.location.assign(redirectUrl);
+        return;
+      }
+
+      if (typeof client.action_url === 'string' && client.action_url) {
+        return;
+      }
+
+      if (order.payment_method === 'razorpay') {
+        const loaded = await loadRazorpayScript();
+        if (!loaded || !window.Razorpay) {
+          throw new Error('Unable to load Razorpay checkout.');
+        }
+
+        const rzp = new window.Razorpay({
+          key: client.key_id,
+          amount: client.amount,
+          currency: client.currency,
+          name: client.name,
+          description: client.description,
+          order_id: client.order_id,
+          prefill: client.prefill,
+          handler: async (result: Record<string, string>) => {
+            setIsVerifyingOnline(true);
+            try {
+              await verifyPaymentReturn(response.data.attempt_id, {
+                razorpay_order_id: result.razorpay_order_id,
+                razorpay_payment_id: result.razorpay_payment_id,
+                razorpay_signature: result.razorpay_signature,
+              });
+              const refreshed = await fetchOrder(order.id);
+              onOrderUpdated?.(refreshed.data);
+              toastSuccess('Payment received');
+            } catch (error) {
+              const message =
+                error instanceof ApiError ? error.message : 'Payment submitted. Verifying with the café…';
+              setOnlineError(message);
+              toastError(message);
+            } finally {
+              setIsVerifyingOnline(false);
+            }
+          },
+        });
+        rzp.open();
+      }
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'Unable to start online payment.';
+      setOnlineError(message);
+      toastError(message);
+    } finally {
+      setIsInitiatingOnline(false);
+    }
+  }
+
+  if (isOnlinePaymentMethod(order.payment_method) && isPendingPayment(order.status) && order.payment_status !== 'confirmed') {
+    return (
+      <section className="payment-card motion-enter" aria-live="polite">
+        <div className="payment-card-header">
+          <OrderStatusBadge status="pending_payment" label="Pending Payment" />
+          <h2>Pay with {order.payment_method_label ?? order.payment_method}</h2>
+          <p>
+            {isVerifyingOnline
+              ? 'Verifying payment… Your order updates only after the server confirms payment.'
+              : 'Complete payment securely. Browser success is not final — the café verifies payment on the server.'}
+          </p>
+        </div>
+        <div className="payment-meta-grid">
+          <div>
+            <span>Order number</span>
+            <strong className="payment-order-number user-select-text">{order.order_number}</strong>
+          </div>
+          <div>
+            <span>Amount due</span>
+            <strong className="payment-amount">{formatCurrency(order.total_amount)}</strong>
+          </div>
+        </div>
+        {onlineError ? <p className="form-feedback is-error">{onlineError}</p> : null}
+        {onlineClient && typeof onlineClient.action_url === 'string' ? (
+          <form method="POST" action={String(onlineClient.action_url)}>
+            {Object.entries((onlineClient.fields as Record<string, string> | undefined) ?? {}).map(([name, value]) => (
+              <input key={name} type="hidden" name={name} value={value} />
+            ))}
+            <button type="submit" className="btn btn-primary btn-lg rounded-pill w-100">
+              Continue to {order.payment_method_label ?? 'payment'}
+            </button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary btn-lg rounded-pill w-100"
+            disabled={isInitiatingOnline || isVerifyingOnline}
+            onClick={() => void handleStartOnlinePayment()}
+          >
+            {isVerifyingOnline
+              ? 'Verifying payment…'
+              : isInitiatingOnline
+                ? 'Starting…'
+                : `Pay ${formatCurrency(order.total_amount)}`}
+          </button>
+        )}
+        {showSecondaryAction ? (
+          <div className="payment-actions">
+            <Link to={secondaryHref} className="btn btn-outline-dark rounded-pill w-100">
+              {secondaryLabel}
+            </Link>
+          </div>
+        ) : null}
+      </section>
+    );
   }
 
   if (isCashPayment(order)) {
