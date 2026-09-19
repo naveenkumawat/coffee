@@ -29,29 +29,33 @@ async function request(path, options = {}) {
     return payload;
 }
 
-const apiBase = '/api/v1/notifications';
+function notificationsApiBase() {
+    const fromBootstrap = window.__COFFEE_OPS_NOTIFICATIONS__?.apiBase;
+
+    return String(fromBootstrap || '/api/v1/notifications').replace(/\/$/, '');
+}
 
 export const notificationsApi = {
     async list(limit = 30) {
-        return request(`${apiBase}?limit=${encodeURIComponent(String(limit))}`);
+        return request(`${notificationsApiBase()}?limit=${encodeURIComponent(String(limit))}`);
     },
     async actionRequired(limit = 30) {
-        return request(`${apiBase}/action-required?limit=${encodeURIComponent(String(limit))}`);
+        return request(`${notificationsApiBase()}/action-required?limit=${encodeURIComponent(String(limit))}`);
     },
     async delivered(recipientId) {
-        return request(`${apiBase}/${recipientId}/delivered`, { method: 'POST', body: '{}' });
+        return request(`${notificationsApiBase()}/${recipientId}/delivered`, { method: 'POST', body: '{}' });
     },
     async seen(recipientId) {
-        return request(`${apiBase}/${recipientId}/seen`, { method: 'POST', body: '{}' });
+        return request(`${notificationsApiBase()}/${recipientId}/seen`, { method: 'POST', body: '{}' });
     },
     async read(recipientId) {
-        return request(`${apiBase}/${recipientId}/read`, { method: 'POST', body: '{}' });
+        return request(`${notificationsApiBase()}/${recipientId}/read`, { method: 'POST', body: '{}' });
     },
     async acknowledge(recipientId) {
-        return request(`${apiBase}/${recipientId}/acknowledge`, { method: 'POST', body: '{}' });
+        return request(`${notificationsApiBase()}/${recipientId}/acknowledge`, { method: 'POST', body: '{}' });
     },
     async reminded(recipientId) {
-        return request(`${apiBase}/${recipientId}/reminded`, { method: 'POST', body: '{}' });
+        return request(`${notificationsApiBase()}/${recipientId}/reminded`, { method: 'POST', body: '{}' });
     },
 };
 

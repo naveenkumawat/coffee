@@ -375,6 +375,7 @@ class OperationalNotificationLifecycleTest extends TestCase
         $this->assertStringContainsString('actionRequiredCount', $store);
         $this->assertStringContainsString('acknowledge', $store);
         $this->assertStringContainsString('__COFFEE_NOTIFICATIONS__', $bladeApi);
+        $this->assertStringContainsString('__COFFEE_OPS_NOTIFICATIONS__', $bladeApi);
         $this->assertStringContainsString('createActionReminderManager', $bladeBootstrap);
         $this->assertStringContainsString('operational.notification', $realtime);
         $this->assertStringContainsString('resources/js/notifications.js', File::get(base_path('resources/views/internal/partials/realtime-bootstrap.blade.php')));

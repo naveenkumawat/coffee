@@ -135,3 +135,46 @@ Local setting after audit: **`fulfilment_dine_in_enabled=0`**.
 - PHPUnit: `PublicCacheVersionTest`, `DiningSessionTest`, `ManualUpiTransactionIdTest`, `GuestCartMergeTest`, `DiningCloseReopenConfirmationTest`, `CustomerWebsiteContentApiTest` — **39 passed**.
 - Pint `--dirty` — **passed** (no PHP edits).
 - PWA: `npm run test:ux` **41 passed**, `typecheck` **passed**, `npm run build` **passed**.
+
+---
+
+## Completion pass — 20 September 2026 (later)
+
+Scope: remaining browser smoke only. Café hours temporarily 00:00–23:59 and Dining ON via `CafeAvailabilityService::syncWeeklyHours` + `WebsiteSettingService::update`; originals restored (Dining **OFF**, hours 08:00–23:50, `outside_hours` at ~02:30 IST). Smoke dining session **11** (table T1) closed; pre-existing open sessions 2,5,6,7,8,9,10 left intact. `migrate:fresh` not run. No launch QR/data entered. Temporary CORS `:4174` patched then restored from `.env` backup.
+
+Method: real Chrome (puppeteer-core + system Chrome) against Vite `:4173` and Admin/Barista Apache. Production `npm run preview` attempted on **127.0.0.1:4174** after `customer-pwa` `npm run build` (`dist/sw.js` generated).
+
+Legend only: **PASS** · **FAIL** · **NOT TESTED** · **BLOCKED**
+
+| Area | Result | Notes |
+| --- | --- | --- |
+| Authenticated retail (guest cart → login → checkout Takeaway → Orders) | **FAIL** | Guest add **PASS** (Cappuccino, cart badge 1). Login as `empty@coffee.local` showed toast “Signed in, but your guest cart could not be merged yet.” Cart empty; footer still Sign in. Checkout/Takeaway/order **NOT TESTED** after that. |
+| Manual UPI lifecycle | **FAIL** | Never reached UTR UI (blocked by retail login/merge). PHPUnit not counted as browser PASS. QR still **BLOCKED** (launch-readiness, no invented QR). |
+| Dining full table → bill → pay → auto-close | **FAIL** | Dining ON table picker **PASS** (430, T1 selected, Account footer). Session 11 started then closed on restore. Place order CTA not reached (drafts not on session). Bill/pay/auto-close **NOT TESTED**. |
+| Dining OFF during active session | **NOT TESTED** | Did not reach Admin Dining OFF while a customer session stayed open in Chrome. |
+| Realtime WS → REST refetch | **FAIL** | `__COFFEE_REALTIME_DIAGNOSTICS__` `connection_state=disconnected` (also `idle` earlier). Focus/reload without WS **NOT TESTED** as a deliberate isolated check. |
+| Production SW / IDB / Cache Storage / offline | **FAIL** | `vite preview :4174` returned **HTTP 404** for `/` and `/index.html` despite `dist/index.html` present. Application tab **NOT TESTED**. Vite **dev still unregisters SW** on 4173. Admin Refresh Customer Cache **click PASS** (see confirmations). Auth/cart survive refresh **NOT TESTED**. |
+| Confirmations | **PASS** | Chrome: Cache Management Cancel (no mutation) then Confirm; inventory movement Cancel. `#internalConfirmModal`, not `window.confirm`. Request Bill / UPI Verify / Dining Close / order cancel **NOT TESTED** (flows not reached). |
+| Searchable selects | **PASS** | Admin Select2: ingredient, product category, flavour, customer, product filter — type/Enter. Waiter table SearchableSelect **FAIL** (waiter login `input[name=login]` timeout). Staff user select **NOT TESTED** as a dedicated users-form control. |
+| Responsive 375/390/430 + 768/1024 | **PASS** | Screenshots of Menu/Checkout/Orders/Account/Dining at 375/390/430 and Menu 768/1024. Authenticated checkout/order-detail/bill **NOT TESTED**. Campaign overlay still covers first menu paint. |
+| Console/network | **FAIL** | Staff notifications requested `http://localhost/api/v1/notifications` (404) under Apache `/coffee` — **fixed** in `resources/js/notifications/api.js` to use `window.__COFFEE_OPS_NOTIFICATIONS__.apiBase`. Remaining: `/build/assets/notification-chime-*.wav` **404** (missing `/coffee` prefix); `/coffee/_boost/browser-logs` **500**; guest `auth/me` **401** expected. |
+| Restore | **PASS** | Dining OFF; hours 08:00–23:50; env CORS without 4174; session 11 closed. |
+
+### Defects fixed this pass
+
+- Internal ops notification client ignored Blade `apiBase` and called origin-root `/api/v1/notifications` (404 on subdirectory Apache). Now uses `__COFFEE_OPS_NOTIFICATIONS__.apiBase`.
+
+### Automated (this pass — not browser PASS)
+
+- Pint `--dirty` passed.
+- PHPUnit `OperationalNotificationLifecycleTest::test_pwa_and_blade_notification_client_foundation_exists`, `StaffOperationalNotificationTest::test_administrator_header_shows_operational_notification_bell` passed.
+- PWA `npm run test:ux` 45 passed; `typecheck` passed; `customer-pwa` `npm run build` passed (`sw.js` cache `8afecd035bc4`).
+
+### Remaining blockers
+
+1. Live retail/UPI/dining Chrome lifecycles incomplete (guest-cart merge toast; UTR/staff not clicked).
+2. Manual UPI QR missing (do not invent).
+3. Production preview on 4174 404 — SW/offline **FAIL** until preview serves `dist`.
+4. Echo disconnected in the PWA tab used for diagnostics.
+5. Notification chime 404 under `/coffee` subdirectory.
+6. Café closed again after hours restore (`outside_hours`).
