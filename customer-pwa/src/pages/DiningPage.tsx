@@ -13,6 +13,7 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { QuantityStepper } from '../components/common/QuantityStepper';
 import { useContentStore, selectDiningEnabled } from '../stores/contentStore';
+import { diningPageShouldKeepLoading, resolveDiningPageView } from '../utils/diningPageView';
 import {
   clearOrderingContext,
   diningDraftItemCount,
@@ -83,9 +84,9 @@ export function DiningPage() {
         clearOrderingContext();
         setActiveSession(null);
 
-        if (!hasBootstrapped) {
-          keepLoading = true;
+        keepLoading = diningPageShouldKeepLoading(hasBootstrapped, false);
 
+        if (keepLoading) {
           return;
         }
 
@@ -166,7 +167,14 @@ export function DiningPage() {
     }
   }
 
-  if (loading || (!hasBootstrapped && !activeSession)) {
+  const view = resolveDiningPageView({
+    loading,
+    hasBootstrapped,
+    hasActiveSession: Boolean(activeSession),
+    diningEnabled,
+  });
+
+  if (view === 'loading') {
     return (
       <div className="page-container dining-page">
         <div className="dining-content">
@@ -177,7 +185,7 @@ export function DiningPage() {
     );
   }
 
-  if (activeSession) {
+  if (view === 'active-session' && activeSession) {
     return (
       <div className="page-container dining-page">
         <div className="dining-content">
@@ -203,7 +211,7 @@ export function DiningPage() {
     );
   }
 
-  if (!diningEnabled) {
+  if (view === 'unavailable') {
     return <Navigate to="/menu" replace />;
   }
 

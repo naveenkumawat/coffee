@@ -268,9 +268,10 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail car
   assert.match(source, /\.\.\.\(showDiningNav/);
   assert.match(theme, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(0,\s*1fr\)\)/);
   assert.doesNotMatch(theme, /repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(diningPage, /selectDiningEnabled/);
-  assert.match(diningPage, /if \(activeSession\)/);
-  assert.match(diningPage, /if \(!diningEnabled\)/);
+  assert.match(diningPage, /resolveDiningPageView/);
+  assert.match(diningPage, /diningPageShouldKeepLoading/);
+  assert.match(diningPage, /if \(view === 'active-session'/);
+  assert.match(diningPage, /if \(view === 'unavailable'\)/);
   assert.match(diningPage, /<Navigate to="\/menu" replace \/>/);
   assert.match(contentStore, /applyDiningCapability/);
   assert.match(contentStore, /overlayDiningCapability/);

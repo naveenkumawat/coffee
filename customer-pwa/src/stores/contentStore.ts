@@ -10,6 +10,7 @@ import {
   WebsiteContent,
   WebsiteSocialLink,
 } from '../types/content';
+import { diningCapabilityFromContent, resolveDiningCapability } from '../utils/diningCapability';
 import { reconcileStaleDiningOrderingMode } from '../utils/orderingContext';
 
 interface ContentState {
@@ -42,8 +43,14 @@ function overlayDiningCapability(content: WebsiteContent, diningEnabled: boolean
   };
 }
 
-function diningCapabilityFromContent(content: WebsiteContent | null): boolean {
-  return Boolean(content?.fulfilment?.dining_enabled ?? content?.fulfilment?.dine_in_enabled);
+function settledDiningEnabled(input: {
+  bootstrapDiningEnabled: boolean | null;
+  storedDiningEnabled: boolean | null;
+  content: WebsiteContent | null;
+}): boolean {
+  return (
+    resolveDiningCapability(input) ?? false
+  );
 }
 
 export const useContentStore = create<ContentState>((set, get) => ({
@@ -77,13 +84,14 @@ export const useContentStore = create<ContentState>((set, get) => ({
         );
 
         if (cached?.data) {
-          const content =
-            typeof sync.diningEnabled === 'boolean'
-              ? overlayDiningCapability(cached.data, sync.diningEnabled)
-              : cached.data;
+          const diningEnabled = settledDiningEnabled({
+            bootstrapDiningEnabled: typeof sync.diningEnabled === 'boolean' ? sync.diningEnabled : null,
+            storedDiningEnabled: get().diningEnabled,
+            content: cached.data,
+          });
           set({
-            content,
-            diningEnabled: typeof sync.diningEnabled === 'boolean' ? sync.diningEnabled : diningCapabilityFromContent(content),
+            content: overlayDiningCapability(cached.data, diningEnabled),
+            diningEnabled,
             hasBootstrapped: true,
           });
         }
@@ -96,19 +104,29 @@ export const useContentStore = create<ContentState>((set, get) => ({
             sync.changed || diningMismatch
               ? await fetchWebsiteContentFromNetwork()
               : await fetchWebsiteContent({ skipNetworkIfCached: true });
-          const diningEnabled =
-            typeof sync.diningEnabled === 'boolean'
-              ? sync.diningEnabled
-              : diningCapabilityFromContent(response.data);
-          const content =
-            typeof sync.diningEnabled === 'boolean'
-              ? overlayDiningCapability(response.data, sync.diningEnabled)
-              : response.data;
+          const diningEnabled = settledDiningEnabled({
+            bootstrapDiningEnabled: typeof sync.diningEnabled === 'boolean' ? sync.diningEnabled : null,
+            storedDiningEnabled: get().diningEnabled,
+            content: response.data,
+          });
+          const content = overlayDiningCapability(response.data, diningEnabled);
 
           reconcileStaleDiningOrderingMode(diningEnabled);
           set({ content, diningEnabled, hasBootstrapped: true });
         } catch {
-          set({ content: get().content, hasBootstrapped: true });
+          const diningEnabled = settledDiningEnabled({
+            bootstrapDiningEnabled: typeof sync.diningEnabled === 'boolean' ? sync.diningEnabled : null,
+            storedDiningEnabled: get().diningEnabled,
+            content: get().content,
+          });
+          const current = get().content;
+
+          reconcileStaleDiningOrderingMode(diningEnabled);
+          set({
+            content: current ? overlayDiningCapability(current, diningEnabled) : current,
+            diningEnabled,
+            hasBootstrapped: true,
+          });
         }
       })().finally(() => {
         bootstrapPromise = null;
@@ -168,9 +186,11 @@ export function selectDiningEnabled(
   content: WebsiteContent | null,
   capability: boolean | null = null,
 ): boolean {
-  if (capability !== null) {
-    return capability;
-  }
-
-  return diningCapabilityFromContent(content);
+  return (
+    resolveDiningCapability({
+      bootstrapDiningEnabled: capability,
+      storedDiningEnabled: null,
+      content,
+    }) ?? false
+  );
 }
