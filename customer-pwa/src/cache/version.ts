@@ -12,10 +12,17 @@ export interface AppBootstrapPayload {
   catalog_version?: string;
   content_version?: string;
   media_version?: string;
+  dining_enabled?: boolean;
+}
+
+export interface PublicCacheSyncResult {
+  version: string | null;
+  changed: boolean;
+  diningEnabled: boolean | null;
 }
 
 let lastKnownVersion: string | null = readStoredCacheVersion();
-let syncPromise: Promise<string | null> | null = null;
+let syncPromise: Promise<PublicCacheSyncResult> | null = null;
 const listeners = new Set<(version: string) => void>();
 
 export function getKnownPublicCacheVersion(): string | null {
@@ -80,7 +87,15 @@ export async function applyServerCacheVersion(serverVersion: string): Promise<bo
   return true;
 }
 
-export async function syncPublicCacheVersion(force = false): Promise<string | null> {
+function knownSyncResult(diningEnabled: boolean | null = null): PublicCacheSyncResult {
+  return {
+    version: getKnownPublicCacheVersion(),
+    changed: false,
+    diningEnabled,
+  };
+}
+
+export async function syncPublicCacheVersion(force = false): Promise<PublicCacheSyncResult> {
   clearObsoleteCacheKeys();
 
   if (syncPromise && !force) {
@@ -91,16 +106,22 @@ export async function syncPublicCacheVersion(force = false): Promise<string | nu
     try {
       const response = await get<ApiEnvelope<AppBootstrapPayload>>('/app-bootstrap');
       const version = response.data?.cache_version?.trim();
+      const diningEnabled =
+        typeof response.data?.dining_enabled === 'boolean' ? response.data.dining_enabled : null;
 
       if (!version) {
-        return getKnownPublicCacheVersion();
+        return knownSyncResult(diningEnabled);
       }
 
-      await applyServerCacheVersion(version);
+      const changed = await applyServerCacheVersion(version);
 
-      return version;
+      return {
+        version,
+        changed,
+        diningEnabled,
+      };
     } catch {
-      return getKnownPublicCacheVersion();
+      return knownSyncResult();
     } finally {
       syncPromise = null;
     }

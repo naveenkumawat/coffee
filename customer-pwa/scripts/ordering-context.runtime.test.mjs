@@ -182,6 +182,32 @@ test('legacy v1 storage migrates on read', async () => {
   assert.ok(window.sessionStorage.getItem('coffee.ordering_context.v2'));
 });
 
+test('dining disabled without a session clears stale dining mode and keeps a seated session', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  mod.writeOrderingContext({
+    mode: 'dining',
+    diningSessionId: '12',
+    tableLabel: 'T12',
+  });
+  mod.reconcileStaleDiningOrderingMode(false);
+  const seated = mod.readOrderingContext();
+  assert.equal(seated.mode, 'dining');
+  assert.equal(seated.diningSession.diningSessionId, '12');
+
+  mod.writeOrderingContext({ diningSession: null, mode: 'takeaway' });
+  window.sessionStorage.setItem(
+    'coffee.ordering_context.v2',
+    JSON.stringify({ mode: 'dining', diningSession: null }),
+  );
+  mod.resetOrderingContextCacheForTests();
+  mod.reconcileStaleDiningOrderingMode(false);
+  const cleared = mod.readOrderingContext();
+  assert.equal(cleared.mode, 'takeaway');
+  assert.equal(cleared.diningSession, null);
+});
+
 test('stale dining mode without a session reconciles to takeaway', async () => {
   const mod = await loadOrderingContextModule();
   mod.resetOrderingContextCacheForTests();

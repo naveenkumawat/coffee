@@ -271,7 +271,9 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail car
   assert.match(diningPage, /selectDiningEnabled/);
   assert.match(diningPage, /if \(activeSession\)/);
   assert.match(diningPage, /if \(!diningEnabled\)/);
-  assert.match(diningPage, /Dining is unavailable/);
+  assert.match(diningPage, /<Navigate to="\/menu" replace \/>/);
+  assert.match(contentStore, /applyDiningCapability/);
+  assert.match(contentStore, /overlayDiningCapability/);
 
   assert.match(source, /isDiningSessionSurfacePath/);
   assert.match(source, /isNavActive/);
@@ -666,6 +668,8 @@ test('public cache uses IndexedDB and namespaced version metadata', () => {
   assert.match(catalog, /getConditional/);
   assert.match(content, /PUBLIC_CACHE_KEYS\.content/);
   assert.match(contentStore, /skipNetworkIfCached/);
+  assert.match(version, /dining_enabled/);
+  assert.match(contentStore, /sync\.diningEnabled/);
   assert.match(auth, /logoutCustomer/);
   assert.doesNotMatch(auth, /purgePublicClientCaches/);
   assert.match(sw, /sip-the-soul-media-/);
@@ -677,6 +681,7 @@ test('public cache uses IndexedDB and namespaced version metadata', () => {
 });
 
 test('private order APIs stay off the public cache and Manual UPI copy is locked after submit', () => {
+  const diningApi = readSrc('api/dining.ts');
   const ordersApi = readSrc('api/orders.ts');
   const client = readSrc('api/client.ts');
   const paymentState = readSrc('utils/paymentState.ts');
@@ -685,19 +690,30 @@ test('private order APIs stay off the public cache and Manual UPI copy is locked
   const listCard = readSrc('components/orders/OrderListCard.tsx');
   const timeline = readSrc('components/orders/OrderStatusTimeline.tsx');
 
+  assert.doesNotMatch(diningApi, /readCachedPublicJson|writeCachedPublicJson|PUBLIC_CACHE/);
   assert.doesNotMatch(ordersApi, /readCachedPublicJson|writeCachedPublicJson|PUBLIC_CACHE/);
   assert.match(client, /cache: init\.cache \?\? 'no-store'/);
   assert.match(paymentState, /can_submit_payment_transaction_id/);
+  assert.match(paymentState, /state !== 'upi_awaiting_review'/);
   assert.match(
     paymentState,
     /You can submit another one only if the café rejects this payment/,
   );
+  assert.match(paymentState, /badge: 'Payment Confirmed'/);
   assert.match(workflow, /customerWorkflowStatusLabel/);
   assert.match(workflow, /return 'Placed'/);
   assert.match(confirmation, /customerWorkflowStatusLabel/);
   assert.match(listCard, /customerWorkflowStatusLabel/);
   assert.doesNotMatch(listCard, /label=\{order\.status_label\}/);
   assert.match(timeline, /Payment verification pending/);
+
+  const paymentCard = readSrc('components/checkout/PaymentInstructionsCard.tsx');
+  const realtime = readSrc('realtime/useRealtimeBootstrap.ts');
+  const ordersPage = readSrc('pages/OrdersPage.tsx');
+  assert.match(paymentCard, /const refreshed = await fetchOrder\(order.id\)/);
+  assert.match(paymentCard, /canSubmitTransaction/);
+  assert.match(realtime, /emitLiveSignal\(signal\)/);
+  assert.match(ordersPage, /window.addEventListener\('focus', reconcile\)/);
 });
 
 test('CMS pages hydrate from the public content store instead of a private fetch', () => {

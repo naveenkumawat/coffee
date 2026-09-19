@@ -43,7 +43,9 @@ function isDiningSessionSurfacePath(pathname: string, sessionId: string): boolea
 export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationProps) {
   const location = useLocation();
   const orderingContext = useOrderingContext();
-  const diningEnabled = useContentStore((state) => selectDiningEnabled(state.content));
+  const diningEnabled = useContentStore((state) =>
+    selectDiningEnabled(state.content, state.diningEnabled),
+  );
   const retailCartCount = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);

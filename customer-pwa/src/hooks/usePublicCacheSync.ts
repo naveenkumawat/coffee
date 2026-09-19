@@ -1,10 +1,21 @@
 import { useEffect } from 'react';
-import { applyServerCacheVersion, syncPublicCacheVersion } from '../cache/version';
+import { applyServerCacheVersion, PublicCacheSyncResult, syncPublicCacheVersion } from '../cache/version';
 import { realtimeConnection } from '../realtime/RealtimeConnection';
+import { useContentStore } from '../stores/contentStore';
+
+async function syncPublicCacheAndDining(force = false): Promise<PublicCacheSyncResult> {
+  const result = await syncPublicCacheVersion(force);
+
+  if (typeof result.diningEnabled === 'boolean') {
+    useContentStore.getState().applyDiningCapability(result.diningEnabled);
+  }
+
+  return result;
+}
 
 export function usePublicCacheSync(): void {
   useEffect(() => {
-    void syncPublicCacheVersion();
+    void syncPublicCacheAndDining();
     void realtimeConnection.connectPublic();
 
     const unsubscribe = realtimeConnection.onPublicCacheInvalidated((version) => {
@@ -13,12 +24,12 @@ export function usePublicCacheSync(): void {
 
     const syncIfVisible = (): void => {
       if (!document.hidden) {
-        void syncPublicCacheVersion();
+        void syncPublicCacheAndDining();
       }
     };
 
     const onOnline = (): void => {
-      void syncPublicCacheVersion(true);
+      void syncPublicCacheAndDining(true);
     };
 
     document.addEventListener('visibilitychange', syncIfVisible);

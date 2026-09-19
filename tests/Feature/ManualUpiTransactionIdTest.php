@@ -49,7 +49,9 @@ class ManualUpiTransactionIdTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.payment_status', 'awaiting_review')
             ->assertJsonPath('data.payment_transaction_id', 'UTR-ABC123456')
-            ->assertJsonPath('data.status', 'pending_payment');
+            ->assertJsonPath('data.status', 'pending_payment')
+            ->assertJsonPath('data.status_label', 'Placed')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', false);
 
         $this->assertTrue($order->fresh()->canCustomerCancel($customer));
 
@@ -191,6 +193,7 @@ class ManualUpiTransactionIdTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('data.payment_status', 'awaiting_review')
+            ->assertJsonPath('data.status_label', 'Placed')
             ->assertJsonPath('data.can_submit_payment_transaction_id', false);
 
         $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
@@ -292,16 +295,24 @@ class ManualUpiTransactionIdTest extends TestCase
         $order->refresh();
         $this->assertSame(OrderStatus::Accepted, $order->status);
         $this->assertSame(PaymentStatus::Confirmed, $order->payment_status);
-        $this->assertNotNull($order->payment_confirmed_at);
+        $this->assertSame('ABC123456', $order->payment_transaction_id);
+        $this->assertEquals(
+            $confirmedAt?->toIso8601String(),
+            $order->payment_confirmed_at?->toIso8601String(),
+        );
 
         $this->app['auth']->forgetGuards();
         Sanctum::actingAs($customer);
         $this->getJson(route('api.v1.orders.show', $order))
             ->assertOk()
-            ->assertJsonPath('data.status', 'accepted')
-            ->assertJsonPath('data.status_label', 'Accepted')
             ->assertJsonPath('data.payment_status', 'confirmed')
             ->assertJsonPath('data.payment_status_label', 'Confirmed')
+            ->assertJsonPath('data.status', 'accepted')
+            ->assertJsonPath('data.status_label', 'Accepted')
             ->assertJsonPath('data.can_submit_payment_transaction_id', false);
+
+        $payload = $this->getJson(route('api.v1.orders.show', $order))->json('data');
+        $this->assertNotSame('Pending Payment', $payload['status_label']);
+        $this->assertNotSame('pending', $payload['payment_status']);
     }
 }

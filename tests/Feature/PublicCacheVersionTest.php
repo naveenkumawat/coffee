@@ -34,7 +34,8 @@ class PublicCacheVersionTest extends TestCase
             ->assertJsonPath('data.cache_version', $version)
             ->assertJsonPath('data.catalog_version', $version)
             ->assertJsonPath('data.content_version', $version)
-            ->assertJsonPath('data.media_version', $version);
+            ->assertJsonPath('data.media_version', $version)
+            ->assertJsonPath('data.dining_enabled', false);
     }
 
     public function test_public_cms_update_invalidates_public_cache_version(): void
@@ -136,6 +137,10 @@ class PublicCacheVersionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.fulfilment.dining_enabled', false)
             ->assertJsonPath('data.fulfilment.dine_in_enabled', false);
+        $this->getJson(route('api.v1.app-bootstrap.show'))
+            ->assertOk()
+            ->assertJsonPath('data.cache_version', $afterOff)
+            ->assertJsonPath('data.dining_enabled', false);
 
         $this->actingAs($manager, 'admin')
             ->put(route('administrator.website-settings.update'), [
@@ -149,6 +154,10 @@ class PublicCacheVersionTest extends TestCase
         $this->getJson(route('api.v1.content.show'))
             ->assertOk()
             ->assertJsonPath('data.fulfilment.dining_enabled', true);
+        $this->getJson(route('api.v1.app-bootstrap.show'))
+            ->assertOk()
+            ->assertJsonPath('data.cache_version', $afterOn)
+            ->assertJsonPath('data.dining_enabled', true);
     }
 
     public function test_admin_refresh_customer_cache_increments_version_and_broadcasts_cache_version_only(): void

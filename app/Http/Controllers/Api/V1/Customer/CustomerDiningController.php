@@ -57,6 +57,12 @@ class CustomerDiningController extends Controller
     {
         $this->authorize('create', DiningSession::class);
 
+        if (! $this->websiteSettings->diningEnabled()) {
+            throw ValidationException::withMessages([
+                'dining' => 'Dining is not available right now.',
+            ]);
+        }
+
         $data = $request->validate([
             'cafe_table_id' => ['required', 'integer', Rule::exists('cafe_tables', 'id')],
             'guest_count' => ['nullable', 'integer', 'min:1', 'max:50'],

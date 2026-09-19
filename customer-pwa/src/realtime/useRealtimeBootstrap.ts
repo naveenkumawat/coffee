@@ -108,16 +108,22 @@ export function useRealtimeBootstrap(): RealtimeConnectionState {
       useNotificationStore.getState().upsertFromRealtime(normalized);
       void useNotificationStore.getState().markDelivered(normalized.recipient_id).catch(() => undefined);
 
-      const item = useNotificationStore.getState().items.find(
-        (row) => row.recipient_id === normalized.recipient_id,
-      );
+      const signal = toLiveSignal({
+        type: normalized.type ?? '',
+        subject: normalized.subject ?? null,
+        action_url: normalized.action_url ?? null,
+        recipient_id: normalized.recipient_id,
+      });
 
-      if (item) {
-        const signal = toLiveSignal(item);
-        if (signal) {
-          emitLiveSignal(signal);
-        }
+      if (signal) {
+        emitLiveSignal(signal);
       }
+
+      const item = useNotificationStore.getState().items.find(
+        (row) =>
+          (normalized.uuid && row.uuid === normalized.uuid) ||
+          row.recipient_id === normalized.recipient_id,
+      );
 
       if (isNew && leaderRef.current?.isLeader() && item) {
         presentImmediateAlert(item, true);

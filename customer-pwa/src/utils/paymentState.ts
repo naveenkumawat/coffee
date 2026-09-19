@@ -26,14 +26,14 @@ export interface PaymentStatePresentation {
  */
 export function resolvePaymentState(order: Order): CanonicalPaymentState {
   if (isCashPayment(order)) {
-    if (order.payment_status === 'confirmed' || Boolean(order.cash_received_at)) {
+    if (order.payment_status === 'confirmed' || Boolean(order.cash_received_at) || Boolean(order.payment_confirmed_at)) {
       return 'cash_confirmed';
     }
 
     return 'cash_pending';
   }
 
-  if (order.payment_status === 'confirmed') {
+  if (order.payment_status === 'confirmed' || Boolean(order.payment_confirmed_at)) {
     return 'upi_confirmed';
   }
 
@@ -52,9 +52,15 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
   const state = resolvePaymentState(order);
   const proof = order.payment_proof;
   const amount = formatCurrency(order.total_amount);
-  const canSubmit = Boolean(
-    order.can_submit_payment_transaction_id ?? proof?.can_submit_transaction ?? proof?.can_upload,
-  );
+  const canSubmit =
+    state !== 'upi_confirmed' &&
+    state !== 'upi_awaiting_review' &&
+    state !== 'cash_confirmed' &&
+    state !== 'cash_pending' &&
+    (order.can_submit_payment_transaction_id ??
+      proof?.can_submit_transaction ??
+      proof?.can_upload ??
+      false);
 
   switch (state) {
     case 'cash_confirmed':

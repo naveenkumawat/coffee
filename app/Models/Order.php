@@ -227,6 +227,10 @@ class Order extends AbstractModel
 
     public function customerLabelForStatus(?OrderStatus $status): string
     {
+        if ($status === OrderStatus::PendingPayment) {
+            return 'Placed';
+        }
+
         if ($status === OrderStatus::ReadyForPickup && $this->fulfilment_method instanceof OrderFulfilmentMethod) {
             return $this->fulfilment_method->readyLabel();
         }

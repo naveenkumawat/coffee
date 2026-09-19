@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
   DiningSession,
@@ -43,7 +43,10 @@ export function DiningPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselect = searchParams.get('table')?.trim() ?? '';
-  const diningEnabled = useContentStore((state) => selectDiningEnabled(state.content));
+  const diningEnabled = useContentStore((state) =>
+    selectDiningEnabled(state.content, state.diningEnabled),
+  );
+  const hasBootstrapped = useContentStore((state) => state.hasBootstrapped);
 
   const [tables, setTables] = useState<DiningTableOption[]>([]);
   const [activeSession, setActiveSession] = useState<DiningSession | null>(null);
@@ -57,6 +60,8 @@ export function DiningPage() {
     let cancelled = false;
 
     void (async () => {
+      let keepLoading = false;
+
       try {
         const active = await fetchActiveDiningSession();
         if (cancelled) {
@@ -71,7 +76,6 @@ export function DiningPage() {
             tableLabel: active.data.table.label,
             draftItemCount: diningDraftItemCount(active.data.drafts),
           });
-          setLoading(false);
 
           return;
         }
@@ -79,9 +83,14 @@ export function DiningPage() {
         clearOrderingContext();
         setActiveSession(null);
 
+        if (!hasBootstrapped) {
+          keepLoading = true;
+
+          return;
+        }
+
         if (!diningEnabled) {
           setTables([]);
-          setLoading(false);
 
           return;
         }
@@ -105,7 +114,7 @@ export function DiningPage() {
           setError(err instanceof ApiError ? err.message : 'Unable to load dining tables.');
         }
       } finally {
-        if (!cancelled) {
+        if (!cancelled && !keepLoading) {
           setLoading(false);
         }
       }
@@ -114,7 +123,7 @@ export function DiningPage() {
     return () => {
       cancelled = true;
     };
-  }, [preselect, diningEnabled]);
+  }, [preselect, diningEnabled, hasBootstrapped]);
 
   const selectedTable = useMemo(
     () => tables.find((table) => table.id === tableId) ?? null,
@@ -157,7 +166,7 @@ export function DiningPage() {
     }
   }
 
-  if (loading) {
+  if (loading || (!hasBootstrapped && !activeSession)) {
     return (
       <div className="page-container dining-page">
         <div className="dining-content">
@@ -195,22 +204,7 @@ export function DiningPage() {
   }
 
   if (!diningEnabled) {
-    return (
-      <div className="page-container dining-page">
-        <div className="dining-content">
-          <PageHeader
-            title="Dining"
-            description="Table service is currently unavailable. You can still order takeaway or delivery."
-          />
-          <EmptyState
-            title="Dining is unavailable"
-            description="Table service is paused right now. Browse the menu for takeaway or delivery instead."
-            actionLabel="Browse menu"
-            actionHref="/menu"
-          />
-        </div>
-      </div>
-    );
+    return <Navigate to="/menu" replace />;
   }
 
   return (

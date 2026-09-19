@@ -134,9 +134,10 @@ export function PaymentInstructionsCard({
     setTxnError(null);
 
     try {
-      const response = await submitPaymentTransactionId(order.id, transactionId);
-      onOrderUpdated?.(response.data);
-      setTransactionId(response.data.payment_transaction_id ?? transactionId);
+      await submitPaymentTransactionId(order.id, transactionId);
+      const refreshed = await fetchOrder(order.id);
+      onOrderUpdated?.(refreshed.data);
+      setTransactionId(refreshed.data.payment_transaction_id ?? transactionId);
       toastSuccess('Transaction ID submitted for verification');
     } catch (error) {
       const message =

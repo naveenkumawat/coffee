@@ -72,7 +72,7 @@ class OrderFulfilmentCheckoutTest extends TestCase
             ->assertJsonPath('data.pickup_name', 'Counter Pickup')
             ->assertJsonPath('data.delivery_fee_amount', null)
             ->assertJsonPath('data.total_amount', '8.00')
-            ->assertJsonPath('data.status_label', 'Pending Payment');
+            ->assertJsonPath('data.status_label', 'Placed');
 
         $order = Order::query()->firstOrFail();
 

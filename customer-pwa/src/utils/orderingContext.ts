@@ -411,6 +411,26 @@ export function clearOrderingContext(): void {
 }
 
 /**
+ * When global Dining is off, drop stale dining *mode* unless a seated session exists.
+ * Does not touch the retail cart.
+ */
+export function reconcileStaleDiningOrderingMode(diningEnabled: boolean): void {
+  if (diningEnabled) {
+    return;
+  }
+
+  const context = readOrderingContext();
+
+  if (hasActiveDiningSession(context)) {
+    return;
+  }
+
+  if (context.mode === 'dining' || context.diningSession) {
+    writeOrderingContext(RETAIL_ORDERING_CONTEXT);
+  }
+}
+
+/**
  * Session is no longer a usable active dining visit (paid/closed/cancelled).
  * Callers should clear dining context; Takeaway cart/mode remain usable.
  */

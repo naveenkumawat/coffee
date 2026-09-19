@@ -52,6 +52,22 @@ export function OrdersPage() {
     () => loadOrders(1, false, true),
     (signal) => signal.type.startsWith('customer.'),
   );
+
+  useEffect(() => {
+    const reconcile = (): void => {
+      if (!document.hidden) {
+        void loadOrders(1, false, true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', reconcile);
+    window.addEventListener('focus', reconcile);
+
+    return () => {
+      document.removeEventListener('visibilitychange', reconcile);
+      window.removeEventListener('focus', reconcile);
+    };
+  }, [loadOrders]);
   function handleLoadMore(event: FormEvent): void {
     event.preventDefault();
     void loadOrders(page + 1, true);
