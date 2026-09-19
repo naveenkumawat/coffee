@@ -20,7 +20,8 @@ import { Order, OrderItem, OrderPaymentInstructions } from '../types/order';
 import { MyProductRating, RatingSummary } from '../types/rating';
 import { discountAmount, orderDiscountLines } from '../utils/discounts';
 import { formatCurrency, formatDateTime, joinLabels } from '../utils/format';
-import { isCashPayment, isPendingPayment, statusTone } from '../utils/orders';
+import { customerWorkflowStatusLabel, isCashPayment, isPendingPayment, statusTone } from '../utils/orders';
+import { paymentStatePresentation } from '../utils/paymentState';
 
 interface RatingTarget {
   productId: number;
@@ -68,6 +69,22 @@ export function OrderDetailPage() {
 
   useEffect(() => {
     void loadOrder();
+  }, [loadOrder]);
+
+  useEffect(() => {
+    const reconcile = (): void => {
+      if (!document.hidden) {
+        void loadOrder(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', reconcile);
+    window.addEventListener('focus', reconcile);
+
+    return () => {
+      document.removeEventListener('visibilitychange', reconcile);
+      window.removeEventListener('focus', reconcile);
+    };
   }, [loadOrder]);
 
   useLiveCanonicalSync(
@@ -189,21 +206,39 @@ export function OrderDetailPage() {
 
   const tone = statusTone(order.status);
   const pendingPayment = isPendingPayment(order.status);
-  const showPaymentCard = isCashPayment(order) || pendingPayment;
+  const paymentPresentation = paymentStatePresentation(order);
+  const showPaymentCard =
+    isCashPayment(order) ||
+    pendingPayment ||
+    paymentPresentation.state === 'upi_awaiting_review' ||
+    paymentPresentation.state === 'upi_rejected' ||
+    paymentPresentation.state === 'upi_confirmed';
   const paymentDetailLabel = (() => {
-    if (!isCashPayment(order)) {
-      return order.payment_method_label ?? 'UPI / QR';
+    if (isCashPayment(order)) {
+      if (order.payment_status === 'confirmed' || order.cash_received_at) {
+        return 'Cash — Paid';
+      }
+
+      if (order.fulfilment_method === 'dine_in') {
+        return 'Cash — Pay at Cafe';
+      }
+
+      return 'Cash — Pay at Pickup';
     }
 
-    if (order.payment_status === 'confirmed' || order.cash_received_at) {
-      return 'Cash — Paid';
+    if (paymentPresentation.state === 'upi_confirmed') {
+      return order.payment_status_label ?? 'Payment Confirmed';
     }
 
-    if (order.fulfilment_method === 'dine_in') {
-      return 'Cash — Pay at Cafe';
+    if (paymentPresentation.state === 'upi_awaiting_review') {
+      return paymentPresentation.badge;
     }
 
-    return 'Cash — Pay at Pickup';
+    if (paymentPresentation.state === 'upi_rejected') {
+      return order.payment_status_label ?? 'Not verified';
+    }
+
+    return order.payment_method_label ?? 'UPI / QR';
   })();
 
   const freeDrinkBenefit = (order.reward_redemptions ?? [])
@@ -228,7 +263,7 @@ export function OrderDetailPage() {
       />
 
       <section className={`order-status-hero is-${tone} motion-enter`}>
-        <OrderStatusBadge status={order.status} label={order.status_label} />
+        <OrderStatusBadge status={order.status} label={customerWorkflowStatusLabel(order)} />
         <h1 className="order-status-number">{order.order_number}</h1>
         <p className="order-status-total">Total {formatCurrency(order.total_amount)}</p>
         <p className="order-status-meta">Placed {formatDateTime(order.placed_at)}</p>

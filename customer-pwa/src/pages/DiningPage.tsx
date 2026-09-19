@@ -12,7 +12,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton';
 import { PageHeader } from '../components/common/PageHeader';
 import { QuantityStepper } from '../components/common/QuantityStepper';
-import { useContentStore } from '../stores/contentStore';
+import { useContentStore, selectDiningEnabled } from '../stores/contentStore';
 import {
   clearOrderingContext,
   diningDraftItemCount,
@@ -43,10 +43,7 @@ export function DiningPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselect = searchParams.get('table')?.trim() ?? '';
-  const content = useContentStore((state) => state.content);
-  const diningEnabled = Boolean(
-    content?.fulfilment?.dining_enabled ?? content?.fulfilment?.dine_in_enabled,
-  );
+  const diningEnabled = useContentStore((state) => selectDiningEnabled(state.content));
 
   const [tables, setTables] = useState<DiningTableOption[]>([]);
   const [activeSession, setActiveSession] = useState<DiningSession | null>(null);
@@ -82,6 +79,13 @@ export function DiningPage() {
         clearOrderingContext();
         setActiveSession(null);
 
+        if (!diningEnabled) {
+          setTables([]);
+          setLoading(false);
+
+          return;
+        }
+
         const response = await fetchDiningTables();
         if (cancelled) {
           return;
@@ -110,7 +114,7 @@ export function DiningPage() {
     return () => {
       cancelled = true;
     };
-  }, [preselect]);
+  }, [preselect, diningEnabled]);
 
   const selectedTable = useMemo(
     () => tables.find((table) => table.id === tableId) ?? null,
@@ -125,7 +129,7 @@ export function DiningPage() {
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
 
-    if (!canStart || submitting || !tableId) {
+    if (!canStart || submitting || !tableId || !diningEnabled) {
       setError('Choose a table to start dining.');
 
       return;
@@ -151,25 +155,6 @@ export function DiningPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (!diningEnabled) {
-    return (
-      <div className="page-container dining-page">
-        <div className="dining-content">
-          <PageHeader
-            title="Dining"
-            description="Table service is currently unavailable. You can still order takeaway or delivery."
-          />
-          <EmptyState
-            title="Dining is unavailable"
-            description="Table service is paused right now. Browse the menu for takeaway or delivery instead."
-            actionLabel="Browse menu"
-            actionHref="/menu"
-          />
-        </div>
-      </div>
-    );
   }
 
   if (loading) {
@@ -204,6 +189,25 @@ export function DiningPage() {
               Return to table
             </Link>
           </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (!diningEnabled) {
+    return (
+      <div className="page-container dining-page">
+        <div className="dining-content">
+          <PageHeader
+            title="Dining"
+            description="Table service is currently unavailable. You can still order takeaway or delivery."
+          />
+          <EmptyState
+            title="Dining is unavailable"
+            description="Table service is paused right now. Browse the menu for takeaway or delivery instead."
+            actionLabel="Browse menu"
+            actionHref="/menu"
+          />
         </div>
       </div>
     );

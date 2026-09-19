@@ -6,9 +6,11 @@ use App\Http\Controllers\Administrator\CafeScheduleController;
 use App\Http\Controllers\Administrator\CafeTableController;
 use App\Http\Controllers\Administrator\CampaignAnalyticsController;
 use App\Http\Controllers\Administrator\CampaignController;
+use App\Http\Controllers\Administrator\CmsPageController;
 use App\Http\Controllers\Administrator\DashboardController;
 use App\Http\Controllers\Administrator\DiningSessionController;
 use App\Http\Controllers\Administrator\FinancialReportController;
+use App\Http\Controllers\Administrator\HeroController;
 use App\Http\Controllers\Administrator\HomeSectionController;
 use App\Http\Controllers\Administrator\IngredientBrandController;
 use App\Http\Controllers\Administrator\IngredientCategoryController;
@@ -28,6 +30,7 @@ use App\Http\Controllers\Administrator\ProductFlavourController;
 use App\Http\Controllers\Administrator\ProductRatingController;
 use App\Http\Controllers\Administrator\ProductTagController;
 use App\Http\Controllers\Administrator\PromotionController;
+use App\Http\Controllers\Administrator\PublicCacheController;
 use App\Http\Controllers\Administrator\RecipeController;
 use App\Http\Controllers\Administrator\RecommendationAnalyticsController;
 use App\Http\Controllers\Administrator\ReferralController;
@@ -128,6 +131,7 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
     Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status.update');
     Route::post('orders/{order}/cash/receive', [OrderController::class, 'markCashReceived'])->name('orders.cash.receive');
+    Route::post('orders/{order}/payment/verify', [OrderController::class, 'confirmManualUpiPayment'])->name('orders.payment.verify');
     Route::post('orders/{order}/payment-proof/reject', [OrderController::class, 'rejectPaymentProof'])->name('orders.payment-proof.reject');
     Route::get('orders/{order}/payment-proof', [OrderController::class, 'paymentProof'])->name('orders.payment-proof.show');
     Route::get('orders/{order}/invoice/pdf', [OrderController::class, 'downloadInvoice'])->name('orders.invoice.pdf');
@@ -199,6 +203,21 @@ Route::middleware(['auth:admin', 'role:owner,manager'])->group(function (): void
 
     Route::get('website-settings', [WebsiteSettingController::class, 'edit'])->name('website-settings.edit');
     Route::put('website-settings', [WebsiteSettingController::class, 'update'])->name('website-settings.update');
+
+    Route::get('content/hero', [HeroController::class, 'edit'])->name('hero.edit');
+    Route::put('content/hero', [HeroController::class, 'update'])->name('hero.update');
+
+    Route::get('cache-management', [PublicCacheController::class, 'index'])->name('cache-management.index');
+    Route::post('cache-management/clear-server', [PublicCacheController::class, 'clearServer'])->name('cache-management.clear-server');
+    Route::post('cache-management/refresh-customer', [PublicCacheController::class, 'refreshCustomer'])->name('cache-management.refresh-customer');
+    Route::post('cache-management/clear-all', [PublicCacheController::class, 'clearAll'])->name('cache-management.clear-all');
+    Route::post('website-settings/cache/clear-server', [PublicCacheController::class, 'clearServer'])->name('website-settings.cache.clear-server');
+    Route::post('website-settings/cache/refresh-customer', [PublicCacheController::class, 'refreshCustomer'])->name('website-settings.cache.refresh-customer');
+    Route::post('website-settings/cache/clear-all', [PublicCacheController::class, 'clearAll'])->name('website-settings.cache.clear-all');
+
+    Route::get('content/pages', [CmsPageController::class, 'index'])->name('cms-pages.index');
+    Route::get('content/pages/{cms_page}/edit', [CmsPageController::class, 'edit'])->name('cms-pages.edit');
+    Route::put('content/pages/{cms_page}', [CmsPageController::class, 'update'])->name('cms-pages.update');
 
     Route::get('social-links', [SocialLinkController::class, 'index'])->name('social-links.index');
     Route::get('social-links/create', [SocialLinkController::class, 'create'])->name('social-links.create');

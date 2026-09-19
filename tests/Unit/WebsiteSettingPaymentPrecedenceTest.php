@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\Cms\CmsPageServiceInterface;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Services\WebsiteSetting\WebsiteSettingService;
 use Illuminate\Support\Collection;
@@ -39,7 +40,8 @@ class WebsiteSettingPaymentPrecedenceTest extends TestCase
         ]));
 
         $socialLinks = Mockery::mock(SocialLinkServiceInterface::class);
-        $service = new WebsiteSettingService($repository, $socialLinks);
+        $cmsPages = Mockery::mock(CmsPageServiceInterface::class);
+        $service = new WebsiteSettingService($repository, $socialLinks, $cmsPages);
         $payment = $service->paymentInstructions();
 
         $this->assertSame('Settings Name', $payment['display_name']);
@@ -60,7 +62,8 @@ class WebsiteSettingPaymentPrecedenceTest extends TestCase
         ]));
 
         $socialLinks = Mockery::mock(SocialLinkServiceInterface::class);
-        $service = new WebsiteSettingService($repository, $socialLinks);
+        $cmsPages = Mockery::mock(CmsPageServiceInterface::class);
+        $service = new WebsiteSettingService($repository, $socialLinks, $cmsPages);
 
         $this->assertSame('Settings disclaimer', $service->deliveryDisclaimer());
 
@@ -69,7 +72,7 @@ class WebsiteSettingPaymentPrecedenceTest extends TestCase
             WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => null,
         ]));
 
-        $serviceEmpty = new WebsiteSettingService($repositoryEmpty, $socialLinks);
+        $serviceEmpty = new WebsiteSettingService($repositoryEmpty, $socialLinks, $cmsPages);
 
         $this->assertSame('Config disclaimer', $serviceEmpty->deliveryDisclaimer());
     }

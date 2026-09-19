@@ -1315,15 +1315,17 @@ class TenderForm {
                     this.performAttachmentRemoval(attachmentId, row);
                 }
             });
-        } else {
-            // Fallback to native confirm if SweetAlert is not available
-            if (
-                confirm(
-                    "Are you sure you want to remove this document? This action cannot be undone."
-                )
-            ) {
-                this.performAttachmentRemoval(attachmentId, row);
-            }
+        } else if (window.InternalConfirm) {
+            window.InternalConfirm.open({
+                title: "Remove document?",
+                body: "Are you sure you want to remove this document? This action cannot be undone.",
+                confirmLabel: "Remove",
+                confirmClass: "btn-danger",
+            }).then((result) => {
+                if (result.confirmed) {
+                    this.performAttachmentRemoval(attachmentId, row);
+                }
+            });
         }
     }
 

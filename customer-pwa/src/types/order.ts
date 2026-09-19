@@ -146,6 +146,7 @@ export interface Order {
   cancelled_at: string | null;
   rejected_at: string | null;
   can_cancel?: boolean;
+  can_submit_payment_transaction_id?: boolean;
   items: OrderItem[];
   status_timeline: OrderStatusTimelineItem[];
   invoice_available: boolean;

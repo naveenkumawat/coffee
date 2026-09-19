@@ -65,7 +65,7 @@ class AddOnService implements AddOnServiceInterface
                 'sort_order' => (int) ($data['sort_order'] ?? 10),
             ]);
 
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $addOn->fresh();
         });
@@ -99,7 +99,7 @@ class AddOnService implements AddOnServiceInterface
 
             $addOn->fill($payload)->save();
 
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $addOn->fresh();
         });
@@ -113,7 +113,7 @@ class AddOnService implements AddOnServiceInterface
             $path = PublicMedia::store($image, PublicMedia::DIRECTORY_ADDONS);
             $addOn->forceFill(['image_path' => $path])->save();
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $addOn->fresh();
         }
@@ -121,7 +121,7 @@ class AddOnService implements AddOnServiceInterface
         if ($remove) {
             $addOn->forceFill(['image_path' => null])->save();
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
         }
 
         return $addOn->fresh();
@@ -130,7 +130,7 @@ class AddOnService implements AddOnServiceInterface
     public function toggleActive(AddOn $addOn): AddOn
     {
         $addOn->forceFill(['is_active' => ! $addOn->is_active])->save();
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $addOn->fresh();
     }
@@ -216,7 +216,7 @@ class AddOnService implements AddOnServiceInterface
                 ->each(fn (ProductAddOn $assignment) => $assignment->delete());
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     /**

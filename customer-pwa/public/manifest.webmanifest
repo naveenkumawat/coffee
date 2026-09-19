@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "The88Coffees",
-  "short_name": "88Coffees",
-  "description": "Order ahead from The88Coffees — takeaway and delivery.",
+  "name": "Sip The Soul",
+  "short_name": "Sip The Soul",
+  "description": "Order ahead — takeaway, delivery, and dine-in.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "lang": "en",
-  "background_color": "#f7f3ee",
+  "background_color": "#f6efe6",
   "theme_color": "#7c5a3b",
   "icons": [
     {

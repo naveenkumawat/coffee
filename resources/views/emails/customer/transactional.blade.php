@@ -1,7 +1,8 @@
 @php
     /** @var array $brand */
-    $businessName = $brand['business_name'] ?? 'The88Coffees';
+    $businessName = $brand['business_name'] ?? config('coffee.company.name', 'Sip The Soul');
     $slogan = $brand['slogan'] ?? null;
+    $logoUrl = $brand['logo_url'] ?? null;
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -18,6 +19,9 @@
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#fffaf5;border:1px solid #e4d4c4;border-radius:12px;overflow:hidden;">
                 <tr>
                     <td style="background-color:#3d2918;color:#f7efe6;padding:22px 24px;">
+                        @if (! empty($logoUrl))
+                            <img src="{{ $logoUrl }}" alt="{{ $businessName }}" width="160" style="display:block;max-width:160px;height:auto;margin:0 0 10px;border:0;">
+                        @endif
                         <div style="font-size:22px;font-weight:700;letter-spacing:0.02em;">{{ $businessName }}</div>
                         @if ($slogan)
                             <div style="margin-top:6px;font-size:13px;color:#d9c4ad;font-family:Arial,Helvetica,sans-serif;">{{ $slogan }}</div>

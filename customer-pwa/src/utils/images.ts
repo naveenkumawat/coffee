@@ -36,12 +36,25 @@ export function resolveCatalogMediaUrl(path: string | null | undefined, fallback
     return fallback;
   }
 
-  if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('blob:')) {
+  if (value.startsWith('data:') || value.startsWith('blob:')) {
     return value;
   }
 
   try {
     const backend = getBackendBaseUrl();
+    const backendUrl = new URL(backend.endsWith('/') ? backend : `${backend}/`);
+
+    if (/^https?:\/\//i.test(value)) {
+      const incoming = new URL(value);
+      const storageMatch = incoming.pathname.match(/\/storage\/.+$/);
+
+      if (storageMatch) {
+        return new URL(storageMatch[0].replace(/^\//, ''), backendUrl).toString();
+      }
+
+      return value;
+    }
+
     let relative = value.replace(/^\//, '');
 
     // Managed public-disk paths are served under /storage/...
@@ -54,7 +67,7 @@ export function resolveCatalogMediaUrl(path: string | null | undefined, fallback
       relative = `storage/${relative}`;
     }
 
-    return new URL(relative, backend.endsWith('/') ? backend : `${backend}/`).toString();
+    return new URL(relative, backendUrl).toString();
   } catch {
     return fallback;
   }

@@ -31,7 +31,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
             return $flavour->fresh(['categories', 'products']);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $flavour;
     }
@@ -48,7 +48,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
             return $productFlavour->fresh(['categories', 'products']);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $productFlavour;
     }
@@ -61,7 +61,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
             $path = PublicMedia::store($image, PublicMedia::DIRECTORY_FLAVOURS);
             $flavour = $this->flavours->update($flavour, ['image_path' => $path]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $flavour;
         }
@@ -69,7 +69,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
         if ($remove) {
             $flavour = $this->flavours->update($flavour, ['image_path' => null]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
         }
 
         return $flavour;
@@ -89,7 +89,7 @@ class ProductFlavourService implements ProductFlavourServiceInterface
             $this->flavours->delete($productFlavour);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     protected function uniqueSlug(string $name, ?int $ignoreId = null): string

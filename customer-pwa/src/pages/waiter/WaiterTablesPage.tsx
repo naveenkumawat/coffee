@@ -8,9 +8,11 @@ import {
   startWaiterSession,
 } from '../../api/waiterDining';
 import { BrandLogo } from '../../components/common/BrandLogo';
+import { confirmYes } from '../../components/common/ConfirmDialog';
 import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { SearchableSelect } from '../../components/common/SearchableSelect';
 import { useDiningOpsSync } from '../../notifications/useDiningOpsSync';
 import { useAuthStore } from '../../stores/authStore';
 import { useToastStore } from '../../stores/toastStore';
@@ -76,7 +78,6 @@ export function WaiterTablesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busyTableId, setBusyTableId] = useState<number | null>(null);
-  const [confirmTable, setConfirmTable] = useState<WaiterTable | null>(null);
 
   const loadTables = useCallback(async (): Promise<void> => {
     setErrorMessage(null);
@@ -113,7 +114,6 @@ export function WaiterTablesPage() {
 
   async function handleStartSession(table: WaiterTable): Promise<void> {
     setBusyTableId(table.id);
-    setConfirmTable(null);
 
     try {
       const response = await startWaiterSession({ cafe_table_id: table.id });
@@ -142,7 +142,17 @@ export function WaiterTablesPage() {
     }
 
     if (table.available || table.display_state === 'available') {
-      setConfirmTable(table);
+      void (async () => {
+        const confirmed = await confirmYes({
+          title: 'Start session?',
+          body: `Open a new dining session on ${table.label}.`,
+          confirmLabel: 'Start session',
+        });
+
+        if (confirmed) {
+          await handleStartSession(table);
+        }
+      })();
     }
   }
 
@@ -172,7 +182,7 @@ export function WaiterTablesPage() {
     <div className="page-container waiter-page">
       <header className="waiter-page-header">
         <div className="waiter-page-brand">
-          <BrandLogo linked={false} size="sm" showWordmark />
+          <BrandLogo linked={false} placement="compact" size="sm" />
           <div>
             <p className="eyebrow">Waiter</p>
             <h1>Tables</h1>
@@ -180,6 +190,26 @@ export function WaiterTablesPage() {
           </div>
         </div>
         <div className="waiter-header-actions">
+          <div className="waiter-table-finder">
+            <SearchableSelect
+              value=""
+              options={tables.map((table) => ({
+                value: String(table.id),
+                label: `${table.label} · ${table.display_state_label}`,
+              }))}
+              placeholder="Find a table"
+              searchPlaceholder="Search tables"
+              allowClear={false}
+              emptyLabel="No matching tables"
+              onChange={(value) => {
+                const table = tables.find((row) => String(row.id) === value);
+
+                if (table) {
+                  handleTableTap(table);
+                }
+              }}
+            />
+          </div>
           <button type="button" className="btn btn-text" onClick={() => void loadTables()}>
             Refresh
           </button>
@@ -249,42 +279,6 @@ export function WaiterTablesPage() {
           })}
         </div>
       )}
-
-      {confirmTable ? (
-        <div className="waiter-confirm-overlay" role="presentation">
-          <button
-            type="button"
-            className="waiter-confirm-backdrop"
-            aria-label="Cancel"
-            onClick={() => setConfirmTable(null)}
-          />
-          <div
-            className="waiter-confirm-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="start-session-title"
-          >
-            <h2 id="start-session-title">Start session?</h2>
-            <p>
-              Open a new dining session on <strong>{confirmTable.label}</strong>.
-            </p>
-            <div className="waiter-confirm-actions">
-              <button type="button" className="btn btn-secondary rounded-pill" onClick={() => setConfirmTable(null)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary rounded-pill"
-                disabled={busyTableId === confirmTable.id}
-                aria-busy={busyTableId === confirmTable.id}
-                onClick={() => void handleStartSession(confirmTable)}
-              >
-                {busyTableId === confirmTable.id ? 'Starting…' : 'Start session'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

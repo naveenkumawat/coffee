@@ -22,7 +22,7 @@ export function AuthCard({
     <section className="auth-card motion-enter">
       {showBrand ? (
         <div className="auth-brand">
-          <BrandLogo linked size="md" />
+          <BrandLogo linked placement="compact" size="md" />
         </div>
       ) : null}
 

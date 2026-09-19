@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\CustomerAuthController;
+use App\Http\Controllers\Api\V1\Bootstrap\AppBootstrapController;
 use App\Http\Controllers\Api\V1\CafeAvailability\CafeAvailabilityController;
 use App\Http\Controllers\Api\V1\CafeTable\CafeTableController;
 use App\Http\Controllers\Api\V1\Catalog\CatalogController;
@@ -63,6 +64,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('/variants', [CatalogController::class, 'variants'])->name('variants.index');
     });
 
+    Route::get('/app-bootstrap', [AppBootstrapController::class, 'show'])
+        ->middleware('throttle:60,1')
+        ->name('app-bootstrap.show');
     Route::get('/content', [WebsiteContentController::class, 'show'])->name('content.show');
     Route::get('/cafe-availability', [CafeAvailabilityController::class, 'show'])->name('cafe-availability.show');
     Route::get('/home', [HomeController::class, 'show'])->name('home.show');

@@ -1,4 +1,4 @@
-<p style="margin:0 0 6px;">{{ $brand['business_name'] ?? 'The88Coffees' }}</p>
+<p style="margin:0 0 6px;">{{ $brand['business_name'] ?? config('coffee.company.name', 'Sip The Soul') }}</p>
 @if (! empty($brand['address']))
     <p style="margin:0 0 6px;white-space:pre-line;">{{ $brand['address'] }}</p>
 @endif

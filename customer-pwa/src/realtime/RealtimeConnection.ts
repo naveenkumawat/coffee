@@ -67,7 +67,9 @@ class RealtimeConnectionService {
   private probeHandlers = new Set<(payload: RealtimeProbePayload) => void>();
   private notificationHandlers = new Set<(payload: Record<string, unknown>) => void>();
   private diningOpsHandlers = new Set<(payload: Record<string, unknown>) => void>();
+  private publicCacheHandlers = new Set<(version: string) => void>();
   private scopedChannelRefCounts = new Map<string, number>();
+  private publicChannelBound = false;
 
   getState(): RealtimeConnectionState {
     return this.state;
@@ -100,6 +102,30 @@ class RealtimeConnectionService {
     return () => {
       this.diningOpsHandlers.delete(handler);
     };
+  }
+
+  onPublicCacheInvalidated(handler: (version: string) => void): () => void {
+    this.publicCacheHandlers.add(handler);
+    this.bindPublicCacheChannel();
+
+    return () => {
+      this.publicCacheHandlers.delete(handler);
+    };
+  }
+
+  async connectPublic(): Promise<void> {
+    const env = readEnvConfig();
+
+    if (!env.enabled || !env.key) {
+      return;
+    }
+
+    if (!this.echo) {
+      window.Pusher = Pusher;
+      this.echo = this.createEcho(env);
+    }
+
+    this.bindPublicCacheChannel();
   }
 
   subscribeDiningSession(
@@ -187,24 +213,7 @@ class RealtimeConnectionService {
 
     window.Pusher = Pusher;
 
-    const echo = new Echo({
-      broadcaster: 'reverb',
-      key: env.key,
-      wsHost: env.host,
-      wsPort: env.port,
-      wssPort: env.port,
-      forceTLS: env.scheme === 'https',
-      enabledTransports: ['ws', 'wss'],
-      authEndpoint: broadcastingAuthUrl(),
-      auth: {
-        headers: {
-          Accept: 'application/json',
-          'X-XSRF-TOKEN': readCsrfToken() ?? '',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-      },
-      withCredentials: true,
-    });
+    const echo = this.createEcho(env);
 
     if (generation !== this.connectGeneration) {
       echo.disconnect();
@@ -234,6 +243,51 @@ class RealtimeConnectionService {
     if (options.joinPresence) {
       echo.join('ops');
     }
+
+    this.bindPublicCacheChannel();
+  }
+
+  private createEcho(env: {
+    key: string;
+    host: string;
+    port: number;
+    scheme: 'http' | 'https';
+  }): EchoInstance {
+    return new Echo({
+      broadcaster: 'reverb',
+      key: env.key,
+      wsHost: env.host,
+      wsPort: env.port,
+      wssPort: env.port,
+      forceTLS: env.scheme === 'https',
+      enabledTransports: ['ws', 'wss'],
+      authEndpoint: broadcastingAuthUrl(),
+      auth: {
+        headers: {
+          Accept: 'application/json',
+          'X-XSRF-TOKEN': readCsrfToken() ?? '',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      },
+      withCredentials: true,
+    });
+  }
+
+  private bindPublicCacheChannel(): void {
+    if (!this.echo || this.publicChannelBound) {
+      return;
+    }
+
+    this.echo.channel('public.cache').listen('.public.cache.invalidated', (payload: Record<string, unknown>) => {
+      const version = typeof payload.cache_version === 'string' ? payload.cache_version.trim() : '';
+
+      if (!version) {
+        return;
+      }
+
+      this.publicCacheHandlers.forEach((handler) => handler(version));
+    });
+    this.publicChannelBound = true;
   }
 
   private bindConnectionEvents(echo: EchoInstance, generation: number): void {
@@ -299,6 +353,7 @@ class RealtimeConnectionService {
     this.connectGeneration += 1;
     this.activeUserId = null;
     this.scopedChannelRefCounts.clear();
+    this.publicChannelBound = false;
 
     if (this.echo) {
       const connector = this.echo.connector as { pusher?: { connection: {

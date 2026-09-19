@@ -114,14 +114,14 @@
                                 <div class="text-muted fs-7 mb-1">Blocked at</div>
                                 <div class="fw-semibold text-gray-900">{{ $managedUser->ordering_blocked_at?->format('d M Y, h:i A') ?? '—' }}</div>
                             </div>
-                            <form method="POST" action="{{ route('administrator.users.unblock-ordering', $managedUser) }}">
+                            <form method="POST" action="{{ route('administrator.users.unblock-ordering', $managedUser) }}" data-confirm-title="Unblock ordering?" data-confirm-body="This customer will be able to place orders again." data-confirm-label="Unblock ordering" data-confirm-class="btn-success">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-light-success">
                                     Unblock Ordering
                                 </button>
                             </form>
                         @else
-                            <form method="POST" action="{{ route('administrator.users.block-ordering', $managedUser) }}" class="mt-2">
+                            <form method="POST" action="{{ route('administrator.users.block-ordering', $managedUser) }}" class="mt-2" data-confirm-title="Block ordering?" data-confirm-body="This customer will not be able to place new orders until unblocked." data-confirm-label="Block ordering" data-confirm-class="btn-danger">
                                 @csrf
                                 <label for="ordering_blocked_reason" class="form-label fs-7 text-muted">Internal reason (optional)</label>
                                 <textarea

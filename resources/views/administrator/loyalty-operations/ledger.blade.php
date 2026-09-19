@@ -62,7 +62,7 @@
                 </div>
                 <div class="col-xl-2 col-md-4">
                     <label for="reward_id" class="form-label">Reward</label>
-                    <select id="reward_id" name="reward_id" class="form-select">
+                    <select id="reward_id" name="reward_id" class="form-select" data-control="select2" data-placeholder="All rewards">
                         <option value="">All rewards</option>
                         @foreach ($rewardOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) ($filters['reward_id'] ?? '') === (string) $id)>{{ $name }}</option>

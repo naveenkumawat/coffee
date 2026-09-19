@@ -13,6 +13,7 @@ import {
   sortedTimeline,
   timelineTimestampForStatus,
 } from '../../utils/orders';
+import { resolvePaymentState } from '../../utils/paymentState';
 
 interface OrderStatusTimelineProps {
   order: Order;
@@ -21,7 +22,10 @@ interface OrderStatusTimelineProps {
 export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
   const currentIndex = progressStepIndex(order.status);
   const failed = isTerminalFailure(order.status);
-  const pendingPayment = isPendingPayment(order.status);
+  const paymentState = resolvePaymentState(order);
+  const awaitingReview = paymentState === 'upi_awaiting_review';
+  const unpaidUpi = paymentState === 'upi_pending' || paymentState === 'upi_rejected';
+  const pendingPayment = isPendingPayment(order.status) && unpaidUpi;
   const ready = isReadyForPickup(order.status);
   const delivery = isDeliveryOrder(order);
   const dineIn = isDineInOrder(order);
@@ -65,7 +69,9 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
           <span className="auth-badge">Tracking</span>
           <h2>Order progress</h2>
           <p>
-            {pendingPayment
+            {awaitingReview
+              ? "We've received your transaction ID. Preparation starts after the cafe verifies payment."
+              : pendingPayment
               ? 'Preparation starts after the cafe confirms your payment.'
               : ready
                 ? delivery
@@ -78,10 +84,24 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
         </div>
       </div>
 
+      {awaitingReview ? (
+        <div className="order-next-step is-payment">
+          <strong>Payment verification pending</strong>
+          <p>
+            We&apos;ve received your transaction ID. You can submit another one only if the café rejects this
+            payment.
+          </p>
+        </div>
+      ) : null}
+
       {pendingPayment ? (
         <div className="order-next-step is-payment">
-          <strong>Awaiting payment</strong>
-          <p>Complete UPI payment and upload your screenshot so the cafe can confirm and start preparing.</p>
+          <strong>{paymentState === 'upi_rejected' ? 'Transaction ID not verified' : 'Awaiting payment'}</strong>
+          <p>
+            {paymentState === 'upi_rejected'
+              ? 'The café could not verify the previous Transaction ID. Submit a new one to continue.'
+              : 'Pay via UPI and enter your Transaction ID / UTR so the cafe can confirm and start preparing.'}
+          </p>
         </div>
       ) : null}
 

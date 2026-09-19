@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Order } from '../../types/order';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import {
+  customerWorkflowStatusLabel,
   isActiveOrder,
   isDeliveryOrder,
   isDineInOrder,
@@ -11,6 +12,7 @@ import {
   primaryItemLabel,
   statusTone,
 } from '../../utils/orders';
+import { paymentStatePresentation } from '../../utils/paymentState';
 import { OrderStatusBadge } from './OrderStatusBadge';
 
 interface OrderListCardProps {
@@ -24,6 +26,10 @@ export function OrderListCard({ order }: OrderListCardProps) {
   const delivery = isDeliveryOrder(order);
   const dineIn = isDineInOrder(order);
 
+  const payment = paymentStatePresentation(order);
+  const awaitingReview = payment.state === 'upi_awaiting_review';
+  const paymentConfirmed = payment.state === 'upi_confirmed' || payment.state === 'cash_confirmed';
+
   return (
     <Link
       to={`/orders/${order.id}`}
@@ -31,7 +37,7 @@ export function OrderListCard({ order }: OrderListCardProps) {
         'order-list-card',
         `is-${tone}`,
         active ? 'is-active-order' : 'is-quiet-order',
-        isPendingPayment(order.status) ? 'needs-payment' : '',
+        isPendingPayment(order.status) && !awaitingReview && !paymentConfirmed ? 'needs-payment' : '',
         isReadyForPickup(order.status) ? 'is-ready' : '',
       ]
         .filter(Boolean)
@@ -39,7 +45,11 @@ export function OrderListCard({ order }: OrderListCardProps) {
     >
       <div className="order-list-card-top">
         <div className="order-list-card-copy">
-          <OrderStatusBadge status={order.status} label={order.status_label} />
+          <OrderStatusBadge status={order.status} label={customerWorkflowStatusLabel(order)} />
+          <OrderStatusBadge
+            status={paymentConfirmed ? 'payment_confirmed' : 'pending_payment'}
+            label={payment.badge}
+          />
           <h2>{order.order_number}</h2>
           <p className="order-list-date">
             {formatDateTime(order.placed_at)}
@@ -58,7 +68,9 @@ export function OrderListCard({ order }: OrderListCardProps) {
         </span>
       </div>
 
-      {isPendingPayment(order.status) ? (
+      {awaitingReview ? (
+        <p className="order-list-callout">Payment verification pending</p>
+      ) : isPendingPayment(order.status) && !paymentConfirmed ? (
         <p className="order-list-callout">Payment needed to start preparation</p>
       ) : null}
       {isReadyForPickup(order.status) ? (

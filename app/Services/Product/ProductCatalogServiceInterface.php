@@ -36,5 +36,5 @@ interface ProductCatalogServiceInterface
 
     public function publicCatalogUpdatedAt(): CarbonInterface;
 
-    public function flushPublicCache(): void;
+    public function flushPublicCache(bool $bumpPublicClientVersion = false): void;
 }

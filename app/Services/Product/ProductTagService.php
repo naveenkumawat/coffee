@@ -22,7 +22,7 @@ class ProductTagService implements ProductTagServiceInterface
             return $this->tags->create($this->prepareAttributes($data));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $tag;
     }
@@ -33,7 +33,7 @@ class ProductTagService implements ProductTagServiceInterface
             return $this->tags->update($tag, $this->prepareAttributes($data, (int) $tag->getKey()));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $tag;
     }
@@ -51,7 +51,7 @@ class ProductTagService implements ProductTagServiceInterface
             $this->tags->delete($tag);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     /**

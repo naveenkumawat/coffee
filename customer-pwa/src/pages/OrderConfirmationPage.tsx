@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { cancelOrder, fetchOrder } from '../api/orders';
 import { ApiError } from '../api/client';
@@ -21,9 +21,11 @@ import {
   isCashPayment,
   isDeliveryOrder,
   isDineInOrder,
+  customerWorkflowStatusLabel,
   isPendingPayment,
 } from '../utils/orders';
 import { paymentStatePresentation } from '../utils/paymentState';
+import { useLiveCanonicalSync } from '../notifications/useLiveCanonicalSync';
 
 interface ConfirmationLocationState {
   order?: Order;
@@ -56,11 +58,7 @@ function confirmationNextStep(order: Order): string {
   return paymentStatePresentation(order).body;
 }
 
-function paymentChipLabel(order: Order): string | null {
-  if (!isCashPayment(order)) {
-    return null;
-  }
-
+function paymentChipLabel(order: Order): string {
   return paymentStatePresentation(order).badge;
 }
 
@@ -99,41 +97,63 @@ export function OrderConfirmationPage() {
     }
   }, [locationState?.payment, orderId]);
 
-  useEffect(() => {
+  const loadOrder = useCallback(async (soft = false): Promise<void> => {
     if (!orderId) {
       return;
     }
 
-    if (order && (payment || isCashPayment(order))) {
-      return;
+    if (!soft && !order) {
+      setIsLoading(true);
     }
 
-    async function loadOrder(): Promise<void> {
-      if (!order) {
-        setIsLoading(true);
-      }
-
+    try {
+      const response = await fetchOrder(orderId);
+      setOrder(response.data);
       setErrorMessage(null);
 
-      try {
-        const response = await fetchOrder(orderId);
-        setOrder(response.data);
-
-        if (response.meta?.payment) {
-          setPayment(response.meta.payment);
-          writeCachedPayment(orderId, response.meta.payment);
-        }
-      } catch (error) {
-        if (!order) {
-          setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your order confirmation.');
-        }
-      } finally {
-        setIsLoading(false);
+      if (response.meta?.payment) {
+        setPayment(response.meta.payment);
+        writeCachedPayment(orderId, response.meta.payment);
       }
+    } catch (error) {
+      if (!soft && !order) {
+        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load your order confirmation.');
+      }
+    } finally {
+      setIsLoading(false);
     }
+  }, [order, orderId]);
 
-    void loadOrder();
-  }, [order, orderId, payment]);
+  useEffect(() => {
+    void loadOrder(Boolean(order));
+  }, [orderId]); // eslint-disable-line react-hooks/exhaustive-deps -- initial/server reconcile per order
+
+  useLiveCanonicalSync(
+    () => loadOrder(true),
+    (signal) => {
+      if (signal.subject?.type === 'Order' && String(signal.subject.id) === String(orderId)) {
+        return true;
+      }
+
+      return Boolean(signal.action_url && signal.action_url.includes(`/orders/${orderId}`));
+    },
+  );
+
+  useEffect(() => {
+    const reconcile = (): void => {
+      if (!document.hidden) {
+        void loadOrder(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', reconcile);
+    window.addEventListener('focus', reconcile);
+
+    return () => {
+      document.removeEventListener('visibilitychange', reconcile);
+      window.removeEventListener('focus', reconcile);
+    };
+  }, [loadOrder]);
 
   async function handleCancelOrder(): Promise<void> {
     if (!order || !order.can_cancel) {
@@ -165,25 +185,24 @@ export function OrderConfirmationPage() {
     }
   }
 
-  const statusLabel = useMemo(() => order?.status_label ?? 'Pending Payment', [order]);
+  const statusLabel = useMemo(() => (order ? customerWorkflowStatusLabel(order) : 'Placed'), [order]);
   const fulfilmentLabel = useMemo(() => fulfilmentChipLabel(order), [order]);
-  const cashLabel = useMemo(() => (order ? paymentChipLabel(order) : null), [order]);
+  const paymentLabel = useMemo(() => (order ? paymentChipLabel(order) : null), [order]);
+  const paymentPresentation = useMemo(() => (order ? paymentStatePresentation(order) : null), [order]);
   const needsPaymentUi = useMemo(() => {
-    if (!order) {
+    if (!order || !paymentPresentation) {
       return false;
     }
 
-    if (isCashPayment(order)) {
-      return true;
-    }
-
     return (
-      isPendingPayment(order.status) ||
-      order.payment_status === 'awaiting_review' ||
-      order.payment_status === 'rejected' ||
-      order.payment_status === 'pending'
+      paymentPresentation.state === 'cash_pending' ||
+      paymentPresentation.state === 'cash_confirmed' ||
+      paymentPresentation.state === 'upi_pending' ||
+      paymentPresentation.state === 'upi_awaiting_review' ||
+      paymentPresentation.state === 'upi_rejected' ||
+      paymentPresentation.state === 'upi_confirmed'
     );
-  }, [order]);
+  }, [order, paymentPresentation]);
 
   if (isLoading) {
     return (
@@ -215,8 +234,7 @@ export function OrderConfirmationPage() {
   }
 
   const contextLabel = fulfilmentContextLabel(order);
-  const paymentConfirmed =
-    order.payment_status === 'confirmed' || (!isPendingPayment(order.status) && order.payment_status !== 'rejected');
+  const paymentConfirmed = paymentPresentation?.state === 'upi_confirmed' || paymentPresentation?.state === 'cash_confirmed';
   const freeDrinkBenefit = (order.reward_redemptions ?? [])
     .filter((redemption) => redemption.reward_type === 'free_drink')
     .reduce((sum, redemption) => sum + discountAmount(redemption.benefit_amount), 0);
@@ -235,7 +253,7 @@ export function OrderConfirmationPage() {
         </div>
         <div className="confirmation-meta-row" aria-label="Order fulfilment and status">
           <span className="status-badge is-neutral fulfilment-badge">{fulfilmentLabel}</span>
-          {cashLabel ? <span className="status-badge is-neutral fulfilment-badge">{cashLabel}</span> : null}
+          {paymentLabel ? <span className="status-badge is-neutral fulfilment-badge">{paymentLabel}</span> : null}
           <OrderStatusBadge status={order.status} label={statusLabel} className="confirmation-status-badge" />
         </div>
         {contextLabel ? (

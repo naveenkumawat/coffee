@@ -46,7 +46,7 @@ export function RouteErrorPage() {
   if (recovering) {
     return (
       <div className="page-container route-error-page">
-        <BrandLogo size="lg" />
+        <BrandLogo placement="compact" size="md" />
         <section className="state-card" aria-live="polite">
           <span className="state-icon">
             <i className="bi bi-arrow-repeat" aria-hidden="true"></i>
@@ -72,7 +72,7 @@ export function RouteErrorPage() {
 
   return (
     <div className="page-container route-error-page">
-      <BrandLogo size="lg" />
+      <BrandLogo placement="compact" size="md" />
       <section className="state-card state-card-error" role="alert">
         <span className="state-icon">
           <i className={`bi ${offline ? 'bi-wifi-off' : 'bi-exclamation-octagon'}`} aria-hidden="true"></i>

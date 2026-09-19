@@ -433,7 +433,7 @@
 <template id="addon-recipe-line-template">
     <tr data-addon-recipe-line>
         <td>
-            <select name="add_ons[__ADDON__][lines][__LINE__][ingredient_id]" class="form-select">
+            <select name="add_ons[__ADDON__][lines][__LINE__][ingredient_id]" class="form-select" data-control="select2" data-placeholder="Select…">
                 <option value="">Select…</option>
                 @foreach ($ingredientOptions as $id => $label)
                     <option value="{{ $id }}">{{ $label }}</option>

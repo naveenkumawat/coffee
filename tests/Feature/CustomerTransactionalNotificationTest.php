@@ -40,7 +40,7 @@ class CustomerTransactionalNotificationTest extends TestCase
         parent::setUp();
 
         config()->set('coffee.pwa.url', 'https://app.example.test');
-        config()->set('coffee.company.name', 'The88Coffees');
+        config()->set('coffee.company.name', 'Sip The Soul');
     }
 
     public function test_welcome_notification_sends_once_on_registration(): void
@@ -60,7 +60,7 @@ class CustomerTransactionalNotificationTest extends TestCase
         $mail = (new CustomerWelcomeNotification)->toMail($customer);
         $html = $mail->render();
 
-        $this->assertStringContainsString('Welcome to The88Coffees', $mail->subject);
+        $this->assertStringContainsString('Welcome to Sip The Soul', $mail->subject);
         $this->assertStringContainsString('https://app.example.test/menu', $html);
         $this->assertStringNotContainsString('password', strtolower($html));
         $this->assertSame(1, CustomerNotificationLog::query()->where('type', CustomerNotificationType::Welcome)->count());

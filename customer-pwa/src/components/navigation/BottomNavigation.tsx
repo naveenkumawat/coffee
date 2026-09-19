@@ -5,6 +5,7 @@ import { useOrderingContext } from '../../hooks/useOrderingContext';
 import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
+import { selectDiningEnabled, useContentStore } from '../../stores/contentStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
 import { AppIcons, formatCountBadge } from '../../utils/icons';
@@ -42,6 +43,7 @@ function isDiningSessionSurfacePath(pathname: string, sessionId: string): boolea
 export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationProps) {
   const location = useLocation();
   const orderingContext = useOrderingContext();
+  const diningEnabled = useContentStore((state) => selectDiningEnabled(state.content));
   const retailCartCount = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
@@ -53,6 +55,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const realtimeLabel = realtimeStatusLabel(realtimeState);
   const diningSession =
     !waiterMode && hasActiveDiningSession(orderingContext) ? orderingContext.diningSession : null;
+  const showDiningNav = Boolean(diningSession) || diningEnabled;
   const cartCount = retailCartCount;
   const previousCount = useRef(cartCount);
   const [badgeBump, setBadgeBump] = useState(false);
@@ -112,22 +115,26 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
           icon: AppIcons.menu,
           isNavActive: (pathname) => pathname === '/menu' || pathname.startsWith('/menu/'),
         },
-        {
-          to: diningTo,
-          label: 'Dining',
-          icon: AppIcons.dining,
-          isNavActive: (pathname) => {
-            if (diningSession) {
-              return isDiningSessionSurfacePath(pathname, diningSession.diningSessionId);
-            }
+        ...(showDiningNav
+          ? [
+              {
+                to: diningTo,
+                label: 'Dining',
+                icon: AppIcons.dining,
+                isNavActive: (pathname) => {
+                  if (diningSession) {
+                    return isDiningSessionSurfacePath(pathname, diningSession.diningSessionId);
+                  }
 
-            if (pathname === '/dining') {
-              return true;
-            }
+                  if (pathname === '/dining') {
+                    return true;
+                  }
 
-            return pathname.startsWith('/dining/');
-          },
-        },
+                  return pathname.startsWith('/dining/');
+                },
+              } satisfies BottomNavItem,
+            ]
+          : []),
         {
           to: cartTo,
           label: 'Cart',

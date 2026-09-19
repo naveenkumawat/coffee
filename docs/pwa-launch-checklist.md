@@ -3,6 +3,7 @@
 Last updated: September 4, 2026 (L2 launch-data readiness)  
 Status after Phase C6 final QA + D1/D2/D3 prep + L2 audit: ready for production smoke test **only after** real café data clears `coffee:launch-readiness`; keep customer Blade until live verification.  
 Deployment runbook: `docs/production-deployment.md`.  
+Public/client cache: `docs/pwa-cache-strategy.md`.  
 Launch data checklist: `docs/launch-data-todo.md`.
 
 ## Administrator production content checklist
@@ -17,7 +18,7 @@ Legend: **READY** · **NEEDS REAL VALUE** · **DEMO-ONLY** · **OPTIONAL/DEFERRE
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Brand name / slogan | READY (baseline) / verify on prod | Website Settings targets The88Coffees + Sip. Relax. Enjoy. |
+| Brand name / slogan | READY (baseline) / verify on prod | Website Settings targets Sip The Soul + CAFFEINE TILL COFFIN. |
 | Business phone / WhatsApp / email / address / hours | NEEDS REAL VALUE | |
 | Social Links shells | READY | URLs NEEDS REAL VALUE |
 | Payment UPI / phone / QR / instructions | NEEDS REAL VALUE | Manual payment; no gateway |
@@ -35,8 +36,8 @@ Legend: **READY** · **NEEDS REAL VALUE** · **DEMO-ONLY** · **OPTIONAL/DEFERRE
 | Catalog readiness command | READY | `php artisan coffee:catalog-readiness` |
 
 ### Brand & business
-- [x] Brand / café name (`business_name`) — **The88Coffees** — CONFIGURED (local baseline)
-- [x] Home slogan (`hero_subtitle`) — **Sip. Relax. Enjoy.** — CONFIGURED (local baseline)
+- [x] Brand / café name (`business_name`) — **Sip The Soul** — CONFIGURED (local baseline)
+- [x] Home slogan (`hero_subtitle`) — **CAFFEINE TILL COFFIN.** — CONFIGURED (local baseline)
 - [ ] Social links (Facebook / WhatsApp / Instagram) — shells present; URLs NEEDS REAL VALUE
 - [ ] Phone — NEEDS REAL VALUE
 - [ ] WhatsApp — NEEDS REAL VALUE

@@ -42,7 +42,7 @@
                 </div>
                 <div class="col-xl-2 col-md-3">
                     <label for="ingredient_category_id" class="form-label">Category</label>
-                    <select id="ingredient_category_id" name="ingredient_category_id" class="form-select">
+                    <select id="ingredient_category_id" name="ingredient_category_id" class="form-select" data-control="select2" data-placeholder="All categories">
                         <option value="">All categories</option>
                         @foreach ($categoryOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('ingredient_category_id') === (string) $id)>{{ $name }}</option>
@@ -51,7 +51,7 @@
                 </div>
                 <div class="col-xl-2 col-md-3">
                     <label for="ingredient_brand_id" class="form-label">Brand</label>
-                    <select id="ingredient_brand_id" name="ingredient_brand_id" class="form-select">
+                    <select id="ingredient_brand_id" name="ingredient_brand_id" class="form-select" data-control="select2" data-placeholder="All brands">
                         <option value="">All brands</option>
                         @foreach ($brandOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('ingredient_brand_id') === (string) $id)>{{ $name }}</option>
@@ -69,7 +69,7 @@
                 </div>
                 <div class="col-xl-3 col-md-3">
                     <label for="created_by" class="form-label">Performed By</label>
-                    <select id="created_by" name="created_by" class="form-select">
+                    <select id="created_by" name="created_by" class="form-select" data-control="select2" data-placeholder="All users">
                         <option value="">All users</option>
                         @foreach ($userOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('created_by') === (string) $id)>{{ $name }}</option>

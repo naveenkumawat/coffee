@@ -49,7 +49,11 @@
 
         <div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
             <a href="{{ $dashboardRoute }}" class="d-lg-none text-decoration-none">
-                <span class="fw-bold text-dark">{{ config('app.name') }}</span>
+                @if (! empty($cafeBrand['logo_url']))
+                    <img src="{{ $cafeBrand['logo_url'] }}" alt="{{ $cafeBrand['name'] ?? config('app.name') }}" style="max-height:1.75rem;max-width:8rem;object-fit:contain;">
+                @else
+                    <span class="fw-bold text-dark">{{ $cafeBrand['name'] ?? config('app.name') }}</span>
+                @endif
             </a>
         </div>
 

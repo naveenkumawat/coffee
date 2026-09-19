@@ -19,6 +19,7 @@ interface WebsiteSettingServiceInterface
      *
      * @return array{
      *     hero: array{title: ?string, subtitle: ?string, image_path: ?string},
+     *     branding: array{name: ?string, tagline: ?string, logo_url: ?string, display_mode: string, favicon_url: ?string},
      *     business: array{
      *         name: ?string,
      *         about_short: ?string,
@@ -45,6 +46,7 @@ interface WebsiteSettingServiceInterface
      *         terms: ?string,
      *         privacy: ?string
      *     },
+     *     faq_items: list<array{id: int, question: string, answer: string}>,
      *     social_links: list<array{label: string, icon_key: string, url: string, sort_order: int}>
      * }
      */

@@ -9,10 +9,12 @@ export interface ConfirmRequest {
   body: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  submittingLabel?: string;
   tone?: ConfirmTone;
   requireReason?: boolean;
   reasonLabel?: string;
   reasonPlaceholder?: string;
+  execute?: (reason: string | null) => Promise<void>;
 }
 
 export type ConfirmResult =
@@ -107,7 +109,7 @@ export function ConfirmDialogHost() {
     resolve(result);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     if (!pending || busy) {
@@ -118,11 +120,29 @@ export function ConfirmDialogHost() {
       return;
     }
 
+    const trimmedReason = pending.requireReason ? reason.trim() : null;
+    const execute = pending.execute;
+
+    if (!execute) {
+      finish({
+        confirmed: true,
+        reason: trimmedReason,
+      });
+
+      return;
+    }
+
     setBusy(true);
-    finish({
-      confirmed: true,
-      reason: pending.requireReason ? reason.trim() : null,
-    });
+
+    try {
+      await execute(trimmedReason);
+      const { resolve } = pending;
+      setPending(null);
+      setBusy(false);
+      resolve({ confirmed: true, reason: trimmedReason });
+    } catch {
+      setBusy(false);
+    }
   }
 
   if (!pending) {
@@ -149,6 +169,7 @@ export function ConfirmDialogHost() {
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
+        aria-busy={busy || undefined}
         onClick={(event) => event.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
@@ -188,7 +209,7 @@ export function ConfirmDialogHost() {
               className={`btn ${confirmClass} rounded-pill`}
               disabled={busy || (pending.requireReason && reason.trim() === '')}
             >
-              {pending.confirmLabel ?? 'Confirm'}
+              {busy ? (pending.submittingLabel ?? 'Working…') : (pending.confirmLabel ?? 'Confirm')}
             </button>
           </div>
         </form>

@@ -4,6 +4,7 @@ namespace App\Services\Menu;
 
 use App\Repositories\Menu\MenuCategoryRepositoryInterface;
 use App\Repositories\Menu\MenuItemRepositoryInterface;
+use App\Services\PublicCache\PublicCacheVersionServiceInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -40,5 +41,6 @@ class MenuCatalogService implements MenuCatalogServiceInterface
     {
         Cache::forget(self::PUBLIC_MENU_CACHE_KEY);
         Cache::forget(self::FEATURED_MENU_CACHE_KEY);
+        app(PublicCacheVersionServiceInterface::class)->bump('menu');
     }
 }

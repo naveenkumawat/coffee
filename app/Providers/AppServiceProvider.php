@@ -17,6 +17,7 @@ use App\Models\Recipe;
 use App\Observers\PublicCatalogCacheObserver;
 use App\Services\Cart\CartServiceInterface;
 use App\Services\Product\ProductCatalogServiceInterface;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\DatabaseRefreshed;
 use Illuminate\Http\Request;
@@ -59,6 +60,24 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with('customerCartCount', $customerCartCount);
+        });
+
+        View::composer([
+            'internal.layouts.auth',
+            'internal.layouts.default',
+            'internal.includes.partials.header',
+            'internal.includes.partials.sidebar',
+            'internal.includes.partials.footer',
+        ], function ($view): void {
+            $content = app(WebsiteSettingServiceInterface::class)->customerContent();
+            $branding = $content['branding'] ?? [];
+
+            $view->with('cafeBrand', [
+                'name' => (string) ($branding['name'] ?? config('app.name')),
+                'tagline' => $branding['tagline'] ?? null,
+                'logo_url' => $branding['logo_url'] ?? null,
+                'favicon_url' => null,
+            ]);
         });
 
         View::composer([

@@ -15,6 +15,7 @@ import {
   updateDiningDraft,
 } from '../api/dining';
 import { confirmYes } from '../components/common/ConfirmDialog';
+import { REQUEST_BILL_CONFIRM } from '../utils/diningConfirmCopy';
 import { CompactDiningRoundBar } from '../components/common/CompactActionBars';
 import { QuantityStepper } from '../components/common/QuantityStepper';
 import { useDiningOpsSync } from '../notifications/useDiningOpsSync';
@@ -296,9 +297,7 @@ export function DiningSessionPage() {
     }
 
     const confirmed = await confirmYes({
-      title: 'Request the bill?',
-      body: "Once the bill is requested, you won't be able to add more orders to this dining session.",
-      confirmLabel: 'Request bill',
+      ...REQUEST_BILL_CONFIRM,
     });
 
     if (!confirmed) {

@@ -163,7 +163,7 @@ class HomeSectionService implements HomeSectionServiceInterface
 
     protected function flushCaches(): void
     {
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
         $this->merchandising->flushConfigCache();
     }
 

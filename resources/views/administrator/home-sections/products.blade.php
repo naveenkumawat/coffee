@@ -26,7 +26,7 @@
                 @csrf
                 <div class="col-xl-8 col-md-8">
                     <label for="product_id" class="form-label">Add product</label>
-                    <select id="product_id" name="product_id" class="form-select @error('product_id') is-invalid @enderror" required>
+                    <select id="product_id" name="product_id" class="form-select @error('product_id') is-invalid @enderror" required data-control="select2" data-placeholder="Select an active product">
                         <option value="">Select an active product</option>
                         @foreach ($productOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) old('product_id') === (string) $id)>{{ $name }}</option>

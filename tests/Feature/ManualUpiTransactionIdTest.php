@@ -170,6 +170,138 @@ class ManualUpiTransactionIdTest extends TestCase
         Storage::disk('local')->put($order->payment_proof_path, 'legacy-bytes');
 
         Sanctum::actingAs($customer);
-        $this->get(route('api.v1.orders.payment-proof.show', $order))->assertOk();
+        $this->getJson(route('api.v1.orders.payment-proof.show', $order))->assertOk();
+    }
+
+    public function test_awaiting_verification_locks_utr_until_staff_rejects(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $admin = User::factory()->manager()->create();
+        $order = Order::factory()->takeaway()->create([
+            'customer_id' => $customer->id,
+            'status' => OrderStatus::PendingPayment,
+            'payment_status' => PaymentStatus::Pending,
+            'payment_method' => PaymentMethod::Manual,
+            'payment_expires_at' => now()->addHour(),
+        ]);
+
+        Sanctum::actingAs($customer);
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'ABC123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.payment_status', 'awaiting_review')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', false);
+
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'ABC123456789',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transaction_id']);
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('administrator.orders.payment-proof.reject', $order), [
+                'notes' => 'Not found',
+            ])
+            ->assertRedirect();
+
+        $order->refresh();
+        $this->assertSame(PaymentStatus::Rejected, $order->payment_status);
+        $this->assertNull($order->payment_confirmed_at);
+
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($customer);
+        $this->getJson(route('api.v1.orders.show', $order))
+            ->assertOk()
+            ->assertJsonPath('data.payment_status', 'rejected')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', true)
+            ->assertJsonPath('data.status', 'pending_payment');
+
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'XYZ987654',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.payment_transaction_id', 'XYZ987654')
+            ->assertJsonPath('data.payment_status', 'awaiting_review');
+    }
+
+    public function test_staff_verify_marks_paid_and_accept_preserves_payment(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $operator = User::factory()->operator()->create();
+        $order = Order::factory()->takeaway()->create([
+            'customer_id' => $customer->id,
+            'status' => OrderStatus::PendingPayment,
+            'payment_status' => PaymentStatus::Pending,
+            'payment_method' => PaymentMethod::Manual,
+            'total_amount' => '18.00',
+            'payment_expires_at' => now()->addHour(),
+        ]);
+
+        Sanctum::actingAs($customer);
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'ABC123456',
+        ])->assertOk();
+
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($operator, 'admin')
+            ->post(route('operator.orders.payment.verify', $order))
+            ->assertRedirect(route('operator.orders.show', $order));
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::PaymentConfirmed, $order->status);
+        $this->assertSame(PaymentStatus::Confirmed, $order->payment_status);
+        $this->assertNotNull($order->payment_confirmed_at);
+        $this->assertSame($operator->id, $order->payment_received_by_id);
+        $this->assertFalse($order->canSubmitManualPaymentEvidence());
+
+        $this->actingAs($operator, 'admin')
+            ->post(route('operator.orders.payment.verify', $order))
+            ->assertRedirect(route('operator.orders.show', $order));
+
+        $confirmedAt = $order->fresh()->payment_confirmed_at;
+
+        $this->actingAs($operator, 'admin')
+            ->post(route('operator.orders.payment.verify', $order))
+            ->assertRedirect();
+
+        $this->assertEquals(
+            $confirmedAt?->toIso8601String(),
+            $order->fresh()->payment_confirmed_at?->toIso8601String(),
+        );
+
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($customer);
+        $this->getJson(route('api.v1.orders.show', $order))
+            ->assertOk()
+            ->assertJsonPath('data.payment_status', 'confirmed')
+            ->assertJsonPath('data.status', 'payment_confirmed')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', false);
+
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'NEWUTR0001',
+        ])->assertUnprocessable();
+
+        $this->app['auth']->forgetGuards();
+        $this->actingAs($operator, 'admin')
+            ->patch(route('operator.orders.status.update', $order), [
+                'status' => OrderStatus::Accepted->value,
+            ])
+            ->assertRedirect();
+
+        $order->refresh();
+        $this->assertSame(OrderStatus::Accepted, $order->status);
+        $this->assertSame(PaymentStatus::Confirmed, $order->payment_status);
+        $this->assertNotNull($order->payment_confirmed_at);
+
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($customer);
+        $this->getJson(route('api.v1.orders.show', $order))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'accepted')
+            ->assertJsonPath('data.status_label', 'Accepted')
+            ->assertJsonPath('data.payment_status', 'confirmed')
+            ->assertJsonPath('data.payment_status_label', 'Confirmed')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', false);
     }
 }

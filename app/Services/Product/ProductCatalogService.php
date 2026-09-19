@@ -5,6 +5,7 @@ namespace App\Services\Product;
 use App\Http\Resources\Api\V1\ProductResource;
 use App\Models\Product;
 use App\Repositories\Product\ProductRepositoryInterface;
+use App\Services\PublicCache\PublicCacheVersionServiceInterface;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -106,13 +107,17 @@ class ProductCatalogService implements ProductCatalogServiceInterface
         return now()->startOfMinute();
     }
 
-    public function flushPublicCache(): void
+    public function flushPublicCache(bool $bumpPublicClientVersion = false): void
     {
         Cache::forget(self::PUBLIC_PRODUCT_CACHE_KEY);
         Cache::forget(self::FEATURED_PRODUCT_CACHE_KEY);
         Cache::forget(self::PUBLIC_PRODUCTS_PAYLOAD_CACHE_KEY);
         Cache::forever(self::PUBLIC_CATALOG_VERSION_KEY, (string) Str::uuid());
         Cache::forever(self::PUBLIC_CATALOG_UPDATED_AT_KEY, now()->toIso8601String());
+
+        if ($bumpPublicClientVersion) {
+            app(PublicCacheVersionServiceInterface::class)->bump('catalog');
+        }
     }
 
     /**

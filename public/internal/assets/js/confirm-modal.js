@@ -31,6 +31,11 @@
                 return;
             }
 
+            var submit = qs('internalConfirmSubmit');
+            if (submit.disabled) {
+                return;
+            }
+
             var reason = '';
             if (pendingOptions.requireReason) {
                 var reasonInput = qs('internalConfirmReason');
@@ -46,6 +51,11 @@
                 reasonInput.classList.remove('is-invalid');
                 error.classList.add('d-none');
             }
+
+            submit.disabled = true;
+            qs('internalConfirmCancel').disabled = true;
+            submit.textContent = pendingOptions.submittingLabel || 'Working…';
+            modalEl.setAttribute('aria-busy', 'true');
 
             var resolve = pendingResolve;
             pendingResolve = null;
@@ -64,6 +74,7 @@
 
             qs('internalConfirmSubmit').disabled = false;
             qs('internalConfirmCancel').disabled = false;
+            modalEl.removeAttribute('aria-busy');
         });
 
         return true;
@@ -135,6 +146,7 @@
                     title: title || 'Confirm',
                     body: body || legacy || 'Continue with this action?',
                     confirmLabel: form.getAttribute('data-confirm-label') || 'Confirm',
+                    cancelLabel: form.getAttribute('data-confirm-cancel') || 'Cancel',
                     confirmClass: form.getAttribute('data-confirm-class') || 'btn-primary',
                     requireReason: form.getAttribute('data-confirm-require-reason') === '1',
                     reasonLabel: form.getAttribute('data-confirm-reason-label') || 'Reason',

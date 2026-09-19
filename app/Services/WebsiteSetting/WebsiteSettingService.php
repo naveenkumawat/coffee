@@ -2,9 +2,12 @@
 
 namespace App\Services\WebsiteSetting;
 
+use App\Enums\BrandDisplayMode;
 use App\Enums\WebsiteSettingKey;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
 use App\Services\CafeAvailability\CafeAvailabilityServiceInterface;
+use App\Services\Cms\CmsPageServiceInterface;
+use App\Services\PublicCache\PublicCacheVersionServiceInterface;
 use App\Services\Social\SocialLinkServiceInterface;
 use App\Support\PublicMedia;
 
@@ -13,6 +16,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
     public function __construct(
         protected WebsiteSettingRepositoryInterface $settings,
         protected SocialLinkServiceInterface $socialLinks,
+        protected CmsPageServiceInterface $cmsPages,
     ) {}
 
     public function valuesForAdmin(): array
@@ -48,6 +52,10 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         ) {
             app(CafeAvailabilityServiceInterface::class)->flushAvailabilityCache();
         }
+
+        if ($this->touchesPublicCustomerContent($values)) {
+            app(PublicCacheVersionServiceInterface::class)->invalidate('website_settings');
+        }
     }
 
     public function customerContent(): array
@@ -57,22 +65,36 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         $businessWhatsapp = $this->filledOrNull($values[WebsiteSettingKey::BusinessWhatsappNumber->value] ?? null)
             ?? $payment['whatsapp_number'];
 
+        $businessName = $this->filledOrNull($values[WebsiteSettingKey::BusinessName->value] ?? null)
+            ?? $this->filledOrNull((string) config('coffee.company.name'));
+        $tagline = $this->filledOrNull($values[WebsiteSettingKey::HeroSubtitle->value] ?? null);
+        $logoUrl = PublicMedia::url($this->filledOrNull($values[WebsiteSettingKey::BrandLogoPath->value] ?? null));
+        $displayMode = BrandDisplayMode::fromStored($values[WebsiteSettingKey::BrandDisplayMode->value] ?? null);
+        $cmsBodies = $this->cmsPages->publishedPageBodies();
+        $faqItems = $this->cmsPages->publishedFaqItems();
+
         return [
             'hero' => [
                 'title' => $this->filledOrNull($values[WebsiteSettingKey::HeroTitle->value] ?? null),
-                'subtitle' => $this->filledOrNull($values[WebsiteSettingKey::HeroSubtitle->value] ?? null),
+                'subtitle' => $tagline,
                 'image_path' => PublicMedia::url($this->filledOrNull($values[WebsiteSettingKey::HeroImagePath->value] ?? null)),
             ],
+            'branding' => [
+                'name' => $businessName,
+                'tagline' => $tagline,
+                'logo_url' => $logoUrl,
+                'display_mode' => $displayMode->value,
+                'favicon_url' => null,
+            ],
             'business' => [
-                'name' => $this->filledOrNull($values[WebsiteSettingKey::BusinessName->value] ?? null)
-                    ?? $this->filledOrNull((string) config('coffee.company.name')),
+                'name' => $businessName,
                 'about_short' => $this->filledOrNull($values[WebsiteSettingKey::BusinessAboutShort->value] ?? null),
                 'phone' => $this->filledOrNull($values[WebsiteSettingKey::BusinessPhone->value] ?? null),
                 'whatsapp_number' => $businessWhatsapp,
                 'email' => $this->filledOrNull($values[WebsiteSettingKey::BusinessEmail->value] ?? null)
                     ?? $this->filledOrNull((string) config('coffee.company.support_email')),
                 'address' => $this->filledOrNull($values[WebsiteSettingKey::BusinessAddress->value] ?? null),
-                'opening_hours' => $this->filledOrNull($values[WebsiteSettingKey::BusinessOpeningHours->value] ?? null),
+                'opening_hours' => app(CafeAvailabilityServiceInterface::class)->publicStatus()->displayHoursText(),
             ],
             'payment' => $payment,
             'fulfilment' => [
@@ -83,13 +105,9 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
             'behaviour' => [
                 'tracking_enabled' => (bool) config('coffee.behaviour.enabled', true),
             ],
-            'pages' => [
-                'about' => $this->filledOrNull($values[WebsiteSettingKey::PagesAbout->value] ?? null),
-                'contact' => $this->filledOrNull($values[WebsiteSettingKey::PagesContact->value] ?? null),
-                'faq' => $this->filledOrNull($values[WebsiteSettingKey::PagesFaq->value] ?? null),
-                'terms' => $this->filledOrNull($values[WebsiteSettingKey::PagesTerms->value] ?? null),
-                'privacy' => $this->filledOrNull($values[WebsiteSettingKey::PagesPrivacy->value] ?? null),
-            ],
+            'pages' => $cmsBodies,
+            'page_meta' => $this->cmsPages->publishedPageMeta(),
+            'faq_items' => $faqItems,
             'social_links' => $this->socialLinks->customerFacingLinks($businessWhatsapp),
             'availability' => app(CafeAvailabilityServiceInterface::class)->publicStatus()->toPublicArray(),
         ];
@@ -322,5 +340,46 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
         }
 
         return max($min, min($max, (int) $raw));
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     */
+    protected function touchesPublicCustomerContent(array $values): bool
+    {
+        $publicKeys = [
+            WebsiteSettingKey::BusinessName->value,
+            WebsiteSettingKey::HeroSubtitle->value,
+            WebsiteSettingKey::BrandLogoPath->value,
+            WebsiteSettingKey::BrandDisplayMode->value,
+            WebsiteSettingKey::HeroTitle->value,
+            WebsiteSettingKey::HeroImagePath->value,
+            WebsiteSettingKey::BusinessAboutShort->value,
+            WebsiteSettingKey::BusinessPhone->value,
+            WebsiteSettingKey::BusinessWhatsappNumber->value,
+            WebsiteSettingKey::BusinessEmail->value,
+            WebsiteSettingKey::BusinessAddress->value,
+            WebsiteSettingKey::BusinessOpeningHours->value,
+            WebsiteSettingKey::BusinessTimezone->value,
+            WebsiteSettingKey::PaymentDisplayName->value,
+            WebsiteSettingKey::PaymentInstructions->value,
+            WebsiteSettingKey::PaymentUpiId->value,
+            WebsiteSettingKey::PaymentPhone->value,
+            WebsiteSettingKey::PaymentQrImagePath->value,
+            WebsiteSettingKey::PaymentWhatsappNumber->value,
+            WebsiteSettingKey::PaymentCashEnabled->value,
+            WebsiteSettingKey::PaymentManualUpiEnabled->value,
+            WebsiteSettingKey::PaymentRazorpayEnabled->value,
+            WebsiteSettingKey::PaymentPayuEnabled->value,
+            WebsiteSettingKey::PaymentPaytmEnabled->value,
+            WebsiteSettingKey::PaymentPhonepeEnabled->value,
+            WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value,
+            WebsiteSettingKey::FulfilmentDineInEnabled->value,
+            WebsiteSettingKey::OrderingManualClosed->value,
+            WebsiteSettingKey::OrderingManualClosedUntil->value,
+            WebsiteSettingKey::OrderingManualClosedMessage->value,
+        ];
+
+        return collect($publicKeys)->contains(fn (string $key): bool => array_key_exists($key, $values));
     }
 }

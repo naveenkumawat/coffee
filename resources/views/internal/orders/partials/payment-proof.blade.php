@@ -7,7 +7,7 @@
     $isManualUpi = $order->payment_method === PaymentMethod::Manual;
     $proofShowRoute = $paymentProofShowRoute ?? 'administrator.orders.payment-proof.show';
     $rejectRoute = $paymentProofRejectRoute ?? 'administrator.orders.payment-proof.reject';
-    $verifyRoute = $paymentVerifyRoute ?? 'administrator.orders.status.update';
+    $verifyRoute = $paymentVerifyRoute ?? 'administrator.orders.payment.verify';
     $proofUrl = (! $isCash && $order->hasPaymentProof())
         ? route($proofShowRoute, $order)
         : null;
@@ -75,7 +75,7 @@
 
             @if ($isCash)
                 @if ($order->canMarkCashReceived() && filled($cashReceiveUrl))
-                    <form method="POST" action="{{ $cashReceiveUrl }}">
+                    <form method="POST" action="{{ $cashReceiveUrl }}" data-confirm-title="Mark cash received?" data-confirm-body="Confirm cash has been collected for this order." data-confirm-label="Mark cash received" data-confirm-class="btn-success">
                         @csrf
                         <button type="submit" class="btn btn-sm btn-success">Mark Cash Received</button>
                     </form>
@@ -136,9 +136,6 @@
                             data-confirm-class="btn-success"
                         >
                             @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="status" value="{{ OrderStatus::PaymentConfirmed->value }}" />
-                            <input type="hidden" name="notes" value="Manual UPI Transaction ID verified." />
                             <button type="submit" class="btn btn-sm btn-success">Verify Payment</button>
                         </form>
                         <form

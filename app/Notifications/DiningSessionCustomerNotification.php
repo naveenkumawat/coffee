@@ -6,6 +6,7 @@ use App\Enums\CustomerNotificationType;
 use App\Models\DiningSession;
 use App\Notifications\Concerns\BuildsCustomerMail;
 use App\Support\CustomerAppUrl;
+use App\Support\CustomerEmailBrand;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -64,13 +65,15 @@ class DiningSessionCustomerNotification extends Notification implements ShouldQu
             ],
         };
 
+        $brand = CustomerEmailBrand::snapshot();
+
         return $this->customerMail(
             subject: $subject,
             greeting: $this->greetingFor(is_string($name) ? $name : null),
             introLines: $intro,
             actionText: $action,
             actionUrl: $url,
-            outroLines: ['See you at The88Coffees.'],
+            outroLines: ['See you at '.$brand['business_name'].'.'],
             extra: [
                 'statusLabel' => $this->type->label(),
                 'statusTone' => 'success',

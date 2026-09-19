@@ -81,6 +81,75 @@ class DiningSessionTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_customer_cannot_start_session_when_dining_disabled(): void
+    {
+        WebsiteSetting::query()->updateOrCreate(
+            ['key' => WebsiteSettingKey::FulfilmentDineInEnabled->value],
+            ['value' => '0'],
+        );
+
+        $customer = User::factory()->customer()->create();
+        $table = CafeTable::factory()->create(['code' => 'DX', 'is_active' => true]);
+
+        Sanctum::actingAs($customer);
+        $this->postJson(route('api.v1.dining.sessions.store'), [
+            'cafe_table_id' => $table->id,
+            'guest_count' => 2,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['dining']);
+
+        $this->assertSame(0, DiningSession::query()->count());
+        $this->getJson(route('api.v1.content.show'))
+            ->assertOk()
+            ->assertJsonPath('data.fulfilment.dining_enabled', false);
+    }
+
+    public function test_existing_session_can_finish_after_dining_disabled(): void
+    {
+        $this->enableDining();
+
+        $customer = User::factory()->customer()->create();
+        $table = CafeTable::factory()->create(['code' => 'DY', 'is_active' => true]);
+        $variant = $this->makePurchasableVariant('6.00');
+
+        Sanctum::actingAs($customer);
+        $start = $this->postJson(route('api.v1.dining.sessions.store'), [
+            'cafe_table_id' => $table->id,
+            'guest_count' => 2,
+        ])->assertCreated();
+
+        $sessionId = (int) $start->json('data.id');
+
+        $this->postJson(route('api.v1.dining.sessions.drafts.store', $sessionId), [
+            'product_variant_id' => $variant->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        $this->postJson(route('api.v1.dining.sessions.rounds.store', $sessionId))
+            ->assertCreated();
+
+        WebsiteSetting::query()->updateOrCreate(
+            ['key' => WebsiteSettingKey::FulfilmentDineInEnabled->value],
+            ['value' => '0'],
+        );
+
+        $this->postJson(route('api.v1.dining.sessions.request-bill', $sessionId))
+            ->assertOk()
+            ->assertJsonPath('data.status', DiningSessionStatus::AwaitingPayment->value);
+
+        $this->getJson(route('api.v1.dining.sessions.active'))
+            ->assertOk()
+            ->assertJsonPath('data.id', $sessionId);
+
+        $otherTable = CafeTable::factory()->create(['code' => 'DZ', 'is_active' => true]);
+        $this->postJson(route('api.v1.dining.sessions.store'), [
+            'cafe_table_id' => $otherTable->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['dining']);
+    }
+
     public function test_table_cannot_host_two_active_sessions_and_customer_only_one(): void
     {
         $this->enableDining();

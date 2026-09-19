@@ -95,7 +95,7 @@
                         </div>
                     </div>
                     <div class="card-body pt-5">
-                        <form method="POST" action="{{ route('administrator.inventory.refill-requests.approve', $request) }}" class="mb-6">
+                        <form method="POST" action="{{ route('administrator.inventory.refill-requests.approve', $request) }}" class="mb-6" data-confirm-title="Approve refill request?" data-confirm-body="Approval does not change stock by itself. A linked inventory movement will complete the refill." data-confirm-label="Approve" data-confirm-class="btn-success">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="approved">
@@ -111,7 +111,7 @@
                             </div>
                         </form>
 
-                        <form method="POST" action="{{ route('administrator.inventory.refill-requests.reject', $request) }}">
+                        <form method="POST" action="{{ route('administrator.inventory.refill-requests.reject', $request) }}" data-confirm-title="Reject refill request?" data-confirm-body="This rejects the barista refill request. Stock is not changed." data-confirm-label="Reject" data-confirm-class="btn-danger">
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="rejected">

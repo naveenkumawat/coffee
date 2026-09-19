@@ -28,7 +28,7 @@ class ProductCategoryService implements ProductCategoryServiceInterface
             return $this->categories->create($attributes);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $category;
     }
@@ -42,7 +42,7 @@ class ProductCategoryService implements ProductCategoryServiceInterface
             return $this->categories->update($productCategory, $attributes);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $productCategory;
     }
@@ -55,7 +55,7 @@ class ProductCategoryService implements ProductCategoryServiceInterface
             $path = PublicMedia::store($image, PublicMedia::DIRECTORY_CATEGORIES);
             $category = $this->categories->update($category, ['image_path' => $path]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $category;
         }
@@ -63,7 +63,7 @@ class ProductCategoryService implements ProductCategoryServiceInterface
         if ($remove) {
             $category = $this->categories->update($category, ['image_path' => null]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
         }
 
         return $category;
@@ -82,7 +82,7 @@ class ProductCategoryService implements ProductCategoryServiceInterface
             $this->categories->delete($productCategory);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     protected function uniqueSlug(string $name, ?int $ignoreId = null): string

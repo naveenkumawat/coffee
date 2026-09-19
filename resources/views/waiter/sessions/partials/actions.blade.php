@@ -15,9 +15,10 @@
     <form
         method="POST"
         action="{{ route('waiter.sessions.request-bill', $session) }}"
-        data-confirm-title="Request the bill?"
-        data-confirm-body="Once the bill is requested, guests won't be able to add more orders to this dining session."
-        data-confirm-label="Request bill"
+        data-confirm-title="Request final bill?"
+        data-confirm-body="The current dining bill will be frozen and no additional orders can be placed unless the session is returned to an allowed state by authorized staff."
+        data-confirm-label="Request Bill"
+        data-confirm-cancel="Keep Ordering"
     >
         @csrf
         <x-internal.button label="Request bill" type="submit" variant="default" icon="ki-bill" />
@@ -66,7 +67,7 @@
         method="POST"
         action="{{ route('waiter.sessions.close', $session) }}"
         data-confirm-title="Close dining session?"
-        data-confirm-body="This will end the session and release Table {{ $tableLabel }}. No more orders can be added."
+        data-confirm-body="This ends the dining session and makes Table {{ $tableLabel }} available. No more orders can be added."
         data-confirm-label="Close session"
     >
         @csrf

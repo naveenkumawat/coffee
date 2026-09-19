@@ -165,6 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   logout: async () => {
     realtimeConnection.disconnect();
+    void realtimeConnection.connectPublic();
     await logoutCustomer();
     resetCustomerSession(set);
   },
@@ -179,10 +180,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   clearAuth: () => {
     realtimeConnection.disconnect();
+    void realtimeConnection.connectPublic();
     resetCustomerSession(set);
   },
   setGuest: () => {
     realtimeConnection.disconnect();
+    void realtimeConnection.connectPublic();
     resetCustomerSession(set);
   },
 }));

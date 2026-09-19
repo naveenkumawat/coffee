@@ -5,7 +5,7 @@ return [
         'menu_ttl' => env('COFFEE_MENU_CACHE_TTL', 15),
     ],
     'company' => [
-        'name' => env('APP_NAME', 'The88Coffees'),
+        'name' => env('APP_NAME', 'Sip The Soul'),
         'support_email' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
     ],
     'pwa' => [
@@ -25,8 +25,10 @@ return [
     ],
     'media' => [
         'disk' => env('COFFEE_MEDIA_DISK', 'public'),
-        /** Soft target ~50–150KB; hard cap for uploads (kilobytes). */
+        /** Soft target ~50–150KB; hard cap for catalog/product/site media (kilobytes). */
         'max_kilobytes' => (int) env('COFFEE_MEDIA_MAX_KB', 512),
+        /** Primary logo only (Website Settings branding). Does not change catalog media. */
+        'brand_logo_max_kilobytes' => (int) env('COFFEE_BRAND_LOGO_MAX_KB', 5120),
     ],
     'payments' => [
         'display_name' => env('COFFEE_PAYMENT_DISPLAY_NAME', env('APP_NAME', 'Coffee')),

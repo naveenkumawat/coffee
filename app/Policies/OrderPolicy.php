@@ -62,7 +62,15 @@ class OrderPolicy
     {
         return $user->hasRole('customer')
             && (int) $order->customer_id === (int) $user->getKey()
-            && $order->canUploadPaymentProof();
+            && ! $order->isCashPayment()
+            && ! ($order->payment_method?->isOnline() ?? false);
+    }
+
+    public function confirmManualUpiPayment(User $user, Order $order): bool
+    {
+        return ($user->canManageOrders() || $user->canOperateOrders())
+            && ! $order->isCashPayment()
+            && ! ($order->payment_method?->isOnline() ?? false);
     }
 
     public function rejectPaymentProof(User $user, Order $order): bool

@@ -1,4 +1,4 @@
-# The88Coffees — Launch menu
+# Sip The Soul — Launch menu
 
 **Status: STOPPED — awaiting café decisions**  
 **Date:** 31 Aug 2026 · **L2 re-audit:** 4 Sep 2026  

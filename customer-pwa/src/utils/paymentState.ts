@@ -1,6 +1,6 @@
 import { Order } from '../types/order';
 import { formatCurrency } from './format';
-import { isCashPayment, isDineInOrder, isPendingPayment } from './orders';
+import { isCashPayment, isDineInOrder } from './orders';
 
 export type CanonicalPaymentState =
   | 'cash_pending'
@@ -33,23 +33,16 @@ export function resolvePaymentState(order: Order): CanonicalPaymentState {
     return 'cash_pending';
   }
 
-  if (order.payment_status === 'awaiting_review' && Boolean(order.payment_proof?.uploaded || order.payment_transaction_id)) {
+  if (order.payment_status === 'confirmed') {
+    return 'upi_confirmed';
+  }
+
+  if (order.payment_status === 'awaiting_review') {
     return 'upi_awaiting_review';
   }
 
   if (order.payment_status === 'rejected') {
     return 'upi_rejected';
-  }
-
-  if (
-    order.payment_status === 'confirmed' ||
-    (order.status !== null &&
-      !isPendingPayment(order.status) &&
-      order.payment_status !== 'awaiting_review' &&
-      order.payment_status !== 'rejected' &&
-      order.payment_status !== 'pending')
-  ) {
-    return 'upi_confirmed';
   }
 
   return 'upi_pending';
@@ -59,7 +52,9 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
   const state = resolvePaymentState(order);
   const proof = order.payment_proof;
   const amount = formatCurrency(order.total_amount);
-  const canSubmit = Boolean(proof?.can_submit_transaction ?? proof?.can_upload ?? isPendingPayment(order.status));
+  const canSubmit = Boolean(
+    order.can_submit_payment_transaction_id ?? proof?.can_submit_transaction ?? proof?.can_upload,
+  );
 
   switch (state) {
     case 'cash_confirmed':
@@ -89,7 +84,7 @@ export function paymentStatePresentation(order: Order): PaymentStatePresentation
         state,
         badge: 'Payment verification pending',
         title: 'Payment verification pending',
-        body: "We've received your transaction ID. Your order will be confirmed once the payment is verified.",
+        body: "We've received your transaction ID. You can submit another one only if the café rejects this payment.",
         canUploadProof: canSubmit,
         canSubmitTransaction: canSubmit,
         primaryAction: canSubmit ? 'replace_transaction' : 'track_order',

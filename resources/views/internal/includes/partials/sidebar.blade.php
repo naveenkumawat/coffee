@@ -70,6 +70,13 @@
                 ] : [],
             ],
             [
+                'heading' => 'Content',
+                'items' => $user?->canManageWebsiteSettings() ? [
+                    ['label' => 'Pages', 'route' => 'administrator.cms-pages.index', 'pattern' => 'administrator.cms-pages.*', 'icon' => 'ki-document'],
+                    ['label' => 'Hero', 'route' => 'administrator.hero.edit', 'pattern' => 'administrator.hero.*', 'icon' => 'ki-picture'],
+                ] : [],
+            ],
+            [
                 'heading' => 'Administration',
                 'items' => array_values(array_filter([
                     $user?->canManageUsers()
@@ -77,6 +84,9 @@
                         : null,
                     $user?->canManageWebsiteSettings()
                         ? ['label' => 'Website Settings', 'route' => 'administrator.website-settings.edit', 'pattern' => 'administrator.website-settings.*', 'icon' => 'ki-setting-2']
+                        : null,
+                    $user?->canManageWebsiteSettings()
+                        ? ['label' => 'Cache Management', 'route' => 'administrator.cache-management.index', 'pattern' => 'administrator.cache-management.*', 'icon' => 'ki-abstract-26']
                         : null,
                     $user?->canManageWebsiteSettings()
                         ? ['label' => 'Social Links', 'route' => 'administrator.social-links.index', 'pattern' => 'administrator.social-links.*', 'icon' => 'ki-share']
@@ -218,7 +228,7 @@
 <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="225px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
     <div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
         <a href="{{ $dashboardRoute }}" class="text-decoration-none d-flex flex-column">
-            <span class="fs-3 fw-bold text-white">{{ config('app.name') }}</span>
+            <span class="fs-3 fw-bold text-white">{{ $cafeBrand['name'] ?? config('app.name') }}</span>
             <span class="text-gray-400 fs-8 text-uppercase">{{ $panelLabel }}</span>
         </a>
 

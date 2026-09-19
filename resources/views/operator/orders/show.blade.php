@@ -99,7 +99,7 @@
                 'markCashRoute' => route('operator.orders.cash.receive', $order),
                 'paymentProofShowRoute' => 'operator.orders.payment-proof.show',
                 'paymentProofRejectRoute' => 'operator.orders.payment-proof.reject',
-                'paymentVerifyRoute' => 'operator.orders.status.update',
+                'paymentVerifyRoute' => 'operator.orders.payment.verify',
             ])
 
             @include('internal.orders.partials.status-actions', [

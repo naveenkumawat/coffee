@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
-import { fetchWebsiteContent } from '../../api/content';
-import { ApiError } from '../../api/client';
+import { useEffect, useMemo } from 'react';
 import { ErrorState } from '../common/ErrorState';
 import { LoadingSkeleton } from '../common/LoadingSkeleton';
 import { PageHeader } from '../common/PageHeader';
-import { ContentPageKey, DEFAULT_BRAND_NAME, WebsiteContent } from '../../types/content';
+import { ContentPageKey, DEFAULT_BRAND_NAME, WebsiteFaqItem } from '../../types/content';
 import { parseFaqItems } from '../../utils/contentPages';
 import { ContactActions } from './ContactActions';
 import { FaqAccordion } from './FaqAccordion';
+import { useContentStore } from '../../stores/contentStore';
+
+const EMPTY_FAQ_ITEMS: WebsiteFaqItem[] = [];
 
 const pageMeta: Record<ContentPageKey, { title: string; description: string }> = {
   about: {
@@ -36,38 +37,50 @@ interface ContentPageProps {
   page: ContentPageKey;
 }
 
+function looksLikeHtml(value: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(value);
+}
+
 export function ContentPage({ page }: ContentPageProps) {
-  const meta = pageMeta[page];
-  const [content, setContent] = useState<WebsiteContent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fallbackMeta = pageMeta[page];
+  const content = useContentStore((state) => state.content);
+  const hasBootstrapped = useContentStore((state) => state.hasBootstrapped);
+  const bootstrap = useContentStore((state) => state.bootstrap);
 
   useEffect(() => {
-    async function load(): Promise<void> {
-      setIsLoading(true);
-      setErrorMessage(null);
+    void bootstrap();
+  }, [bootstrap]);
 
-      try {
-        const response = await fetchWebsiteContent();
-        setContent(response.data);
-      } catch (error) {
-        setErrorMessage(error instanceof ApiError ? error.message : 'Unable to load this page.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void load();
-  }, [page]);
-
+  const cmsMeta = content?.page_meta?.[page];
+  const title = cmsMeta?.title?.trim() || fallbackMeta.title;
+  const description = cmsMeta?.meta_description?.trim() || fallbackMeta.description;
   const body = content?.pages[page]?.trim() ?? '';
   const business = content?.business;
-  const faqItems = useMemo(() => (page === 'faq' ? parseFaqItems(body) : []), [body, page]);
+  const structuredFaq = content?.faq_items ?? EMPTY_FAQ_ITEMS;
+  const faqItems = useMemo(() => {
+    if (page !== 'faq') {
+      return [];
+    }
+
+    if (structuredFaq.length > 0) {
+      return structuredFaq.map((item) => ({
+        id: String(item.id),
+        question: item.question,
+        answer: item.answer,
+      }));
+    }
+
+    return parseFaqItems(body);
+  }, [body, page, structuredFaq]);
   const isLongForm = page === 'terms' || page === 'privacy';
+  const unpublished = cmsMeta ? cmsMeta.is_published === false : false;
+  const showEmpty = !body && page !== 'contact' && !(page === 'faq' && faqItems.length > 0);
+  const isLoading = !hasBootstrapped && !content;
+  const errorMessage = hasBootstrapped && !content ? 'Unable to load this page.' : null;
 
   return (
     <div className={`page-container content-page content-page-${page}`}>
-      <PageHeader title={meta.title} description={meta.description} showBack />
+      <PageHeader title={title} description={description} showBack />
 
       {isLoading ? <LoadingSkeleton cardCount={1} lines={6} /> : null}
       {errorMessage ? <ErrorState description={errorMessage} onRetry={() => window.location.reload()} /> : null}
@@ -94,11 +107,15 @@ export function ContentPage({ page }: ContentPageProps) {
             <section
               className={`content-section ${isLongForm ? 'is-longform' : ''} ${page === 'about' ? 'is-story' : ''}`.trim()}
             >
-              <div className="content-body content-preline">{body}</div>
+              {looksLikeHtml(body) ? (
+                <div className="content-body cms-html" dangerouslySetInnerHTML={{ __html: body }} />
+              ) : (
+                <div className="content-body content-preline">{body}</div>
+              )}
             </section>
           ) : null}
 
-          {!body && page !== 'contact' && !(page === 'faq' && faqItems.length > 0) ? (
+          {(showEmpty || unpublished) && page !== 'contact' ? (
             <section className="content-section">
               <p className="content-empty">This page has not been published yet.</p>
             </section>
@@ -107,7 +124,11 @@ export function ContentPage({ page }: ContentPageProps) {
           {page === 'contact' && body ? (
             <section className="content-section is-secondary">
               <h2 className="content-section-title">More details</h2>
-              <div className="content-body content-preline">{body}</div>
+              {looksLikeHtml(body) ? (
+                <div className="content-body cms-html" dangerouslySetInnerHTML={{ __html: body }} />
+              ) : (
+                <div className="content-body content-preline">{body}</div>
+              )}
             </section>
           ) : null}
         </div>

@@ -143,9 +143,9 @@ class ProductMediaTest extends TestCase
         $manager = User::factory()->manager()->create();
 
         $this->actingAs($manager, 'admin')->put(route('administrator.website-settings.update'), [
-            WebsiteSettingKey::HeroTitle->value => 'Cafe',
+            'section' => 'payments',
             'payment_qr_image' => UploadedFile::fake()->image('qr.png', 300, 300),
-        ])->assertRedirect(route('administrator.website-settings.edit'));
+        ])->assertRedirect(route('administrator.website-settings.edit', ['section' => 'payments']));
 
         $stored = WebsiteSetting::query()
             ->where('key', WebsiteSettingKey::PaymentQrImagePath->value)

@@ -9,6 +9,7 @@ use App\Exceptions\OrderSecurityException;
 use App\Models\CafeClosure;
 use App\Models\CafeOperatingHour;
 use App\Repositories\WebsiteSetting\WebsiteSettingRepositoryInterface;
+use App\Services\PublicCache\PublicCacheVersionServiceInterface;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -213,13 +214,13 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
             }
         });
 
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
     }
 
     public function storeClosure(array $data): CafeClosure
     {
         $closure = CafeClosure::query()->create($this->prepareClosureAttributes($data));
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
 
         return $closure;
     }
@@ -227,7 +228,7 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
     public function updateClosure(CafeClosure $closure, array $data): CafeClosure
     {
         $closure->fill($this->prepareClosureAttributes($data))->save();
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
 
         return $closure->fresh();
     }
@@ -235,7 +236,7 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
     public function setClosureActive(CafeClosure $closure, bool $isActive): CafeClosure
     {
         $closure->forceFill(['is_active' => $isActive])->save();
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
 
         return $closure->fresh();
     }
@@ -244,7 +245,7 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
     {
         $closure->forceFill(['is_active' => false])->save();
         $closure->delete();
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
     }
 
     public function closeOrdering(?CarbonInterface $until = null, ?string $customerMessage = null): void
@@ -260,7 +261,7 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
         ];
 
         $this->settings->upsertValues($payload);
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
     }
 
     public function reopenOrdering(): void
@@ -270,12 +271,18 @@ class CafeAvailabilityService implements CafeAvailabilityServiceInterface
             WebsiteSettingKey::OrderingManualClosedUntil->value => null,
             WebsiteSettingKey::OrderingManualClosedMessage->value => null,
         ]);
-        $this->flushAvailabilityCache();
+        $this->flushPublicAvailabilityCaches();
     }
 
     public function flushAvailabilityCache(): void
     {
         Cache::forget(self::PUBLIC_CACHE_KEY);
+    }
+
+    public function flushPublicAvailabilityCaches(): void
+    {
+        $this->flushAvailabilityCache();
+        app(PublicCacheVersionServiceInterface::class)->invalidate('cafe_schedule');
     }
 
     /**

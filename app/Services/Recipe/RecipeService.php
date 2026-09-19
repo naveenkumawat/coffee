@@ -36,7 +36,7 @@ class RecipeService implements RecipeServiceInterface
             return $this->recipes->replaceLines($recipe, $this->prepareLines($data->getLines()));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $recipe;
     }
@@ -59,7 +59,7 @@ class RecipeService implements RecipeServiceInterface
             return $this->recipes->replaceLines($recipe, $this->prepareLines($data->getLines()));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $recipe;
     }
@@ -71,7 +71,7 @@ class RecipeService implements RecipeServiceInterface
             $this->recipes->delete($recipe);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     protected function validateVariant(int $variantId): ProductVariant

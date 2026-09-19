@@ -270,6 +270,7 @@ class OrderAbuseProtectionTest extends TestCase
 
     public function test_payment_proof_rate_limit_returns_429_without_clearing_existing_proof(): void
     {
+        config()->set('broadcasting.default', 'null');
         $this->setSecuritySetting(WebsiteSettingKey::OrderSecurityPaymentProofAttemptsPer15Minutes, '1');
 
         $customer = User::factory()->customer()->create();
@@ -288,6 +289,24 @@ class OrderAbuseProtectionTest extends TestCase
 
         $txn = $order->fresh()->payment_transaction_id;
         $this->assertSame('UTRRATELIMIT001', $txn);
+
+        $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
+            'transaction_id' => 'UTRRATELIMIT002',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transaction_id']);
+
+        $this->assertSame($txn, $order->fresh()->payment_transaction_id);
+
+        $admin = User::factory()->manager()->create();
+        $this->actingAs($admin, 'admin')
+            ->post(route('administrator.orders.payment-proof.reject', $order), [
+                'notes' => 'Not found',
+            ])
+            ->assertRedirect();
+
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($customer);
 
         $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
             'transaction_id' => 'UTRRATELIMIT002',

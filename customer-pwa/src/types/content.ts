@@ -64,19 +64,43 @@ export interface WebsiteAvailabilityContent {
   }>;
 }
 
+export interface WebsiteBrandingContent {
+  name: string | null;
+  tagline: string | null;
+  logo_url: string | null;
+  display_mode?: 'logo' | 'logo_name' | 'logo_name_tagline' | null;
+  favicon_url: string | null;
+}
+
+export interface WebsitePageMeta {
+  title: string;
+  seo_title: string | null;
+  meta_description: string | null;
+  is_published: boolean;
+}
+
+export interface WebsiteFaqItem {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export type ContentPageKey = keyof WebsitePagesContent;
+
 export interface WebsiteContent {
   hero: WebsiteHeroContent;
+  branding?: WebsiteBrandingContent;
   business: WebsiteBusinessContent;
   payment: WebsitePaymentContent;
   fulfilment?: WebsiteFulfilmentContent;
   behaviour?: WebsiteBehaviourContent;
   pages: WebsitePagesContent;
+  page_meta?: Partial<Record<ContentPageKey, WebsitePageMeta>>;
+  faq_items?: WebsiteFaqItem[];
   social_links?: WebsiteSocialLink[];
   availability?: WebsiteAvailabilityContent;
 }
 
-export type ContentPageKey = keyof WebsitePagesContent;
-
 /** Fallbacks used only until `/content` loads or when settings are empty. */
-export const DEFAULT_BRAND_NAME = 'The88Coffees';
-export const DEFAULT_HOME_SLOGAN = 'Sip. Relax. Enjoy.';
+export const DEFAULT_BRAND_NAME = 'Sip The Soul';
+export const DEFAULT_HOME_SLOGAN = 'CAFFEINE TILL COFFIN.';

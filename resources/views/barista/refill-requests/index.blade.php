@@ -26,7 +26,7 @@
                 </div>
                 <div class="col-xl-4 col-md-3">
                     <label for="ingredient_id" class="form-label">Ingredient</label>
-                    <select id="ingredient_id" name="ingredient_id" class="form-select">
+                    <select id="ingredient_id" name="ingredient_id" class="form-select" data-control="select2" data-placeholder="All ingredients">
                         <option value="">All ingredients</option>
                         @foreach ($ingredientOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('ingredient_id') === (string) $id)>{{ $name }}</option>

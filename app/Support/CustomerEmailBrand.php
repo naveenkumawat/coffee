@@ -10,6 +10,7 @@ final class CustomerEmailBrand
      * @return array{
      *     business_name: string,
      *     slogan: string|null,
+     *     logo_url: string|null,
      *     phone: string|null,
      *     whatsapp: string|null,
      *     email: string|null,
@@ -23,12 +24,14 @@ final class CustomerEmailBrand
         $settings ??= app(WebsiteSettingServiceInterface::class);
         $content = $settings->customerContent();
 
-        $businessName = trim((string) ($content['business']['name'] ?? '')) ?: (string) config('coffee.company.name', 'The88Coffees');
+        $businessName = trim((string) ($content['business']['name'] ?? '')) ?: (string) config('coffee.company.name', 'Sip The Soul');
         $slogan = filled($content['hero']['subtitle'] ?? null) ? (string) $content['hero']['subtitle'] : null;
+        $logoUrl = filled($content['branding']['logo_url'] ?? null) ? (string) $content['branding']['logo_url'] : null;
 
         return [
             'business_name' => $businessName,
             'slogan' => $slogan,
+            'logo_url' => $logoUrl,
             'phone' => filled($content['business']['phone'] ?? null) ? (string) $content['business']['phone'] : null,
             'whatsapp' => filled($content['business']['whatsapp_number'] ?? null) ? (string) $content['business']['whatsapp_number'] : null,
             'email' => filled($content['business']['email'] ?? null) ? (string) $content['business']['email'] : null,

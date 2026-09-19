@@ -49,6 +49,7 @@ class DemoSeeder extends Seeder
             DemoLoyaltySeeder::class,
             DemoCampaignSeeder::class,
             WebsiteSettingSeeder::class,
+            CmsPageSeeder::class,
             CafeScheduleSeeder::class,
             DemoSocialLinkSeeder::class,
             DemoCustomerActivitySeeder::class,

@@ -2,11 +2,20 @@
 
 namespace Tests;
 
+use App\Events\Realtime\PublicCacheInvalidated;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Event;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Event::fake([PublicCacheInvalidated::class]);
+    }
+
     public function createApplication(): Application
     {
         $this->forgetBootstrapCaches();

@@ -26,7 +26,7 @@ class OrderInvoiceTest extends TestCase
             ['key' => WebsiteSettingKey::BusinessName->value],
             [
                 'section' => WebsiteSettingKey::BusinessName->section(),
-                'value' => 'The88Coffees',
+                'value' => 'Sip The Soul',
                 'value_type' => WebsiteSettingKey::BusinessName->valueType(),
             ],
         );
@@ -58,7 +58,7 @@ class OrderInvoiceTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('application/pdf', (string) $response->headers->get('content-type'));
         $this->assertStringContainsString(
-            'The88Coffees-CC-310826-0026.pdf',
+            'SipTheSoul-CC-310826-0026.pdf',
             (string) $response->headers->get('content-disposition'),
         );
         $this->assertGreaterThan(100, strlen($response->getContent()));

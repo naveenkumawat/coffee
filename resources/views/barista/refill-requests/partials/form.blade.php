@@ -5,7 +5,7 @@
         </div>
     </div>
     <div class="card-body pt-0">
-        <form method="POST" action="{{ $action }}" class="form">
+        <form method="POST" action="{{ $action }}" class="form" data-confirm-title="Submit refill request?" data-confirm-body="This sends a refill request for administrator review. Stock does not change until an approved movement is recorded." data-confirm-label="Submit request">
             @csrf
 
             <div class="row g-6 mb-8 internal-form-grid">

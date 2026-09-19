@@ -8,10 +8,8 @@ use App\Http\Resources\Api\V1\Dining\DiningServiceRequestResource;
 use App\Models\DiningServiceRequest;
 use App\Models\DiningSession;
 use App\Services\Dining\DiningServiceRequestServiceInterface;
-use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class CustomerDiningServiceRequestController extends Controller
 {
@@ -19,18 +17,11 @@ class CustomerDiningServiceRequestController extends Controller
 
     public function __construct(
         protected DiningServiceRequestServiceInterface $serviceRequests,
-        protected WebsiteSettingServiceInterface $websiteSettings,
     ) {}
 
     public function store(Request $request, DiningSession $session): JsonResponse
     {
         $this->authorize('create', [DiningServiceRequest::class, $session]);
-
-        if (! $this->websiteSettings->diningEnabled()) {
-            throw ValidationException::withMessages([
-                'dining' => 'Dining is disabled.',
-            ]);
-        }
 
         $existing = $this->serviceRequests->currentForSession($session);
         $serviceRequest = $this->serviceRequests->createOrderAssistance($session, $request->user());

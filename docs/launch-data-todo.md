@@ -1,4 +1,4 @@
-# The88Coffees — Launch data to-do
+# Sip The Soul — Launch data to-do
 
 **Purpose:** Actionable checklist to move from demo/test data to real café production data.  
 **Last audited:** 4 Sep 2026 (L2 launch readiness)  
@@ -32,11 +32,11 @@
 
 Confirm with `php artisan coffee:launch-readiness` (must exit 0).
 
-- [ ] **Brand name** in Website Settings (`business_name`) — local baseline may already be The88Coffees; verify on production DB
+- [ ] **Brand name** in Website Settings (`business_name`) — local baseline may already be Sip The Soul; verify on production DB
 - [ ] **UPI ID** (`payment_upi_id`) — real café UPI
 - [ ] **Payment QR image** uploaded + file present on public disk (`storage:link`)
 - [ ] **Terms** + **Privacy** pages — café-approved legal copy only
-- [ ] **Opening hours** — Website Settings text and/or Cafe Operating Hours (7-day schedule)
+- [ ] **Opening hours** — Café Schedule (7-day operating hours). Do not use a separate Website Settings display-text field.
 - [ ] **`docs/launch-menu.md` confirmed** — categories, products, sizes, prices filled by café (currently STOPPED)
 - [ ] **Sellable catalog** — at least one **active** product that passes `coffee:catalog-readiness` (category, image, priced variants, recipes, station)
 - [ ] **No `*@coffee.local` users** on production

@@ -63,7 +63,7 @@
         method="POST"
         action="{{ route('administrator.dining-sessions.reopen', $session) }}"
         data-confirm-title="Reopen dining session?"
-        data-confirm-body="This will make the session active again and may occupy Table {{ $tableLabel }}."
+        data-confirm-body="This makes the dining session and Table {{ $tableLabel }} active again. Paid sessions and tables that already have another open session cannot be reopened."
         data-confirm-label="Reopen session"
         data-confirm-require-reason="1"
         data-confirm-reason-field="note"
@@ -79,7 +79,7 @@
         method="POST"
         action="{{ route('administrator.dining-sessions.close', $session) }}"
         data-confirm-title="Close dining session?"
-        data-confirm-body="This will end the session and release Table {{ $tableLabel }}. No more orders can be added."
+        data-confirm-body="This ends the dining session and makes Table {{ $tableLabel }} available. No more orders can be added."
         data-confirm-label="Close session"
         data-confirm-class="btn-danger"
         @if (! $paymentConfirmed)

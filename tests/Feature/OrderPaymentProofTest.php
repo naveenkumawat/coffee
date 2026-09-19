@@ -44,7 +44,9 @@ class OrderPaymentProofTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.payment_status', 'awaiting_review')
             ->assertJsonPath('data.payment_transaction_id', '312345678901')
-            ->assertJsonPath('data.status', 'pending_payment');
+            ->assertJsonPath('data.status', 'pending_payment')
+            ->assertJsonPath('data.can_submit_payment_transaction_id', false)
+            ->assertJsonPath('data.payment_proof.can_submit_transaction', false);
 
         $order->refresh();
 
@@ -93,7 +95,9 @@ class OrderPaymentProofTest extends TestCase
 
         $this->postJson(route('api.v1.orders.payment-proof.upload', $order), [
             'transaction_id' => '312345678901',
-        ])->assertForbidden();
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['transaction_id']);
     }
 
     public function test_administrator_can_reject_and_verify_transaction_id(): void
@@ -188,5 +192,7 @@ class OrderPaymentProofTest extends TestCase
             $confirmedAt->toIso8601String(),
             $order->fresh()->payment_confirmed_at?->toIso8601String(),
         );
+        $this->assertSame(PaymentStatus::Confirmed, $order->fresh()->payment_status);
+        $this->assertSame(OrderStatus::Accepted, $order->fresh()->status);
     }
 }

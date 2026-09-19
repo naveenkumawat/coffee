@@ -1,10 +1,10 @@
-# Production Deployment Runbook — The88Coffees / Coffee Café
+# Production Deployment Runbook — Sip The Soul / Coffee Café
 
 Last updated: August 31, 2026  
 Status: prepare only — do **not** deploy until smoke tests on real HTTPS hosts pass.  
 Customer Blade remains available until an explicit retirement task.
 
-See also: `docs/pwa-launch-checklist.md`
+See also: `docs/pwa-launch-checklist.md`, `docs/pwa-cache-strategy.md`
 
 ---
 
@@ -64,7 +64,7 @@ MAIL_USERNAME=...
 MAIL_PASSWORD=...
 MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=orders@example.com
-MAIL_FROM_NAME="The88Coffees"
+MAIL_FROM_NAME="Sip The Soul"
 
 TRUSTED_PROXIES=*           # or comma-separated proxy IPs behind a load balancer
 

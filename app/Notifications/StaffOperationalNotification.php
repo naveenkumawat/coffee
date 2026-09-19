@@ -7,6 +7,7 @@ use App\Enums\StaffNotificationType;
 use App\Models\User;
 use App\Notifications\Concerns\BuildsCustomerMail;
 use App\Services\Notification\StaffNotificationContext;
+use App\Support\CustomerEmailBrand;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -87,7 +88,7 @@ class StaffOperationalNotification extends Notification implements ShouldQueue
             actionText: $content['actionText'],
             actionUrl: $this->actionUrl($notifiable),
             outroLines: [
-                'This is an internal The88Coffees operations alert.',
+                'This is an internal '.CustomerEmailBrand::snapshot()['business_name'].' operations alert.',
             ],
             extra: [
                 'statusLabel' => $this->type->label(),

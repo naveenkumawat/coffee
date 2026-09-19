@@ -1,4 +1,7 @@
 import { ApiEnvelope, get, getConditional } from './client';
+import { readCachedPublicJson, writeCachedPublicJson } from '../cache/publicCache';
+import { PUBLIC_CACHE_KEYS } from '../cache/keys';
+import { onPublicCacheVersionChange } from '../cache/version';
 import { Product, ProductCategory, ProductFlavour, ProductListMeta, ProductVariant } from '../types/catalog';
 
 export interface ProductQueryFilters {
@@ -16,12 +19,34 @@ export interface ProductQueryFilters {
 let menuCatalogueCache: Product[] | null = null;
 let menuCatalogueEtag: string | null = null;
 
-export function fetchCategories(): Promise<ApiEnvelope<ProductCategory[]>> {
-  return get<ApiEnvelope<ProductCategory[]>>('/catalog/categories');
+onPublicCacheVersionChange(() => {
+  clearMenuCatalogueCache();
+});
+
+export async function fetchCategories(): Promise<ApiEnvelope<ProductCategory[]>> {
+  const cached = await readCachedPublicJson<ApiEnvelope<ProductCategory[]>>(PUBLIC_CACHE_KEYS.catalogCategories);
+
+  if (cached) {
+    return cached;
+  }
+
+  const fresh = await get<ApiEnvelope<ProductCategory[]>>('/catalog/categories');
+  await writeCachedPublicJson(PUBLIC_CACHE_KEYS.catalogCategories, fresh);
+
+  return fresh;
 }
 
-export function fetchFlavours(): Promise<ApiEnvelope<ProductFlavour[]>> {
-  return get<ApiEnvelope<ProductFlavour[]>>('/catalog/flavours');
+export async function fetchFlavours(): Promise<ApiEnvelope<ProductFlavour[]>> {
+  const cached = await readCachedPublicJson<ApiEnvelope<ProductFlavour[]>>(PUBLIC_CACHE_KEYS.catalogFlavours);
+
+  if (cached) {
+    return cached;
+  }
+
+  const fresh = await get<ApiEnvelope<ProductFlavour[]>>('/catalog/flavours');
+  await writeCachedPublicJson(PUBLIC_CACHE_KEYS.catalogFlavours, fresh);
+
+  return fresh;
 }
 
 export function fetchFeaturedProducts(): Promise<ApiEnvelope<Product[]>> {
@@ -96,20 +121,51 @@ export async function fetchMenuCatalogue(force = false): Promise<Product[]> {
     menuCatalogueEtag = null;
   }
 
-  const result = await getConditional<ApiEnvelope<Product[]>>(
-    '/catalog/products',
-    menuCatalogueEtag,
+  const cachedRecord = await readCachedPublicJson<{ products: Product[]; etag: string | null }>(
+    PUBLIC_CACHE_KEYS.catalogProducts,
   );
 
-  if (result.notModified && menuCatalogueCache) {
+  if (!force && cachedRecord?.products?.length) {
+    menuCatalogueCache = cachedRecord.products;
+    menuCatalogueEtag = cachedRecord.etag ?? menuCatalogueEtag;
+  }
+
+  const revalidate = async (): Promise<Product[]> => {
+    const result = await getConditional<ApiEnvelope<Product[]>>(
+      '/catalog/products',
+      force ? null : menuCatalogueEtag,
+    );
+
+    if (result.notModified && menuCatalogueCache) {
+      return menuCatalogueCache;
+    }
+
+    const products = result.data?.data ?? menuCatalogueCache ?? [];
+    menuCatalogueCache = products;
+    menuCatalogueEtag = result.etag;
+    await writeCachedPublicJson(PUBLIC_CACHE_KEYS.catalogProducts, {
+      products,
+      etag: result.etag,
+    });
+
+    return products;
+  };
+
+  if (!force && menuCatalogueCache) {
+    void revalidate().catch(() => undefined);
+
     return menuCatalogueCache;
   }
 
-  const products = result.data?.data ?? [];
-  menuCatalogueCache = products;
-  menuCatalogueEtag = result.etag;
+  try {
+    return await revalidate();
+  } catch (error) {
+    if (menuCatalogueCache) {
+      return menuCatalogueCache;
+    }
 
-  return products;
+    throw error;
+  }
 }
 
 export function clearMenuCatalogueCache(): void {

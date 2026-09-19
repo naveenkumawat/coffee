@@ -4,10 +4,13 @@ namespace App\Enums;
 
 enum WebsiteSettingKey: string
 {
-    case HeroTitle = 'hero_title';
-    case HeroSubtitle = 'hero_subtitle';
-    case HeroImagePath = 'hero_image_path';
     case BusinessName = 'business_name';
+    case HeroSubtitle = 'hero_subtitle';
+    case BrandLogoPath = 'brand_logo_path';
+    case BrandDisplayMode = 'brand_display_mode';
+    case BrandFaviconPath = 'brand_favicon_path';
+    case HeroTitle = 'hero_title';
+    case HeroImagePath = 'hero_image_path';
     case BusinessAboutShort = 'business_about_short';
     case BusinessPhone = 'business_phone';
     case BusinessWhatsappNumber = 'business_whatsapp_number';
@@ -65,8 +68,9 @@ enum WebsiteSettingKey: string
     public function section(): string
     {
         return match ($this) {
-            self::HeroTitle, self::HeroSubtitle, self::HeroImagePath => 'hero',
-            self::BusinessName, self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours, self::BusinessTimezone => 'business',
+            self::BusinessName, self::HeroSubtitle, self::BrandLogoPath, self::BrandDisplayMode, self::BrandFaviconPath => 'branding',
+            self::HeroTitle, self::HeroImagePath => 'hero',
+            self::BusinessAboutShort, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::BusinessAddress, self::BusinessOpeningHours, self::BusinessTimezone => 'business',
             self::PaymentDisplayName, self::PaymentInstructions, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber,
             self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'payment',
             self::FulfilmentDeliveryDisclaimer, self::FulfilmentDineInEnabled => 'fulfilment',
@@ -125,9 +129,12 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle => 'Hero title',
-            self::HeroSubtitle => 'Home slogan / hero subtitle',
+            self::HeroSubtitle => 'Tagline',
             self::HeroImagePath => 'Hero image',
-            self::BusinessName => 'Business name',
+            self::BusinessName => 'Brand name',
+            self::BrandLogoPath => 'Primary logo',
+            self::BrandDisplayMode => 'Brand display',
+            self::BrandFaviconPath => 'Favicon / App icon',
             self::BusinessAboutShort => 'Short about text',
             self::BusinessPhone => 'Phone',
             self::BusinessWhatsappNumber => 'WhatsApp number',
@@ -188,7 +195,7 @@ enum WebsiteSettingKey: string
     {
         return match ($this) {
             self::HeroTitle, self::BusinessName, self::PaymentDisplayName, self::TaxLegalBusinessName => 120,
-            self::HeroImagePath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin, self::BusinessTimezone, self::OrderingManualClosedUntil, self::ReferralRewardType, self::ReferralCouponDiscountType => 255,
+            self::HeroImagePath, self::BrandLogoPath, self::BrandFaviconPath, self::BusinessPhone, self::BusinessWhatsappNumber, self::BusinessEmail, self::PaymentUpiId, self::PaymentPhone, self::PaymentQrImagePath, self::PaymentWhatsappNumber, self::TaxGstin, self::BusinessTimezone, self::OrderingManualClosedUntil, self::ReferralRewardType, self::ReferralCouponDiscountType, self::BrandDisplayMode => 255,
             self::TaxLabel => 40,
             self::TaxPercent, self::ReferralCouponDiscountValue, self::ReferralCouponMaxDiscount, self::ReferralCouponMinimumSubtotal, self::ReferralMinimumQualifyingOrderAmount => 8,
             self::OrderingManualClosedMessage => 500,
@@ -202,7 +209,8 @@ enum WebsiteSettingKey: string
             self::ReferralRewardQuantity,
             self::ReferralRewardRedemptionDurationDays,
             self::ReferralMaxRewardsPerCustomerMonth => 10,
-            self::HeroSubtitle, self::BusinessAboutShort => 1000,
+            self::HeroSubtitle => 120,
+            self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
             self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
             self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 1,
@@ -232,7 +240,7 @@ enum WebsiteSettingKey: string
             self::ReferralCouponMaxDiscount,
             self::ReferralCouponMinimumSubtotal,
             self::ReferralMinimumQualifyingOrderAmount => 'number',
-            self::ReferralRewardType, self::ReferralCouponDiscountType => 'select',
+            self::ReferralRewardType, self::ReferralCouponDiscountType, self::BrandDisplayMode => 'select',
             default => 'text',
         };
     }
@@ -245,6 +253,11 @@ enum WebsiteSettingKey: string
             self::TaxPercent => 'Percentage from 0 to 100, e.g. 5.00.',
             self::TaxInclusive => 'Off = exclusive (GST added to subtotal). On = inclusive (menu prices already include GST).',
             self::TaxGstin => 'Printed on invoices only when set. Leave blank if not applicable.',
+            self::BusinessName => 'Customer-facing café name (Sip The Soul). Used in the PWA, emails, and invoices when set.',
+            self::HeroSubtitle => 'Official tagline shown under the logo. Use exact capitalization: CAFFEINE TILL COFFIN.',
+            self::BrandLogoPath => 'Used across the customer website and supported branded documents. Transparent PNG, WebP or SVG is recommended for best results. JPG is accepted. SVG uploads are sanitized automatically. Recommended about 512×512 for a mark, or up to 1200×400 for a wordmark. The café name is shown as text when no logo is uploaded.',
+            self::BrandDisplayMode => 'Controls whether the customer header shows the logo alone, logo plus brand name, or logo plus name plus tagline. If no logo is uploaded, the name (and tagline when selected) is shown instead of a blank header.',
+            self::BrandFaviconPath => 'Unused. Favicons are static frontend files, not uploaded here.',
             self::TaxLegalBusinessName => 'Optional legal name for invoices when different from the café display brand.',
             self::FulfilmentDineInEnabled => 'Allow customers to place dine-in / table orders from the PWA. Manage café tables under Café Tables.',
             self::BusinessTimezone => 'IANA timezone used for operating hours and closures (e.g. Asia/Kolkata). Never use the customer browser timezone.',

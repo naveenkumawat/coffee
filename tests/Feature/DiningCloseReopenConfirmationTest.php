@@ -166,8 +166,34 @@ class DiningCloseReopenConfirmationTest extends TestCase
 
         $this->assertStringContainsString('internalConfirmModal', $html);
         $this->assertStringContainsString('data-confirm-title="Close dining session?"', $html);
+        $this->assertStringContainsString('available', $html);
         $this->assertStringContainsString('data-confirm-title="Resume ordering?"', $html);
         $this->assertStringContainsString('confirm-modal.js', $html);
+        $this->assertStringNotContainsString('onsubmit="return confirm(', $html);
+    }
+
+    public function test_waiter_request_bill_uses_designed_confirm_copy(): void
+    {
+        $this->enableDining();
+
+        $waiter = User::factory()->waiter()->create();
+        $table = CafeTable::factory()->create(['is_active' => true, 'code' => 'T4']);
+        $variant = $this->makePurchasableVariant();
+        $dining = app(DiningSessionServiceInterface::class);
+
+        $session = $dining->startSession($table, null, $waiter, ['guest_count' => 2]);
+        $dining->addDraftItem($session, (int) $variant->id, 1, $waiter);
+        $dining->placeRound($session, $waiter);
+
+        $html = $this->actingAs($waiter, 'admin')
+            ->get(route('waiter.sessions.show', $session))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-confirm-title="Request final bill?"', $html);
+        $this->assertStringContainsString('data-confirm-label="Request Bill"', $html);
+        $this->assertStringContainsString('data-confirm-cancel="Keep Ordering"', $html);
+        $this->assertStringContainsString('no additional orders can be placed', $html);
         $this->assertStringNotContainsString('onsubmit="return confirm(', $html);
     }
 

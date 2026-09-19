@@ -48,4 +48,48 @@ readonly class CafeAvailabilityResult
             'weekly_hours' => $this->weeklyHours,
         ];
     }
+
+    public function displayHoursText(): ?string
+    {
+        if ($this->weeklyHours === []) {
+            return $this->todayHoursLabel;
+        }
+
+        $lines = [];
+
+        foreach ($this->weeklyHours as $day) {
+            $label = trim((string) ($day['label'] ?? ''));
+
+            if ($label === '') {
+                continue;
+            }
+
+            $intervals = is_array($day['intervals'] ?? null) ? $day['intervals'] : [];
+
+            if (! ($day['is_open'] ?? false) || $intervals === []) {
+                $lines[] = $label.': Closed';
+
+                continue;
+            }
+
+            $parts = [];
+
+            foreach ($intervals as $interval) {
+                if (! is_array($interval)) {
+                    continue;
+                }
+
+                $opens = trim((string) ($interval['opens_at'] ?? ''));
+                $closes = trim((string) ($interval['closes_at'] ?? ''));
+
+                if ($opens !== '' && $closes !== '') {
+                    $parts[] = $opens.'–'.$closes;
+                }
+            }
+
+            $lines[] = $label.': '.($parts === [] ? 'Closed' : implode(', ', $parts));
+        }
+
+        return $lines === [] ? $this->todayHoursLabel : implode("\n", $lines);
+    }
 }

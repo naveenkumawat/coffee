@@ -682,8 +682,15 @@
                 const message =
                     button.dataset.confirmMessage ||
                     this.config.texts.confirmToggleStatus;
-                if (!confirm(message)) {
-                    return;
+                if (window.InternalConfirm) {
+                    const result = await window.InternalConfirm.open({
+                        title: "Change status?",
+                        body: message,
+                        confirmLabel: "Continue",
+                    });
+                    if (!result.confirmed) {
+                        return;
+                    }
                 }
             }
 
@@ -1323,7 +1330,19 @@
                 button.dataset.confirmMessage ||
                 `Are you sure you want to delete ${entityName}?`;
 
-            if (!confirm(message)) {
+            if (window.InternalConfirm) {
+                window.InternalConfirm.open({
+                    title: "Delete user?",
+                    body: message,
+                    confirmLabel: "Delete",
+                    confirmClass: "btn-danger",
+                }).then((result) => {
+                    if (!result.confirmed) {
+                        return;
+                    }
+
+                    console.log("Deleting user:", entityName);
+                });
                 return;
             }
 

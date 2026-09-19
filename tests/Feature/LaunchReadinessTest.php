@@ -6,6 +6,7 @@ use App\Enums\PreparationStation;
 use App\Enums\ProductServingUnit;
 use App\Enums\UserRole;
 use App\Enums\WebsiteSettingKey;
+use App\Models\CafeOperatingHour;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductVariant;
@@ -133,12 +134,22 @@ class LaunchReadinessTest extends TestCase
 
     protected function seedMinimalBusinessConfig(): void
     {
-        $this->putSetting(WebsiteSettingKey::BusinessName, 'The88Coffees');
+        $this->putSetting(WebsiteSettingKey::BusinessName, 'Sip The Soul');
         $this->putSetting(WebsiteSettingKey::PaymentUpiId, 'cafe@upi');
         $this->putSetting(WebsiteSettingKey::PaymentQrImagePath, 'https://example.test/qr.png');
         $this->putSetting(WebsiteSettingKey::PagesTerms, 'Terms approved');
         $this->putSetting(WebsiteSettingKey::PagesPrivacy, 'Privacy approved');
-        $this->putSetting(WebsiteSettingKey::BusinessOpeningHours, 'Daily 8–22');
+
+        CafeOperatingHour::query()->delete();
+
+        for ($weekday = 0; $weekday <= 6; $weekday++) {
+            CafeOperatingHour::query()->create([
+                'weekday' => $weekday,
+                'opens_at' => '08:00:00',
+                'closes_at' => '22:00:00',
+                'sort_order' => 0,
+            ]);
+        }
     }
 
     protected function putSetting(WebsiteSettingKey $key, string $value): void

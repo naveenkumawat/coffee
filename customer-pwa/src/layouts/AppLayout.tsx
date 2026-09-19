@@ -9,6 +9,7 @@ import { ServiceWorkerUpdateBanner } from '../components/common/ServiceWorkerUpd
 import { ToastHost } from '../components/common/ToastHost';
 import { NotificationBell, NotificationDrawer } from '../components/notifications/NotificationBell';
 import { useAppBootstrap } from '../hooks/useAppBootstrap';
+import { usePublicCacheSync } from '../hooks/usePublicCacheSync';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useServiceWorkerUpdate } from '../hooks/useServiceWorkerUpdate';
 import { useRealtimeBootstrap } from '../realtime/useRealtimeBootstrap';
@@ -28,7 +29,21 @@ export function AppLayout() {
   const [hasStickyCta, setHasStickyCta] = useState(false);
   const realtimeState = useRealtimeBootstrap();
 
+  usePublicCacheSync();
   useAppBootstrap();
+
+  useEffect(() => {
+    document.title = brandName;
+
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    appleTitle?.setAttribute('content', brandName);
+
+    const applicationName = document.querySelector('meta[name="application-name"]');
+    applicationName?.setAttribute('content', brandName);
+
+    const ogSite = document.querySelector('meta[property="og:site_name"]');
+    ogSite?.setAttribute('content', brandName);
+  }, [brandName]);
 
   useEffect(() => {
     // Clear recovery guard only after a short healthy window so a failed

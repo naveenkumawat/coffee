@@ -60,6 +60,8 @@ interface OrderServiceInterface
 
     public function uploadPaymentProof(Order $order, User $customer, string $transactionId): Order;
 
+    public function confirmManualUpiPayment(Order $order, User $actor): Order;
+
     public function rejectPaymentProof(Order $order, User $actor, ?string $notes = null): Order;
 
     public function markCashReceived(Order $order, User $actor): Order;

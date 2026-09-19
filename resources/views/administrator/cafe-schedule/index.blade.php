@@ -59,12 +59,12 @@
 
                     @if ($canManage)
                         @if ($status->code === \App\Enums\CafeAvailabilityCode::ManualClosed)
-                            <form method="POST" action="{{ route('administrator.cafe-schedule.reopen') }}">
+                            <form method="POST" action="{{ route('administrator.cafe-schedule.reopen') }}" data-confirm-title="Reopen cafe ordering?" data-confirm-body="Customers will be able to place orders again according to opening hours." data-confirm-label="Reopen now" data-confirm-class="btn-success">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-light-success">Reopen Now</button>
                             </form>
                         @else
-                            <form method="POST" action="{{ route('administrator.cafe-schedule.close') }}" class="border border-gray-300 rounded p-4">
+                            <form method="POST" action="{{ route('administrator.cafe-schedule.close') }}" class="border border-gray-300 rounded p-4" data-confirm-title="Put cafe out of service?" data-confirm-body="Customers will not be able to place orders until you reopen." data-confirm-label="Put out of service" data-confirm-class="btn-danger">
                                 @csrf
                                 <div class="fw-semibold text-gray-900 mb-3">Put Out of Service</div>
                                 <div class="mb-3">

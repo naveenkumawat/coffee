@@ -182,6 +182,29 @@ test('legacy v1 storage migrates on read', async () => {
   assert.ok(window.sessionStorage.getItem('coffee.ordering_context.v2'));
 });
 
+test('stale dining mode without a session reconciles to takeaway', async () => {
+  const mod = await loadOrderingContextModule();
+  mod.resetOrderingContextCacheForTests();
+
+  mod.setOrderingMode('dining');
+  const withoutSession = mod.readOrderingContext();
+  assert.equal(withoutSession.mode, 'takeaway');
+  assert.equal(withoutSession.diningSession, null);
+
+  mod.writeOrderingContext({
+    mode: 'dining',
+    diningSessionId: '9',
+    tableLabel: 'T9',
+  });
+  assert.equal(mod.isDiningOrderingMode(mod.readOrderingContext()), true);
+
+  mod.writeOrderingContext({ diningSession: null, mode: 'takeaway' });
+  const cleared = mod.readOrderingContext();
+  assert.equal(cleared.mode, 'takeaway');
+  assert.equal(cleared.diningSession, null);
+  assert.equal(mod.isDiningOrderingMode(cleared), false);
+});
+
 test('isDiningSessionTerminal covers paid closed and cancelled', async () => {
   const mod = await loadOrderingContextModule();
 

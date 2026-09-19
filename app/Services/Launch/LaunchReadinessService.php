@@ -2,11 +2,13 @@
 
 namespace App\Services\Launch;
 
+use App\Enums\CmsPageKey;
 use App\Enums\PaymentMethod;
 use App\Enums\UserRole;
 use App\Enums\WebsiteSettingKey;
 use App\Models\CafeOperatingHour;
 use App\Models\CafeTable;
+use App\Models\CmsPage;
 use App\Models\HomeSection;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -39,7 +41,7 @@ class LaunchReadinessService implements LaunchReadinessServiceInterface
         $this->auditPayment($settings, $findings, $areas);
         $this->auditHours($settings, $findings, $areas);
         $this->auditFulfilment($settings, $findings, $areas);
-        $this->auditCms($settings, $findings, $areas);
+        $this->auditCms($findings, $areas);
         $this->auditSocial($findings, $areas);
         $this->auditCatalog($findings, $areas);
         $this->auditLaunchMenuDoc($findings, $areas);
@@ -208,23 +210,22 @@ class LaunchReadinessService implements LaunchReadinessServiceInterface
      */
     protected function auditHours(array $settings, array &$findings, array &$areas): void
     {
-        $textHours = $this->filled($settings[WebsiteSettingKey::BusinessOpeningHours->value] ?? null);
         $structuredDays = CafeOperatingHour::query()->count();
 
-        if ($textHours === null && $structuredDays === 0) {
+        if ($structuredDays === 0) {
             $this->add(
                 $findings,
                 'hours.missing',
                 'blocker',
                 'hours',
-                'No opening hours: set Website Settings business_opening_hours and/or Cafe Operating Hours rows.',
+                'No opening hours: configure Café Schedule operating hours.',
             );
-            $areas[] = $this->area('opening_hours', 'missing_real_data', 'Neither CMS hours nor structured schedule configured.');
+            $areas[] = $this->area('opening_hours', 'missing_real_data', 'Structured café schedule is not configured.');
         } else {
             $areas[] = $this->area(
                 'opening_hours',
                 'ready',
-                ($textHours ? 'CMS hours set; ' : '')."structured_days={$structuredDays}",
+                "structured_days={$structuredDays}",
             );
         }
 
@@ -271,28 +272,39 @@ class LaunchReadinessService implements LaunchReadinessServiceInterface
     }
 
     /**
-     * @param  array<string, ?string>  $settings
      * @param  list<array{code: string, severity: string, message: string, area: string}>  $findings
      * @param  list<array{area: string, status: string, notes: string}>  $areas
      */
-    protected function auditCms(array $settings, array &$findings, array &$areas): void
+    protected function auditCms(array &$findings, array &$areas): void
     {
+        $pages = CmsPage::query()->get()->keyBy('key');
+
         foreach ([
-            [WebsiteSettingKey::PagesTerms, 'cms.terms', 'blocker', 'Terms page (approved legal copy)'],
-            [WebsiteSettingKey::PagesPrivacy, 'cms.privacy', 'blocker', 'Privacy page (approved legal copy)'],
-            [WebsiteSettingKey::PagesAbout, 'cms.about', 'required', 'About page'],
-            [WebsiteSettingKey::PagesContact, 'cms.contact', 'required', 'Visit / Contact page'],
-            [WebsiteSettingKey::PagesFaq, 'cms.faq', 'required', 'FAQ page'],
+            [CmsPageKey::Terms, 'cms.terms', 'blocker', 'Terms page (approved legal copy)'],
+            [CmsPageKey::Privacy, 'cms.privacy', 'blocker', 'Privacy page (approved legal copy)'],
+            [CmsPageKey::About, 'cms.about', 'required', 'About page'],
+            [CmsPageKey::Contact, 'cms.contact', 'required', 'Visit / Contact page'],
+            [CmsPageKey::Faq, 'cms.faq', 'required', 'FAQ page'],
         ] as [$key, $code, $severity, $label]) {
-            if ($this->filled($settings[$key->value] ?? null) === null) {
-                $this->add($findings, $code, $severity, 'cms', "{$label} content missing in Website Settings.");
+            $page = $pages->get($key->value);
+            $hasContent = $page instanceof CmsPage
+                && $page->is_published
+                && ($key === CmsPageKey::Faq
+                    ? $page->faqItems()->where('is_active', true)->exists()
+                    : filled($page->body));
+
+            if (! $hasContent) {
+                $this->add($findings, $code, $severity, 'cms', "{$label} content missing in Content → Pages.");
             }
         }
 
+        $terms = $pages->get(CmsPageKey::Terms->value);
+        $privacy = $pages->get(CmsPageKey::Privacy->value);
+
         $areas[] = $this->area(
             'cms_pages',
-            $this->filled($settings[WebsiteSettingKey::PagesTerms->value] ?? null)
-                && $this->filled($settings[WebsiteSettingKey::PagesPrivacy->value] ?? null)
+            $terms instanceof CmsPage && $terms->is_published && filled($terms->body)
+                && $privacy instanceof CmsPage && $privacy->is_published && filled($privacy->body)
                 ? 'ready'
                 : 'missing_real_data',
             'Do not invent legal Terms/Privacy.',

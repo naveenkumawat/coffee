@@ -79,6 +79,21 @@ export function isPendingPayment(status: string | null | undefined): boolean {
   return status === 'pending_payment';
 }
 
+/** Cafe workflow chip — never treat `pending_payment` as the payment message. */
+export function customerWorkflowStatusLabel(
+  order: Pick<Order, 'status' | 'status_label'> | null | undefined,
+): string {
+  if (!order?.status) {
+    return 'Placed';
+  }
+
+  if (order.status === 'pending_payment') {
+    return 'Placed';
+  }
+
+  return order.status_label?.trim() || order.status;
+}
+
 export function isReadyForPickup(status: string | null | undefined): boolean {
   return status === 'ready_for_pickup';
 }
@@ -189,8 +204,12 @@ export function sortOrdersForDisplay(orders: Order[]): Order[] {
 }
 
 export function orderListActionLabel(
-  order: Pick<Order, 'status' | 'fulfilment_method' | 'payment_method' | 'can_cancel'>,
+  order: Pick<Order, 'status' | 'fulfilment_method' | 'payment_method' | 'payment_status' | 'can_cancel'>,
 ): string {
+  if (order.payment_status === 'awaiting_review') {
+    return 'Track';
+  }
+
   if (isPendingPayment(order.status)) {
     if (isCashPayment(order)) {
       return order.can_cancel ? 'Cancel' : 'Track';

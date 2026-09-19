@@ -143,7 +143,8 @@ class CafeAvailabilityTest extends TestCase
 
         $this->actingAs($admin, 'admin')
             ->get(route('administrator.cafe-schedule.index'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('data-confirm-title="Put cafe out of service?"', false);
 
         $this->actingAs($admin, 'admin')
             ->put(route('administrator.cafe-schedule.hours.update'), [

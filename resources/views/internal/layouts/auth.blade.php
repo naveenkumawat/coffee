@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <base href="" />
-        <title>{{ $title ?? config('app.name') }} | {{ ucfirst($panel) }} Login</title>
+        <title>{{ $title ?? ($cafeBrand['name'] ?? config('app.name')) }} | {{ ucfirst($panel) }} Login</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,8 +21,12 @@
                 style="background-image: url('{{ asset('internal/assets/media/illustrations/sketchy-1/17.png') }}')"
             >
                 <div class="d-flex flex-center flex-column flex-column-fluid p-10 pb-lg-20">
-                    <a href="{{ route('home') }}" class="mb-12 text-decoration-none">
-                        <span class="text-primary fw-bold fs-1">{{ config('app.name') }}</span>
+                    <a href="{{ route('home') }}" class="mb-12 text-decoration-none text-center">
+                        @if (! empty($cafeBrand['logo_url']))
+                            <img src="{{ $cafeBrand['logo_url'] }}" alt="{{ $cafeBrand['name'] ?? config('app.name') }}" style="max-height:3rem;max-width:14rem;object-fit:contain;">
+                        @else
+                            <span class="text-primary fw-bold fs-1">{{ $cafeBrand['name'] ?? config('app.name') }}</span>
+                        @endif
                     </a>
 
                     <div class="w-lg-500px bg-body rounded shadow-sm p-10 p-lg-15 mx-auto">

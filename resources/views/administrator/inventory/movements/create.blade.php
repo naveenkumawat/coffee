@@ -35,7 +35,7 @@
             </div>
         </div>
         <div class="card-body pt-0">
-            <form method="POST" action="{{ route('administrator.inventory.movements.store') }}" class="form">
+            <form method="POST" action="{{ route('administrator.inventory.movements.store') }}" class="form" data-confirm-title="Record stock movement?" data-confirm-body="This changes on-hand quantity. The ledger row cannot be edited later." data-confirm-label="Record movement" data-confirm-class="btn-warning">
                 @csrf
 
                 <div class="row g-6 mb-8 internal-form-grid">

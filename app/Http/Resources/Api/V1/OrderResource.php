@@ -108,6 +108,7 @@ class OrderResource extends JsonResource
             ),
             'payment_status' => $order->payment_status?->value,
             'payment_status_label' => $order->payment_status?->label(),
+            'can_submit_payment_transaction_id' => $order->canSubmitManualPaymentEvidence(),
             'payment_reference' => $order->payment_reference,
             'payment_transaction_id' => $order->isCashPayment() || $order->payment_method?->isOnline()
                 ? null

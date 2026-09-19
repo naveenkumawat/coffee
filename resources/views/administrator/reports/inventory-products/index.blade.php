@@ -60,7 +60,7 @@
                 </div>
                 <div class="col-xl-2 col-md-4">
                     <label for="ingredient_id" class="form-label">Ingredient</label>
-                    <select id="ingredient_id" name="ingredient_id" class="form-select">
+                    <select id="ingredient_id" name="ingredient_id" class="form-select" data-control="select2" data-placeholder="All ingredients">
                         <option value="">All ingredients</option>
                         @foreach ($options['ingredients'] as $id => $name)
                             <option value="{{ $id }}" @selected((string) $filters['ingredient_id'] === (string) $id)>{{ $name }}</option>
@@ -69,7 +69,7 @@
                 </div>
                 <div class="col-xl-2 col-md-4">
                     <label for="ingredient_category_id" class="form-label">Ingredient category</label>
-                    <select id="ingredient_category_id" name="ingredient_category_id" class="form-select">
+                    <select id="ingredient_category_id" name="ingredient_category_id" class="form-select" data-control="select2" data-placeholder="All categories">
                         <option value="">All categories</option>
                         @foreach ($options['ingredient_categories'] as $id => $name)
                             <option value="{{ $id }}" @selected((string) $filters['ingredient_category_id'] === (string) $id)>{{ $name }}</option>
@@ -87,7 +87,7 @@
                 </div>
                 <div class="col-xl-2 col-md-4">
                     <label for="product_category_id" class="form-label">Product category</label>
-                    <select id="product_category_id" name="product_category_id" class="form-select">
+                    <select id="product_category_id" name="product_category_id" class="form-select" data-control="select2" data-placeholder="All categories">
                         <option value="">All categories</option>
                         @foreach ($options['product_categories'] as $id => $name)
                             <option value="{{ $id }}" @selected((string) $filters['product_category_id'] === (string) $id)>{{ $name }}</option>

@@ -19,7 +19,7 @@
                 </div>
                 <div class="col-xl-3 col-md-3">
                     <label for="product_category_id" class="form-label">Category</label>
-                    <select id="product_category_id" name="product_category_id" class="form-select">
+                    <select id="product_category_id" name="product_category_id" class="form-select" data-control="select2" data-placeholder="All categories">
                         <option value="">All categories</option>
                         @foreach ($categoryOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('product_category_id') === (string) $id)>{{ $name }}</option>
@@ -28,7 +28,7 @@
                 </div>
                 <div class="col-xl-3 col-md-3">
                     <label for="product_id" class="form-label">Product</label>
-                    <select id="product_id" name="product_id" class="form-select">
+                    <select id="product_id" name="product_id" class="form-select" data-control="select2" data-placeholder="All products">
                         <option value="">All products</option>
                         @foreach ($productOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('product_id') === (string) $id)>{{ $name }}</option>

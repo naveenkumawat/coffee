@@ -50,6 +50,32 @@ class PublicMedia
     }
 
     /**
+     * @return list<string>
+     */
+    public static function brandLogoAllowedExtensions(): array
+    {
+        return ['svg', 'png', 'jpg', 'jpeg', 'webp'];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function brandLogoAllowedMimes(): array
+    {
+        return ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'];
+    }
+
+    public static function brandLogoMaxKilobytes(): int
+    {
+        return max(1, (int) config('coffee.media.brand_logo_max_kilobytes', 5120));
+    }
+
+    public static function brandLogoMaxMegabytesLabel(): string
+    {
+        return (string) max(1, intdiv(self::brandLogoMaxKilobytes(), 1024));
+    }
+
+    /**
      * Validation rules for an optional uploaded image field.
      *
      * @return list<string>
@@ -81,21 +107,25 @@ class PublicMedia
             return $value;
         }
 
-        if (str_starts_with($value, '/')) {
-            return url($value);
+        $relative = ltrim(str_replace('\\', '/', $value), '/');
+
+        // url('storage/...') appends to APP_URL (including /coffee subdirectory).
+        // url('/storage/...') is host-absolute and drops the subdirectory.
+        if (str_starts_with($relative, 'storage/')) {
+            return url($relative);
         }
 
-        if (str_starts_with($value, 'storage/')) {
-            return url('/'.$value);
+        if (self::isManagedRelativePath($relative)) {
+            return url('storage/'.$relative);
         }
 
-        $generated = Storage::disk(self::disk())->url($value);
+        $generated = Storage::disk(self::disk())->url($relative);
 
         if (preg_match('#^https?://#i', $generated) === 1) {
             return $generated;
         }
 
-        return url($generated);
+        return url(ltrim((string) $generated, '/'));
     }
 
     /**
@@ -106,9 +136,15 @@ class PublicMedia
     {
         $directory = trim($directory, '/');
         $extension = strtolower((string) $file->getClientOriginalExtension());
+        $guessed = strtolower((string) $file->extension());
+
+        if ($extension === 'svg' || $guessed === 'svg') {
+            throw ValidationException::withMessages([
+                'image' => 'SVG is only accepted for the primary logo.',
+            ]);
+        }
 
         if (! in_array($extension, self::allowedExtensions(), true)) {
-            $guessed = strtolower((string) $file->extension());
             $extension = in_array($guessed, self::allowedExtensions(), true) ? $guessed : 'jpg';
         }
 
@@ -126,6 +162,56 @@ class PublicMedia
         }
 
         return $path;
+    }
+
+    /**
+     * Store a primary logo. Raster files use the generic PublicMedia pipeline;
+     * SVG is sanitized, then written with a generated UUID filename.
+     */
+    public static function storeBrandLogo(UploadedFile $file): string
+    {
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+
+        if (! in_array($extension, self::brandLogoAllowedExtensions(), true)) {
+            $guessed = strtolower((string) $file->extension());
+            $extension = in_array($guessed, self::brandLogoAllowedExtensions(), true) ? $guessed : '';
+        }
+
+        if ($extension === 'jpeg') {
+            $extension = 'jpg';
+        }
+
+        if ($extension === 'svg') {
+            $path = $file->getRealPath();
+            $contents = is_string($path) && $path !== '' ? (string) file_get_contents($path) : '';
+            $clean = (new BrandLogoSvgSanitizer)->clean($contents);
+
+            if ($clean === null) {
+                throw ValidationException::withMessages([
+                    'brand_logo' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+                ]);
+            }
+
+            $filename = Str::uuid()->toString().'.svg';
+            $relative = self::DIRECTORY_WEBSITE.'/'.$filename;
+            $stored = Storage::disk(self::disk())->put($relative, $clean);
+
+            if ($stored !== true) {
+                throw ValidationException::withMessages([
+                    'brand_logo' => 'Unable to store the image. Please try again.',
+                ]);
+            }
+
+            return $relative;
+        }
+
+        if (! in_array($extension, self::allowedExtensions(), true)) {
+            throw ValidationException::withMessages([
+                'brand_logo' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+            ]);
+        }
+
+        return self::store($file, self::DIRECTORY_WEBSITE);
     }
 
     /**

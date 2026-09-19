@@ -29,7 +29,7 @@
                 @endphp
                 <div class="d-flex flex-wrap gap-2">
                     @foreach ($availableTransitions as $statusValue => $statusLabel)
-                        <form method="POST" action="{{ route($routeName, $order) }}" class="d-inline-flex flex-wrap align-items-end gap-2">
+                        <form method="POST" action="{{ route($routeName, $order) }}" class="d-inline-flex flex-wrap align-items-end gap-2" @if (in_array($statusValue, ['cancelled', 'rejected'], true)) data-confirm-title="{{ $statusValue === 'rejected' ? 'Reject this order?' : 'Cancel this order?' }}" data-confirm-body="{{ $statusValue === 'rejected' ? 'This rejects the order. This cannot be undone from this screen.' : 'This cancels the order. This cannot be undone from this screen.' }}" data-confirm-label="{{ $statusLabel }}" data-confirm-class="btn-danger" @endif>
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="status" value="{{ $statusValue }}" />

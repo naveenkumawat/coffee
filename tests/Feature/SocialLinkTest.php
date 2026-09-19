@@ -45,7 +45,7 @@ class SocialLinkTest extends TestCase
             'platform_key' => 'instagram',
             'label' => 'Instagram',
             'icon_key' => SocialIconKey::Instagram->value,
-            'url' => 'https://instagram.com/the88coffees',
+            'url' => 'https://instagram.com/sipthesoul',
             'sort_order' => 30,
             'is_active' => true,
         ]);
@@ -53,7 +53,7 @@ class SocialLinkTest extends TestCase
             'platform_key' => 'facebook',
             'label' => 'Facebook',
             'icon_key' => SocialIconKey::Facebook->value,
-            'url' => 'https://facebook.com/the88coffees',
+            'url' => 'https://facebook.com/sipthesoul',
             'sort_order' => 10,
             'is_active' => true,
         ]);
@@ -61,7 +61,7 @@ class SocialLinkTest extends TestCase
             'platform_key' => 'youtube',
             'label' => 'YouTube',
             'icon_key' => SocialIconKey::Youtube->value,
-            'url' => 'https://youtube.com/@the88coffees',
+            'url' => 'https://youtube.com/@sipthesoul',
             'sort_order' => 5,
         ]);
         SocialLink::factory()->withoutUrl()->create([
@@ -89,7 +89,7 @@ class SocialLinkTest extends TestCase
             ->assertJsonCount(3, 'data.social_links')
             ->assertJsonPath('data.social_links.0.label', 'Facebook')
             ->assertJsonPath('data.social_links.0.icon_key', 'facebook')
-            ->assertJsonPath('data.social_links.0.url', 'https://facebook.com/the88coffees')
+            ->assertJsonPath('data.social_links.0.url', 'https://facebook.com/sipthesoul')
             ->assertJsonPath('data.social_links.1.label', 'WhatsApp')
             ->assertJsonPath('data.social_links.1.url', 'https://wa.me/919876543210')
             ->assertJsonPath('data.social_links.2.label', 'Instagram')

@@ -185,7 +185,8 @@ export async function request<TResponse>(path: string, init: RequestInit = {}): 
   const response = await fetch(toUrl(path), {
     credentials: 'include',
     ...init,
-    headers
+    headers,
+    cache: init.cache ?? 'no-store',
   });
 
   const payload = await parsePayload(response);

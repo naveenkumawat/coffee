@@ -5,6 +5,7 @@ namespace App\Services\Social;
 use App\Enums\SocialIconKey;
 use App\Models\SocialLink;
 use App\Repositories\Social\SocialLinkRepositoryInterface;
+use App\Services\PublicCache\PublicCacheVersionServiceInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -17,14 +18,20 @@ class SocialLinkService implements SocialLinkServiceInterface
 
     public function store(array $data): SocialLink
     {
-        return DB::transaction(fn (): SocialLink => $this->links->create($this->prepareAttributes($data)));
+        $link = DB::transaction(fn (): SocialLink => $this->links->create($this->prepareAttributes($data)));
+        app(PublicCacheVersionServiceInterface::class)->invalidate('social_link');
+
+        return $link;
     }
 
     public function update(SocialLink $link, array $data): SocialLink
     {
-        return DB::transaction(
+        $updated = DB::transaction(
             fn (): SocialLink => $this->links->update($link, $this->prepareAttributes($data, (int) $link->getKey())),
         );
+        app(PublicCacheVersionServiceInterface::class)->invalidate('social_link');
+
+        return $updated;
     }
 
     public function delete(SocialLink $link): void
@@ -33,11 +40,15 @@ class SocialLinkService implements SocialLinkServiceInterface
             $link->forceFill(['is_active' => false])->save();
             $this->links->delete($link);
         });
+        app(PublicCacheVersionServiceInterface::class)->invalidate('social_link');
     }
 
     public function setActive(SocialLink $link, bool $isActive): SocialLink
     {
-        return $this->links->setActive($link, $isActive);
+        $updated = $this->links->setActive($link, $isActive);
+        app(PublicCacheVersionServiceInterface::class)->invalidate('social_link');
+
+        return $updated;
     }
 
     public function move(SocialLink $link, string $direction): void
@@ -49,6 +60,7 @@ class SocialLinkService implements SocialLinkServiceInterface
         }
 
         DB::transaction(fn () => $this->links->move($link, $direction));
+        app(PublicCacheVersionServiceInterface::class)->invalidate('social_link');
     }
 
     public function customerFacingLinks(?string $canonicalWhatsappNumber = null): array

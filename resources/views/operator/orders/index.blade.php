@@ -45,7 +45,7 @@
                 </div>
                 <div class="col-xl-3 col-md-3">
                     <label for="customer_id" class="form-label">Customer</label>
-                    <select id="customer_id" name="customer_id" class="form-select">
+                    <select id="customer_id" name="customer_id" class="form-select" data-control="select2" data-placeholder="All customers">
                         <option value="">All customers</option>
                         @foreach ($customerOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('customer_id') === (string) $id)>{{ $name }}</option>
@@ -54,7 +54,7 @@
                 </div>
                 <div class="col-xl-3 col-md-6">
                     <label for="assigned_barista_id" class="form-label">Assigned Barista</label>
-                    <select id="assigned_barista_id" name="assigned_barista_id" class="form-select">
+                    <select id="assigned_barista_id" name="assigned_barista_id" class="form-select" data-control="select2" data-placeholder="Any barista">
                         <option value="">Any barista</option>
                         @foreach ($baristaOptions as $id => $name)
                             <option value="{{ $id }}" @selected((string) request('assigned_barista_id') === (string) $id)>{{ $name }}</option>

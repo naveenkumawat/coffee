@@ -237,6 +237,10 @@ test('dining entry page uses table cards guest stepper and start dining CTA', ()
 
 test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail cart', () => {
   const source = readSrc('components/navigation/BottomNavigation.tsx');
+  const theme = readSrc('assets/styles/theme.css');
+  const diningPage = readSrc('pages/DiningPage.tsx');
+  const contentStore = readSrc('stores/contentStore.ts');
+
   assert.match(source, /useOrderingContext/);
   assert.match(source, /hasActiveDiningSession/);
   assert.match(source, /diningSessionPath/);
@@ -257,8 +261,17 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail car
   assert.match(source, /diningTo = diningSession/);
   assert.doesNotMatch(source, /draftItemCount/);
   assert.doesNotMatch(source, /diningMenuPath/);
-  assert.doesNotMatch(source, /!diningContext && diningEnabled/);
-  assert.doesNotMatch(source, /diningEnabled/);
+
+  assert.match(contentStore, /export function selectDiningEnabled/);
+  assert.match(source, /selectDiningEnabled/);
+  assert.match(source, /showDiningNav = Boolean\(diningSession\) \|\| diningEnabled/);
+  assert.match(source, /\.\.\.\(showDiningNav/);
+  assert.match(theme, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(0,\s*1fr\)\)/);
+  assert.doesNotMatch(theme, /repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(diningPage, /selectDiningEnabled/);
+  assert.match(diningPage, /if \(activeSession\)/);
+  assert.match(diningPage, /if \(!diningEnabled\)/);
+  assert.match(diningPage, /Dining is unavailable/);
 
   assert.match(source, /isDiningSessionSurfacePath/);
   assert.match(source, /isNavActive/);
@@ -297,11 +310,22 @@ test('customer dining uses designed confirm dialog instead of browser confirm', 
   assert.match(dialog, /export function confirmAction/);
   assert.match(dialog, /ConfirmDialogHost/);
   assert.match(select, /export function SearchableSelect/);
-  assert.match(session, /Request the bill\?/);
+  assert.match(select, /ArrowDown/);
+  assert.match(select, /allowClear/);
+  const tables = readSrc('pages/waiter/WaiterTablesPage.tsx');
+  assert.match(tables, /SearchableSelect/);
+  assert.match(tables, /confirmYes/);
+  assert.doesNotMatch(tables, /waiter-confirm-overlay/);
+  assert.match(dialog, /Working…/);
+  assert.match(dialog, /disabled=\{busy/);
+  assert.match(session, /REQUEST_BILL_CONFIRM/);
+  assert.match(readSrc('utils/diningConfirmCopy.ts'), /Request final bill\?/);
+  assert.match(readSrc('utils/diningConfirmCopy.ts'), /Keep Ordering/);
   assert.match(session, /confirmYes/);
   assert.match(orderDetail, /confirmYes/);
   assert.match(confirmation, /confirmYes/);
   assert.match(addresses, /confirmYes/);
+  assert.match(waiter, /REQUEST_BILL_CONFIRM/);
   assert.match(waiter, /Resume ordering/);
   assert.match(waiter, /Accept Round/);
 
@@ -458,9 +482,226 @@ test('shared discount helpers prefer named backend lines over generic Discount',
   assert.match(breakdown, /discountDisplayLabel/);
 });
 
+test('customer branding uses Sip The Soul tokens and settings-driven logo', () => {
+  const types = readSrc('types/content.ts');
+  const logo = readSrc('components/common/BrandLogo.tsx');
+  const layout = readSrc('layouts/AppLayout.tsx');
+  const theme = readFileSync(join(root, 'src/assets/styles/theme.css'), 'utf8');
+  const manifest = readFileSync(join(root, 'public/manifest.webmanifest'), 'utf8');
+  const index = readFileSync(join(root, 'index.html'), 'utf8');
+  const confirm = readSrc('components/common/ConfirmDialog.tsx');
+
+  assert.match(types, /DEFAULT_BRAND_NAME = 'Sip The Soul'/);
+  assert.match(types, /DEFAULT_HOME_SLOGAN = 'CAFFEINE TILL COFFIN\.'/);
+  assert.match(types, /logo_url/);
+  assert.match(types, /display_mode/);
+  assert.match(types, /favicon_url/);
+  assert.doesNotMatch(types, /The88Coffees/);
+  assert.doesNotMatch(types, /Sip\. Relax\. Enjoy\./);
+
+  assert.match(logo, /selectBrandLogoUrl/);
+  assert.match(logo, /resolveCatalogMediaUrl/);
+  assert.match(logo, /placement/);
+  assert.match(logo, /brand-wordmark/);
+  assert.match(logo, /onError/);
+  assert.doesNotMatch(logo, /brand-mark\.svg/);
+
+  assert.match(layout, /document\.title = brandName/);
+  assert.doesNotMatch(layout, /selectBrandFaviconUrl/);
+
+  assert.match(theme, /--brand-primary:\s*#7c5a3b/);
+  assert.match(theme, /--brand-espresso:\s*#2c1810/);
+  assert.match(theme, /--success:\s*#1f7a4c/);
+  assert.match(theme, /--danger:\s*#b44d4d/);
+  assert.match(confirm, /btn-danger/);
+  assert.match(confirm, /btn-success/);
+
+  assert.match(manifest, /"name": "Sip The Soul"/);
+  assert.match(manifest, /"short_name": "Sip The Soul"/);
+  assert.match(manifest, /pwa-192x192\.png/);
+  assert.match(index, /Sip The Soul/);
+  assert.doesNotMatch(index, /The88Coffees/);
+});
+
+test('campaign account popup uses compact shared dialog primitives', () => {
+  const modal = readSrc('components/campaigns/CampaignPopupModal.tsx');
+  const theme = readFileSync(join(root, 'src/assets/styles/theme.css'), 'utf8');
+  const confirm = readSrc('components/common/ConfirmDialog.tsx');
+  const session = readSrc('pages/DiningSessionPage.tsx');
+  const bill = readSrc('pages/DiningBillPage.tsx');
+
+  assert.match(modal, /createPortal/);
+  assert.match(modal, /confirm-dialog-overlay/);
+  assert.match(modal, /confirm-dialog-panel/);
+  assert.match(modal, /confirm-dialog-header/);
+  assert.match(modal, /role="dialog"/);
+  assert.match(modal, /aria-modal="true"/);
+  assert.match(modal, /aria-label="Close"/);
+  assert.match(modal, /product-overlay-close/);
+  assert.match(modal, /lockOverlayBackgroundScroll/);
+  assert.match(modal, /unlockOverlayBackgroundScroll/);
+  assert.match(modal, /ctaLockRef/);
+  assert.match(modal, /link-button campaign-popup-dismiss/);
+  assert.match(modal, /Not now/);
+  assert.match(modal, /btn btn-primary rounded-pill w-100/);
+  assert.match(modal, /Escape/);
+  assert.match(modal, /trigger\.focus/);
+  assert.doesNotMatch(modal, /product-overlay-panel/);
+  assert.doesNotMatch(modal, /product-overlay-handle/);
+  assert.doesNotMatch(modal, /className="icon-button"/);
+  assert.doesNotMatch(modal, /btn-lg/);
+  assert.doesNotMatch(modal, /btn-light/);
+  assert.doesNotMatch(modal, /Close campaign/);
+
+  assert.match(theme, /\.campaign-popup-panel \.confirm-dialog-header h2\s*\{[\s\S]*?clamp\(1\.4rem/);
+  assert.match(theme, /\.confirm-dialog-header h2\s*\{[\s\S]*?font-size:\s*1\.15rem/);
+  assert.match(theme, /\.confirm-dialog-panel\s*\{[\s\S]*?max-height:\s*calc\(100dvh/);
+  assert.match(theme, /\.confirm-dialog-overlay\s*\{[\s\S]*?var\(--page-gutter\)/);
+  assert.match(theme, /\.campaign-popup-dismiss\s*\{/);
+  assert.doesNotMatch(theme, /\.campaign-popup-panel[\s\S]{0,180}max-height:\s*min\(85vh/);
+
+  assert.match(confirm, /confirm-dialog-actions/);
+  assert.match(confirm, /btn-outline-dark rounded-pill/);
+  assert.doesNotMatch(confirm, /campaign-popup/);
+  assert.match(session, /REQUEST_BILL_CONFIRM/);
+  assert.match(session, /confirmYes/);
+  assert.match(bill, /Submit Transaction ID\?/);
+  assert.doesNotMatch(session, /window\.confirm\(/);
+});
+
+test('home brand lockup uses placement variants and mode layouts without 52px squares', () => {
+  const logo = readSrc('components/common/BrandLogo.tsx');
+  const header = readSrc('components/common/Header.tsx');
+  const auth = readSrc('components/auth/AuthCard.tsx');
+  const waiter = readSrc('pages/waiter/WaiterTablesPage.tsx');
+  const theme = readFileSync(join(root, 'src/assets/styles/theme.css'), 'utf8');
+
+  assert.match(header, /placement="hero"/);
+  assert.doesNotMatch(header, /placement="compact"/);
+
+  assert.match(auth, /placement="compact"/);
+  assert.match(waiter, /placement="compact"/);
+  assert.doesNotMatch(auth, /placement="hero"/);
+  assert.doesNotMatch(waiter, /placement="hero"/);
+
+  assert.match(logo, /is-logo-only/);
+  assert.match(logo, /is-logo-name/);
+  assert.match(logo, /is-logo-name-tagline/);
+  assert.match(logo, /brand-lockup-copy/);
+  assert.match(logo, /onError/);
+  assert.match(logo, /alt=\{showName \? '' : displayName\}/);
+  assert.match(logo, /displayMode === 'logo'/);
+  assert.match(logo, /displayMode === 'logo_name'/);
+  assert.match(logo, /displayMode === 'logo_name_tagline'/);
+
+  assert.match(theme, /\.brand-lockup\.is-hero\.is-logo-only \.brand-logo-image/);
+  assert.match(theme, /\.brand-lockup\.is-hero\.is-logo-name \.brand-logo-image/);
+  assert.match(theme, /\.brand-lockup\.is-hero\.is-logo-name-tagline \.brand-logo-image/);
+  assert.match(theme, /\.brand-lockup\.is-logo-name,\s*\n\.brand-lockup\.is-logo-name-tagline \{\s*\n\s*flex-direction:\s*row/);
+  assert.match(theme, /--brand-lockup-hero-logo-only-max-width:\s*clamp\(180px/);
+  assert.match(theme, /--brand-lockup-hero-logo-only-max-height:\s*clamp\(120px/);
+  assert.match(theme, /object-fit:\s*contain/);
+  assert.match(theme, /\.brand-lockup\.is-compact \.brand-logo-image/);
+  assert.match(theme, /flex-shrink:\s*0/);
+  assert.match(theme, /\.brand-lockup-copy[\s\S]*?min-width:\s*0/);
+  assert.match(theme, /\.brand-lockup\.is-hero\.is-logo-only \.brand-logo-image \{\s*[\s\S]*?width:\s*auto/);
+  assert.match(theme, /\.brand-lockup\.is-hero\.is-logo-name \.brand-logo-image[\s\S]*?width:\s*auto/);
+  assert.doesNotMatch(theme, /\.brand-logo-image[\s\S]{0,80}width:\s*52px/);
+  assert.doesNotMatch(theme, /\.brand-logo-image[\s\S]{0,80}height:\s*52px/);
+  assert.doesNotMatch(theme, /\.home-brand-header[\s\S]{0,220}height:\s*3\.25rem/);
+  assert.doesNotMatch(theme, /--brand-lockup-compact-max-height:\s*clamp\(180px/);
+});
+
+test('customer tokens use warm cream page surfaces and complementary type roles', () => {
+  const theme = readFileSync(join(root, 'src/assets/styles/theme.css'), 'utf8');
+  const logo = readSrc('components/common/BrandLogo.tsx');
+
+  assert.match(theme, /--brand-page-bg:\s*#f6efe6/);
+  assert.match(theme, /--brand-cream:\s*#f6efe6/);
+  assert.match(theme, /--brand-surface:\s*#fbf6ee/);
+  assert.match(theme, /\.app-shell[\s\S]{0,700}background:\s*var\(--brand-page-bg\)/);
+  assert.match(theme, /\.bottom-navigation \{[\s\S]{0,700}background:\s*var\(--brand-page-bg\)/);
+  assert.match(theme, /--font-display:\s*'Fraunces'/);
+  assert.match(theme, /--font-body:\s*'Poppins'/);
+  assert.match(theme, /family=Fraunces/);
+  assert.doesNotMatch(theme, /family=Raleway/);
+  assert.match(theme, /\.brand-wordmark[\s\S]{0,80}var\(--font-display\)/);
+  assert.match(theme, /\.brand-tagline[\s\S]{0,180}var\(--font-body\)/);
+  assert.match(theme, /\.brand-tagline[\s\S]{0,220}letter-spacing:\s*0\.06em/);
+  assert.match(theme, /\.skeleton-card \{[\s\S]{0,120}background:\s*var\(--brand-surface\)/);
+  assert.match(logo, /<img/);
+  assert.match(logo, /className="brand-logo-image"/);
+  assert.doesNotMatch(logo, /dangerouslySetInnerHTML/);
+  assert.match(theme, /\.brand-logo-image[\s\S]{0,180}object-fit:\s*contain/);
+  assert.match(theme, /\.brand-logo-image[\s\S]{0,180}height:\s*auto/);
+  assert.doesNotMatch(theme, /\.brand-logo-image[\s\S]{0,220}background:/);
+  assert.doesNotMatch(theme, /\.brand-logo-image[\s\S]{0,220}mix-blend/);
+  assert.doesNotMatch(theme, /\.brand-logo-image[\s\S]{0,220}filter:/);
+  assert.doesNotMatch(logo, /mixBlendMode|backgroundColor/);
+});
+
 test('route error page logs the real error in development', () => {
   const source = readSrc('pages/RouteErrorPage.tsx');
   assert.match(source, /import\.meta\.env\.DEV/);
   assert.match(source, /console\.error/);
   assert.match(source, /Something went wrong/);
+});
+
+test('public cache uses IndexedDB and namespaced version metadata', () => {
+  const keys = readSrc('cache/keys.ts');
+  const version = readSrc('cache/version.ts');
+  const idb = readSrc('cache/idb.ts');
+  const catalog = readSrc('api/catalog.ts');
+  const content = readSrc('api/content.ts');
+  const contentStore = readSrc('stores/contentStore.ts');
+  const auth = readSrc('stores/authStore.ts');
+  const sw = readFileSync(join(root, 'scripts/generate-sw.mjs'), 'utf8');
+
+  assert.match(keys, /sip-the-soul\.cache-version/);
+  assert.match(keys, /PUBLIC_CACHE_DB = 'sip-the-soul'/);
+  assert.match(keys, /the88coffees\.cache-version/);
+  assert.doesNotMatch(version, /guest-cart|ordering_context/);
+  assert.match(idb, /JSON\.parse\(JSON\.stringify\(payload\)\)/);
+  assert.match(catalog, /readCachedPublicJson/);
+  assert.match(catalog, /getConditional/);
+  assert.match(content, /PUBLIC_CACHE_KEYS\.content/);
+  assert.match(contentStore, /skipNetworkIfCached/);
+  assert.match(auth, /logoutCustomer/);
+  assert.doesNotMatch(auth, /purgePublicClientCaches/);
+  assert.match(sw, /sip-the-soul-media-/);
+  assert.match(sw, /MEDIA_MAX_ENTRIES = 80/);
+  assert.match(sw, /PURGE_PUBLIC_MEDIA/);
+  assert.match(sw, /isAuthoritativeApi\(url\)/);
+  assert.match(sw, /pathname\.startsWith\('\/api\/'\)/);
+  assert.match(sw, /cacheFirstPublicMedia/);
+});
+
+test('private order APIs stay off the public cache and Manual UPI copy is locked after submit', () => {
+  const ordersApi = readSrc('api/orders.ts');
+  const client = readSrc('api/client.ts');
+  const paymentState = readSrc('utils/paymentState.ts');
+  const workflow = readSrc('utils/orders.ts');
+  const confirmation = readSrc('pages/OrderConfirmationPage.tsx');
+  const listCard = readSrc('components/orders/OrderListCard.tsx');
+  const timeline = readSrc('components/orders/OrderStatusTimeline.tsx');
+
+  assert.doesNotMatch(ordersApi, /readCachedPublicJson|writeCachedPublicJson|PUBLIC_CACHE/);
+  assert.match(client, /cache: init\.cache \?\? 'no-store'/);
+  assert.match(paymentState, /can_submit_payment_transaction_id/);
+  assert.match(
+    paymentState,
+    /You can submit another one only if the café rejects this payment/,
+  );
+  assert.match(workflow, /customerWorkflowStatusLabel/);
+  assert.match(workflow, /return 'Placed'/);
+  assert.match(confirmation, /customerWorkflowStatusLabel/);
+  assert.match(listCard, /customerWorkflowStatusLabel/);
+  assert.doesNotMatch(listCard, /label=\{order\.status_label\}/);
+  assert.match(timeline, /Payment verification pending/);
+});
+
+test('CMS pages hydrate from the public content store instead of a private fetch', () => {
+  const page = readSrc('components/content/ContentPage.tsx');
+  assert.match(page, /useContentStore/);
+  assert.doesNotMatch(page, /fetchWebsiteContent/);
 });

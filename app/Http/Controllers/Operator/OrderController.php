@@ -99,6 +99,17 @@ class OrderController extends Controller
             ->with('status', 'Cash marked as received.');
     }
 
+    public function confirmManualUpiPayment(Order $order): RedirectResponse
+    {
+        $this->authorize('confirmManualUpiPayment', $order);
+
+        $this->service->confirmManualUpiPayment($order, request()->user('admin'));
+
+        return redirect()
+            ->route('operator.orders.show', $order)
+            ->with('status', 'Manual UPI payment verified.');
+    }
+
     public function rejectPaymentProof(OrderPaymentProofRejectRequest $request, Order $order): RedirectResponse
     {
         $this->authorize('rejectPaymentProof', $order);

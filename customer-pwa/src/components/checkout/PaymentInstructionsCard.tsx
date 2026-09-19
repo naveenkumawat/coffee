@@ -422,14 +422,24 @@ export function PaymentInstructionsCard({
           <i className="bi bi-hourglass-split" aria-hidden="true"></i>
           <div>
             <strong>Payment verification pending</strong>
-            <p>
-              We&apos;ve received your transaction ID
-              {proof?.transaction_id || order.payment_transaction_id
-                ? ` (${proof?.transaction_id || order.payment_transaction_id})`
-                : ''}
-              . Your order will be confirmed once the payment is verified.
-            </p>
+            <p>{presentation.body}</p>
           </div>
+        </div>
+      ) : null}
+
+      {awaitingReview && (order.payment_transaction_id || proof?.transaction_id) ? (
+        <div className="payment-detail-block">
+          <label className="form-label" htmlFor={`upi-txn-locked-${order.id}`}>
+            UPI Transaction ID / UTR
+          </label>
+          <input
+            id={`upi-txn-locked-${order.id}`}
+            type="text"
+            className="form-control mb-3"
+            value={order.payment_transaction_id ?? proof?.transaction_id ?? ''}
+            readOnly
+            disabled
+          />
         </div>
       ) : null}
 

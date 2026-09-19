@@ -16,6 +16,7 @@ import {
   setWaiterPaymentMethod,
 } from '../../api/waiterDining';
 import { confirmAction, confirmYes } from '../../components/common/ConfirmDialog';
+import { REQUEST_BILL_CONFIRM } from '../../utils/diningConfirmCopy';
 import { ErrorState } from '../../components/common/ErrorState';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -123,9 +124,7 @@ export function WaiterSessionPage() {
 
     if (!discardDraft) {
       const confirmed = await confirmYes({
-        title: 'Request the bill?',
-        body: "Once the bill is requested, guests won't be able to add more orders to this session.",
-        confirmLabel: 'Request bill',
+        ...REQUEST_BILL_CONFIRM,
       });
 
       if (!confirmed) {
@@ -529,7 +528,7 @@ export function WaiterSessionPage() {
                   void (async () => {
                     const confirmed = await confirmYes({
                       title: 'Close dining session?',
-                      body: `This will end the session and release ${session.table.label}. No more orders can be added.`,
+                      body: `This ends the dining session and makes ${session.table.label} available. No more orders can be added.`,
                       confirmLabel: 'Close session',
                     });
 
@@ -568,7 +567,7 @@ export function WaiterSessionPage() {
                   void (async () => {
                     const result = await confirmAction({
                       title: 'Resume ordering?',
-                      body: `This reopens the unpaid bill for ${session.table.label} so more orders can be added.`,
+                      body: `This reopens the unpaid bill so ${session.table.label} is active for more orders. Paid or conflicting sessions cannot be reopened.`,
                       confirmLabel: 'Resume ordering',
                       requireReason: true,
                       reasonLabel: 'Reason',

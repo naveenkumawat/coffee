@@ -2,16 +2,32 @@
 
 namespace App\Http\Requests\WebsiteSetting;
 
+use App\Enums\BrandDisplayMode;
 use App\Enums\WebsiteSettingKey;
+use App\Enums\WebsiteSettingSection;
 use App\Models\WebsiteSetting;
+use App\Rules\BrandLogoUpload;
 use App\Support\PublicMedia;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class WebsiteSettingUpdateRequest extends FormRequest
 {
+    protected string $incomingSection = '';
+
     public function authorize(): bool
     {
         return $this->user('admin')?->can('update', WebsiteSetting::class) ?? false;
+    }
+
+    public function incomingSection(): string
+    {
+        return $this->incomingSection;
+    }
+
+    public function section(): WebsiteSettingSection
+    {
+        return WebsiteSettingSection::fromQuery($this->input('section', $this->query('section')));
     }
 
     /**
@@ -19,14 +35,44 @@ class WebsiteSettingUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        if (in_array($this->incomingSection, ['hero', 'social'], true)) {
+            return [];
+        }
+
+        $section = $this->section();
         $rules = [
-            'hero_image' => PublicMedia::uploadRules(),
-            'payment_qr_image' => PublicMedia::uploadRules(),
-            'remove_hero_image' => ['nullable', 'boolean'],
-            'remove_payment_qr_image' => ['nullable', 'boolean'],
+            'section' => ['required', Rule::enum(WebsiteSettingSection::class)],
         ];
 
-        foreach (WebsiteSettingKey::ordered() as $key) {
+        if ($section === WebsiteSettingSection::Branding) {
+            $rules['brand_logo'] = ['nullable', 'file', new BrandLogoUpload];
+            $rules['remove_brand_logo'] = ['nullable', 'boolean'];
+        }
+
+        if ($section === WebsiteSettingSection::Payments) {
+            $rules['payment_qr_image'] = PublicMedia::uploadRules();
+            $rules['remove_payment_qr_image'] = ['nullable', 'boolean'];
+        }
+
+        foreach ($section->settingKeys() as $key) {
+            if (in_array($key, [
+                WebsiteSettingKey::BrandLogoPath,
+                WebsiteSettingKey::BrandFaviconPath,
+                WebsiteSettingKey::PagesAbout,
+                WebsiteSettingKey::PagesContact,
+                WebsiteSettingKey::PagesFaq,
+                WebsiteSettingKey::PagesTerms,
+                WebsiteSettingKey::PagesPrivacy,
+            ], true)) {
+                continue;
+            }
+
+            if ($key === WebsiteSettingKey::BrandDisplayMode) {
+                $rules[$key->value] = ['required', 'string', Rule::enum(BrandDisplayMode::class)];
+
+                continue;
+            }
+
             if ($key->valueType() === 'boolean') {
                 $rules[$key->value] = ['nullable', 'boolean'];
 
@@ -104,7 +150,19 @@ class WebsiteSettingUpdateRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (WebsiteSettingKey::ordered() as $key) {
+        $this->incomingSection = trim((string) $this->input('section', $this->query('section')));
+
+        if (in_array($this->incomingSection, ['hero', 'social'], true)) {
+            return;
+        }
+
+        $section = WebsiteSettingSection::fromQuery($this->incomingSection);
+
+        $this->merge([
+            'section' => $section->value,
+        ]);
+
+        foreach ($section->settingKeys() as $key) {
             if ($key->valueType() !== 'boolean') {
                 continue;
             }
@@ -121,10 +179,11 @@ class WebsiteSettingUpdateRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
-            'hero_image' => 'Hero image',
+            'section' => 'Settings category',
             'payment_qr_image' => 'Payment QR image',
-            'remove_hero_image' => 'Remove hero image',
+            'brand_logo' => 'Primary logo',
             'remove_payment_qr_image' => 'Remove payment QR image',
+            'remove_brand_logo' => 'Remove primary logo',
         ];
 
         foreach (WebsiteSettingKey::ordered() as $key) {
@@ -132,5 +191,21 @@ class WebsiteSettingUpdateRequest extends FormRequest
         }
 
         return $attributes;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        $maxLabel = PublicMedia::brandLogoMaxMegabytesLabel();
+
+        return [
+            'brand_logo.file' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+            'brand_logo.max' => 'Primary logo must not be larger than '.$maxLabel.' MB.',
+            'brand_logo.mimes' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+            'brand_logo.mimetypes' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+            'brand_logo.image' => 'Primary logo must be SVG, PNG, JPG, JPEG, or WebP.',
+        ];
     }
 }

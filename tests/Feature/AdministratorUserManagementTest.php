@@ -84,7 +84,8 @@ class AdministratorUserManagementTest extends TestCase
             ->assertOk()
             ->assertSee('internal-button-group', false)
             ->assertSee($customer->email)
-            ->assertSee('Pending order module');
+            ->assertSee('Pending order module')
+            ->assertSee('data-confirm-title="Block ordering?"', false);
     }
 
     public function test_user_filters_support_search_role_and_status(): void

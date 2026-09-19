@@ -330,8 +330,20 @@ class Order extends AbstractModel
             return false;
         }
 
-        return $this->status === OrderStatus::PendingPayment
-            && in_array($this->payment_status, [PaymentStatus::Pending, PaymentStatus::AwaitingReview, PaymentStatus::Rejected], true);
+        if ($this->status !== OrderStatus::PendingPayment) {
+            return false;
+        }
+
+        if ($this->payment_status === PaymentStatus::Confirmed || $this->payment_confirmed_at !== null) {
+            return false;
+        }
+
+        // Submitted UTR is locked until staff Reject / Not Found.
+        if ($this->payment_status === PaymentStatus::AwaitingReview) {
+            return false;
+        }
+
+        return in_array($this->payment_status, [PaymentStatus::Pending, PaymentStatus::Rejected], true);
     }
 
     public function clearPaymentProofFiles(): void

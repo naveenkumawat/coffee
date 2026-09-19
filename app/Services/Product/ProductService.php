@@ -41,7 +41,7 @@ class ProductService implements ProductServiceInterface
             return $this->products->replaceVariants($product, $this->prepareVariants($data->getVariants()));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $product;
     }
@@ -61,7 +61,7 @@ class ProductService implements ProductServiceInterface
             return $this->products->replaceVariants($product, $this->prepareVariants($data->getVariants()));
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         return $product;
     }
@@ -95,7 +95,7 @@ class ProductService implements ProductServiceInterface
         }
 
         $product->forceFill(['is_active' => false])->save();
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
 
         $lines = collect($report->missing)
             ->map(fn (string $item): string => "- {$item}")
@@ -129,7 +129,7 @@ class ProductService implements ProductServiceInterface
             $this->products->delete($product);
         });
 
-        $this->catalog->flushPublicCache();
+        $this->catalog->flushPublicCache(true);
     }
 
     public function syncImage(Product $product, ?UploadedFile $image, bool $remove): Product
@@ -140,7 +140,7 @@ class ProductService implements ProductServiceInterface
             $path = PublicMedia::store($image, PublicMedia::DIRECTORY_PRODUCTS);
             $product = $this->products->update($product, ['image_path' => $path]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
 
             return $product;
         }
@@ -148,7 +148,7 @@ class ProductService implements ProductServiceInterface
         if ($remove) {
             $product = $this->products->update($product, ['image_path' => null]);
             PublicMedia::deleteManaged($previous);
-            $this->catalog->flushPublicCache();
+            $this->catalog->flushPublicCache(true);
         }
 
         return $product;

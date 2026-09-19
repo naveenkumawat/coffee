@@ -8,6 +8,8 @@ use App\Repositories\CafeTable\CafeTableRepository;
 use App\Repositories\CafeTable\CafeTableRepositoryInterface;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Cart\CartRepositoryInterface;
+use App\Repositories\Cms\CmsPageRepository;
+use App\Repositories\Cms\CmsPageRepositoryInterface;
 use App\Repositories\Favourite\FavouriteRepository;
 use App\Repositories\Favourite\FavouriteRepositoryInterface;
 use App\Repositories\Home\HomeSectionRepository;
@@ -77,6 +79,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
         $this->app->bind(RecipeRepositoryInterface::class, RecipeRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(CmsPageRepositoryInterface::class, CmsPageRepository::class);
         $this->app->bind(WebsiteSettingRepositoryInterface::class, WebsiteSettingRepository::class);
         $this->app->bind(SocialLinkRepositoryInterface::class, SocialLinkRepository::class);
         $this->app->bind(CafeTableRepositoryInterface::class, CafeTableRepository::class);

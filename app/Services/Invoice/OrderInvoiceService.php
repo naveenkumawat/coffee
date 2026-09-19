@@ -50,7 +50,7 @@ class OrderInvoiceService implements OrderInvoiceServiceInterface
 
         $cafeName = filled($business['name'] ?? null)
             ? (string) $business['name']
-            : (string) config('app.name', 'The88Coffees');
+            : (string) config('app.name', 'Sip The Soul');
 
         $order->loadMissing('items.addOns');
         $lines = $order->items

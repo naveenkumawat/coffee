@@ -9,6 +9,7 @@ use App\Models\CafeTable;
 use App\Models\Campaign;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\CmsPage;
 use App\Models\CustomerReferral;
 use App\Models\DiningServiceRequest;
 use App\Models\DiningSession;
@@ -41,6 +42,7 @@ use App\Policies\CafeTablePolicy;
 use App\Policies\CampaignPolicy;
 use App\Policies\CartItemPolicy;
 use App\Policies\CartPolicy;
+use App\Policies\CmsPagePolicy;
 use App\Policies\CustomerReferralPolicy;
 use App\Policies\DiningServiceRequestPolicy;
 use App\Policies\DiningSessionPolicy;
@@ -101,6 +103,7 @@ class AuthServiceProvider extends ServiceProvider
         Promotion::class => PromotionPolicy::class,
         LoyaltyReward::class => LoyaltyRewardPolicy::class,
         Recipe::class => RecipePolicy::class,
+        CmsPage::class => CmsPagePolicy::class,
         SocialLink::class => SocialLinkPolicy::class,
         User::class => UserPolicy::class,
         WebsiteSetting::class => WebsiteSettingPolicy::class,

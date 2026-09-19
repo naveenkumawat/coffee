@@ -44,7 +44,7 @@ class CustomerWhatsAppNotificationTest extends TestCase
         parent::setUp();
 
         config()->set('coffee.pwa.url', 'https://app.example.test');
-        config()->set('coffee.company.name', 'The88Coffees');
+        config()->set('coffee.company.name', 'Sip The Soul');
         config()->set('services.whatsapp.enabled', false);
     }
 

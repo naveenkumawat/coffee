@@ -1,16 +1,26 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import brandMark from '../../assets/images/app-logo/brand-mark.svg';
 import { DEFAULT_BRAND_NAME } from '../../types/content';
-import { selectBrandName, useContentStore } from '../../stores/contentStore';
+import {
+  selectBrandDisplayMode,
+  selectBrandLogoUrl,
+  selectBrandName,
+  selectHomeSlogan,
+  useContentStore,
+} from '../../stores/contentStore';
+import { resolveCatalogMediaUrl } from '../../utils/images';
 
 interface BrandLogoProps {
-  /** When true, wraps the mark + name in a home link. */
+  /** When true, wraps the lockup in a home link. */
   linked?: boolean;
-  /** Compact header treatment. */
-  size?: 'sm' | 'md' | 'lg';
-  /** Show wordmark next to the cup mark. */
-  showWordmark?: boolean;
-  /** Optional override; defaults to Website Settings business name. */
+  /**
+   * hero = prominent home branding.
+   * compact = auth, waiter, error, and other chrome (never 200–300px logos).
+   */
+  placement?: 'hero' | 'compact';
+  /** Compact size only; ignored for hero. */
+  size?: 'sm' | 'md';
+  /** Optional override; defaults to Website Settings brand name. */
   name?: string;
   className?: string;
 }
@@ -19,29 +29,53 @@ interface BrandLogoProps {
 export const BRAND_DISPLAY_NAME = DEFAULT_BRAND_NAME;
 
 /**
- * Shared customer brand lockup using the cup mark + configured business name.
+ * Shared customer brand lockup: uploaded Website Settings logo and optional name/tagline.
  */
 export function BrandLogo({
   linked = false,
+  placement = 'compact',
   size = 'md',
-  showWordmark = true,
   name,
   className = '',
 }: BrandLogoProps) {
   const configuredName = useContentStore((state) => selectBrandName(state.content));
+  const tagline = useContentStore((state) => selectHomeSlogan(state.content));
+  const rawLogoUrl = useContentStore((state) => selectBrandLogoUrl(state.content));
+  const displayMode = useContentStore((state) => selectBrandDisplayMode(state.content));
+  const [logoFailed, setLogoFailed] = useState(false);
   const displayName = name?.trim() || configuredName;
+  const resolvedLogo = rawLogoUrl ? resolveCatalogMediaUrl(rawLogoUrl, '') : '';
+  const showLogo = Boolean(resolvedLogo) && !logoFailed;
+  const showName = !showLogo || displayMode === 'logo_name' || displayMode === 'logo_name_tagline';
+  const showTagline = placement === 'hero' && displayMode === 'logo_name_tagline';
+  const layoutClass = !showLogo
+    ? 'is-text-only'
+    : displayMode === 'logo'
+      ? 'is-logo-only'
+      : displayMode === 'logo_name'
+        ? 'is-logo-name'
+        : 'is-logo-name-tagline';
 
   const content = (
-    <span className={`brand-lockup is-${size} ${className}`.trim()}>
-      <img
-        src={brandMark}
-        alt={showWordmark ? '' : displayName}
-        className="brand-mark-icon"
-        width={40}
-        height={40}
-        decoding="async"
-      />
-      {showWordmark ? <span className="brand-wordmark">{displayName}</span> : null}
+    <span
+      className={`brand-lockup is-${placement} is-${size} ${layoutClass} ${className}`.trim()}
+    >
+      {showLogo ? (
+        <img
+          src={resolvedLogo}
+          alt={showName ? '' : displayName}
+          className="brand-logo-image"
+          decoding="async"
+          onError={() => setLogoFailed(true)}
+        />
+      ) : null}
+      {showName || showTagline ? (
+        <span className="brand-lockup-copy">
+          {showName ? <span className="brand-wordmark">{displayName}</span> : null}
+          {showTagline && tagline ? <span className="brand-tagline">{tagline}</span> : null}
+        </span>
+      ) : null}
+      {!showLogo && !showName ? <span className="visually-hidden">{displayName}</span> : null}
     </span>
   );
 
@@ -50,7 +84,11 @@ export function BrandLogo({
   }
 
   return (
-    <Link to="/" className="brand-lockup-link" aria-label={`${displayName} home`}>
+    <Link
+      to="/"
+      className={`brand-lockup-link is-${placement}`}
+      {...(showName ? {} : { 'aria-label': `${displayName} home` })}
+    >
       {content}
     </Link>
   );

@@ -1,6 +1,6 @@
 # Coffee Customer PWA
 
-Customer-facing mobile-first PWA for Coffee Cafe.
+Customer-facing mobile-first PWA for Sip The Soul.
 
 Recommended hosting shape:
 

@@ -429,5 +429,11 @@ class AdministratorInventoryManagementTest extends TestCase
             ->get(route('administrator.inventory.history'))
             ->assertOk()
             ->assertSee('internal-button-group', false);
+
+        $this->actingAs($manager, 'admin')
+            ->get(route('administrator.inventory.movements.create'))
+            ->assertOk()
+            ->assertSee('data-confirm-title="Record stock movement?"', false)
+            ->assertSee('data-control="select2"', false);
     }
 }
