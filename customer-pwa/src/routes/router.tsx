@@ -4,6 +4,7 @@ import { RouteErrorPage } from '../pages/RouteErrorPage';
 import { lazyPage } from '../utils/lazyPage';
 import { GuestRoute } from './GuestRoute';
 import { ProtectedRoute } from './ProtectedRoute';
+import { RetailOrderingGate } from './RetailOrderingGate';
 import { WaiterRoute } from './WaiterRoute';
 
 const HomePage = lazyPage(() => import('../pages/HomePage').then((module) => ({ default: module.HomePage })));
@@ -133,7 +134,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'cart',
-        element: <CartPage />,
+        element: (
+          <RetailOrderingGate>
+            <CartPage />
+          </RetailOrderingGate>
+        ),
       },
       {
         element: <WaiterRoute />,
@@ -161,7 +166,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: 'checkout',
-            element: <CheckoutPage />,
+            element: (
+              <RetailOrderingGate>
+                <CheckoutPage />
+              </RetailOrderingGate>
+            ),
           },
           {
             path: 'dining',

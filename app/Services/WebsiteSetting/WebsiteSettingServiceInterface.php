@@ -37,7 +37,7 @@ interface WebsiteSettingServiceInterface
      *         qr_image_path: ?string,
      *         whatsapp_number: ?string
      *     },
-     *     fulfilment: array{delivery_disclaimer: ?string, dine_in_enabled: bool},
+     *     fulfilment: array{delivery_disclaimer: ?string, dine_in_enabled: bool, dining_enabled: bool, cart_enabled: bool},
      *     behaviour: array{tracking_enabled: bool},
      *     pages: array{
      *         about: ?string,
@@ -74,6 +74,12 @@ interface WebsiteSettingServiceInterface
      * Dining / table-service feature toggle (same setting as legacy fulfilment_dine_in_enabled).
      */
     public function diningEnabled(): bool;
+
+    /**
+     * Customer retail cart and takeaway/delivery checkout. Independent of Dining and payment gateways.
+     * Missing values stay enabled so existing installations keep current ordering.
+     */
+    public function customerCartEnabled(): bool;
 
     /**
      * @return array{

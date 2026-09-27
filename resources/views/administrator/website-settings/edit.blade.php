@@ -294,7 +294,8 @@
                                             @endif
                                         @elseif ($key->valueType() === 'boolean')
                                             @php
-                                                $checked = filter_var(old($key->value, $values[$key->value] ?? '0'), FILTER_VALIDATE_BOOLEAN);
+                                                $booleanFallback = $key === \App\Enums\WebsiteSettingKey::CustomerCartEnabled ? '1' : '0';
+                                                $checked = filter_var(old($key->value, $values[$key->value] ?? $booleanFallback), FILTER_VALIDATE_BOOLEAN);
                                                 $methodCode = match ($key) {
                                                     \App\Enums\WebsiteSettingKey::PaymentCashEnabled => 'cash',
                                                     \App\Enums\WebsiteSettingKey::PaymentManualUpiEnabled => 'manual_upi',

@@ -46,6 +46,7 @@ enum WebsiteSettingSection: string
                 WebsiteSettingKey::BusinessTimezone,
             ],
             self::Ordering => [
+                WebsiteSettingKey::CustomerCartEnabled,
                 WebsiteSettingKey::OrderSecurityEnabled,
                 WebsiteSettingKey::OrderSecurityMaxOpenUnpaidOrders,
                 WebsiteSettingKey::OrderSecurityMaxOrdersPerHour,

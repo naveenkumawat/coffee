@@ -59,6 +59,7 @@ class CustomerCheckoutController extends Controller
                     'delivery_disclaimer' => $this->websiteSettings->deliveryDisclaimer(),
                     'dining_enabled' => $this->websiteSettings->diningEnabled(),
                     'dine_in_enabled' => $this->websiteSettings->diningEnabled(),
+                    'cart_enabled' => $this->websiteSettings->customerCartEnabled(),
                 ],
                 'payment_methods' => $this->paymentEligibility->methodsByFulfilment($request->user()),
                 'payment' => $this->paymentInstructions(),

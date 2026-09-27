@@ -28,7 +28,7 @@ interface ProductCustomizationSheetProps {
   initialQuantity?: number;
   cartItemId?: number | null;
   onSaved?: () => void;
-  submitMode?: 'cart' | 'callback';
+  submitMode?: 'cart' | 'callback' | 'browse';
   onSubmitConfigured?: (payload: ProductConfiguredPayload) => Promise<void>;
   ctaLabel?: string;
 }
@@ -74,6 +74,7 @@ export function ProductCustomizationSheet({
   const catalogAddOns = product.add_ons ?? [];
   const isEditing = cartItemId != null;
   const isCallbackMode = submitMode === 'callback';
+  const isBrowseMode = submitMode === 'browse';
   const addItem = useCartStore((state) => state.addItem);
   const replaceConfiguredItem = useCartStore((state) => state.replaceConfiguredItem);
   const isVariantPending = useCartStore((state) => state.isVariantPending);
@@ -360,31 +361,35 @@ export function ProductCustomizationSheet({
               </div>
             ) : null}
 
-            <div className="product-overlay-block product-customize-qty">
-              <span className="product-overlay-label">Quantity</span>
-              <QuantityStepper value={quantity} size="lg" onChange={setQuantity} />
-            </div>
+            {isBrowseMode ? null : (
+              <div className="product-overlay-block product-customize-qty">
+                <span className="product-overlay-label">Quantity</span>
+                <QuantityStepper value={quantity} size="lg" onChange={setQuantity} />
+              </div>
+            )}
           </div>
         </div>
 
         <div className="product-overlay-footer product-overlay-footer-compact">
           <div className="product-overlay-footer-meta">
-            <span>{isEditing ? 'Updating cart' : 'Ready to add'}</span>
-            <strong>{formatCurrency(previewTotal)}</strong>
+            <span>{isBrowseMode ? 'Price' : isEditing ? 'Updating cart' : 'Ready to add'}</span>
+            <strong>{formatCurrency(isBrowseMode ? previewUnit : previewTotal)}</strong>
           </div>
-          <button
-            type="button"
-            className="btn btn-primary btn-lg rounded-pill w-100"
-            disabled={!selectedVariant?.is_available || pending}
-            aria-busy={pending}
-            onClick={() => void handleSubmit()}
-          >
-            {pending
-              ? isEditing
-                ? 'Updating…'
-                : 'Adding…'
-              : primaryLabel}
-          </button>
+          {isBrowseMode ? null : (
+            <button
+              type="button"
+              className="btn btn-primary btn-lg rounded-pill w-100"
+              disabled={!selectedVariant?.is_available || pending}
+              aria-busy={pending}
+              onClick={() => void handleSubmit()}
+            >
+              {pending
+                ? isEditing
+                  ? 'Updating…'
+                  : 'Adding…'
+                : primaryLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>,

@@ -13,12 +13,14 @@ export interface AppBootstrapPayload {
   content_version?: string;
   media_version?: string;
   dining_enabled?: boolean;
+  cart_enabled?: boolean;
 }
 
 export interface PublicCacheSyncResult {
   version: string | null;
   changed: boolean;
   diningEnabled: boolean | null;
+  cartEnabled: boolean | null;
 }
 
 let lastKnownVersion: string | null = readStoredCacheVersion();
@@ -87,11 +89,15 @@ export async function applyServerCacheVersion(serverVersion: string): Promise<bo
   return true;
 }
 
-function knownSyncResult(diningEnabled: boolean | null = null): PublicCacheSyncResult {
+function knownSyncResult(
+  diningEnabled: boolean | null = null,
+  cartEnabled: boolean | null = null,
+): PublicCacheSyncResult {
   return {
     version: getKnownPublicCacheVersion(),
     changed: false,
     diningEnabled,
+    cartEnabled,
   };
 }
 
@@ -108,9 +114,11 @@ export async function syncPublicCacheVersion(force = false): Promise<PublicCache
       const version = response.data?.cache_version?.trim();
       const diningEnabled =
         typeof response.data?.dining_enabled === 'boolean' ? response.data.dining_enabled : null;
+      const cartEnabled =
+        typeof response.data?.cart_enabled === 'boolean' ? response.data.cart_enabled : null;
 
       if (!version) {
-        return knownSyncResult(diningEnabled);
+        return knownSyncResult(diningEnabled, cartEnabled);
       }
 
       const changed = await applyServerCacheVersion(version);
@@ -119,6 +127,7 @@ export async function syncPublicCacheVersion(force = false): Promise<PublicCache
         version,
         changed,
         diningEnabled,
+        cartEnabled,
       };
     } catch {
       return knownSyncResult();

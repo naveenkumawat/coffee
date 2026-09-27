@@ -27,6 +27,7 @@ class AppBootstrapController extends Controller
             'content_version' => $snapshot['content_version'],
             'media_version' => $snapshot['media_version'],
             'dining_enabled' => $this->websiteSettings->diningEnabled(),
+            'cart_enabled' => $this->websiteSettings->customerCartEnabled(),
         ], 'App bootstrap retrieved.');
     }
 }

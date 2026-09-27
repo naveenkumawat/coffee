@@ -15,6 +15,7 @@ import { PageHeader } from '../components/common/PageHeader';
 import { ProductImage } from '../components/common/ProductImage';
 import { RecommendationSection } from '../components/recommendations/RecommendationSection';
 import { useOrderingContext } from '../hooks/useOrderingContext';
+import { selectCartEnabled, useContentStore } from '../stores/contentStore';
 import { Product } from '../types/catalog';
 import { PublicProductReview, RatingSummary } from '../types/rating';
 import { hasActiveDiningSession } from '../utils/orderingContext';
@@ -23,6 +24,9 @@ import { trackBehaviour } from '../tracking/behaviourTracker';
 
 export function ProductDetailPage() {
   const orderingContext = useOrderingContext();
+  const cartEnabled = useContentStore((state) => selectCartEnabled(state.content, state.cartEnabled));
+  const diningOrdering = hasActiveDiningSession(orderingContext) && orderingContext.mode === 'dining';
+  const browseOnly = !cartEnabled && !diningOrdering;
   const { productId = '' } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
@@ -177,7 +181,9 @@ export function ProductDetailPage() {
           ) : null}
 
           <div className="detail-order-block">
-            <h2 className="detail-order-heading">{variants.length > 1 ? 'Choose sizes' : 'Add to order'}</h2>
+            <h2 className="detail-order-heading">
+              {browseOnly ? 'Sizes & prices' : variants.length > 1 ? 'Choose sizes' : 'Add to order'}
+            </h2>
             <ProductOrderControl product={product} mode="full" className="detail-order-control" />
             {unavailable ? (
               <p className="summary-warning">This drink is currently unavailable. Browse another menu item.</p>

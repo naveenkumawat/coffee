@@ -101,6 +101,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
                 'delivery_disclaimer' => $this->deliveryDisclaimer(),
                 'dine_in_enabled' => $this->diningEnabled(),
                 'dining_enabled' => $this->diningEnabled(),
+                'cart_enabled' => $this->customerCartEnabled(),
             ],
             'behaviour' => [
                 'tracking_enabled' => (bool) config('coffee.behaviour.enabled', true),
@@ -166,6 +167,13 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
     public function diningEnabled(): bool
     {
         return $this->dineInEnabled();
+    }
+
+    public function customerCartEnabled(): bool
+    {
+        $values = $this->settings->keyedValues();
+
+        return $this->toBoolSetting($values->get(WebsiteSettingKey::CustomerCartEnabled->value), true);
     }
 
     public function orderSecurityConfig(): array
@@ -375,6 +383,7 @@ class WebsiteSettingService implements WebsiteSettingServiceInterface
             WebsiteSettingKey::PaymentPhonepeEnabled->value,
             WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value,
             WebsiteSettingKey::FulfilmentDineInEnabled->value,
+            WebsiteSettingKey::CustomerCartEnabled->value,
             WebsiteSettingKey::OrderingManualClosed->value,
             WebsiteSettingKey::OrderingManualClosedUntil->value,
             WebsiteSettingKey::OrderingManualClosedMessage->value,

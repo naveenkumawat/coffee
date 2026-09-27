@@ -235,7 +235,7 @@ test('dining entry page uses table cards guest stepper and start dining CTA', ()
   assert.match(theme, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
 });
 
-test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail cart', () => {
+test('customer footer slots follow cart and dining capabilities', () => {
   const source = readSrc('components/navigation/BottomNavigation.tsx');
   const theme = readSrc('assets/styles/theme.css');
   const diningPage = readSrc('pages/DiningPage.tsx');
@@ -263,9 +263,15 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail car
   assert.doesNotMatch(source, /diningMenuPath/);
 
   assert.match(contentStore, /export function selectDiningEnabled/);
+  assert.match(contentStore, /export function selectCartEnabled/);
+  assert.match(contentStore, /applyCartCapability/);
+  assert.match(contentStore, /overlayCartCapability/);
+  assert.doesNotMatch(contentStore, /clearGuestCart|guest-cart/);
   assert.match(source, /selectDiningEnabled/);
+  assert.match(source, /selectCartEnabled/);
+  assert.match(source, /customerFooterSlots/);
   assert.match(source, /showDiningNav = Boolean\(diningSession\) \|\| diningEnabled/);
-  assert.match(source, /\.\.\.\(showDiningNav/);
+  assert.match(source, /showCartNav = cartEnabled/);
   assert.match(theme, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(0,\s*1fr\)\)/);
   assert.doesNotMatch(theme, /repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(diningPage, /resolveDiningPageView/);
@@ -282,8 +288,23 @@ test('customer footer always keeps Home/Menu/Dining/Cart/Account with retail car
 
 test('product order control routes dining mode into dining draft', () => {
   const control = readSrc('components/catalog/ProductOrderControl.tsx');
+  const sheet = readSrc('components/catalog/ProductCustomizationSheet.tsx');
+  const router = readSrc('routes/router.tsx');
+  const detail = readSrc('pages/ProductDetailPage.tsx');
   assert.match(control, /useOrderingAddHandler/);
   assert.match(control, /effectiveHandler/);
+  assert.match(control, /selectCartEnabled/);
+  assert.match(control, /browseOnly = !effectiveHandler && !cartEnabled/);
+  assert.match(control, /Order at the counter/);
+  assert.match(control, /formatCurrency\(price\)/);
+  assert.match(control, /submitMode=\{browseOnly \? 'browse'/);
+  assert.match(sheet, /submitMode\?: 'cart' \| 'callback' \| 'browse'/);
+  assert.match(sheet, /isBrowseMode \? null :/);
+  assert.match(detail, /browseOnly \? 'Sizes & prices'/);
+  assert.match(router, /<RetailOrderingGate>\s*<CartPage \/>/);
+  assert.match(router, /<RetailOrderingGate>\s*<CheckoutPage \/>/);
+  assert.match(router, /path: 'orders',\s*element: <OrdersPage \/>/);
+  assert.doesNotMatch(router, /RetailOrderingGate>\s*<OrdersPage/);
 
   const handler = readSrc('hooks/useOrderingAddHandler.ts');
   assert.match(handler, /addDiningDraft/);

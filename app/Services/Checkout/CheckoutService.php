@@ -12,6 +12,7 @@ use App\Services\Cart\CartServiceInterface;
 use App\Services\CustomerDeliveryAddress\CustomerDeliveryAddressServiceInterface;
 use App\Services\Order\OrderServiceInterface;
 use App\Services\OrderSecurity\OrderSecurityServiceInterface;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Transfers\Checkout\CheckoutTransferInterface;
 use App\Transfers\Order\OrderTransferInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -28,6 +29,7 @@ class CheckoutService implements CheckoutServiceInterface
         protected OrderSecurityServiceInterface $orderSecurity,
         protected CafeAvailabilityServiceInterface $cafeAvailability,
         protected CustomerDeliveryAddressServiceInterface $deliveryAddresses,
+        protected WebsiteSettingServiceInterface $websiteSettings,
     ) {}
 
     public function getCheckoutContext(User $customer, ?string $fulfilmentMethod = null): array
@@ -73,6 +75,12 @@ class CheckoutService implements CheckoutServiceInterface
                 ]);
             }
 
+            if (! $this->websiteSettings->customerCartEnabled()) {
+                throw ValidationException::withMessages([
+                    'checkout' => 'Online ordering is unavailable. Please order at the counter.',
+                ]);
+            }
+
             /** @var User $lockedCustomer */
             $lockedCustomer = User::query()
                 ->whereKey($customer->getKey())
@@ -92,7 +100,7 @@ class CheckoutService implements CheckoutServiceInterface
             $duplicate = $this->orderSecurity->findRecentDuplicate($lockedCustomer, $data, $context);
 
             if ($duplicate !== null) {
-                $this->cartService->clear($lockedCustomer);
+                $this->cartService->clear($lockedCustomer, true);
 
                 return $duplicate;
             }
@@ -159,7 +167,7 @@ class CheckoutService implements CheckoutServiceInterface
 
             $this->orderSecurity->rememberOrderFingerprint($lockedCustomer, $data, $context, $order);
             $this->orderSecurity->hitSuccessfulOrderCreate($lockedCustomer);
-            $this->cartService->clear($lockedCustomer);
+            $this->cartService->clear($lockedCustomer, true);
 
             return $order;
         });

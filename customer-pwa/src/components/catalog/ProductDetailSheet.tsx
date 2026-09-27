@@ -4,6 +4,7 @@ import { fetchProduct } from '../../api/catalog';
 import { ApiError } from '../../api/client';
 import { fetchProductRatings } from '../../api/ratings';
 import { useProductOverlay } from '../../hooks/useProductOverlay';
+import { selectCartEnabled, useContentStore } from '../../stores/contentStore';
 import { Product } from '../../types/catalog';
 import { PublicProductReview, RatingSummary } from '../../types/rating';
 import { ProductImage } from '../common/ProductImage';
@@ -36,6 +37,8 @@ export function ProductDetailSheet({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(initialProduct.rating_summary ?? null);
   const [reviews, setReviews] = useState<PublicProductReview[]>([]);
+  const cartEnabled = useContentStore((state) => selectCartEnabled(state.content, state.cartEnabled));
+  const retailBrowse = !orderHandler && !cartEnabled;
 
   useEffect(() => {
     if (!open) {
@@ -210,7 +213,7 @@ export function ProductDetailSheet({
         </div>
 
         <div className="product-overlay-footer-order">
-          <span className="product-overlay-label">Add to order</span>
+          <span className="product-overlay-label">{retailBrowse ? 'Sizes & prices' : 'Add to order'}</span>
           <ProductOrderControl
             product={product}
             mode="full"

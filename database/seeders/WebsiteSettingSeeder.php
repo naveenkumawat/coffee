@@ -49,6 +49,7 @@ class WebsiteSettingSeeder extends Seeder
             WebsiteSettingKey::PaymentPhonepeEnabled->value => '0',
             WebsiteSettingKey::FulfilmentDeliveryDisclaimer->value => 'Delivery will be arranged through a third-party service. Delivery charges are payable separately by the customer.',
             WebsiteSettingKey::FulfilmentDineInEnabled->value => '1',
+            WebsiteSettingKey::CustomerCartEnabled->value => '1',
             WebsiteSettingKey::TaxEnabled->value => '1',
             WebsiteSettingKey::TaxLabel->value => 'GST',
             WebsiteSettingKey::TaxPercent->value => '5.00',

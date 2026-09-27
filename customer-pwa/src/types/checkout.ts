@@ -39,6 +39,7 @@ export interface CheckoutFulfilmentMeta {
   delivery_disclaimer: string;
   dine_in_enabled?: boolean;
   dining_enabled?: boolean;
+  cart_enabled?: boolean;
 }
 
 export interface CheckoutSummaryMeta extends Record<string, unknown> {

@@ -10,16 +10,19 @@ import {
   WebsiteContent,
   WebsiteSocialLink,
 } from '../types/content';
+import { cartCapabilityFromContent, resolveCartEnabled } from '../utils/cartCapability';
 import { diningCapabilityFromContent, resolveDiningCapability } from '../utils/diningCapability';
 import { reconcileStaleDiningOrderingMode } from '../utils/orderingContext';
 
 interface ContentState {
   content: WebsiteContent | null;
   diningEnabled: boolean | null;
+  cartEnabled: boolean | null;
   hasBootstrapped: boolean;
   bootstrap: () => Promise<void>;
   reload: () => Promise<void>;
   applyDiningCapability: (diningEnabled: boolean) => void;
+  applyCartCapability: (cartEnabled: boolean) => void;
 }
 
 /** Stable empty fallback — never inline `?? []` in a Zustand selector (fresh [] → React #185). */
@@ -43,6 +46,27 @@ function overlayDiningCapability(content: WebsiteContent, diningEnabled: boolean
   };
 }
 
+function overlayCartCapability(content: WebsiteContent, cartEnabled: boolean): WebsiteContent {
+  return {
+    ...content,
+    fulfilment: {
+      delivery_disclaimer: content.fulfilment?.delivery_disclaimer ?? null,
+      ...content.fulfilment,
+      cart_enabled: cartEnabled,
+    },
+  };
+}
+
+function withPublicCapabilities(
+  content: WebsiteContent,
+  diningEnabled: boolean,
+  cartEnabled: boolean | null,
+): WebsiteContent {
+  const withDining = overlayDiningCapability(content, diningEnabled);
+
+  return typeof cartEnabled === 'boolean' ? overlayCartCapability(withDining, cartEnabled) : withDining;
+}
+
 function settledDiningEnabled(input: {
   bootstrapDiningEnabled: boolean | null;
   storedDiningEnabled: boolean | null;
@@ -53,9 +77,18 @@ function settledDiningEnabled(input: {
   );
 }
 
+function settledCartEnabled(input: {
+  bootstrapCartEnabled: boolean | null;
+  storedCartEnabled: boolean | null;
+  content: WebsiteContent | null;
+}): boolean {
+  return resolveCartEnabled(input);
+}
+
 export const useContentStore = create<ContentState>((set, get) => ({
   content: null,
   diningEnabled: null,
+  cartEnabled: null,
   hasBootstrapped: false,
   applyDiningCapability: (diningEnabled: boolean) => {
     reconcileStaleDiningOrderingMode(diningEnabled);
@@ -63,7 +96,15 @@ export const useContentStore = create<ContentState>((set, get) => ({
 
     set({
       diningEnabled,
-      content: current ? overlayDiningCapability(current, diningEnabled) : current,
+      content: current ? withPublicCapabilities(current, diningEnabled, get().cartEnabled) : current,
+    });
+  },
+  applyCartCapability: (cartEnabled: boolean) => {
+    const current = get().content;
+
+    set({
+      cartEnabled,
+      content: current ? overlayCartCapability(current, cartEnabled) : current,
     });
   },
   bootstrap: async () => {
@@ -79,6 +120,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
           get().applyDiningCapability(sync.diningEnabled);
         }
 
+        if (typeof sync.cartEnabled === 'boolean') {
+          get().applyCartCapability(sync.cartEnabled);
+        }
+
         const cached = await readCachedPublicJson<Awaited<ReturnType<typeof fetchWebsiteContent>>>(
           PUBLIC_CACHE_KEYS.content,
         );
@@ -89,9 +134,15 @@ export const useContentStore = create<ContentState>((set, get) => ({
             storedDiningEnabled: get().diningEnabled,
             content: cached.data,
           });
+          const cartEnabled = settledCartEnabled({
+            bootstrapCartEnabled: typeof sync.cartEnabled === 'boolean' ? sync.cartEnabled : null,
+            storedCartEnabled: get().cartEnabled,
+            content: cached.data,
+          });
           set({
-            content: overlayDiningCapability(cached.data, diningEnabled),
+            content: withPublicCapabilities(cached.data, diningEnabled, cartEnabled),
             diningEnabled,
+            cartEnabled,
             hasBootstrapped: true,
           });
         }
@@ -100,8 +151,12 @@ export const useContentStore = create<ContentState>((set, get) => ({
           const cachedDining = diningCapabilityFromContent(get().content);
           const diningMismatch =
             typeof sync.diningEnabled === 'boolean' && sync.diningEnabled !== cachedDining;
+          const cachedCart = cartCapabilityFromContent(get().content);
+          const cartMismatch =
+            typeof sync.cartEnabled === 'boolean' &&
+            (cachedCart === null || cachedCart !== sync.cartEnabled);
           const response =
-            sync.changed || diningMismatch
+            sync.changed || diningMismatch || cartMismatch
               ? await fetchWebsiteContentFromNetwork()
               : await fetchWebsiteContent({ skipNetworkIfCached: true });
           const diningEnabled = settledDiningEnabled({
@@ -109,22 +164,33 @@ export const useContentStore = create<ContentState>((set, get) => ({
             storedDiningEnabled: get().diningEnabled,
             content: response.data,
           });
-          const content = overlayDiningCapability(response.data, diningEnabled);
+          const cartEnabled = settledCartEnabled({
+            bootstrapCartEnabled: typeof sync.cartEnabled === 'boolean' ? sync.cartEnabled : null,
+            storedCartEnabled: get().cartEnabled,
+            content: response.data,
+          });
+          const content = withPublicCapabilities(response.data, diningEnabled, cartEnabled);
 
           reconcileStaleDiningOrderingMode(diningEnabled);
-          set({ content, diningEnabled, hasBootstrapped: true });
+          set({ content, diningEnabled, cartEnabled, hasBootstrapped: true });
         } catch {
           const diningEnabled = settledDiningEnabled({
             bootstrapDiningEnabled: typeof sync.diningEnabled === 'boolean' ? sync.diningEnabled : null,
             storedDiningEnabled: get().diningEnabled,
             content: get().content,
           });
+          const cartEnabled = settledCartEnabled({
+            bootstrapCartEnabled: typeof sync.cartEnabled === 'boolean' ? sync.cartEnabled : null,
+            storedCartEnabled: get().cartEnabled,
+            content: get().content,
+          });
           const current = get().content;
 
           reconcileStaleDiningOrderingMode(diningEnabled);
           set({
-            content: current ? overlayDiningCapability(current, diningEnabled) : current,
+            content: current ? withPublicCapabilities(current, diningEnabled, cartEnabled) : current,
             diningEnabled,
+            cartEnabled,
             hasBootstrapped: true,
           });
         }
@@ -139,8 +205,15 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const response = await fetchWebsiteContentFromNetwork();
       const diningEnabled = diningCapabilityFromContent(response.data);
+      const cartFromContent = cartCapabilityFromContent(response.data);
+      const cartEnabled = cartFromContent ?? get().cartEnabled ?? true;
       reconcileStaleDiningOrderingMode(diningEnabled);
-      set({ content: response.data, diningEnabled, hasBootstrapped: true });
+      set({
+        content: withPublicCapabilities(response.data, diningEnabled, cartEnabled),
+        diningEnabled,
+        cartEnabled,
+        hasBootstrapped: true,
+      });
     } catch {
       // Keep last known public content when offline.
     }
@@ -179,6 +252,18 @@ export function selectSocialLinks(content: WebsiteContent | null): readonly Webs
 
 export function selectAvailability(content: WebsiteContent | null): WebsiteAvailabilityContent | null {
   return content?.availability ?? null;
+}
+
+/** Server cart_enabled from bootstrap overlay, then fulfilment. Unknown stays enabled. */
+export function selectCartEnabled(
+  content: WebsiteContent | null,
+  capability: boolean | null = null,
+): boolean {
+  return resolveCartEnabled({
+    bootstrapCartEnabled: capability,
+    storedCartEnabled: null,
+    content,
+  });
 }
 
 /** Server dining_enabled from bootstrap overlay, then fulfilment — fail closed until either arrives. */

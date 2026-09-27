@@ -5,9 +5,10 @@ import { useOrderingContext } from '../../hooks/useOrderingContext';
 import { RealtimeConnectionState } from '../../realtime/types';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
-import { selectDiningEnabled, useContentStore } from '../../stores/contentStore';
+import { selectCartEnabled, selectDiningEnabled, useContentStore } from '../../stores/contentStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { cartBadgeAriaLabel, formatCartBadgeCount } from '../../utils/cartQuantity';
+import { customerFooterSlots } from '../../utils/customerFooter';
 import { AppIcons, formatCountBadge } from '../../utils/icons';
 import { buildLoginRedirect } from '../../utils/navigation';
 import {
@@ -46,6 +47,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const diningEnabled = useContentStore((state) =>
     selectDiningEnabled(state.content, state.diningEnabled),
   );
+  const cartEnabled = useContentStore((state) => selectCartEnabled(state.content, state.cartEnabled));
   const retailCartCount = useCartStore((state) => state.count);
   const status = useAuthStore((state) => state.status);
   const customer = useAuthStore((state) => state.customer);
@@ -58,6 +60,7 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
   const diningSession =
     !waiterMode && hasActiveDiningSession(orderingContext) ? orderingContext.diningSession : null;
   const showDiningNav = Boolean(diningSession) || diningEnabled;
+  const showCartNav = cartEnabled;
   const cartCount = retailCartCount;
   const previousCount = useRef(cartCount);
   const [badgeBump, setBadgeBump] = useState(false);
@@ -109,53 +112,56 @@ export function BottomNavigation({ realtimeState = 'idle' }: BottomNavigationPro
             ]
           : []),
       ]
-    : [
-        { to: '/', label: 'Home', icon: AppIcons.home, end: true },
-        {
-          to: menuTo,
-          label: 'Menu',
-          icon: AppIcons.menu,
-          isNavActive: (pathname) => pathname === '/menu' || pathname.startsWith('/menu/'),
-        },
-        ...(showDiningNav
-          ? [
-              {
-                to: diningTo,
-                label: 'Dining',
-                icon: AppIcons.dining,
-                isNavActive: (pathname) => {
-                  if (diningSession) {
-                    return isDiningSessionSurfacePath(pathname, diningSession.diningSessionId);
-                  }
+    : customerFooterSlots({ cartEnabled: showCartNav, showDiningNav }).map((slot): BottomNavItem => {
+        switch (slot) {
+          case 'home':
+            return { to: '/', label: 'Home', icon: AppIcons.home, end: true };
+          case 'menu':
+            return {
+              to: menuTo,
+              label: 'Menu',
+              icon: AppIcons.menu,
+              isNavActive: (pathname) => pathname === '/menu' || pathname.startsWith('/menu/'),
+            };
+          case 'dining':
+            return {
+              to: diningTo,
+              label: 'Dining',
+              icon: AppIcons.dining,
+              isNavActive: (pathname) => {
+                if (diningSession) {
+                  return isDiningSessionSurfacePath(pathname, diningSession.diningSessionId);
+                }
 
-                  if (pathname === '/dining') {
-                    return true;
-                  }
+                if (pathname === '/dining') {
+                  return true;
+                }
 
-                  return pathname.startsWith('/dining/');
-                },
-              } satisfies BottomNavItem,
-            ]
-          : []),
-        {
-          to: cartTo,
-          label: 'Cart',
-          icon: AppIcons.cart,
-          ariaLabel: cartAriaLabel,
-          isNavActive: (pathname) => pathname === '/cart' || pathname.startsWith('/cart/'),
-        },
-        {
-          to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
-          label: isAuthenticated ? 'Account' : 'Sign in',
-          icon: AppIcons.account,
-          badgeCount: isAuthenticated ? unreadCount : 0,
-          ariaLabel:
-            isAuthenticated && accountUnreadLabel
-              ? `Account, ${accountUnreadLabel} unread notifications`
-              : undefined,
-          isNavActive: (pathname) => pathname === '/account' || pathname.startsWith('/account/'),
-        },
-      ];
+                return pathname.startsWith('/dining/');
+              },
+            };
+          case 'cart':
+            return {
+              to: cartTo,
+              label: 'Cart',
+              icon: AppIcons.cart,
+              ariaLabel: cartAriaLabel,
+              isNavActive: (pathname) => pathname === '/cart' || pathname.startsWith('/cart/'),
+            };
+          case 'account':
+            return {
+              to: isAuthenticated ? '/account' : buildLoginRedirect('/account'),
+              label: isAuthenticated ? 'Account' : 'Sign in',
+              icon: AppIcons.account,
+              badgeCount: isAuthenticated ? unreadCount : 0,
+              ariaLabel:
+                isAuthenticated && accountUnreadLabel
+                  ? `Account, ${accountUnreadLabel} unread notifications`
+                  : undefined,
+              isNavActive: (pathname) => pathname === '/account' || pathname.startsWith('/account/'),
+            };
+        }
+      });
 
   if (typeof document === 'undefined') {
     return null;

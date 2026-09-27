@@ -27,6 +27,7 @@ export interface WebsiteFulfilmentContent {
   delivery_disclaimer: string | null;
   dine_in_enabled?: boolean;
   dining_enabled?: boolean;
+  cart_enabled?: boolean;
 }
 
 export interface WebsiteBehaviourContent {

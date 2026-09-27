@@ -17,7 +17,7 @@ interface CartServiceInterface
 
     public function removeItem(User $customer, CartItem $cartItem): Cart;
 
-    public function clear(User $customer): Cart;
+    public function clear(User $customer, bool $bypassRetailCartGate = false): Cart;
 
     /**
      * @param  list<array{product_variant_id: int, quantity: int}>  $items

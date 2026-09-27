@@ -47,6 +47,7 @@ enum WebsiteSettingKey: string
     case OrderingManualClosed = 'ordering_manual_closed';
     case OrderingManualClosedUntil = 'ordering_manual_closed_until';
     case OrderingManualClosedMessage = 'ordering_manual_closed_message';
+    case CustomerCartEnabled = 'customer_cart_enabled';
     case ReferralEnabled = 'referral_enabled';
     case ReferralRewardType = 'referral_reward_type';
     case ReferralRewardProductId = 'referral_reward_product_id';
@@ -83,7 +84,8 @@ enum WebsiteSettingKey: string
             self::OrderSecurityDuplicateOrderWindowMinutes => 'order_security',
             self::OrderingManualClosed,
             self::OrderingManualClosedUntil,
-            self::OrderingManualClosedMessage => 'cafe_ordering',
+            self::OrderingManualClosedMessage,
+            self::CustomerCartEnabled => 'cafe_ordering',
             self::ReferralEnabled,
             self::ReferralRewardType,
             self::ReferralRewardProductId,
@@ -109,7 +111,7 @@ enum WebsiteSettingKey: string
             self::BusinessOpeningHours,
             self::PaymentInstructions,
             self::FulfilmentDeliveryDisclaimer => 'text',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::CustomerCartEnabled, self::ReferralEnabled,
             self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'boolean',
             self::OrderSecurityMaxOpenUnpaidOrders,
             self::OrderSecurityMaxOrdersPerHour,
@@ -168,6 +170,7 @@ enum WebsiteSettingKey: string
             self::OrderSecurityCheckoutAttemptsPer10Minutes => 'Checkout attempts / 10 minutes',
             self::OrderSecurityPaymentProofAttemptsPer15Minutes => 'Payment proof attempts / 15 minutes',
             self::OrderSecurityDuplicateOrderWindowMinutes => 'Duplicate order window (minutes)',
+            self::CustomerCartEnabled => 'Customer Cart & Ordering',
             self::OrderingManualClosed => 'Ordering manually closed',
             self::OrderingManualClosedUntil => 'Manual closed until',
             self::OrderingManualClosedMessage => 'Manual closed customer message',
@@ -212,7 +215,7 @@ enum WebsiteSettingKey: string
             self::HeroSubtitle => 120,
             self::BusinessAboutShort => 1000,
             self::BusinessAddress, self::BusinessOpeningHours, self::PaymentInstructions, self::FulfilmentDeliveryDisclaimer => 2000,
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::CustomerCartEnabled, self::ReferralEnabled,
             self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 1,
             self::PagesAbout, self::PagesContact, self::PagesFaq, self::PagesTerms, self::PagesPrivacy => 20000,
         };
@@ -223,7 +226,7 @@ enum WebsiteSettingKey: string
         return match ($this) {
             self::BusinessEmail => 'email',
             self::BusinessPhone, self::BusinessWhatsappNumber, self::PaymentPhone, self::PaymentWhatsappNumber => 'tel',
-            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::ReferralEnabled,
+            self::FulfilmentDineInEnabled, self::TaxEnabled, self::TaxInclusive, self::OrderSecurityEnabled, self::OrderingManualClosed, self::CustomerCartEnabled, self::ReferralEnabled,
             self::PaymentCashEnabled, self::PaymentManualUpiEnabled, self::PaymentRazorpayEnabled, self::PaymentPayuEnabled, self::PaymentPaytmEnabled, self::PaymentPhonepeEnabled => 'checkbox',
             self::TaxPercent,
             self::OrderSecurityMaxOpenUnpaidOrders,
@@ -260,6 +263,7 @@ enum WebsiteSettingKey: string
             self::BrandFaviconPath => 'Unused. Favicons are static frontend files, not uploaded here.',
             self::TaxLegalBusinessName => 'Optional legal name for invoices when different from the café display brand.',
             self::FulfilmentDineInEnabled => 'Allow customers to place dine-in / table orders from the PWA. Manage café tables under Café Tables.',
+            self::CustomerCartEnabled => 'When disabled, customers can browse the menu and prices but cannot add items to the retail cart or place customer takeaway/delivery orders online. Customers order directly at the counter.',
             self::BusinessTimezone => 'IANA timezone used for operating hours and closures (e.g. Asia/Kolkata). Never use the customer browser timezone.',
             self::OrderSecurityEnabled => 'When enabled, pending-order limits, duplicate detection, and order rate limits apply at checkout.',
             self::OrderSecurityMaxOpenUnpaidOrders => 'Customers cannot place another order while they already have this many unpaid/open orders (1–20).',

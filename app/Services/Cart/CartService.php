@@ -19,6 +19,7 @@ use App\Services\Loyalty\LoyaltyServiceInterface;
 use App\Services\Promotion\PromotionServiceInterface;
 use App\Services\Referral\ReferralServiceInterface;
 use App\Services\Tax\TaxCalculatorInterface;
+use App\Services\WebsiteSetting\WebsiteSettingServiceInterface;
 use App\Support\AddOnConfiguration;
 use App\Support\CustomerDiscountLines;
 use App\Transfers\Cart\CartItemTransfer;
@@ -38,7 +39,19 @@ class CartService implements CartServiceInterface
         protected AttributionServiceInterface $attribution,
         protected LoyaltyRewardServiceInterface $loyaltyRewards,
         protected LoyaltyServiceInterface $loyalty,
+        protected WebsiteSettingServiceInterface $websiteSettings,
     ) {}
+
+    protected function assertCustomerRetailCartEnabled(): void
+    {
+        if ($this->websiteSettings->customerCartEnabled()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'cart' => 'Online ordering is unavailable. Please order at the counter.',
+        ]);
+    }
 
     public function getForCustomer(User $customer): Cart
     {
@@ -47,6 +60,8 @@ class CartService implements CartServiceInterface
 
     public function addItem(User $customer, CartItemTransferInterface $data): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         return DB::transaction(function () use ($customer, $data): Cart {
             $cart = $this->carts->firstOrCreateForCustomer($customer);
             $variant = $this->validateVariant($data->getProductVariantId());
@@ -120,6 +135,8 @@ class CartService implements CartServiceInterface
 
     public function updateItem(User $customer, CartItem $cartItem, CartItemTransferInterface $data): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         return DB::transaction(function () use ($customer, $cartItem, $data): Cart {
             $cart = $this->carts->firstOrCreateForCustomer($customer);
 
@@ -166,6 +183,8 @@ class CartService implements CartServiceInterface
 
     public function removeItem(User $customer, CartItem $cartItem): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         return DB::transaction(function () use ($customer, $cartItem): Cart {
             $cart = $this->carts->firstOrCreateForCustomer($customer);
 
@@ -181,8 +200,12 @@ class CartService implements CartServiceInterface
         });
     }
 
-    public function clear(User $customer): Cart
+    public function clear(User $customer, bool $bypassRetailCartGate = false): Cart
     {
+        if (! $bypassRetailCartGate) {
+            $this->assertCustomerRetailCartEnabled();
+        }
+
         return DB::transaction(function () use ($customer): Cart {
             $cart = $this->carts->firstOrCreateForCustomer($customer);
             $this->carts->clearItems($cart);
@@ -199,6 +222,8 @@ class CartService implements CartServiceInterface
 
     public function mergeGuestItems(User $customer, array $items, ?string $idempotencyKey = null): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $cacheKey = null;
 
         if (filled($idempotencyKey)) {
@@ -535,6 +560,8 @@ class CartService implements CartServiceInterface
 
     public function applyPromoCode(User $customer, string $code, ?string $fulfilmentMethod = null): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $normalized = $this->promotions->normalizeCode($code);
 
         if ($normalized === null) {
@@ -562,6 +589,8 @@ class CartService implements CartServiceInterface
 
     public function clearPromoCode(User $customer): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $cart = $this->getForCustomer($customer);
         $cart->forceFill(['promo_code' => null])->save();
 
@@ -570,6 +599,8 @@ class CartService implements CartServiceInterface
 
     public function addFreeDrinkRewardToCart(User $customer, int $rewardId, ?string $fulfilmentMethod = null): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $reward = $this->referrals->findOwnedUsableReward($customer, $rewardId);
 
         if ($reward->reward_type !== CustomerRewardType::FreeDrink) {
@@ -608,6 +639,8 @@ class CartService implements CartServiceInterface
 
     public function applyReferralCouponReward(User $customer, string $code, ?string $fulfilmentMethod = null): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $reward = $this->referrals->findOwnedUsableCouponReward($customer, $code);
 
         $cart = $this->getForCustomer($customer);
@@ -640,6 +673,8 @@ class CartService implements CartServiceInterface
 
     public function clearReferralRewards(User $customer): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $cart = $this->getForCustomer($customer);
         $cart->forceFill([
             'referral_free_drink_reward_id' => null,
@@ -651,6 +686,8 @@ class CartService implements CartServiceInterface
 
     public function applyLoyaltyReward(User $customer, int $rewardId, ?string $fulfilmentMethod = null): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         if (! $this->loyaltyRewards->redemptionEnabled()) {
             throw ValidationException::withMessages([
                 'loyalty_reward_id' => 'Loyalty rewards are not available right now.',
@@ -684,6 +721,8 @@ class CartService implements CartServiceInterface
 
     public function clearLoyaltyReward(User $customer): Cart
     {
+        $this->assertCustomerRetailCartEnabled();
+
         $cart = $this->getForCustomer($customer);
         $cart->forceFill(['loyalty_reward_id' => null])->save();
 
